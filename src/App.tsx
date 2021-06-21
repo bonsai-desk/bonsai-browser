@@ -1,26 +1,17 @@
 import React from 'react';
 import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
-import styled from 'styled-components';
+import { values } from 'mobx';
+import { IApp } from './interfaces/app';
+// import { observer } from 'mobx-react-lite';
+// import { types, getSnapshot } from 'mobx-state-tree';
+import Button from './components/Button';
 import icon from '../assets/icon.svg';
 import './App.global.css';
-
-interface IPerson {
-  name: string;
-  age: number;
-}
+import { IPerson } from './interfaces/person';
 
 function greet(person: IPerson): string {
   return `hello ${person.name} who is ${person.age} years old`;
 }
-
-const Button = styled.button`
-  background: transparent;
-  border-radius: 3px;
-  border: 2px solid palevioletred;
-  color: palevioletred;
-  margin: 0 1em;
-  padding: 0.25em 1em;
-`;
 
 const Hello = () => {
   const cameron: IPerson = { name: 'cameron', age: 25 };
@@ -31,7 +22,7 @@ const Hello = () => {
       </div>
       <h1>{greet(cameron)}</h1>
       <Button>hello</Button>
-      <div className="bg-gray-400 w-full h-20">asdf</div>
+      <Button>hello</Button>
       <div className="Hello">
         <a
           href="https://electron-react-boilerplate.js.org/"
@@ -62,7 +53,27 @@ const Hello = () => {
   );
 };
 
-export default function App() {
+let id = 0;
+const randomId = () => {
+  id += 1;
+  return id.toString();
+};
+
+const App = (props: IApp) => {
+  const { store } = props;
+  function onClick() {
+    store.addTodo(randomId(), 'new task');
+  }
+  return (
+    <div>
+      <button type="button" onClick={onClick}>
+        Add Task
+      </button>
+      {values(store.todos).map((todo) => (
+        <div key={todo.id}>{todo.id}</div>
+      ))}
+    </div>
+  );
   return (
     <Router>
       <Switch>
@@ -70,4 +81,6 @@ export default function App() {
       </Switch>
     </Router>
   );
-}
+};
+
+export default App;
