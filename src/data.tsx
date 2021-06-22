@@ -38,8 +38,8 @@ const RootModel = types
       return Array.from(self.todos.values()).filter((todo) => todo.done).length;
     },
     getTodosWhereDoneIs(done: boolean) {
-      return Array.from(self.todos.values()).filter(
-        (todo) => todo.done === done
+      return Array.from(self.todos.entries()).filter(
+        (item) => item[1].done === done
       );
     },
   }))
