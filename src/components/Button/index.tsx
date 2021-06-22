@@ -12,7 +12,7 @@ const Button = styled.button`
   transition: transform ease-in 0.1s;
   cursor: pointer;
 
-  &:hover {
+  :hover {
     transform: scale(1.05);
   }
 `;
