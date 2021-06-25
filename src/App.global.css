@@ -13,31 +13,8 @@ body {
     #7a2c9e 129.35%
   );
   font-family: sans-serif;
-  overflow-y: hidden;
+  overflow: hidden;
   display: flex;
   justify-content: center;
   align-items: center;
-}
-
-/*li {*/
-/*  list-style: none;*/
-/*}*/
-
-a {
-  text-decoration: none;
-  height: fit-content;
-  width: fit-content;
-  margin: 10px;
-}
-
-a:hover {
-  opacity: 1;
-  text-decoration: none;
-}
-
-.Hello {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 20px 0;
 }

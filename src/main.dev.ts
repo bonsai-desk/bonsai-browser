@@ -11,7 +11,7 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 import path from 'path';
-import { app, BrowserWindow, shell } from 'electron';
+import { app, BrowserWindow, BrowserView, shell } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
@@ -67,17 +67,71 @@ const createWindow = async () => {
     return path.join(RESOURCES_PATH, ...paths);
   };
 
+  const windowWidth = 1024;
+  const windowHeight = 728;
+  const headerHeight = 50;
+
   mainWindow = new BrowserWindow({
-    show: false,
-    width: 1024,
-    height: 728,
+    frame: false,
+    width: windowWidth,
+    height: windowHeight,
     icon: getAssetPath('icon.png'),
     webPreferences: {
       nodeIntegration: true,
     },
   });
 
-  mainWindow.loadURL(`file://${__dirname}/index.html`);
+  const titleBarView = new BrowserView({
+    webPreferences: {
+      nodeIntegration: true,
+    },
+  });
+  mainWindow.setBrowserView(titleBarView);
+  titleBarView.setBounds({
+    x: 0,
+    y: 0,
+    width: windowWidth,
+    height: headerHeight,
+  });
+  titleBarView.webContents.loadURL(`file://${__dirname}/index.html`);
+
+  const mainView = new BrowserView();
+  mainWindow.addBrowserView(mainView);
+  mainView.setBounds({
+    x: 0,
+    y: headerHeight,
+    width: windowWidth,
+    height: Math.max(windowHeight - headerHeight, 0),
+  });
+  mainView.webContents.loadURL('https://google.com');
+
+  // open window before loading is complete
+  if (process.env.START_MINIMIZED) {
+    mainWindow.minimize();
+  } else {
+    mainWindow.show();
+    mainWindow.focus();
+  }
+
+  mainWindow.on('resize', () => {
+    if (mainWindow) {
+      const windowSize = mainWindow.getSize();
+
+      mainView.setBounds({
+        x: 0,
+        y: headerHeight,
+        width: windowSize[0],
+        height: Math.max(windowSize[1] - headerHeight, 0),
+      });
+
+      titleBarView.setBounds({
+        x: 0,
+        y: 0,
+        width: windowSize[0],
+        height: headerHeight,
+      });
+    }
+  });
 
   // @TODO: Use 'ready-to-show' event
   //        https://github.com/electron/electron/blob/master/docs/api/browser-window.md#using-ready-to-show-event
@@ -85,12 +139,12 @@ const createWindow = async () => {
     if (!mainWindow) {
       throw new Error('"mainWindow" is not defined');
     }
-    if (process.env.START_MINIMIZED) {
-      mainWindow.minimize();
-    } else {
-      mainWindow.show();
-      mainWindow.focus();
-    }
+    // if (process.env.START_MINIMIZED) {
+    //   mainWindow.minimize();
+    // } else {
+    //   mainWindow.show();
+    //   mainWindow.focus();
+    // }
   });
 
   mainWindow.on('closed', () => {

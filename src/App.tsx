@@ -24,7 +24,7 @@ const App = observer(() => {
       </Button>
       <ul>
         {store.getTodosWhereDoneIs(false).map(([idx, todo]) => (
-          <li key={idx}>{todo.name}</li>
+          <li key={idx}>{`${todo.name}, id: ${idx}`}</li>
         ))}
       </ul>
     </div>
