@@ -69,13 +69,14 @@ const createWindow = async () => {
 
   const windowWidth = 1024;
   const windowHeight = 728;
-  const headerHeight = 50;
+  const headerHeight = 79;
 
   mainWindow = new BrowserWindow({
     frame: false,
     width: windowWidth,
     height: windowHeight,
     icon: getAssetPath('icon.png'),
+    titleBarStyle: 'hidden',
     webPreferences: {
       nodeIntegration: true,
     },
