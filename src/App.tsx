@@ -2,6 +2,7 @@ import React from 'react';
 import { observer } from 'mobx-react-lite';
 import styled from 'styled-components';
 // import Button from './components/Button';
+import { useMst } from './data';
 // import { useMst } from './data';
 
 // let newId = 5;
@@ -44,41 +45,29 @@ const RoundButton = styled.div`
 `;
 
 const TitleBar = observer(() => {
+  const store = useMst();
   return (
     <TitleBarFull>
       <TitleBarTop>asdf</TitleBarTop>
       <TitleBarBottom>
-        <RoundButton />
-        <RoundButton />
-        <RoundButton />
+        <RoundButton
+          onClick={() => {
+            store.view.loadURL('https://www.google.com/');
+          }}
+        />
+        <RoundButton
+          onClick={() => {
+            store.view.loadURL('https://arxiv.org/abs/2106.12583');
+          }}
+        />
+        <RoundButton
+          onClick={() => {
+            store.view.loadURL('https://scholar.google.com');
+          }}
+        />
       </TitleBarBottom>
     </TitleBarFull>
   );
 });
-
-// const App = observer(() => {
-//   const store = useMst();
-//
-//   function onClick() {
-//     store.addTodo(randomId(), 'A thing');
-//   }
-//
-//   return (
-//     <div>
-//       <Button type="button" onClick={onClick}>
-//         button
-//       </Button>
-//       <ul>
-//         {store.getTodosWhereDoneIs(false).map(([idx, todo]) => (
-//           <li key={idx}>{`${todo.name}, id: ${idx}`}</li>
-//         ))}
-//       </ul>
-//     </div>
-//   );
-// });
-
-// {store.getTodosWhereDoneIs(false).map((info) => (
-//   <div key={info[0]}>{info[1].name}</div>
-// ))}
 
 export default TitleBar;

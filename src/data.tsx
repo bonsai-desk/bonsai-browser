@@ -1,5 +1,6 @@
 import { Instance, types } from 'mobx-state-tree';
 import { createContext, useContext } from 'react';
+import ViewStore from './store/view';
 
 const User = types.model({
   id: types.identifier,
@@ -28,6 +29,7 @@ const RootModel = types
   .model({
     users: types.map(User),
     todos: types.map(Todo),
+    view: ViewStore,
   })
   .views((self) => ({
     get pendingCount() {
@@ -50,6 +52,7 @@ const RootModel = types
   }));
 
 const initialState = RootModel.create({
+  view: ViewStore.create(),
   users: {
     '1': {
       id: '1',

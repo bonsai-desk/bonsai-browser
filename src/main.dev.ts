@@ -11,7 +11,14 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 import path from 'path';
-import { app, BrowserWindow, BrowserView, shell } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  BrowserView,
+  shell,
+  ipcMain,
+  WebContents,
+} from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
@@ -50,6 +57,14 @@ const installExtensions = async () => {
     )
     .catch(console.log);
 };
+
+function addListeners(webContents: WebContents) {
+  ipcMain.on('asynchronous-message', (event, arg) => {
+    webContents.loadURL('https://arxiv.org/abs/2106.12583');
+    console.log('message', arg);
+    event.reply('asynchronous-reply', 'pong');
+  });
+}
 
 const createWindow = async () => {
   if (
@@ -109,7 +124,14 @@ const createWindow = async () => {
     width: windowWidth,
     height: Math.max(windowHeight - headerHeight, 0),
   });
+
+  addListeners(mainWindow.webContents);
+
   mainView.webContents.loadURL('https://google.com');
+
+  ipcMain.on('load-url', (_, arg) => {
+    mainView.webContents.loadURL(arg);
+  });
 
   // open window before loading is complete
   if (process.env.START_MINIMIZED) {
