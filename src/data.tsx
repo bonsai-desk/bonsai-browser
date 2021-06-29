@@ -1,5 +1,6 @@
 import { Instance, types } from 'mobx-state-tree';
 import { createContext, useContext } from 'react';
+import TabStore from './store/tabs';
 
 const User = types.model({
   id: types.identifier,
@@ -78,12 +79,19 @@ const initialState = RootModel.create({
 
 export const rootStore = initialState;
 
+export const tabStore = new TabStore();
+
+interface AppContextInterface {
+  rootStore: RootInstance;
+  tabStore: TabStore;
+}
+
 export type RootInstance = Instance<typeof RootModel>;
-const RootStoreContext = createContext<null | RootInstance>(null);
+const RootStoreContext = createContext<null | AppContextInterface>(null);
 
 export const { Provider } = RootStoreContext;
 
-export function useMst() {
+export function useStore() {
   const store = useContext(RootStoreContext);
   if (store === null) {
     throw new Error('Store cannot be null, please add a context provider');

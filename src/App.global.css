@@ -19,3 +19,9 @@ body {
   justify-content: center;
   align-items: center;
 }
+
+.clearfix::after {
+  content: '';
+  clear: both;
+  display: table;
+}

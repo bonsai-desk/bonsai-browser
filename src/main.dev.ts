@@ -96,6 +96,11 @@ const createWindow = async () => {
   });
   titleBarView.webContents.loadURL(`file://${__dirname}/index.html`);
 
+  // titleBarView.webContents.toggleDevTools();
+  titleBarView.webContents.openDevTools({
+    mode: 'detach',
+  });
+
   const mainView = new BrowserView({
     webPreferences: {
       nodeIntegration: false,

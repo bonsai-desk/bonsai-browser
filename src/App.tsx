@@ -1,15 +1,10 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import styled from 'styled-components';
-// import Button from './components/Button';
 import './App.global.css';
-// import { useMst } from './data';
-
-// let newId = 5;
-// const randomId = () => {
-//   newId += 1;
-//   return newId.toString();
-// };
+import { useStore } from './data';
+import Tab from './components/Tab';
+import TabObject from './interfaces/tab';
 
 const TitleBarFull = styled.div`
   -webkit-app-region: drag;
@@ -20,14 +15,20 @@ const TitleBarFull = styled.div`
 
 const TitleBarTop = styled.div`
   -webkit-app-region: drag;
+  -webkit-user-select: none;
   width: 100vw;
-  height: 42px;
+  height: 32px;
   background-color: #dee1e6;
   //border-bottom: 5px solid black;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: baseline;
+  padding-top: 10px;
+  padding-left: 6px;
+  padding-right: 10px;
 `;
 
 const TitleBarBottom = styled.div`
-  -webkit-app-region: drag;
   width: 100vw;
   height: 36px;
   background-color: white;
@@ -35,23 +36,51 @@ const TitleBarBottom = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-content: center;
+  padding-left: 4px;
 `;
 
 const RoundButton = styled.div`
   width: 28px;
   height: 28px;
   background-color: gray;
-  border-radius: 9999px;
+  border-radius: 50%;
+  margin-left: 2px;
+`;
+
+const NewTabButton = styled.button`
+  width: 28px;
+  height: 28px;
+  border: none;
+  background-color: #82dbff;
+  border-radius: 50%;
+  margin-left: 7px;
+  margin-top: 1px;
+`;
+
+const URLBox = styled.input`
+  width: 750px;
+  margin-left: 10px;
 `;
 
 const TitleBar = observer(() => {
+  const { tabStore } = useStore();
   return (
     <TitleBarFull>
-      <TitleBarTop>asdf</TitleBarTop>
+      <TitleBarTop>
+        {tabStore.tabs.map((tab: TabObject) => (
+          <Tab key={tab.key} tab={tab} />
+        ))}
+        <NewTabButton
+          onClick={() => {
+            tabStore.addTab('');
+          }}
+        />
+      </TitleBarTop>
       <TitleBarBottom>
         <RoundButton />
         <RoundButton />
         <RoundButton />
+        <URLBox type="text" />
       </TitleBarBottom>
     </TitleBarFull>
   );
