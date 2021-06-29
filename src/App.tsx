@@ -2,7 +2,6 @@ import React from 'react';
 import { observer } from 'mobx-react-lite';
 import styled from 'styled-components';
 // import Button from './components/Button';
-import './App.global.css';
 // import { useMst } from './data';
 
 // let newId = 5;
