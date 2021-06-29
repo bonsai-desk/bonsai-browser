@@ -96,7 +96,12 @@ const createWindow = async () => {
   });
   titleBarView.webContents.loadURL(`file://${__dirname}/index.html`);
 
-  const mainView = new BrowserView();
+  const mainView = new BrowserView({
+    webPreferences: {
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
   mainWindow.addBrowserView(mainView);
   mainView.setBounds({
     x: 0,
