@@ -11,7 +11,14 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 import path from 'path';
-import { app, BrowserWindow, BrowserView, shell } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  BrowserView,
+  shell,
+  ipcMain,
+  WebContents,
+} from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
@@ -51,6 +58,14 @@ const installExtensions = async () => {
     .catch(console.log);
 };
 
+function addListeners(webContents: WebContents) {
+  ipcMain.on('asynchronous-message', (event, arg) => {
+    webContents.loadURL('https://arxiv.org/abs/2106.12583');
+    console.log('message', arg);
+    event.reply('asynchronous-reply', 'pong');
+  });
+}
+
 const createWindow = async () => {
   if (
     process.env.NODE_ENV === 'development' ||
@@ -71,16 +86,27 @@ const createWindow = async () => {
   const windowHeight = 728;
   const headerHeight = 79;
 
-  mainWindow = new BrowserWindow({
-    frame: false,
-    width: windowWidth,
-    height: windowHeight,
-    icon: getAssetPath('icon.png'),
-    titleBarStyle: 'hidden',
-    webPreferences: {
-      nodeIntegration: true,
-    },
-  });
+  if (process.platform === 'darwin') {
+    mainWindow = new BrowserWindow({
+      frame: false,
+      width: windowWidth,
+      height: windowHeight,
+      icon: getAssetPath('icon.png'),
+      titleBarStyle: 'hidden',
+      webPreferences: {
+        nodeIntegration: true,
+      },
+    });
+  } else {
+    mainWindow = new BrowserWindow({
+      width: windowWidth,
+      height: windowHeight,
+      icon: getAssetPath('icon.png'),
+      webPreferences: {
+        nodeIntegration: true,
+      },
+    });
+  }
 
   const titleBarView = new BrowserView({
     webPreferences: {
@@ -114,7 +140,14 @@ const createWindow = async () => {
     width: windowWidth,
     height: Math.max(windowHeight - headerHeight, 0),
   });
+
+  addListeners(mainWindow.webContents);
+
   mainView.webContents.loadURL('https://google.com');
+
+  ipcMain.on('load-url', (_, arg) => {
+    mainView.webContents.loadURL(arg);
+  });
 
   // open window before loading is complete
   if (process.env.START_MINIMIZED) {

@@ -1,13 +1,11 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import styled from 'styled-components';
-import './App.global.css';
 import { useStore } from './data';
 import Tab from './components/Tab';
 import TabObject from './interfaces/tab';
 
 const TitleBarFull = styled.div`
-  -webkit-app-region: drag;
   width: 100vw;
   height: 100vh;
   background-color: red;
@@ -16,7 +14,7 @@ const TitleBarFull = styled.div`
 const TitleBarTop = styled.div`
   -webkit-app-region: drag;
   -webkit-user-select: none;
-  width: 100vw;
+  width: calc(100% - 16px);
   height: 32px;
   background-color: #dee1e6;
   //border-bottom: 5px solid black;
@@ -29,7 +27,7 @@ const TitleBarTop = styled.div`
 `;
 
 const TitleBarBottom = styled.div`
-  width: 100vw;
+  width: calc(100% - 4px);
   height: 36px;
   background-color: white;
   border-bottom: 1px solid #dee1e6;
@@ -85,30 +83,5 @@ const TitleBar = observer(() => {
     </TitleBarFull>
   );
 });
-
-// const App = observer(() => {
-//   const store = useMst();
-//
-//   function onClick() {
-//     store.addTodo(randomId(), 'A thing');
-//   }
-//
-//   return (
-//     <div>
-//       <Button type="button" onClick={onClick}>
-//         button
-//       </Button>
-//       <ul>
-//         {store.getTodosWhereDoneIs(false).map(([idx, todo]) => (
-//           <li key={idx}>{`${todo.name}, id: ${idx}`}</li>
-//         ))}
-//       </ul>
-//     </div>
-//   );
-// });
-
-// {store.getTodosWhereDoneIs(false).map((info) => (
-//   <div key={info[0]}>{info[1].name}</div>
-// ))}
 
 export default TitleBar;
