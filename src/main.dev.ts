@@ -86,10 +86,10 @@ function addListeners(window: BrowserWindow) {
     console.log('message', arg);
     event.reply('asynchronous-reply', 'pong');
   });
-  ipcMain.on('create-new-tab', (event, [url, id]) => {
-    const tabView = new TabView(window, url);
+  ipcMain.on('create-new-tab', (event, id) => {
+    const tabView = new TabView(window);
     tabViews[id] = tabView;
-    event.reply('new-tab-created', [url, id, 'test']);
+    event.reply('new-tab-created', id);
   });
   ipcMain.on('remove-tab', (event, id) => {
     const tabView = tabViews[id];
@@ -103,6 +103,18 @@ function addListeners(window: BrowserWindow) {
   });
   ipcMain.on('set-tab', (_, [id, oldId]) => {
     setTab(window, id, oldId);
+  });
+  ipcMain.on('load-url-in-active-tab', (_, [id, url]) => {
+    if (id === -1) {
+      return;
+    }
+    const tabView = tabViews[id];
+    if (typeof tabView === 'undefined') {
+      throw new Error(
+        `load-url-in-active-tab: tab with id ${id} does not exist`
+      );
+    }
+    tabView.view.webContents.loadURL(url);
   });
 }
 
@@ -182,12 +194,9 @@ const createWindow = async () => {
     }
   });
 
-  // titleBarView.webContents.toggleDevTools();
   titleBarView.webContents.openDevTools({
     mode: 'detach',
   });
-
-  // const tabView = new TabView(mainWindow);
 
   // used to wait until it is loaded before showing
   // // @TODO: Use 'ready-to-show' event

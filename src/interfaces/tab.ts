@@ -1,9 +1,7 @@
-import TabView from '../tab-view';
-
 interface TabObject {
   id: number;
   url: string;
-  view: TabView;
+  searchBar: string;
 }
 
 export default TabObject;

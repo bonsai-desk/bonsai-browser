@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { observer } from 'mobx-react-lite';
 import styled from 'styled-components';
+import { ipcRenderer } from 'electron';
 import { useStore } from './data';
 import Tab from './components/Tab';
 import TabObject from './interfaces/tab';
@@ -67,11 +68,14 @@ const NewTabButton = styled.img`
 const URLBox = styled.input`
   width: 750px;
   margin-left: 10px;
+  border-radius: 10000000px;
+  outline: none;
+  border: 2px solid black;
+  padding-left: 10px;
 `;
 
 const TitleBar = observer(() => {
   const { tabStore } = useStore();
-  const [urlValue, setUrlValue] = useState('https://youtube.com');
   return (
     <TitleBarFull>
       <TitleBarTop>
@@ -80,7 +84,7 @@ const TitleBar = observer(() => {
         ))}
         <NewTabButtonParent
           onClick={() => {
-            tabStore.addTab(urlValue);
+            tabStore.addTab();
           }}
         >
           <NewTabButton src={plusIcon} />
@@ -92,8 +96,21 @@ const TitleBar = observer(() => {
         <RoundButton />
         <URLBox
           type="text"
-          value={urlValue}
-          onInput={(e) => setUrlValue(e.currentTarget.value)}
+          value={tabStore.getActiveTabSearchBar()}
+          onInput={(e) => {
+            if (tabStore.activeTabId === -1) {
+              tabStore.addTab();
+            }
+            tabStore.setActiveTabSearchBar(e.currentTarget.value);
+          }}
+          onKeyDown={(e) => {
+            if (e.nativeEvent.code === 'Enter') {
+              ipcRenderer.send('load-url-in-active-tab', [
+                tabStore.activeTabId,
+                tabStore.getActiveTabSearchBar(),
+              ]);
+            }
+          }}
         />
       </TitleBarBottom>
     </TitleBarFull>

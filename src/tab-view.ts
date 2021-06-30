@@ -9,7 +9,7 @@ class TabView {
 
   view: BrowserView;
 
-  constructor(window: BrowserWindow, startUrl: string) {
+  constructor(window: BrowserWindow) {
     if (!window) {
       throw new Error('"window" is not defined');
     }
@@ -22,8 +22,6 @@ class TabView {
     });
 
     this.resize();
-
-    this.view.webContents.loadURL(startUrl);
 
     window.on('resize', () => {
       this.resize();
