@@ -30,7 +30,6 @@ export default class TabStore {
 
   popTab(id: number) {
     this.tabs = this.tabs.filter((tab) => tab.id !== id);
-    console.log(`test: ${id}`);
   }
 
   static addTab(url: string) {

@@ -70,7 +70,7 @@ function addListeners(window: BrowserWindow) {
     event.reply('new-tab-created', [url, id, 'test']);
   });
   ipcMain.on('remove-tab', (event, id) => {
-    // tabViews[id].view.webContents.destroy();
+    window.removeBrowserView(tabViews[id].view);
     event.reply('tab-removed', id);
   });
 }
