@@ -1,6 +1,9 @@
+import TabView from '../tab-view';
+
 interface TabObject {
-  key: string;
+  id: number;
   url: string;
+  view: TabView;
 }
 
 export default TabObject;

@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import styled from 'styled-components';
 import { useStore } from './data';
 import Tab from './components/Tab';
 import TabObject from './interfaces/tab';
+import TabStore from './store/tabs';
 
 const TitleBarFull = styled.div`
   width: 100vw;
@@ -62,15 +63,16 @@ const URLBox = styled.input`
 
 const TitleBar = observer(() => {
   const { tabStore } = useStore();
+  const [urlValue, setUrlValue] = useState('https://google.com');
   return (
     <TitleBarFull>
       <TitleBarTop>
         {tabStore.tabs.map((tab: TabObject) => (
-          <Tab key={tab.key} tab={tab} />
+          <Tab key={tab.id} tab={tab} />
         ))}
         <NewTabButton
           onClick={() => {
-            tabStore.addTab('');
+            TabStore.addTab(urlValue);
           }}
         />
       </TitleBarTop>
@@ -78,7 +80,11 @@ const TitleBar = observer(() => {
         <RoundButton />
         <RoundButton />
         <RoundButton />
-        <URLBox type="text" />
+        <URLBox
+          type="text"
+          value={urlValue}
+          onInput={(e) => setUrlValue(e.currentTarget.value)}
+        />
       </TitleBarBottom>
     </TitleBarFull>
   );

@@ -1,28 +1,44 @@
 import { makeAutoObservable } from 'mobx';
+import { ipcRenderer } from 'electron';
 import TabObject from '../interfaces/tab';
+import TabView from '../tab-view';
 
-let id = 0;
+export default class TabStore {
+  static id = 0;
 
-class TabStore {
   tabs: TabObject[] = [];
 
   constructor() {
     makeAutoObservable(this);
-    this.addTab('https://google.com');
-    this.addTab('https://youtube.com');
-  }
 
-  addTab(url: string) {
-    this.tabs.push({
-      key: id.toString(),
-      url,
+    ipcRenderer.on('new-tab-created', (_, [url, id, tabView]) => {
+      this.pushTab(url, id, tabView);
     });
-    id += 1;
+
+    ipcRenderer.on('tab-removed', (_, id) => {
+      this.popTab(id);
+    });
   }
 
-  removeTab(key: string) {
-    this.tabs = this.tabs.filter((tab) => tab.key !== key);
+  pushTab(url: string, id: number, view: TabView) {
+    this.tabs.push({
+      id,
+      url,
+      view,
+    });
+  }
+
+  popTab(id: number) {
+    this.tabs = this.tabs.filter((tab) => tab.id !== id);
+    console.log(`test: ${id}`);
+  }
+
+  static addTab(url: string) {
+    ipcRenderer.send('create-new-tab', [url, TabStore.id]);
+    TabStore.id += 1;
+  }
+
+  static removeTab(id: number) {
+    ipcRenderer.send('remove-tab', id);
   }
 }
-
-export default TabStore;

@@ -1,8 +1,8 @@
 import React from 'react';
 import styled from 'styled-components';
 import { observer } from 'mobx-react-lite';
-import { useStore } from '../../data';
 import TabObject from '../../interfaces/tab';
+import TabStore from '../../store/tabs';
 
 const TabParent = styled.div`
   background-color: #489aff;
@@ -21,14 +21,13 @@ interface ITab {
 }
 
 const Tab = observer(({ tab }: ITab) => {
-  const { tabStore } = useStore();
   return (
     <TabParent>
       <div>{tab.url}</div>
       <button
         type="button"
         onClick={() => {
-          tabStore.removeTab(tab.key);
+          TabStore.removeTab(tab.id);
         }}
       >
         X

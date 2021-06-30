@@ -78,7 +78,6 @@ const initialState = RootModel.create({
 });
 
 export const rootStore = initialState;
-
 export const tabStore = new TabStore();
 
 interface AppContextInterface {

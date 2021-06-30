@@ -11,17 +11,15 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 import path from 'path';
-import {
-  app,
-  BrowserWindow,
-  BrowserView,
-  shell,
-  ipcMain,
-  WebContents,
-} from 'electron';
+import { app, BrowserWindow, BrowserView, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
+import TabView, {
+  startWindowWidth,
+  startWindowHeight,
+  headerHeight,
+} from './tab-view';
 
 export default class AppUpdater {
   constructor() {
@@ -58,11 +56,22 @@ const installExtensions = async () => {
     .catch(console.log);
 };
 
-function addListeners(webContents: WebContents) {
+const tabViews: Record<number, TabView> = {};
+
+function addListeners(window: BrowserWindow) {
   ipcMain.on('asynchronous-message', (event, arg) => {
-    webContents.loadURL('https://arxiv.org/abs/2106.12583');
+    window.webContents.loadURL('https://arxiv.org/abs/2106.12583'); // loads to main window which is hidden
     console.log('message', arg);
     event.reply('asynchronous-reply', 'pong');
+  });
+  ipcMain.on('create-new-tab', (event, [url, id]) => {
+    const tabView = new TabView(window, url);
+    tabViews[id] = tabView;
+    event.reply('new-tab-created', [url, id, 'test']);
+  });
+  ipcMain.on('remove-tab', (event, id) => {
+    // tabViews[id].view.webContents.destroy();
+    event.reply('tab-removed', id);
   });
 }
 
@@ -82,15 +91,11 @@ const createWindow = async () => {
     return path.join(RESOURCES_PATH, ...paths);
   };
 
-  const windowWidth = 1024;
-  const windowHeight = 728;
-  const headerHeight = 79;
-
   if (process.platform === 'darwin') {
     mainWindow = new BrowserWindow({
       frame: false,
-      width: windowWidth,
-      height: windowHeight,
+      width: startWindowWidth,
+      height: startWindowHeight,
       icon: getAssetPath('icon.png'),
       titleBarStyle: 'hidden',
       webPreferences: {
@@ -99,13 +104,23 @@ const createWindow = async () => {
     });
   } else {
     mainWindow = new BrowserWindow({
-      width: windowWidth,
-      height: windowHeight,
+      width: startWindowWidth,
+      height: startWindowHeight,
       icon: getAssetPath('icon.png'),
       webPreferences: {
         nodeIntegration: true,
       },
     });
+  }
+
+  addListeners(mainWindow);
+
+  // open window before loading is complete
+  if (process.env.START_MINIMIZED) {
+    mainWindow.minimize();
+  } else {
+    mainWindow.show();
+    mainWindow.focus();
   }
 
   const titleBarView = new BrowserView({
@@ -117,7 +132,7 @@ const createWindow = async () => {
   titleBarView.setBounds({
     x: 0,
     y: 0,
-    width: windowWidth,
+    width: startWindowWidth,
     height: headerHeight,
   });
   titleBarView.webContents.loadURL(`file://${__dirname}/index.html`);
@@ -127,69 +142,22 @@ const createWindow = async () => {
     mode: 'detach',
   });
 
-  const mainView = new BrowserView({
-    webPreferences: {
-      nodeIntegration: false,
-      sandbox: true,
-    },
-  });
-  mainWindow.addBrowserView(mainView);
-  mainView.setBounds({
-    x: 0,
-    y: headerHeight,
-    width: windowWidth,
-    height: Math.max(windowHeight - headerHeight, 0),
-  });
+  // const tabView = new TabView(mainWindow);
 
-  addListeners(mainWindow.webContents);
-
-  mainView.webContents.loadURL('https://google.com');
-
-  ipcMain.on('load-url', (_, arg) => {
-    mainView.webContents.loadURL(arg);
-  });
-
-  // open window before loading is complete
-  if (process.env.START_MINIMIZED) {
-    mainWindow.minimize();
-  } else {
-    mainWindow.show();
-    mainWindow.focus();
-  }
-
-  mainWindow.on('resize', () => {
-    if (mainWindow) {
-      const windowSize = mainWindow.getSize();
-
-      mainView.setBounds({
-        x: 0,
-        y: headerHeight,
-        width: windowSize[0],
-        height: Math.max(windowSize[1] - headerHeight, 0),
-      });
-
-      titleBarView.setBounds({
-        x: 0,
-        y: 0,
-        width: windowSize[0],
-        height: headerHeight,
-      });
-    }
-  });
-
-  // @TODO: Use 'ready-to-show' event
-  //        https://github.com/electron/electron/blob/master/docs/api/browser-window.md#using-ready-to-show-event
-  mainWindow.webContents.on('did-finish-load', () => {
-    if (!mainWindow) {
-      throw new Error('"mainWindow" is not defined');
-    }
-    // if (process.env.START_MINIMIZED) {
-    //   mainWindow.minimize();
-    // } else {
-    //   mainWindow.show();
-    //   mainWindow.focus();
-    // }
-  });
+  // used to wait until it is loaded before showing
+  // // @TODO: Use 'ready-to-show' event
+  // //        https://github.com/electron/electron/blob/master/docs/api/browser-window.md#using-ready-to-show-event
+  // mainWindow.webContents.on('did-finish-load', () => {
+  //   if (!mainWindow) {
+  //     throw new Error('"mainWindow" is not defined');
+  //   }
+  //   // if (process.env.START_MINIMIZED) {
+  //   //   mainWindow.minimize();
+  //   // } else {
+  //   //   mainWindow.show();
+  //   //   mainWindow.focus();
+  //   // }
+  // });
 
   mainWindow.on('closed', () => {
     mainWindow = null;
