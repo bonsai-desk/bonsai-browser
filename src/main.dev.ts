@@ -193,9 +193,11 @@ const createWindow = async () => {
     }
   });
 
-  titleBarView.webContents.openDevTools({
-    mode: 'detach',
-  });
+  if (!app.isPackaged) {
+    titleBarView.webContents.openDevTools({
+      mode: 'detach',
+    });
+  }
 
   // used to wait until it is loaded before showing
   // // @TODO: Use 'ready-to-show' event
