@@ -12,10 +12,6 @@ export default class TabStore {
   constructor() {
     makeAutoObservable(this);
 
-    ipcRenderer.on('new-tab-created', (_, id) => {
-      this.pushTab('', id);
-    });
-
     ipcRenderer.on('tab-removed', (_, id) => {
       this.popTab(id);
     });
@@ -40,7 +36,9 @@ export default class TabStore {
   }
 
   addTab() {
+    console.log('addTab');
     ipcRenderer.send('create-new-tab', TabStore.id);
+    this.pushTab('', TabStore.id);
     this.setActiveTab(TabStore.id);
     TabStore.id += 1;
   }

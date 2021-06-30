@@ -36,6 +36,7 @@ const TabTileParent = styled.div`
 
 const TabTitle = styled.div`
   overflow: hidden;
+  white-space: nowrap;
   width: 100%;
   padding-left: 6px;
   color: white;

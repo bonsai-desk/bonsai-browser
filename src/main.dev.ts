@@ -86,10 +86,9 @@ function addListeners(window: BrowserWindow) {
     console.log('message', arg);
     event.reply('asynchronous-reply', 'pong');
   });
-  ipcMain.on('create-new-tab', (event, id) => {
+  ipcMain.on('create-new-tab', (_, id) => {
     const tabView = new TabView(window);
     tabViews[id] = tabView;
-    event.reply('new-tab-created', id);
   });
   ipcMain.on('remove-tab', (event, id) => {
     const tabView = tabViews[id];
