@@ -23,7 +23,9 @@ export default class TabStore {
   }
 
   setActiveTab(id: number) {
+    const oldId = this.activeTabId;
     this.activeTabId = id;
+    ipcRenderer.send('set-tab', [id, oldId]);
   }
 
   pushTab(url: string, id: number, view: TabView) {
@@ -39,17 +41,15 @@ export default class TabStore {
   }
 
   addTab(url: string) {
-    if (this.activeTabId === -1) {
-      this.activeTabId = TabStore.id;
-    }
     ipcRenderer.send('create-new-tab', [url, TabStore.id]);
+    this.setActiveTab(TabStore.id);
     TabStore.id += 1;
   }
 
   removeTab(id: number) {
-    if (this.activeTabId === id) {
-      this.activeTabId = -1;
-    }
     ipcRenderer.send('remove-tab', id);
+    if (this.activeTabId === id) {
+      this.setActiveTab(-1);
+    }
   }
 }

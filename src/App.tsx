@@ -60,6 +60,10 @@ const NewTabButtonParent = styled.div`
   margin-top: 1px;
 `;
 
+const NewTabButton = styled.img`
+  -webkit-user-drag: none;
+`;
+
 const URLBox = styled.input`
   width: 750px;
   margin-left: 10px;
@@ -67,7 +71,7 @@ const URLBox = styled.input`
 
 const TitleBar = observer(() => {
   const { tabStore } = useStore();
-  const [urlValue, setUrlValue] = useState('https://google.com');
+  const [urlValue, setUrlValue] = useState('https://youtube.com');
   return (
     <TitleBarFull>
       <TitleBarTop>
@@ -79,7 +83,7 @@ const TitleBar = observer(() => {
             tabStore.addTab(urlValue);
           }}
         >
-          <img src={plusIcon} alt="plus-icon" />
+          <NewTabButton src={plusIcon} />
         </NewTabButtonParent>
       </TitleBarTop>
       <TitleBarBottom>

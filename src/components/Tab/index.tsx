@@ -13,7 +13,7 @@ const TabParent = styled.div`
   -webkit-app-region: no-drag;
   -webkit-user-select: none;
   -webkit-user-drag: none;
-  width: 125px;
+  width: 225px;
   height: calc(100% - 1px);
   border-left: 1px solid black;
   border-top: 1px solid black;
@@ -50,6 +50,7 @@ const CloseButtonParent = styled.div`
 
 const XIcon = styled.img`
   width: 28px;
+  -webkit-user-drag: none;
 `;
 
 interface ITab {
@@ -66,7 +67,7 @@ const Tab = observer(({ tab }: ITab) => {
   return (
     <TabParent
       color={active ? activeColor : defaultColor}
-      onClick={() => {
+      onMouseDown={() => {
         tabStore.setActiveTab(tab.id);
       }}
     >
@@ -76,6 +77,9 @@ const Tab = observer(({ tab }: ITab) => {
       <CloseButtonParent>
         <XIcon
           src={xIcon}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+          }}
           onClick={() => {
             tabStore.removeTab(tab.id);
           }}

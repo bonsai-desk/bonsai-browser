@@ -58,6 +58,28 @@ const installExtensions = async () => {
 
 const tabViews: Record<number, TabView> = {};
 
+const setTab = (window: BrowserWindow, id: number, oldId: number) => {
+  if (id === oldId) {
+    return;
+  }
+
+  const oldTabView = tabViews[oldId];
+  if (typeof oldTabView !== 'undefined') {
+    window.removeBrowserView(oldTabView.view);
+  }
+
+  if (id === -1) {
+    return;
+  }
+  const tabView = tabViews[id];
+  if (typeof tabView === 'undefined') {
+    throw new Error(`setTab: tab with id ${id} does not exist`);
+  }
+
+  window.addBrowserView(tabView.view);
+  tabView.resize();
+};
+
 function addListeners(window: BrowserWindow) {
   ipcMain.on('asynchronous-message', (event, arg) => {
     window.webContents.loadURL('https://arxiv.org/abs/2106.12583'); // loads to main window which is hidden
@@ -70,9 +92,17 @@ function addListeners(window: BrowserWindow) {
     event.reply('new-tab-created', [url, id, 'test']);
   });
   ipcMain.on('remove-tab', (event, id) => {
-    window.removeBrowserView(tabViews[id].view);
+    const tabView = tabViews[id];
+    if (typeof tabView === 'undefined') {
+      throw new Error(`remove-tab: tab with id ${id} does not exist`);
+    }
+    window.removeBrowserView(tabView.view);
+    (tabView.view.webContents as any).destroy();
     delete tabViews[id];
     event.reply('tab-removed', id);
+  });
+  ipcMain.on('set-tab', (_, [id, oldId]) => {
+    setTab(window, id, oldId);
   });
 }
 
