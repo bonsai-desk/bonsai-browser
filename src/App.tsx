@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import { useStore } from './data';
 import Tab from './components/Tab';
 import TabObject from './interfaces/tab';
-import TabStore from './store/tabs';
+import plusIcon from '../assets/plus.svg';
 
 const TitleBarFull = styled.div`
   width: 100vw;
@@ -46,7 +46,11 @@ const RoundButton = styled.div`
   margin-left: 2px;
 `;
 
-const NewTabButton = styled.button`
+const NewTabButtonParent = styled.div`
+  -webkit-app-region: no-drag;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   width: 28px;
   height: 28px;
   border: none;
@@ -70,11 +74,13 @@ const TitleBar = observer(() => {
         {tabStore.tabs.map((tab: TabObject) => (
           <Tab key={tab.id} tab={tab} />
         ))}
-        <NewTabButton
+        <NewTabButtonParent
           onClick={() => {
-            TabStore.addTab(urlValue);
+            tabStore.addTab(urlValue);
           }}
-        />
+        >
+          <img src={plusIcon} alt="plus-icon" />
+        </NewTabButtonParent>
       </TitleBarTop>
       <TitleBarBottom>
         <RoundButton />

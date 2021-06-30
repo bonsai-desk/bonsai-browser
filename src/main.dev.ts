@@ -71,6 +71,7 @@ function addListeners(window: BrowserWindow) {
   });
   ipcMain.on('remove-tab', (event, id) => {
     window.removeBrowserView(tabViews[id].view);
+    delete tabViews[id];
     event.reply('tab-removed', id);
   });
 }
@@ -94,16 +95,18 @@ const createWindow = async () => {
   if (process.platform === 'darwin') {
     mainWindow = new BrowserWindow({
       frame: false,
+      titleBarStyle: 'hidden',
       width: startWindowWidth,
       height: startWindowHeight,
       icon: getAssetPath('icon.png'),
-      titleBarStyle: 'hidden',
       webPreferences: {
         nodeIntegration: true,
       },
     });
   } else {
     mainWindow = new BrowserWindow({
+      frame: false,
+      titleBarStyle: 'hidden',
       width: startWindowWidth,
       height: startWindowHeight,
       icon: getAssetPath('icon.png'),
@@ -136,6 +139,18 @@ const createWindow = async () => {
     height: headerHeight,
   });
   titleBarView.webContents.loadURL(`file://${__dirname}/index.html`);
+
+  mainWindow.on('resize', () => {
+    if (mainWindow) {
+      const windowSize = mainWindow.getSize();
+      titleBarView.setBounds({
+        x: 0,
+        y: 0,
+        width: windowSize[0],
+        height: headerHeight,
+      });
+    }
+  });
 
   // titleBarView.webContents.toggleDevTools();
   titleBarView.webContents.openDevTools({

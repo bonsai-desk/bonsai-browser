@@ -8,6 +8,8 @@ export default class TabStore {
 
   tabs: TabObject[] = [];
 
+  activeTabId = -1;
+
   constructor() {
     makeAutoObservable(this);
 
@@ -18,6 +20,10 @@ export default class TabStore {
     ipcRenderer.on('tab-removed', (_, id) => {
       this.popTab(id);
     });
+  }
+
+  setActiveTab(id: number) {
+    this.activeTabId = id;
   }
 
   pushTab(url: string, id: number, view: TabView) {
@@ -32,12 +38,18 @@ export default class TabStore {
     this.tabs = this.tabs.filter((tab) => tab.id !== id);
   }
 
-  static addTab(url: string) {
+  addTab(url: string) {
+    if (this.activeTabId === -1) {
+      this.activeTabId = TabStore.id;
+    }
     ipcRenderer.send('create-new-tab', [url, TabStore.id]);
     TabStore.id += 1;
   }
 
-  static removeTab(id: number) {
+  removeTab(id: number) {
+    if (this.activeTabId === id) {
+      this.activeTabId = -1;
+    }
     ipcRenderer.send('remove-tab', id);
   }
 }
