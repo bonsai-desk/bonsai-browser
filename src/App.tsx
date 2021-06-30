@@ -47,11 +47,11 @@ const RoundButton = styled.div`
 `;
 
 const NewTabButton = styled.button`
-  width: 48px;
+  width: 28px;
   height: 28px;
   border: none;
   background-color: #82dbff;
-  border-radius: 10px;
+  border-radius: 50%;
   margin-left: 7px;
   margin-top: 1px;
 `;
@@ -72,7 +72,6 @@ const TitleBar = observer(() => {
         ))}
         <NewTabButton
           onClick={() => {
-            console.log('ping');
             TabStore.addTab(urlValue);
           }}
         />
