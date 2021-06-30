@@ -68,4 +68,12 @@ export default class TabStore {
       }
     }
   }
+
+  setActiveTabUrl(text: string) {
+    for (let i = 0; i < this.tabs.length; i += 1) {
+      if (this.tabs[i].id === this.activeTabId) {
+        this.tabs[i].url = text;
+      }
+    }
+  }
 }

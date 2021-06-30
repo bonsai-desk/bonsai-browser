@@ -19,7 +19,6 @@ const TitleBarTop = styled.div`
   width: calc(100% - 16px);
   height: 32px;
   background-color: #dee1e6;
-  //border-bottom: 5px solid black;
   display: flex;
   flex-wrap: wrap;
   align-content: baseline;
@@ -109,6 +108,7 @@ const TitleBar = observer(() => {
                 tabStore.activeTabId,
                 tabStore.getActiveTabSearchBar(),
               ]);
+              tabStore.setActiveTabUrl(tabStore.getActiveTabSearchBar());
             }
           }}
         />
