@@ -6,6 +6,8 @@ import { useStore } from './data';
 import Tab from './components/Tab';
 import TabObject from './interfaces/tab';
 import plusIcon from '../assets/plus.svg';
+import backIcon from '../assets/arrow-back.svg';
+import refreshIcon from '../assets/refresh.svg';
 
 const TitleBarFull = styled.div`
   width: 100vw;
@@ -40,13 +42,38 @@ const TitleBarBottom = styled.div`
   overflow: hidden;
 `;
 
+// const RoundButton = styled.div`
+//   width: 28px;
+//   height: 28px;
+//   background-color: gray;
+//   border-radius: 50%;
+//   margin-left: 2px;
+//   flex-shrink: 0;
+// `;
+
 const RoundButton = styled.div`
+  -webkit-app-region: no-drag;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   width: 28px;
   height: 28px;
+  border: none;
   background-color: gray;
   border-radius: 50%;
   margin-left: 2px;
-  flex-shrink: 0;
+`;
+
+const RoundButtonIcon = styled.img`
+  -webkit-user-drag: none;
+  width: 20px;
+`;
+
+const RoundButtonIconFlipped = styled.img`
+  -webkit-user-drag: none;
+  width: 20px;
+  transform: rotate(180deg);
 `;
 
 const NewTabButtonParent = styled.div`
@@ -65,7 +92,7 @@ const NewTabButtonParent = styled.div`
   margin-right: 100px;
 `;
 
-const NewTabButton = styled.img`
+const NewTabButtonIcon = styled.img`
   -webkit-user-drag: none;
 `;
 
@@ -114,13 +141,30 @@ const TitleBar = observer(() => {
             }
           }}
         >
-          <NewTabButton src={plusIcon} />
+          <NewTabButtonIcon src={plusIcon} />
         </NewTabButtonParent>
       </TitleBarTop>
       <TitleBarBottom>
-        <RoundButton />
-        <RoundButton />
-        <RoundButton />
+        <RoundButton>
+          <RoundButtonIcon src={backIcon} />
+        </RoundButton>
+        <RoundButton>
+          <RoundButtonIconFlipped src={backIcon} />
+        </RoundButton>
+        <RoundButton>
+          <RoundButtonIcon
+            src={refreshIcon}
+            onClick={() => {
+              ipcRenderer.send('load-url-in-tab', [
+                tabStore.activeTabId,
+                tabStore.tabs[tabStore.getTabIndex(tabStore.activeTabId)].url,
+              ]);
+              tabStore.setActiveTabUrl(
+                tabStore.tabs[tabStore.getTabIndex(tabStore.activeTabId)].url
+              );
+            }}
+          />
+        </RoundButton>
         <URLBox
           type="text"
           ref={urlBoxRef}
@@ -138,6 +182,16 @@ const TitleBar = observer(() => {
                 tabStore.getActiveTabSearchBar(),
               ]);
               tabStore.setActiveTabUrl(tabStore.getActiveTabSearchBar());
+            }
+          }}
+          onClick={() => {
+            if (urlBoxRef.current != null) {
+              urlBoxRef.current.select();
+            }
+          }}
+          onBlur={() => {
+            if (urlBoxRef.current != null) {
+              urlBoxRef.current.blur();
             }
           }}
         />
