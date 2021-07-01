@@ -1,9 +1,11 @@
 import React from 'react';
+import { ipcRenderer } from 'electron';
+import { runInAction } from 'mobx';
 import styled, { css } from 'styled-components';
 import { observer } from 'mobx-react-lite';
+import { tabStore as tabStoreStatic, useStore } from '../../data';
 import TabObject from '../../interfaces/tab';
 import xIcon from '../../../assets/x-letter.svg';
-import { useStore } from '../../data';
 
 interface StyledTabParentProps {
   color: string;
@@ -57,6 +59,13 @@ const XIcon = styled.img`
 interface ITab {
   tab: TabObject;
 }
+
+ipcRenderer.on('url-changed', (_, [id, newUrl]) => {
+  runInAction(() => {
+    tabStoreStatic.tabs[tabStoreStatic.getTabIndex(id)].searchBar = newUrl;
+    tabStoreStatic.tabs[tabStoreStatic.getTabIndex(id)].url = newUrl;
+  });
+});
 
 const Tab = observer(({ tab }: ITab) => {
   const { tabStore } = useStore();

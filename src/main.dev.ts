@@ -80,6 +80,19 @@ const setTab = (window: BrowserWindow, id: number, oldId: number) => {
   tabView.resize();
 };
 
+function validURL(str: string): boolean {
+  const pattern = new RegExp(
+    '^(https?:\\/\\/)?' + // protocol
+    '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
+    '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
+    '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
+    '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
+      '(\\#[-a-z\\d_]*)?$',
+    'i'
+  ); // fragment locator
+  return pattern.test(str);
+}
+
 function addListeners(window: BrowserWindow) {
   ipcMain.on('asynchronous-message', (event, arg) => {
     window.webContents.loadURL('https://arxiv.org/abs/2106.12583'); // loads to main window which is hidden
@@ -103,7 +116,7 @@ function addListeners(window: BrowserWindow) {
   ipcMain.on('set-tab', (_, [id, oldId]) => {
     setTab(window, id, oldId);
   });
-  ipcMain.on('load-url-in-active-tab', (_, [id, url]) => {
+  ipcMain.on('load-url-in-active-tab', (event, [id, url]) => {
     if (id === -1) {
       return;
     }
@@ -113,7 +126,25 @@ function addListeners(window: BrowserWindow) {
         `load-url-in-active-tab: tab with id ${id} does not exist`
       );
     }
-    tabView.view.webContents.loadURL(url);
+    let fullUrl = url;
+    if (!/^https?:\/\//i.test(url)) {
+      fullUrl = `http://${url}`;
+    }
+
+    // url is invalid
+    if (!validURL(fullUrl)) {
+      fullUrl = `https://www.google.com/search?q=${url}`;
+    }
+
+    (async () => {
+      await tabView.view.webContents.loadURL(fullUrl).catch(() => {
+        // failed to load url
+        // todo: handle this
+        console.log(`error loading url: ${fullUrl}`);
+      });
+      const newUrl = tabView.view.webContents.getURL();
+      event.reply('url-changed', [id, newUrl]);
+    })();
   });
 }
 

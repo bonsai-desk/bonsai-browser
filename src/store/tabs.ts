@@ -17,6 +17,16 @@ export default class TabStore {
     });
   }
 
+  getTabIndex(id: number): number {
+    for (let i = 0; i < this.tabs.length; i += 1) {
+      if (this.tabs[i].id === id) {
+        return i;
+      }
+    }
+    throw new Error(`Could not getTab with id ${id}`);
+    // return { id: -1, url: '', searchBar: '' };
+  }
+
   setActiveTab(id: number) {
     const oldId = this.activeTabId;
     this.activeTabId = id;
@@ -36,7 +46,6 @@ export default class TabStore {
   }
 
   addTab() {
-    console.log('addTab');
     ipcRenderer.send('create-new-tab', TabStore.id);
     this.pushTab('', TabStore.id);
     this.setActiveTab(TabStore.id);
