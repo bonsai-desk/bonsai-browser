@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
 import styled from 'styled-components';
 import { ipcRenderer } from 'electron';
@@ -20,7 +20,8 @@ const TitleBarTop = styled.div`
   height: 32px;
   background-color: #dee1e6;
   display: flex;
-  flex-wrap: wrap;
+  //flex-wrap: wrap;
+  overflow: hidden;
   align-content: baseline;
   padding-top: 10px;
   padding-left: 6px;
@@ -33,9 +34,10 @@ const TitleBarBottom = styled.div`
   background-color: white;
   border-bottom: 1px solid #dee1e6;
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   align-content: center;
   padding-left: 4px;
+  overflow: hidden;
 `;
 
 const RoundButton = styled.div`
@@ -44,10 +46,12 @@ const RoundButton = styled.div`
   background-color: gray;
   border-radius: 50%;
   margin-left: 2px;
+  flex-shrink: 0;
 `;
 
 const NewTabButtonParent = styled.div`
   -webkit-app-region: no-drag;
+  flex-shrink: 0;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -58,6 +62,7 @@ const NewTabButtonParent = styled.div`
   border-radius: 50%;
   margin-left: 7px;
   margin-top: 1px;
+  margin-right: 100px;
 `;
 
 const NewTabButton = styled.img`
@@ -65,16 +70,30 @@ const NewTabButton = styled.img`
 `;
 
 const URLBox = styled.input`
-  width: 750px;
+  flex-grow: 1;
   margin-left: 10px;
   border-radius: 10000000px;
   outline: none;
   border: 2px solid black;
   padding-left: 10px;
+  margin-right: 10px;
+  height: 22px;
 `;
 
 const TitleBar = observer(() => {
   const { tabStore } = useStore();
+  const urlBoxRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    tabStore.addTab();
+    tabStore.setActiveTabSearchBar('https://www.google.com');
+    ipcRenderer.send('load-url-in-tab', [
+      tabStore.activeTabId,
+      tabStore.getActiveTabSearchBar(),
+    ]);
+    tabStore.setActiveTabUrl(tabStore.getActiveTabSearchBar());
+  }, []);
+
   return (
     <TitleBarFull>
       <TitleBarTop>
@@ -84,6 +103,9 @@ const TitleBar = observer(() => {
         <NewTabButtonParent
           onClick={() => {
             tabStore.addTab();
+            if (urlBoxRef.current != null) {
+              urlBoxRef.current.focus();
+            }
           }}
         >
           <NewTabButton src={plusIcon} />
@@ -95,6 +117,7 @@ const TitleBar = observer(() => {
         <RoundButton />
         <URLBox
           type="text"
+          ref={urlBoxRef}
           value={tabStore.getActiveTabSearchBar()}
           onInput={(e) => {
             if (tabStore.activeTabId === -1) {
@@ -104,7 +127,7 @@ const TitleBar = observer(() => {
           }}
           onKeyDown={(e) => {
             if (e.nativeEvent.code === 'Enter') {
-              ipcRenderer.send('load-url-in-active-tab', [
+              ipcRenderer.send('load-url-in-tab', [
                 tabStore.activeTabId,
                 tabStore.getActiveTabSearchBar(),
               ]);

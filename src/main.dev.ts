@@ -116,7 +116,7 @@ function addListeners(window: BrowserWindow) {
   ipcMain.on('set-tab', (_, [id, oldId]) => {
     setTab(window, id, oldId);
   });
-  ipcMain.on('load-url-in-active-tab', (event, [id, url]) => {
+  ipcMain.on('load-url-in-tab', (event, [id, url]) => {
     if (id === -1) {
       return;
     }
@@ -170,6 +170,8 @@ const createWindow = async () => {
       titleBarStyle: 'hidden',
       width: startWindowWidth,
       height: startWindowHeight,
+      minWidth: 500,
+      minHeight: headerHeight,
       icon: getAssetPath('icon.png'),
       webPreferences: {
         nodeIntegration: true,
@@ -181,6 +183,8 @@ const createWindow = async () => {
       titleBarStyle: 'hidden',
       width: startWindowWidth,
       height: startWindowHeight,
+      minWidth: 500,
+      minHeight: headerHeight + 50,
       icon: getAssetPath('icon.png'),
       webPreferences: {
         nodeIntegration: true,

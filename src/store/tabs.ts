@@ -24,7 +24,6 @@ export default class TabStore {
       }
     }
     throw new Error(`Could not getTab with id ${id}`);
-    // return { id: -1, url: '', searchBar: '' };
   }
 
   setActiveTab(id: number) {

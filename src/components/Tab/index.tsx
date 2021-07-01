@@ -16,6 +16,7 @@ const TabParent = styled.div`
   -webkit-user-select: none;
   -webkit-user-drag: none;
   width: 225px;
+  min-width: 0;
   height: calc(100% - 1px);
   border-left: 1px solid black;
   border-top: 1px solid black;
