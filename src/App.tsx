@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import styled from 'styled-components';
 import { ipcRenderer } from 'electron';
@@ -84,7 +84,13 @@ const TitleBar = observer(() => {
   const { tabStore } = useStore();
   const urlBoxRef = useRef<HTMLInputElement>(null);
 
+  const [addedDefaultTab, setAddedDefaultTab] = useState(false);
+
   useEffect(() => {
+    if (addedDefaultTab) {
+      return;
+    }
+    setAddedDefaultTab(true);
     tabStore.addTab();
     tabStore.setActiveTabSearchBar('https://www.google.com');
     ipcRenderer.send('load-url-in-tab', [
@@ -92,7 +98,7 @@ const TitleBar = observer(() => {
       tabStore.getActiveTabSearchBar(),
     ]);
     tabStore.setActiveTabUrl(tabStore.getActiveTabSearchBar());
-  }, []);
+  }, [addedDefaultTab, tabStore]);
 
   return (
     <TitleBarFull>
