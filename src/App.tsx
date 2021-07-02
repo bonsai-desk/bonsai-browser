@@ -183,9 +183,6 @@ const TitleBar = observer(() => {
             src={refreshIcon}
             onClick={() => {
               ipcRenderer.send('tab-refresh', tabStore.activeTabId);
-              tabStore.setActiveTabSearchBar(
-                tabStore.tabs[tabStore.getTabIndex(tabStore.activeTabId)].url
-              );
             }}
           />
         </RoundButton>

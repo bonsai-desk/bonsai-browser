@@ -50,6 +50,12 @@ class TabView {
       updateContents();
     });
 
+    this.view.webContents.on('page-favicon-updated', (_, favicons) => {
+      if (favicons.length > 0) {
+        titleBarView.webContents.send('favicon-updated', favicons[0]);
+      }
+    });
+
     window.addBrowserView(this.view);
   }
 
