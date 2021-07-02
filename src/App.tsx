@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { ipcRenderer } from 'electron';
 import { useStore } from './data';
 import Tab from './components/Tab';
@@ -51,6 +51,10 @@ const TitleBarBottom = styled.div`
 //   flex-shrink: 0;
 // `;
 
+interface StyledRoundButtonProps {
+  color: string;
+}
+
 const RoundButton = styled.div`
   -webkit-app-region: no-drag;
   flex-shrink: 0;
@@ -60,9 +64,13 @@ const RoundButton = styled.div`
   width: 28px;
   height: 28px;
   border: none;
-  background-color: gray;
   border-radius: 50%;
   margin-left: 2px;
+
+  ${({ color }: StyledRoundButtonProps) =>
+    css`
+      background-color: ${color};
+    `}
 `;
 
 const RoundButtonIcon = styled.img`
@@ -114,6 +122,15 @@ const TitleBar = observer(() => {
   const [addedDefaultTab, setAddedDefaultTab] = useState(false);
   const [urlFocus, setUrlFocus] = useState(false);
 
+  let canGoBack = false;
+  let canGoForward = false;
+
+  if (tabStore.activeTabId !== -1) {
+    ({ canGoBack, canGoForward } = tabStore.tabs[
+      tabStore.getTabIndex(tabStore.activeTabId)
+    ]);
+  }
+
   useEffect(() => {
     if (addedDefaultTab) {
       return;
@@ -125,7 +142,6 @@ const TitleBar = observer(() => {
       tabStore.activeTabId,
       tabStore.getActiveTabSearchBar(),
     ]);
-    tabStore.setActiveTabUrl(tabStore.getActiveTabSearchBar());
   }, [addedDefaultTab, tabStore]);
 
   return (
@@ -146,23 +162,27 @@ const TitleBar = observer(() => {
         </NewTabButtonParent>
       </TitleBarTop>
       <TitleBarBottom>
-        <RoundButton>
-          <RoundButtonIcon src={backIcon} />
+        <RoundButton color={canGoBack ? '#949494' : '#e3e3e3'}>
+          <RoundButtonIcon
+            src={backIcon}
+            onClick={() => {
+              ipcRenderer.send('tab-back', tabStore.activeTabId);
+            }}
+          />
         </RoundButton>
-        <RoundButton>
-          <RoundButtonIconFlipped src={backIcon} />
+        <RoundButton color={canGoForward ? '#949494' : '#e3e3e3'}>
+          <RoundButtonIconFlipped
+            src={backIcon}
+            onClick={() => {
+              ipcRenderer.send('tab-forward', tabStore.activeTabId);
+            }}
+          />
         </RoundButton>
-        <RoundButton>
+        <RoundButton color="#949494">
           <RoundButtonIcon
             src={refreshIcon}
             onClick={() => {
-              ipcRenderer.send('load-url-in-tab', [
-                tabStore.activeTabId,
-                tabStore.tabs[tabStore.getTabIndex(tabStore.activeTabId)].url,
-              ]);
-              tabStore.setActiveTabUrl(
-                tabStore.tabs[tabStore.getTabIndex(tabStore.activeTabId)].url
-              );
+              ipcRenderer.send('tab-refresh', tabStore.activeTabId);
             }}
           />
         </RoundButton>
@@ -180,6 +200,7 @@ const TitleBar = observer(() => {
         <URLBox
           type="text"
           ref={urlBoxRef}
+          placeholder="Search Google or type a URL"
           value={tabStore.getActiveTabSearchBar()}
           onInput={(e) => {
             if (tabStore.activeTabId === -1) {
@@ -189,19 +210,19 @@ const TitleBar = observer(() => {
           }}
           onKeyDown={(e) => {
             if (e.nativeEvent.code === 'Enter') {
-              ipcRenderer.send('load-url-in-tab', [
-                tabStore.activeTabId,
-                tabStore.getActiveTabSearchBar(),
-              ]);
-              tabStore.setActiveTabUrl(tabStore.getActiveTabSearchBar());
+              const searchText = tabStore.getActiveTabSearchBar();
+              if (searchText !== '') {
+                ipcRenderer.send('load-url-in-tab', [
+                  tabStore.activeTabId,
+                  searchText,
+                ]);
+              }
             }
           }}
           onClick={() => {
-            if (urlBoxRef.current != null) {
-              if (!urlFocus) {
-                setUrlFocus(true);
-                urlBoxRef.current.select();
-              }
+            if (urlBoxRef.current != null && !urlFocus) {
+              setUrlFocus(true);
+              urlBoxRef.current.select();
             }
           }}
           onBlur={() => {

@@ -110,14 +110,27 @@ function validURL(str: string): boolean {
   return pattern.test(str);
 }
 
-function addListeners(window: BrowserWindow) {
+const updateWebContents = (
+  event: Electron.IpcMainEvent,
+  id: number,
+  tabView: TabView
+) => {
+  event.reply('web-contents-update', [
+    id,
+    tabView.view.webContents.canGoBack(),
+    tabView.view.webContents.canGoForward(),
+    tabView.view.webContents.getURL(),
+  ]);
+};
+
+function addListeners(window: BrowserWindow, titleBarView: BrowserView) {
   ipcMain.on('asynchronous-message', (event, arg) => {
     window.webContents.loadURL('https://arxiv.org/abs/2106.12583'); // loads to main window which is hidden
     console.log('message', arg);
     event.reply('asynchronous-reply', 'pong');
   });
   ipcMain.on('create-new-tab', (_, id) => {
-    const tabView = new TabView(window);
+    const tabView = new TabView(window, id, titleBarView);
     tabViews[id] = tabView;
   });
   ipcMain.on('remove-tab', (event, id) => {
@@ -126,6 +139,7 @@ function addListeners(window: BrowserWindow) {
       throw new Error(`remove-tab: tab with id ${id} does not exist`);
     }
     window.removeBrowserView(tabView.view);
+    // eslint-disable-line @typescript-eslint/no-explicit-any
     (tabView.view.webContents as any).destroy();
     delete tabViews[id];
     event.reply('tab-removed', id);
@@ -134,7 +148,7 @@ function addListeners(window: BrowserWindow) {
     setTab(window, id, oldId);
   });
   ipcMain.on('load-url-in-tab', (event, [id, url]) => {
-    if (id === -1) {
+    if (id === -1 || url === '') {
       return;
     }
     const tabView = tabViews[id];
@@ -153,6 +167,8 @@ function addListeners(window: BrowserWindow) {
       fullUrl = `https://www.google.com/search?q=${url}`;
     }
 
+    event.reply('web-contents-update', [id, true, false, fullUrl]);
+
     (async () => {
       await tabView.view.webContents.loadURL(fullUrl).catch(() => {
         // failed to load url
@@ -161,7 +177,23 @@ function addListeners(window: BrowserWindow) {
       });
       const newUrl = tabView.view.webContents.getURL();
       event.reply('url-changed', [id, newUrl]);
+      updateWebContents(event, id, tabView);
     })();
+  });
+  ipcMain.on('tab-back', (event, id) => {
+    if (tabViews[id].view.webContents.canGoBack()) {
+      tabViews[id].view.webContents.goBack();
+    }
+    updateWebContents(event, id, tabViews[id]);
+  });
+  ipcMain.on('tab-forward', (event, id) => {
+    if (tabViews[id].view.webContents.canGoForward()) {
+      tabViews[id].view.webContents.goForward();
+    }
+    updateWebContents(event, id, tabViews[id]);
+  });
+  ipcMain.on('tab-refresh', (_, id) => {
+    tabViews[id].view.webContents.reload();
   });
 }
 
@@ -220,8 +252,6 @@ const createWindow = async () => {
     });
   }
 
-  addListeners(mainWindow);
-
   debugWindow.loadURL(`file://${__dirname}/index-debug.html`);
 
   hookDebugWindow(debugWindow.webContents);
@@ -251,6 +281,8 @@ const createWindow = async () => {
   });
 
   titleBarView.webContents.loadURL(`file://${__dirname}/index.html`);
+
+  addListeners(mainWindow, titleBarView);
 
   mainWindow.on('resize', () => {
     if (mainWindow) {

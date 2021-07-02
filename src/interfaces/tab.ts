@@ -1,7 +1,9 @@
 interface TabObject {
   id: number;
-  url: string;
   searchBar: string;
+  canGoBack: boolean;
+  canGoForward: boolean;
+  title: string;
 }
 
 export default TabObject;

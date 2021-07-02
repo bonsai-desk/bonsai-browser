@@ -1,9 +1,9 @@
-import { makeAutoObservable } from 'mobx';
+import { makeAutoObservable, runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
 import TabObject from '../interfaces/tab';
 
 export default class TabStore {
-  static id = 0;
+  id = 0; // auto increment to give unique id to each tab
 
   tabs: TabObject[] = [];
 
@@ -35,6 +35,24 @@ export default class TabStore {
       }
       this.popTab(id);
     });
+    ipcRenderer.on(
+      'web-contents-update',
+      (_, [id, canGoBack, canGoForward, url]) => {
+        runInAction(() => {
+          this.tabs[this.getTabIndex(id)].canGoBack = canGoBack;
+          this.tabs[this.getTabIndex(id)].canGoForward = canGoForward;
+          this.tabs[this.getTabIndex(id)].searchBar = url;
+        });
+      }
+    );
+    ipcRenderer.on('title-updated', (_, [id, title]) => {
+      runInAction(() => {
+        this.tabs[this.getTabIndex(id)].title = title;
+      });
+    });
+    // ipcRenderer.on('favicon-updated', (_, faviconUrl) => {
+    //   console.log(faviconUrl);
+    // });
   }
 
   getTabIndex(id: number): number {
@@ -52,11 +70,13 @@ export default class TabStore {
     ipcRenderer.send('set-tab', [id, oldId]);
   }
 
-  pushTab(url: string, id: number) {
+  pushTab(id: number) {
     this.tabs.push({
       id,
-      url,
       searchBar: '',
+      canGoBack: false,
+      canGoForward: false,
+      title: 'New Tab',
     });
   }
 
@@ -65,10 +85,10 @@ export default class TabStore {
   }
 
   addTab() {
-    ipcRenderer.send('create-new-tab', TabStore.id);
-    this.pushTab('', TabStore.id);
-    this.setActiveTab(TabStore.id);
-    TabStore.id += 1;
+    ipcRenderer.send('create-new-tab', this.id);
+    this.pushTab(this.id);
+    this.setActiveTab(this.id);
+    this.id += 1;
   }
 
   static removeTab(id: number) {
@@ -88,14 +108,6 @@ export default class TabStore {
     for (let i = 0; i < this.tabs.length; i += 1) {
       if (this.tabs[i].id === this.activeTabId) {
         this.tabs[i].searchBar = text;
-      }
-    }
-  }
-
-  setActiveTabUrl(text: string) {
-    for (let i = 0; i < this.tabs.length; i += 1) {
-      if (this.tabs[i].id === this.activeTabId) {
-        this.tabs[i].url = text;
       }
     }
   }

@@ -84,7 +84,7 @@ const Tab = observer(({ tab }: ITab) => {
       }}
     >
       <TabTileParent>
-        <TabTitle>{tab.url}</TabTitle>
+        <TabTitle>{tab.title}</TabTitle>
       </TabTileParent>
       <CloseButtonParent>
         <XIcon
