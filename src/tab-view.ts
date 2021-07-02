@@ -9,7 +9,7 @@ class TabView {
 
   view: BrowserView;
 
-  constructor(window: BrowserWindow) {
+  constructor(window: BrowserWindow, id: number, titleBarView: BrowserView) {
     if (!window) {
       throw new Error('"window" is not defined');
     }
@@ -25,6 +25,29 @@ class TabView {
 
     window.on('resize', () => {
       this.resize();
+    });
+
+    this.view.webContents.on('page-title-updated', (_, title) => {
+      titleBarView.webContents.send('title-updated', [id, title]);
+    });
+
+    const updateContents = () => {
+      titleBarView.webContents.send('web-contents-update', [
+        id,
+        this.view.webContents.canGoBack(),
+        this.view.webContents.canGoForward(),
+        this.view.webContents.getURL(),
+      ]);
+    };
+
+    this.view.webContents.on('did-navigate', () => {
+      updateContents();
+    });
+    this.view.webContents.on('did-frame-navigate', () => {
+      updateContents();
+    });
+    this.view.webContents.on('did-navigate-in-page', () => {
+      updateContents();
     });
 
     window.addBrowserView(this.view);
