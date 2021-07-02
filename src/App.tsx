@@ -112,6 +112,7 @@ const TitleBar = observer(() => {
   const urlBoxRef = useRef<HTMLInputElement>(null);
 
   const [addedDefaultTab, setAddedDefaultTab] = useState(false);
+  const [urlFocus, setUrlFocus] = useState(false);
 
   useEffect(() => {
     if (addedDefaultTab) {
@@ -186,12 +187,17 @@ const TitleBar = observer(() => {
           }}
           onClick={() => {
             if (urlBoxRef.current != null) {
-              urlBoxRef.current.select();
+              if (!urlFocus) {
+                setUrlFocus(true);
+                urlBoxRef.current.select();
+              }
             }
           }}
           onBlur={() => {
+            setUrlFocus(false);
             if (urlBoxRef.current != null) {
               urlBoxRef.current.blur();
+              window.getSelection()?.removeAllRanges();
             }
           }}
         />

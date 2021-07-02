@@ -6,6 +6,7 @@ import { observer } from 'mobx-react-lite';
 import { tabStore as tabStoreStatic, useStore } from '../../data';
 import TabObject from '../../interfaces/tab';
 import xIcon from '../../../assets/x-letter.svg';
+import TabStore from '../../store/tabs';
 
 interface StyledTabParentProps {
   color: string;
@@ -92,7 +93,7 @@ const Tab = observer(({ tab }: ITab) => {
             e.stopPropagation();
           }}
           onClick={() => {
-            tabStore.removeTab(tab.id);
+            TabStore.removeTab(tab.id);
           }}
         />
       </CloseButtonParent>

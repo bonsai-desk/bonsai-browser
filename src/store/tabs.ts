@@ -13,6 +13,26 @@ export default class TabStore {
     makeAutoObservable(this);
 
     ipcRenderer.on('tab-removed', (_, id) => {
+      if (id === this.activeTabId) {
+        let setNewTab = false;
+        for (let i = 0; i < this.tabs.length; i += 1) {
+          if (this.tabs[i].id === id) {
+            if (i === this.tabs.length - 1 && i > 0) {
+              this.setActiveTab(this.tabs[i - 1].id);
+              setNewTab = true;
+              break;
+            }
+            if (i !== this.tabs.length - 1) {
+              this.setActiveTab(this.tabs[i + 1].id);
+              setNewTab = true;
+              break;
+            }
+          }
+        }
+        if (!setNewTab) {
+          this.setActiveTab(-1);
+        }
+      }
       this.popTab(id);
     });
   }
@@ -51,11 +71,8 @@ export default class TabStore {
     TabStore.id += 1;
   }
 
-  removeTab(id: number) {
+  static removeTab(id: number) {
     ipcRenderer.send('remove-tab', id);
-    if (this.activeTabId === id) {
-      this.setActiveTab(-1);
-    }
   }
 
   getActiveTabSearchBar(): string {
