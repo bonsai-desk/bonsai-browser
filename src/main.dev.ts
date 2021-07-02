@@ -11,7 +11,14 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 import path from 'path';
-import { app, BrowserWindow, BrowserView, shell, ipcMain } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  BrowserView,
+  shell,
+  ipcMain,
+  WebContents,
+} from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
@@ -30,6 +37,16 @@ export default class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
+
+let debugWindow: BrowserWindow | null = null;
+
+function hookDebugWindow(infoDebugger: WebContents) {
+  ipcMain.on('meta-info', (_, data) => {
+    console.log(data);
+    // debugWindow.event.reply('meta-info', data);
+    infoDebugger.send('meta-info', data);
+  });
+}
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -122,6 +139,7 @@ function addListeners(window: BrowserWindow, titleBarView: BrowserView) {
       throw new Error(`remove-tab: tab with id ${id} does not exist`);
     }
     window.removeBrowserView(tabView.view);
+    // eslint-disable-line @typescript-eslint/no-explicit-any
     (tabView.view.webContents as any).destroy();
     delete tabViews[id];
     event.reply('tab-removed', id);
@@ -195,6 +213,17 @@ const createWindow = async () => {
     return path.join(RESOURCES_PATH, ...paths);
   };
 
+  debugWindow = new BrowserWindow({
+    width: startWindowWidth,
+    height: startWindowHeight,
+    minWidth: 500,
+    minHeight: headerHeight,
+    icon: getAssetPath('icon.png'),
+    webPreferences: {
+      nodeIntegration: true,
+    },
+  });
+
   if (process.platform === 'darwin') {
     mainWindow = new BrowserWindow({
       frame: false,
@@ -223,12 +252,19 @@ const createWindow = async () => {
     });
   }
 
+  debugWindow.loadURL(`file://${__dirname}/index-debug.html`);
+
+  hookDebugWindow(debugWindow.webContents);
+
   // open window before loading is complete
   if (process.env.START_MINIMIZED) {
     mainWindow.minimize();
+    debugWindow.minimize();
   } else {
     mainWindow.show();
     mainWindow.focus();
+
+    debugWindow.show();
   }
 
   const titleBarView = new BrowserView({
@@ -243,6 +279,7 @@ const createWindow = async () => {
     width: startWindowWidth,
     height: headerHeight,
   });
+
   titleBarView.webContents.loadURL(`file://${__dirname}/index.html`);
 
   addListeners(mainWindow, titleBarView);
