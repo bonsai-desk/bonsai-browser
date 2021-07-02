@@ -36,9 +36,11 @@
       "dist/",
       "node_modules/",
       "index.html",
+      "index-debug.html",
       "main.prod.js",
       "main.prod.js.map",
-      "package.json"
+      "package.json",
+      "preload.js"
     ],
     "afterSign": ".erb/scripts/Notarize.js",
     "mac": {

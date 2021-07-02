@@ -1,4 +1,5 @@
 import { BrowserView, BrowserWindow } from 'electron';
+import path from 'path';
 
 export const startWindowWidth = 1024;
 export const startWindowHeight = 728;
@@ -18,8 +19,11 @@ class TabView {
       webPreferences: {
         nodeIntegration: false,
         sandbox: true,
+        preload: path.join(__dirname, './preload.js'),
       },
     });
+
+    this.view.webContents.toggleDevTools();
 
     this.resize();
 
