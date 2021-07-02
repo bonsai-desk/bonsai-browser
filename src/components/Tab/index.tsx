@@ -25,6 +25,7 @@ const TabParent = styled.div`
   border-radius: 10px 10px 0 0;
   display: flex;
   flex-wrap: nowrap;
+  align-items: center;
 
   ${({ color }: StyledTabParentProps) =>
     css`
@@ -33,7 +34,7 @@ const TabParent = styled.div`
 `;
 
 const TabTileParent = styled.div`
-  width: calc(100% - 35px);
+  width: calc(100% - 35px - 28px - 8px);
   display: flex;
   align-items: center;
 `;
@@ -58,6 +59,12 @@ const XIcon = styled.img`
   -webkit-user-drag: none;
 `;
 
+const Favicon = styled.img`
+  width: 16px;
+  height: 16px;
+  margin-left: 8px;
+`;
+
 interface ITab {
   tab: TabObject;
 }
@@ -65,7 +72,6 @@ interface ITab {
 ipcRenderer.on('url-changed', (_, [id, newUrl]) => {
   runInAction(() => {
     tabStoreStatic.tabs[tabStoreStatic.getTabIndex(id)].searchBar = newUrl;
-    tabStoreStatic.tabs[tabStoreStatic.getTabIndex(id)].url = newUrl;
   });
 });
 
@@ -83,6 +89,7 @@ const Tab = observer(({ tab }: ITab) => {
         tabStore.setActiveTab(tab.id);
       }}
     >
+      <Favicon src={tab.faviconUrl} />
       <TabTileParent>
         <TabTitle>{tab.title}</TabTitle>
       </TabTileParent>

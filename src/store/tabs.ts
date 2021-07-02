@@ -50,9 +50,9 @@ export default class TabStore {
         this.tabs[this.getTabIndex(id)].title = title;
       });
     });
-    // ipcRenderer.on('favicon-updated', (_, faviconUrl) => {
-    //   console.log(faviconUrl);
-    // });
+    ipcRenderer.on('favicon-updated', (_, [id, faviconUrl]) => {
+      this.tabs[this.getTabIndex(id)].faviconUrl = faviconUrl;
+    });
   }
 
   getTabIndex(id: number): number {
@@ -77,6 +77,7 @@ export default class TabStore {
       canGoBack: false,
       canGoForward: false,
       title: 'New Tab',
+      faviconUrl: '',
     });
   }
 

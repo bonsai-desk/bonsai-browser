@@ -13,6 +13,7 @@ const TitleBarFull = styled.div`
   width: 100vw;
   height: 100vh;
   background-color: red;
+  font-family: sans-serif;
 `;
 
 const TitleBarTop = styled.div`
@@ -42,21 +43,13 @@ const TitleBarBottom = styled.div`
   overflow: hidden;
 `;
 
-// const RoundButton = styled.div`
-//   width: 28px;
-//   height: 28px;
-//   background-color: gray;
-//   border-radius: 50%;
-//   margin-left: 2px;
-//   flex-shrink: 0;
-// `;
-
 interface StyledRoundButtonProps {
   color: string;
 }
 
 const RoundButton = styled.div`
   -webkit-app-region: no-drag;
+  user-select: none;
   flex-shrink: 0;
   display: flex;
   justify-content: center;
@@ -66,6 +59,7 @@ const RoundButton = styled.div`
   border: none;
   border-radius: 50%;
   margin-left: 2px;
+  color: white;
 
   ${({ color }: StyledRoundButtonProps) =>
     css`
@@ -187,6 +181,7 @@ const TitleBar = observer(() => {
           />
         </RoundButton>
         <RoundButton
+          color="#949494"
           onClick={() => {
             tabStore.setActiveTabSearchBar('https://arxiv.org/abs/2107.00014');
             ipcRenderer.send('load-url-in-tab', [

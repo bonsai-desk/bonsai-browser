@@ -23,8 +23,6 @@ class TabView {
       },
     });
 
-    this.view.webContents.toggleDevTools();
-
     this.resize();
 
     window.on('resize', () => {
@@ -55,8 +53,9 @@ class TabView {
     });
 
     this.view.webContents.on('page-favicon-updated', (_, favicons) => {
+      favicons.map((url) => console.log(url));
       if (favicons.length > 0) {
-        titleBarView.webContents.send('favicon-updated', favicons[0]);
+        titleBarView.webContents.send('favicon-updated', [id, favicons[0]]);
       }
     });
 

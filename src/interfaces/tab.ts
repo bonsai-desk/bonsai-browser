@@ -4,6 +4,7 @@ interface TabObject {
   canGoBack: boolean;
   canGoForward: boolean;
   title: string;
+  faviconUrl: string;
 }
 
 export default TabObject;
