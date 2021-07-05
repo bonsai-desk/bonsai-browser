@@ -34,7 +34,7 @@ const TabParent = styled.div`
 `;
 
 const TabTileParent = styled.div`
-  width: calc(100% - 35px - 28px - 8px);
+  width: calc(100% - 8px - 16px - 35px);
   display: flex;
   align-items: center;
 `;

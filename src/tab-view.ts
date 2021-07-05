@@ -53,11 +53,15 @@ class TabView {
     });
 
     this.view.webContents.on('page-favicon-updated', (_, favicons) => {
-      favicons.map((url) => console.log(url));
+      // favicons.map((url) => console.log(url));
       if (favicons.length > 0) {
         titleBarView.webContents.send('favicon-updated', [id, favicons[0]]);
       }
     });
+
+    // this.view.webContents.on('update-target-url', (_, url) => {
+    //   // console.log(url);
+    // });
 
     window.addBrowserView(this.view);
   }

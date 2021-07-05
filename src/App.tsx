@@ -12,7 +12,6 @@ import refreshIcon from '../assets/refresh.svg';
 const TitleBarFull = styled.div`
   width: 100vw;
   height: 100vh;
-  background-color: red;
   font-family: sans-serif;
 `;
 
@@ -156,29 +155,29 @@ const TitleBar = observer(() => {
         </NewTabButtonParent>
       </TitleBarTop>
       <TitleBarBottom>
-        <RoundButton color={canGoBack ? '#949494' : '#e3e3e3'}>
-          <RoundButtonIcon
-            src={backIcon}
-            onClick={() => {
-              ipcRenderer.send('tab-back', tabStore.activeTabId);
-            }}
-          />
+        <RoundButton
+          color={canGoBack ? '#949494' : '#e3e3e3'}
+          onClick={() => {
+            ipcRenderer.send('tab-back', tabStore.activeTabId);
+          }}
+        >
+          <RoundButtonIcon src={backIcon} />
         </RoundButton>
-        <RoundButton color={canGoForward ? '#949494' : '#e3e3e3'}>
-          <RoundButtonIconFlipped
-            src={backIcon}
-            onClick={() => {
-              ipcRenderer.send('tab-forward', tabStore.activeTabId);
-            }}
-          />
+        <RoundButton
+          color={canGoForward ? '#949494' : '#e3e3e3'}
+          onClick={() => {
+            ipcRenderer.send('tab-forward', tabStore.activeTabId);
+          }}
+        >
+          <RoundButtonIconFlipped src={backIcon} />
         </RoundButton>
-        <RoundButton color="#949494">
-          <RoundButtonIcon
-            src={refreshIcon}
-            onClick={() => {
-              ipcRenderer.send('tab-refresh', tabStore.activeTabId);
-            }}
-          />
+        <RoundButton
+          color="#949494"
+          onClick={() => {
+            ipcRenderer.send('tab-refresh', tabStore.activeTabId);
+          }}
+        >
+          <RoundButtonIcon src={refreshIcon} />
         </RoundButton>
         <RoundButton
           color="#949494"

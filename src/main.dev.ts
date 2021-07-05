@@ -42,7 +42,7 @@ let debugWindow: BrowserWindow | null = null;
 
 function hookDebugWindow(infoDebugger: WebContents) {
   ipcMain.on('meta-info', (_, data) => {
-    console.log(data);
+    // console.log(data);
     // debugWindow.event.reply('meta-info', data);
     infoDebugger.send('meta-info', data);
   });
@@ -75,7 +75,12 @@ const installExtensions = async () => {
 
 const tabViews: Record<number, TabView> = {};
 
-const setTab = (window: BrowserWindow, id: number, oldId: number) => {
+const setTab = (
+  window: BrowserWindow,
+  titleBarView: BrowserView,
+  id: number,
+  oldId: number
+) => {
   if (id === oldId) {
     return;
   }
@@ -94,6 +99,7 @@ const setTab = (window: BrowserWindow, id: number, oldId: number) => {
   }
 
   window.addBrowserView(tabView.view);
+  window.setTopBrowserView(titleBarView);
   tabView.resize();
 };
 
@@ -124,11 +130,6 @@ const updateWebContents = (
 };
 
 function addListeners(window: BrowserWindow, titleBarView: BrowserView) {
-  ipcMain.on('asynchronous-message', (event, arg) => {
-    window.webContents.loadURL('https://arxiv.org/abs/2106.12583'); // loads to main window which is hidden
-    console.log('message', arg);
-    event.reply('asynchronous-reply', 'pong');
-  });
   ipcMain.on('create-new-tab', (_, id) => {
     const tabView = new TabView(window, id, titleBarView);
     tabViews[id] = tabView;
@@ -145,7 +146,7 @@ function addListeners(window: BrowserWindow, titleBarView: BrowserView) {
     event.reply('tab-removed', id);
   });
   ipcMain.on('set-tab', (_, [id, oldId]) => {
-    setTab(window, id, oldId);
+    setTab(window, titleBarView, id, oldId);
   });
   ipcMain.on('load-url-in-tab', (event, [id, url]) => {
     if (id === -1 || url === '') {
@@ -273,6 +274,7 @@ const createWindow = async () => {
     },
   });
   mainWindow.setBrowserView(titleBarView);
+  mainWindow.setTopBrowserView(titleBarView);
   titleBarView.setBounds({
     x: 0,
     y: 0,
