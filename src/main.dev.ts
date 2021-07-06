@@ -11,7 +11,15 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 import path from 'path';
-import { app, BrowserWindow, BrowserView, shell, ipcMain } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  BrowserView,
+  shell,
+  ipcMain,
+  Menu,
+  MenuItem,
+} from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
@@ -67,6 +75,7 @@ const installExtensions = async () => {
 };
 
 const tabViews: Record<number, TabView> = {};
+let activeTabId = -1;
 
 export const windowHasView = (
   window: BrowserWindow,
@@ -95,6 +104,7 @@ const setTab = (
   const oldTabView = tabViews[oldId];
   if (typeof oldTabView !== 'undefined') {
     window.removeBrowserView(oldTabView.view);
+    activeTabId = -1;
   }
 
   if (id === -1) {
@@ -106,6 +116,7 @@ const setTab = (
   }
 
   window.addBrowserView(tabView.view);
+  activeTabId = id;
   window.setTopBrowserView(titleBarView);
   if (windowHasView(window, urlPeekView)) {
     window.setTopBrowserView(urlPeekView);
@@ -154,6 +165,7 @@ function addListeners(
       throw new Error(`remove-tab: tab with id ${id} does not exist`);
     }
     window.removeBrowserView(tabView.view);
+    activeTabId = -1;
     if (windowHasView(window, urlPeekView)) {
       window.removeBrowserView(urlPeekView);
     }
@@ -337,6 +349,24 @@ const createWindow = async () => {
     }
   });
 
+  // globalShortcut.register('CommandOrControl+F', () => {
+  //   // tabStoreStatic.activeTabId;
+  //   // console.log(tabStore.activeTabId);
+  //   // tabViews[]
+  // });
+
+  // Mousetrap.bind('4', () => {
+  //   console.log('4');
+  // });
+
+  // titleBarView.webContents.on('before-input-event', (_, input) => {
+  //   console.log(input.key.toLowerCase());
+  //   // if (input.control && input.key.toLowerCase() === 'f') {
+  //   //   console.log('Pressed Control+F');
+  //   //   event.preventDefault();
+  //   // }
+  // });
+
   if (!app.isPackaged) {
     // titleBarView.webContents.openDevTools({
     //   mode: 'detach',
@@ -374,6 +404,26 @@ const createWindow = async () => {
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line
   new AppUpdater();
+
+  const menu = new Menu();
+
+  menu.append(
+    new MenuItem({
+      label: 'Electron',
+      submenu: [
+        {
+          label: 'find',
+          accelerator: 'CmdOrCtrl+F',
+          click: () => {
+            tabViews[activeTabId].view.webContents.findInPage('e');
+          },
+        },
+      ],
+    })
+  );
+
+  // Menu.buildFromTemplate(menuItems).popup();
+  Menu.setApplicationMenu(menu);
 };
 
 /**
