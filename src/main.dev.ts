@@ -84,7 +84,7 @@ export const windowHasView = (
 const setTab = (
   window: BrowserWindow,
   titleBarView: BrowserView,
-  urlPeakView: BrowserView,
+  urlPeekView: BrowserView,
   id: number,
   oldId: number
 ) => {
@@ -107,8 +107,8 @@ const setTab = (
 
   window.addBrowserView(tabView.view);
   window.setTopBrowserView(titleBarView);
-  if (windowHasView(window, urlPeakView)) {
-    window.setTopBrowserView(urlPeakView);
+  if (windowHasView(window, urlPeekView)) {
+    window.setTopBrowserView(urlPeekView);
   }
   tabView.resize();
 };
@@ -142,10 +142,10 @@ const updateWebContents = (
 function addListeners(
   window: BrowserWindow,
   titleBarView: BrowserView,
-  urlPeakView: BrowserView
+  urlPeekView: BrowserView
 ) {
   ipcMain.on('create-new-tab', (_, id) => {
-    const tabView = new TabView(window, id, titleBarView, urlPeakView);
+    const tabView = new TabView(window, id, titleBarView, urlPeekView);
     tabViews[id] = tabView;
   });
   ipcMain.on('remove-tab', (event, id) => {
@@ -160,7 +160,7 @@ function addListeners(
     event.reply('tab-removed', id);
   });
   ipcMain.on('set-tab', (_, [id, oldId]) => {
-    setTab(window, titleBarView, urlPeakView, id, oldId);
+    setTab(window, titleBarView, urlPeekView, id, oldId);
   });
   ipcMain.on('load-url-in-tab', (event, [id, url]) => {
     if (id === -1 || url === '') {
@@ -298,23 +298,23 @@ const createWindow = async () => {
 
   titleBarView.webContents.loadURL(`file://${__dirname}/index.html`);
 
-  const urlPeakWidth = 300;
-  const urlPeakHeight = 20;
-  const urlPeakView = new BrowserView({
+  const urlPeekWidth = 300;
+  const urlPeekHeight = 20;
+  const urlPeekView = new BrowserView({
     webPreferences: {
       nodeIntegration: true,
     },
   });
-  urlPeakView.setBounds({
+  urlPeekView.setBounds({
     x: 0,
-    y: startWindowHeight - urlPeakHeight,
-    width: urlPeakWidth,
-    height: urlPeakHeight,
+    y: startWindowHeight - urlPeekHeight,
+    width: urlPeekWidth,
+    height: urlPeekHeight,
   });
 
-  urlPeakView.webContents.loadURL(`file://${__dirname}/url-peak.html`);
+  urlPeekView.webContents.loadURL(`file://${__dirname}/url-peek.html`);
 
-  addListeners(mainWindow, titleBarView, urlPeakView);
+  addListeners(mainWindow, titleBarView, urlPeekView);
 
   mainWindow.on('resize', () => {
     if (mainWindow) {
@@ -325,11 +325,11 @@ const createWindow = async () => {
         width: windowSize[0],
         height: headerHeight,
       });
-      urlPeakView.setBounds({
+      urlPeekView.setBounds({
         x: 0,
-        y: windowSize[1] - urlPeakHeight,
-        width: urlPeakWidth,
-        height: urlPeakHeight,
+        y: windowSize[1] - urlPeekHeight,
+        width: urlPeekWidth,
+        height: urlPeekHeight,
       });
     }
   });

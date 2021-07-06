@@ -15,7 +15,7 @@ class TabView {
     window: BrowserWindow,
     id: number,
     titleBarView: BrowserView,
-    urlPeakView: BrowserView
+    urlPeekView: BrowserView
   ) {
     if (!window) {
       throw new Error('"window" is not defined');
@@ -67,16 +67,16 @@ class TabView {
 
     this.view.webContents.on('update-target-url', (_, url) => {
       if (url === '') {
-        if (windowHasView(window, urlPeakView)) {
-          window.removeBrowserView(urlPeakView);
+        if (windowHasView(window, urlPeekView)) {
+          window.removeBrowserView(urlPeekView);
         }
       }
       if (url !== '') {
-        if (!windowHasView(window, urlPeakView)) {
-          window.addBrowserView(urlPeakView);
-          window.setTopBrowserView(urlPeakView);
+        if (!windowHasView(window, urlPeekView)) {
+          window.addBrowserView(urlPeekView);
+          window.setTopBrowserView(urlPeekView);
         }
-        urlPeakView.webContents.send('peak-url-updated', url);
+        urlPeekView.webContents.send('peek-url-updated', url);
       }
     });
 

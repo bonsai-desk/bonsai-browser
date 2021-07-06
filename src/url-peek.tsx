@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import { ipcRenderer } from 'electron';
 import { makeAutoObservable } from 'mobx';
 
-const UrlPeakFull = styled.div`
+const UrlPeekFull = styled.div`
   width: calc(100% - 10px);
   height: 100vh;
   display: flex;
@@ -25,25 +25,25 @@ const UrlText = styled.div`
   border-radius: 0 5px 0 0;
 `;
 
-class PeakStore {
+class PeekStore {
   url = '';
 
   constructor() {
     makeAutoObservable(this);
-    ipcRenderer.on('peak-url-updated', (_, url) => {
+    ipcRenderer.on('peek-url-updated', (_, url) => {
       this.url = url;
     });
   }
 }
 
-const peakStore = new PeakStore();
+const peekStore = new PeekStore();
 
-const UrlPeak = observer(() => {
+const UrlPeek = observer(() => {
   return (
-    <UrlPeakFull>
-      <UrlText>{peakStore.url}</UrlText>
-    </UrlPeakFull>
+    <UrlPeekFull>
+      <UrlText>{peekStore.url}</UrlText>
+    </UrlPeekFull>
   );
 });
 
-export default UrlPeak;
+export default UrlPeek;
