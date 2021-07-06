@@ -11,14 +11,7 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 import path from 'path';
-import {
-  app,
-  BrowserWindow,
-  BrowserView,
-  shell,
-  ipcMain,
-  WebContents,
-} from 'electron';
+import { app, BrowserWindow, BrowserView, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
@@ -38,15 +31,15 @@ export default class AppUpdater {
 
 let mainWindow: BrowserWindow | null = null;
 
-let debugWindow: BrowserWindow | null = null;
+// let debugWindow: BrowserWindow | null = null;
 
-function hookDebugWindow(infoDebugger: WebContents) {
-  ipcMain.on('meta-info', (_, data) => {
-    // console.log(data);
-    // debugWindow.event.reply('meta-info', data);
-    infoDebugger.send('meta-info', data);
-  });
-}
+// function hookDebugWindow(infoDebugger: WebContents) {
+//   ipcMain.on('meta-info', (_, data) => {
+//     // console.log(data);
+//     // debugWindow.event.reply('meta-info', data);
+//     infoDebugger.send('meta-info', data);
+//   });
+// }
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -75,9 +68,23 @@ const installExtensions = async () => {
 
 const tabViews: Record<number, TabView> = {};
 
+export const windowHasView = (
+  window: BrowserWindow,
+  view: BrowserView
+): boolean => {
+  const views = window.getBrowserViews();
+  for (let i = 0; i < views.length; i += 1) {
+    if (views[i] === view) {
+      return true;
+    }
+  }
+  return false;
+};
+
 const setTab = (
   window: BrowserWindow,
   titleBarView: BrowserView,
+  urlPeakView: BrowserView,
   id: number,
   oldId: number
 ) => {
@@ -100,6 +107,9 @@ const setTab = (
 
   window.addBrowserView(tabView.view);
   window.setTopBrowserView(titleBarView);
+  if (windowHasView(window, urlPeakView)) {
+    window.setTopBrowserView(urlPeakView);
+  }
   tabView.resize();
 };
 
@@ -129,9 +139,13 @@ const updateWebContents = (
   ]);
 };
 
-function addListeners(window: BrowserWindow, titleBarView: BrowserView) {
+function addListeners(
+  window: BrowserWindow,
+  titleBarView: BrowserView,
+  urlPeakView: BrowserView
+) {
   ipcMain.on('create-new-tab', (_, id) => {
-    const tabView = new TabView(window, id, titleBarView);
+    const tabView = new TabView(window, id, titleBarView, urlPeakView);
     tabViews[id] = tabView;
   });
   ipcMain.on('remove-tab', (event, id) => {
@@ -146,7 +160,7 @@ function addListeners(window: BrowserWindow, titleBarView: BrowserView) {
     event.reply('tab-removed', id);
   });
   ipcMain.on('set-tab', (_, [id, oldId]) => {
-    setTab(window, titleBarView, id, oldId);
+    setTab(window, titleBarView, urlPeakView, id, oldId);
   });
   ipcMain.on('load-url-in-tab', (event, [id, url]) => {
     if (id === -1 || url === '') {
@@ -214,16 +228,16 @@ const createWindow = async () => {
     return path.join(RESOURCES_PATH, ...paths);
   };
 
-  debugWindow = new BrowserWindow({
-    width: startWindowWidth,
-    height: startWindowHeight,
-    minWidth: 500,
-    minHeight: headerHeight,
-    icon: getAssetPath('icon.png'),
-    webPreferences: {
-      nodeIntegration: true,
-    },
-  });
+  // debugWindow = new BrowserWindow({
+  //   width: startWindowWidth,
+  //   height: startWindowHeight,
+  //   minWidth: 500,
+  //   minHeight: headerHeight,
+  //   icon: getAssetPath('icon.png'),
+  //   webPreferences: {
+  //     nodeIntegration: true,
+  //   },
+  // });
 
   if (process.platform === 'darwin') {
     mainWindow = new BrowserWindow({
@@ -253,19 +267,19 @@ const createWindow = async () => {
     });
   }
 
-  debugWindow.loadURL(`file://${__dirname}/index-debug.html`);
+  // debugWindow.loadURL(`file://${__dirname}/index-debug.html`);
 
-  hookDebugWindow(debugWindow.webContents);
+  // hookDebugWindow(debugWindow.webContents);
 
   // open window before loading is complete
   if (process.env.START_MINIMIZED) {
     mainWindow.minimize();
-    debugWindow.minimize();
+    // debugWindow.minimize();
   } else {
     mainWindow.show();
     mainWindow.focus();
 
-    debugWindow.show();
+    // debugWindow.show();
   }
 
   const titleBarView = new BrowserView({
@@ -284,7 +298,23 @@ const createWindow = async () => {
 
   titleBarView.webContents.loadURL(`file://${__dirname}/index.html`);
 
-  addListeners(mainWindow, titleBarView);
+  const urlPeakWidth = 300;
+  const urlPeakHeight = 20;
+  const urlPeakView = new BrowserView({
+    webPreferences: {
+      nodeIntegration: true,
+    },
+  });
+  urlPeakView.setBounds({
+    x: 0,
+    y: startWindowHeight - urlPeakHeight,
+    width: urlPeakWidth,
+    height: urlPeakHeight,
+  });
+
+  urlPeakView.webContents.loadURL(`file://${__dirname}/url-peak.html`);
+
+  addListeners(mainWindow, titleBarView, urlPeakView);
 
   mainWindow.on('resize', () => {
     if (mainWindow) {
@@ -295,13 +325,19 @@ const createWindow = async () => {
         width: windowSize[0],
         height: headerHeight,
       });
+      urlPeakView.setBounds({
+        x: 0,
+        y: windowSize[1] - urlPeakHeight,
+        width: urlPeakWidth,
+        height: urlPeakHeight,
+      });
     }
   });
 
   if (!app.isPackaged) {
-    titleBarView.webContents.openDevTools({
-      mode: 'detach',
-    });
+    // titleBarView.webContents.openDevTools({
+    //   mode: 'detach',
+    // });
   }
 
   // used to wait until it is loaded before showing

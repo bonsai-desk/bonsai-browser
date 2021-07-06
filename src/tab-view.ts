@@ -1,5 +1,6 @@
 import { BrowserView, BrowserWindow } from 'electron';
 import path from 'path';
+import { windowHasView } from './main.dev';
 
 export const startWindowWidth = 1024;
 export const startWindowHeight = 728;
@@ -10,7 +11,12 @@ class TabView {
 
   view: BrowserView;
 
-  constructor(window: BrowserWindow, id: number, titleBarView: BrowserView) {
+  constructor(
+    window: BrowserWindow,
+    id: number,
+    titleBarView: BrowserView,
+    urlPeakView: BrowserView
+  ) {
     if (!window) {
       throw new Error('"window" is not defined');
     }
@@ -59,9 +65,20 @@ class TabView {
       }
     });
 
-    // this.view.webContents.on('update-target-url', (_, url) => {
-    //   // console.log(url);
-    // });
+    this.view.webContents.on('update-target-url', (_, url) => {
+      if (url === '') {
+        if (windowHasView(window, urlPeakView)) {
+          window.removeBrowserView(urlPeakView);
+        }
+      }
+      if (url !== '') {
+        if (!windowHasView(window, urlPeakView)) {
+          window.addBrowserView(urlPeakView);
+          window.setTopBrowserView(urlPeakView);
+        }
+        urlPeakView.webContents.send('peak-url-updated', url);
+      }
+    });
 
     window.addBrowserView(this.view);
   }
