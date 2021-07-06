@@ -179,18 +179,6 @@ const TitleBar = observer(() => {
         >
           <RoundButtonIcon src={refreshIcon} />
         </RoundButton>
-        <RoundButton
-          color="#949494"
-          onClick={() => {
-            tabStore.setActiveTabSearchBar('https://arxiv.org/abs/2107.00014');
-            ipcRenderer.send('load-url-in-tab', [
-              tabStore.activeTabId,
-              tabStore.getActiveTabSearchBar(),
-            ]);
-          }}
-        >
-          av
-        </RoundButton>
         <URLBox
           type="text"
           ref={urlBoxRef}

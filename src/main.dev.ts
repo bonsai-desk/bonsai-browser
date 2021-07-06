@@ -154,6 +154,9 @@ function addListeners(
       throw new Error(`remove-tab: tab with id ${id} does not exist`);
     }
     window.removeBrowserView(tabView.view);
+    if (windowHasView(window, urlPeekView)) {
+      window.removeBrowserView(urlPeekView);
+    }
     // eslint-disable-line @typescript-eslint/no-explicit-any
     (tabView.view.webContents as any).destroy();
     delete tabViews[id];
@@ -298,7 +301,7 @@ const createWindow = async () => {
 
   titleBarView.webContents.loadURL(`file://${__dirname}/index.html`);
 
-  const urlPeekWidth = 300;
+  const urlPeekWidth = 475;
   const urlPeekHeight = 20;
   const urlPeekView = new BrowserView({
     webPreferences: {
