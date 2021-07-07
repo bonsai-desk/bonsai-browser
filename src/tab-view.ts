@@ -85,6 +85,13 @@ class TabView {
       }
     });
 
+    this.view.webContents.on('found-in-page', (_, result) => {
+      findView.webContents.send('find-results', [
+        result.activeMatchOrdinal,
+        result.matches,
+      ]);
+    });
+
     window.addBrowserView(this.view);
   }
 

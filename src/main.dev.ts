@@ -91,12 +91,16 @@ export const windowHasView = (
   return false;
 };
 
+let findText = '';
+let lastFindTextSearch = '';
+
 function closeFind(window: BrowserWindow, findView: BrowserView) {
   if (windowHasView(window, findView)) {
     window.removeBrowserView(findView);
     const tabView = tabViews[activeTabId];
     if (typeof tabView !== 'undefined') {
       tabView.view.webContents.stopFindInPage('clearSelection');
+      lastFindTextSearch = '';
     }
   }
 }
@@ -163,19 +167,24 @@ const updateWebContents = (
   ]);
 };
 
-let findText = '';
-
-function handleFindText(tabView: BrowserView) {
+function handleFindText(tabView: BrowserView, searchBack?: boolean) {
   if (tabView === null) {
+    lastFindTextSearch = '';
     return;
   }
   if (findText === '') {
     // stop finding if find text is empty
     tabView.webContents.stopFindInPage('clearSelection');
+    lastFindTextSearch = '';
   } else {
-    // console.log(findText);
-    tabView.webContents.findInPage(findText);
+    const shouldSearchBack = typeof searchBack !== 'undefined' && searchBack;
+    const sameAsLastSearch = findText === lastFindTextSearch;
+    tabView.webContents.findInPage(findText, {
+      forward: !shouldSearchBack,
+      findNext: !sameAsLastSearch,
+    });
   }
+  lastFindTextSearch = findText;
 }
 
 function addListeners(
@@ -270,6 +279,18 @@ function addListeners(
   });
   ipcMain.on('find-text-change', (_, boxText) => {
     findText = boxText;
+    const tabView = tabViews[activeTabId];
+    if (typeof tabView !== 'undefined') {
+      handleFindText(tabView.view);
+    }
+  });
+  ipcMain.on('find-previous', () => {
+    const tabView = tabViews[activeTabId];
+    if (typeof tabView !== 'undefined') {
+      handleFindText(tabView.view, true);
+    }
+  });
+  ipcMain.on('find-next', () => {
     const tabView = tabViews[activeTabId];
     if (typeof tabView !== 'undefined') {
       handleFindText(tabView.view);
@@ -379,7 +400,7 @@ const createWindow = async () => {
 
   urlPeekView.webContents.loadURL(`file://${__dirname}/url-peek.html`);
 
-  const findViewWidth = 300;
+  const findViewWidth = 350;
   const findViewHeight = 50;
   const findViewMarginRight = 20;
   const findView = new BrowserView({

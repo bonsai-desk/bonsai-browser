@@ -4,6 +4,7 @@ import styled, { createGlobalStyle, css } from 'styled-components';
 import arrowIcon from '../assets/chevron-right-arrow.svg';
 import xIcon from '../assets/x-letter-black.svg';
 import { ipcRenderer } from 'electron';
+import { makeAutoObservable } from 'mobx';
 
 const GlobalStyle = createGlobalStyle`
   html,
@@ -37,13 +38,12 @@ const FindBox = styled.div`
 
 const SearchBox = styled.input`
   height: 70%;
-  width: 150px;
+  width: 10px;
   padding-left: 15px;
-  padding-right: 15px;
-  flex-shrink: 0;
+  padding-right: 10px;
   border: none;
-  border-right: 1px solid lightgrey;
   outline: none;
+  flex-grow: 1;
 `;
 
 interface ButtonRotation {
@@ -82,6 +82,32 @@ const UpIcon = styled.img`
     `}
 `;
 
+const Results = styled.div`
+  height: 30px;
+  line-height: 30px;
+  border-right: 1px solid lightgrey;
+  padding-right: 15px;
+  text-align: center;
+  font-size: 14px;
+  color: grey;
+`;
+
+class FindStore {
+  current = 0;
+
+  numResults = 0;
+
+  constructor() {
+    makeAutoObservable(this);
+    ipcRenderer.on('find-results', (_, [current, numResults]) => {
+      this.current = current;
+      this.numResults = numResults;
+    });
+  }
+}
+
+const findStore = new FindStore();
+
 const Find = observer(() => {
   const textBoxRef = useRef<HTMLInputElement>(null);
 
@@ -114,10 +140,25 @@ const Find = observer(() => {
               ipcRenderer.send('find-text-change', e.currentTarget.value);
             }}
           />
-          <IconButton rotation="-90">
+          <Results>
+            {boxText === ''
+              ? ''
+              : `${findStore.current}/${findStore.numResults}`}
+          </Results>
+          <IconButton
+            rotation="-90"
+            onClick={() => {
+              ipcRenderer.send('find-previous');
+            }}
+          >
             <UpIcon src={arrowIcon} extraCSS="" />
           </IconButton>
-          <IconButton rotation="90">
+          <IconButton
+            rotation="90"
+            onClick={() => {
+              ipcRenderer.send('find-next');
+            }}
+          >
             <UpIcon src={arrowIcon} extraCSS="" />
           </IconButton>
           <IconButton
