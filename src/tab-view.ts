@@ -1,5 +1,6 @@
 import { BrowserView, BrowserWindow } from 'electron';
 import path from 'path';
+// eslint-disable-next-line import/no-cycle
 import { windowHasView } from './main.dev';
 
 export const startWindowWidth = 1024;
@@ -15,7 +16,8 @@ class TabView {
     window: BrowserWindow,
     id: number,
     titleBarView: BrowserView,
-    urlPeekView: BrowserView
+    urlPeekView: BrowserView,
+    findView: BrowserView
   ) {
     if (!window) {
       throw new Error('"window" is not defined');
@@ -49,6 +51,9 @@ class TabView {
     };
 
     this.view.webContents.on('did-navigate', () => {
+      if (windowHasView(window, findView)) {
+        window.removeBrowserView(findView);
+      }
       updateContents();
     });
     this.view.webContents.on('did-frame-navigate', () => {

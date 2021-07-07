@@ -23,6 +23,7 @@ import {
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
+// eslint-disable-next-line import/no-cycle
 import TabView, {
   startWindowWidth,
   startWindowHeight,
@@ -90,10 +91,21 @@ export const windowHasView = (
   return false;
 };
 
+function closeFind(window: BrowserWindow, findView: BrowserView) {
+  if (windowHasView(window, findView)) {
+    window.removeBrowserView(findView);
+    const tabView = tabViews[activeTabId];
+    if (typeof tabView !== 'undefined') {
+      tabView.view.webContents.stopFindInPage('clearSelection');
+    }
+  }
+}
+
 const setTab = (
   window: BrowserWindow,
   titleBarView: BrowserView,
   urlPeekView: BrowserView,
+  findView: BrowserView,
   id: number,
   oldId: number
 ) => {
@@ -118,6 +130,7 @@ const setTab = (
   window.addBrowserView(tabView.view);
   activeTabId = id;
   window.setTopBrowserView(titleBarView);
+  closeFind(window, findView);
   if (windowHasView(window, urlPeekView)) {
     window.setTopBrowserView(urlPeekView);
   }
@@ -150,13 +163,35 @@ const updateWebContents = (
   ]);
 };
 
+let findText = '';
+
+function handleFindText(tabView: BrowserView) {
+  if (tabView === null) {
+    return;
+  }
+  if (findText === '') {
+    // stop finding if find text is empty
+    tabView.webContents.stopFindInPage('clearSelection');
+  } else {
+    // console.log(findText);
+    tabView.webContents.findInPage(findText);
+  }
+}
+
 function addListeners(
   window: BrowserWindow,
   titleBarView: BrowserView,
-  urlPeekView: BrowserView
+  urlPeekView: BrowserView,
+  findView: BrowserView
 ) {
   ipcMain.on('create-new-tab', (_, id) => {
-    const tabView = new TabView(window, id, titleBarView, urlPeekView);
+    const tabView = new TabView(
+      window,
+      id,
+      titleBarView,
+      urlPeekView,
+      findView
+    );
     tabViews[id] = tabView;
   });
   ipcMain.on('remove-tab', (event, id) => {
@@ -166,6 +201,7 @@ function addListeners(
     }
     window.removeBrowserView(tabView.view);
     activeTabId = -1;
+    closeFind(window, findView);
     if (windowHasView(window, urlPeekView)) {
       window.removeBrowserView(urlPeekView);
     }
@@ -175,7 +211,7 @@ function addListeners(
     event.reply('tab-removed', id);
   });
   ipcMain.on('set-tab', (_, [id, oldId]) => {
-    setTab(window, titleBarView, urlPeekView, id, oldId);
+    setTab(window, titleBarView, urlPeekView, findView, id, oldId);
   });
   ipcMain.on('load-url-in-tab', (event, [id, url]) => {
     if (id === -1 || url === '') {
@@ -206,24 +242,38 @@ function addListeners(
         console.log(`error loading url: ${fullUrl}`);
       });
       const newUrl = tabView.view.webContents.getURL();
+      closeFind(window, findView);
       event.reply('url-changed', [id, newUrl]);
       updateWebContents(event, id, tabView);
     })();
   });
   ipcMain.on('tab-back', (event, id) => {
     if (tabViews[id].view.webContents.canGoBack()) {
+      closeFind(window, findView);
       tabViews[id].view.webContents.goBack();
     }
     updateWebContents(event, id, tabViews[id]);
   });
   ipcMain.on('tab-forward', (event, id) => {
     if (tabViews[id].view.webContents.canGoForward()) {
+      closeFind(window, findView);
       tabViews[id].view.webContents.goForward();
     }
     updateWebContents(event, id, tabViews[id]);
   });
   ipcMain.on('tab-refresh', (_, id) => {
+    closeFind(window, findView);
     tabViews[id].view.webContents.reload();
+  });
+  ipcMain.on('close-find', () => {
+    closeFind(window, findView);
+  });
+  ipcMain.on('find-text-change', (_, boxText) => {
+    findText = boxText;
+    const tabView = tabViews[activeTabId];
+    if (typeof tabView !== 'undefined') {
+      handleFindText(tabView.view);
+    }
   });
 }
 
@@ -329,7 +379,28 @@ const createWindow = async () => {
 
   urlPeekView.webContents.loadURL(`file://${__dirname}/url-peek.html`);
 
-  addListeners(mainWindow, titleBarView, urlPeekView);
+  const findViewWidth = 300;
+  const findViewHeight = 50;
+  const findViewMarginRight = 20;
+  const findView = new BrowserView({
+    webPreferences: {
+      nodeIntegration: true,
+    },
+  });
+  // findView does not show up from Ctrl+F unless you do this for some reason
+  mainWindow.addBrowserView(findView);
+  mainWindow.setTopBrowserView(findView);
+  mainWindow.removeBrowserView(findView);
+  findView.setBounds({
+    x: startWindowWidth - findViewWidth - findViewMarginRight,
+    y: headerHeight,
+    width: findViewWidth,
+    height: findViewHeight,
+  });
+
+  findView.webContents.loadURL(`file://${__dirname}/find.html`);
+
+  addListeners(mainWindow, titleBarView, urlPeekView, findView);
 
   mainWindow.on('resize', () => {
     if (mainWindow) {
@@ -346,29 +417,20 @@ const createWindow = async () => {
         width: urlPeekWidth,
         height: urlPeekHeight,
       });
+      findView.setBounds({
+        x: windowSize[0] - findViewWidth - findViewMarginRight,
+        y: headerHeight,
+        width: findViewWidth,
+        height: findViewHeight,
+      });
     }
   });
 
-  // globalShortcut.register('CommandOrControl+F', () => {
-  //   // tabStoreStatic.activeTabId;
-  //   // console.log(tabStore.activeTabId);
-  //   // tabViews[]
-  // });
-
-  // Mousetrap.bind('4', () => {
-  //   console.log('4');
-  // });
-
-  // titleBarView.webContents.on('before-input-event', (_, input) => {
-  //   console.log(input.key.toLowerCase());
-  //   // if (input.control && input.key.toLowerCase() === 'f') {
-  //   //   console.log('Pressed Control+F');
-  //   //   event.preventDefault();
-  //   // }
-  // });
-
   if (!app.isPackaged) {
     // titleBarView.webContents.openDevTools({
+    //   mode: 'detach',
+    // });
+    // findView.webContents.openDevTools({
     //   mode: 'detach',
     // });
   }
@@ -415,7 +477,31 @@ const createWindow = async () => {
           label: 'find',
           accelerator: 'CmdOrCtrl+F',
           click: () => {
-            tabViews[activeTabId].view.webContents.findInPage('e');
+            if (mainWindow !== null && !windowHasView(mainWindow, findView)) {
+              mainWindow.addBrowserView(findView);
+              mainWindow.setTopBrowserView(findView);
+            }
+
+            const tabView = tabViews[activeTabId];
+            if (typeof tabView !== 'undefined') {
+              findView.webContents.focus();
+              findView.webContents.send('open-find');
+              handleFindText(tabView.view);
+            }
+          },
+        },
+        {
+          label: 'stop-find',
+          accelerator: 'Escape',
+          click: () => {
+            if (mainWindow !== null) {
+              closeFind(mainWindow, findView);
+            }
+
+            const tabView = tabViews[activeTabId];
+            if (typeof tabView !== 'undefined') {
+              // tabView.view.webContents.findInPage('e');
+            }
           },
         },
       ],

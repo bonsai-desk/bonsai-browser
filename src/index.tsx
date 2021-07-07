@@ -3,6 +3,7 @@ import { render } from 'react-dom';
 import App from './App';
 import DebugApp from './DebugApp';
 import UrlPeek from './url-peek';
+import Find from './find';
 import { Provider, rootStore, tabStore } from './data';
 import './index.css';
 
@@ -21,4 +22,8 @@ if (document.getElementById('app')) {
 
 if (document.getElementById('url-peek')) {
   render(<UrlPeek />, document.getElementById('url-peek'));
+}
+
+if (document.getElementById('find')) {
+  render(<Find />, document.getElementById('find'));
 }
