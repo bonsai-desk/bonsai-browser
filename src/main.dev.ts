@@ -19,6 +19,8 @@ import {
   ipcMain,
   Menu,
   MenuItem,
+  Tray,
+  globalShortcut,
 } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
@@ -298,6 +300,46 @@ function addListeners(
   });
 }
 
+const RESOURCES_PATH = app.isPackaged
+  ? path.join(process.resourcesPath, 'assets')
+  : path.join(__dirname, '../assets');
+
+const getAssetPath = (...paths: string[]): string => {
+  return path.join(RESOURCES_PATH, ...paths);
+};
+
+function createTray() {
+  const appIcon = new Tray(getAssetPath('icon.ico'));
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Open',
+      click() {
+        mainWindow?.show();
+      },
+    },
+    {
+      label: 'Close',
+      click() {
+        mainWindow?.hide();
+      },
+    },
+    {
+      label: 'Exit',
+      click() {
+        // app.isQuiting = true;
+        app.quit();
+      },
+    },
+  ]);
+
+  appIcon.on('double-click', () => {
+    mainWindow?.show();
+  });
+  appIcon.setToolTip('Bonsai Browser');
+  appIcon.setContextMenu(contextMenu);
+  return appIcon;
+}
+
 const createWindow = async () => {
   if (
     process.env.NODE_ENV === 'development' ||
@@ -305,14 +347,6 @@ const createWindow = async () => {
   ) {
     await installExtensions();
   }
-
-  const RESOURCES_PATH = app.isPackaged
-    ? path.join(process.resourcesPath, 'assets')
-    : path.join(__dirname, '../assets');
-
-  const getAssetPath = (...paths: string[]): string => {
-    return path.join(RESOURCES_PATH, ...paths);
-  };
 
   // debugWindow = new BrowserWindow({
   //   width: startWindowWidth,
@@ -463,15 +497,37 @@ const createWindow = async () => {
   //   if (!mainWindow) {
   //     throw new Error('"mainWindow" is not defined');
   //   }
-  //   // if (process.env.START_MINIMIZED) {
-  //   //   mainWindow.minimize();
-  //   // } else {
-  //   //   mainWindow.show();
-  //   //   mainWindow.focus();
-  //   // }
   // });
 
+  mainWindow.on('minimize', (e: Event) => {
+    if (mainWindow !== null) {
+      e.preventDefault();
+      mainWindow.hide();
+    }
+  });
+
+  let tray: Tray;
+  app
+    .whenReady()
+    .then(() => {
+      tray = createTray();
+
+      mainWindow?.setKiosk(true);
+
+      globalShortcut.register('Alt+G', () => {
+        if (mainWindow?.isVisible()) {
+          mainWindow?.hide();
+        } else {
+          mainWindow?.show();
+        }
+      });
+
+      return null;
+    })
+    .catch(console.log);
+
   mainWindow.on('closed', () => {
+    tray.destroy();
     mainWindow = null;
   });
 
@@ -525,6 +581,13 @@ const createWindow = async () => {
             }
           },
         },
+        // {
+        //   label: 'test',
+        //   accelerator: 'CmdOrCtrl+T',
+        //   click: () => {
+        //     createTray();
+        //   },
+        // },
       ],
     })
   );
