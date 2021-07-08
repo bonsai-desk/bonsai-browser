@@ -37,6 +37,7 @@
       "node_modules/",
       "index.html",
       "index-debug.html",
+      "*.html",
       "main.prod.js",
       "main.prod.js.map",
       "package.json",
