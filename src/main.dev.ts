@@ -362,9 +362,7 @@ const createWindow = async () => {
   const displays = screen.getAllDisplays();
   if (displays.length > 0) {
     const display = displays[0];
-    browserPadding = display.workAreaSize.height / 15.0;
-    // startWindowWidth = display.workAreaSize.width;
-    // startWindowHeight = display.workAreaSize.height;
+    browserPadding = Math.floor(display.workAreaSize.height / 15.0);
   }
 
   mainWindow = new BrowserWindow({
