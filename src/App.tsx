@@ -16,7 +16,7 @@ const TitleBarFull = styled.div`
 `;
 
 const TitleBarTop = styled.div`
-  -webkit-app-region: drag;
+  //-webkit-app-region: drag;
   -webkit-user-select: none;
   width: calc(100% - 16px);
   height: 32px;

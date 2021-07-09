@@ -3,8 +3,6 @@ import path from 'path';
 // eslint-disable-next-line import/no-cycle
 import { windowHasView } from './main.dev';
 
-export const startWindowWidth = 1024;
-export const startWindowHeight = 728;
 export const headerHeight = 79;
 
 class TabView {

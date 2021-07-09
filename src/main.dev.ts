@@ -27,11 +27,7 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 // eslint-disable-next-line import/no-cycle
-import TabView, {
-  startWindowWidth,
-  startWindowHeight,
-  headerHeight,
-} from './tab-view';
+import TabView, { headerHeight } from './tab-view';
 
 export default class AppUpdater {
   constructor() {
@@ -362,14 +358,23 @@ const createWindow = async () => {
   //   },
   // });
 
+  let browserPadding = 35.0;
+  const displays = screen.getAllDisplays();
+  if (displays.length > 0) {
+    const display = displays[0];
+    browserPadding = display.workAreaSize.height / 15.0;
+    // startWindowWidth = display.workAreaSize.width;
+    // startWindowHeight = display.workAreaSize.height;
+  }
+
   mainWindow = new BrowserWindow({
     frame: false,
     transparent: true,
-    titleBarStyle: 'hidden',
-    width: startWindowWidth,
-    height: startWindowHeight,
+    width: 1000,
+    height: 1000,
     minWidth: 500,
     minHeight: 500,
+    titleBarStyle: 'hidden',
     icon: getAssetPath('icon.png'),
     webPreferences: {
       nodeIntegration: true,
@@ -429,13 +434,6 @@ const createWindow = async () => {
 
   findView.webContents.loadURL(`file://${__dirname}/find.html`);
 
-  let browserPadding = 0;
-  const displays = screen.getAllDisplays();
-  if (displays.length > 0) {
-    const display = displays[0];
-    browserPadding = display.size.height / 20.0;
-  }
-
   addListeners(mainWindow, titleBarView, urlPeekView, findView, browserPadding);
 
   if (!app.isPackaged) {
@@ -466,6 +464,10 @@ const createWindow = async () => {
   const resize = () => {
     if (mainWindow) {
       const windowSize = mainWindow.getSize();
+      console.log(windowSize);
+      console.log(browserPadding);
+      console.log(headerHeight);
+      console.log(titleBarView);
       titleBarView.setBounds({
         x: browserPadding,
         y: browserPadding,
@@ -492,7 +494,8 @@ const createWindow = async () => {
 
   const tray = createTray();
 
-  // mainWindow?.setKiosk(true);
+  mainWindow?.setResizable(false);
+  mainWindow?.setKiosk(true);
 
   globalShortcut.register('CmdOrCtrl+\\', () => {
     if (mainWindow?.isVisible()) {

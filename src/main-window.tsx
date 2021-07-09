@@ -9,7 +9,7 @@ const GlobalStyle = createGlobalStyle`
     padding: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0.25, 0.25, 0.25, 0.35);
   }
 `;
 
