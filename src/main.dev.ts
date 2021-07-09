@@ -382,6 +382,8 @@ const createWindow = async () => {
 
   mainWindow.webContents.loadURL(`file://${__dirname}/main-window.html`);
 
+  let windowFloating = false;
+
   // debugWindow.loadURL(`file://${__dirname}/index-debug.html`);
 
   // hookDebugWindow(debugWindow.webContents);
@@ -461,26 +463,24 @@ const createWindow = async () => {
 
   const resize = () => {
     if (mainWindow) {
+      const padding = windowFloating ? 0 : browserPadding;
+      const hh = windowFloating ? 0 : headerHeight;
       const windowSize = mainWindow.getSize();
-      console.log(windowSize);
-      console.log(browserPadding);
-      console.log(headerHeight);
-      console.log(titleBarView);
       titleBarView.setBounds({
-        x: browserPadding,
-        y: browserPadding,
-        width: windowSize[0] - browserPadding * 2,
-        height: headerHeight,
+        x: padding,
+        y: padding,
+        width: windowSize[0] - padding * 2,
+        height: hh,
       });
       urlPeekView.setBounds({
-        x: browserPadding,
-        y: windowSize[1] - urlPeekHeight + browserPadding,
+        x: padding,
+        y: windowSize[1] - urlPeekHeight - padding,
         width: urlPeekWidth,
         height: urlPeekHeight,
       });
       findView.setBounds({
-        x: windowSize[0] - findViewWidth - findViewMarginRight - browserPadding,
-        y: headerHeight + browserPadding,
+        x: windowSize[0] - findViewWidth - findViewMarginRight - padding,
+        y: hh + padding,
         width: findViewWidth,
         height: findViewHeight,
       });
@@ -551,20 +551,29 @@ const createWindow = async () => {
             if (mainWindow !== null) {
               closeFind(mainWindow, findView);
             }
-
-            const tabView = tabViews[activeTabId];
-            if (typeof tabView !== 'undefined') {
-              // tabView.view.webContents.findInPage('e');
+          },
+        },
+        {
+          label: 'Float',
+          accelerator: 'CmdOrCtrl+M',
+          click: () => {
+            if (mainWindow?.isVisible()) {
+              windowFloating = !windowFloating;
+              Object.values(tabViews).forEach((tabView) => {
+                tabView.windowFloating = windowFloating;
+                tabView.resize();
+              });
+              if (windowHasView(mainWindow, titleBarView) && windowFloating) {
+                mainWindow?.removeBrowserView(titleBarView);
+              }
+              if (!windowHasView(mainWindow, titleBarView) && !windowFloating) {
+                mainWindow?.addBrowserView(titleBarView);
+                mainWindow?.setTopBrowserView(titleBarView);
+              }
+              resize();
             }
           },
         },
-        // {
-        //   label: 'test',
-        //   accelerator: 'CmdOrCtrl+T',
-        //   click: () => {
-        //     createTray();
-        //   },
-        // },
       ],
     })
   );

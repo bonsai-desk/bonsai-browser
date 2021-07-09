@@ -12,6 +12,8 @@ class TabView {
 
   browserPadding: number;
 
+  windowFloating = false;
+
   constructor(
     window: BrowserWindow,
     id: number,
@@ -99,12 +101,13 @@ class TabView {
 
   resize() {
     const windowSize = this.window.getSize();
+    const padding = this.windowFloating ? 0 : this.browserPadding;
+    const hh = this.windowFloating ? 0 : headerHeight;
     this.view.setBounds({
-      x: this.browserPadding,
-      y: headerHeight + this.browserPadding,
-      width: windowSize[0] - this.browserPadding * 2,
-      height:
-        Math.max(windowSize[1] - headerHeight, 0) - this.browserPadding * 2,
+      x: padding,
+      y: hh + padding,
+      width: windowSize[0] - padding * 2,
+      height: Math.max(windowSize[1] - hh, 0) - padding * 2,
     });
   }
 }
