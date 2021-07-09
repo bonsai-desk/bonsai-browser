@@ -536,7 +536,7 @@ const createWindow = async () => {
 
     if (windowFloating && !moving && mainWindow !== null) {
       const bounds = mainWindow.getBounds();
-      bounds.x -= Math.floor(deltaTime * 800);
+      bounds.x -= Math.floor(deltaTime * 1600);
       if (bounds.x < 25) {
         bounds.x = 25;
       }
@@ -548,7 +548,8 @@ const createWindow = async () => {
   const tray = createTray();
 
   mainWindow?.setResizable(false);
-  mainWindow?.setKiosk(true);
+  // mainWindow?.setKiosk(true);
+  mainWindow?.setFullScreen(true);
 
   globalShortcut.register('CmdOrCtrl+\\', () => {
     if (mainWindow?.isVisible()) {
@@ -623,7 +624,6 @@ const createWindow = async () => {
               windowFloating = !windowFloating;
 
               if (windowFloating) {
-                // mainWindow?.setAlwaysOnTop(true);
                 if (!windowHasView(mainWindow, overlayView)) {
                   mainWindow?.addBrowserView(overlayView);
                   mainWindow?.setTopBrowserView(overlayView);
@@ -631,15 +631,17 @@ const createWindow = async () => {
                 if (windowHasView(mainWindow, titleBarView)) {
                   mainWindow?.removeBrowserView(titleBarView);
                 }
-                mainWindow?.setKiosk(false);
+                // mainWindow?.setKiosk(false);
+                mainWindow?.setFullScreen(false);
                 mainWindow?.setBounds({
                   x: 100,
                   y: 100,
                   width: 600,
                   height: 400,
                 });
+                mainWindow?.setAlwaysOnTop(true);
               } else {
-                // mainWindow?.setAlwaysOnTop(false);
+                mainWindow?.setAlwaysOnTop(false);
                 if (windowHasView(mainWindow, overlayView)) {
                   mainWindow?.removeBrowserView(overlayView);
                 }
@@ -647,7 +649,8 @@ const createWindow = async () => {
                   mainWindow?.addBrowserView(titleBarView);
                   mainWindow?.setTopBrowserView(titleBarView);
                 }
-                mainWindow?.setKiosk(true);
+                // mainWindow?.setKiosk(true);
+                mainWindow?.setFullScreen(true);
               }
 
               Object.values(tabViews).forEach((tabView) => {
