@@ -21,6 +21,7 @@ import {
   MenuItem,
   Tray,
   globalShortcut,
+  screen,
 } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
@@ -193,7 +194,8 @@ function addListeners(
   window: BrowserWindow,
   titleBarView: BrowserView,
   urlPeekView: BrowserView,
-  findView: BrowserView
+  findView: BrowserView,
+  browserPadding: number
 ) {
   ipcMain.on('create-new-tab', (_, id) => {
     const tabView = new TabView(
@@ -201,7 +203,8 @@ function addListeners(
       id,
       titleBarView,
       urlPeekView,
-      findView
+      findView,
+      browserPadding
     );
     tabViews[id] = tabView;
   });
@@ -359,33 +362,22 @@ const createWindow = async () => {
   //   },
   // });
 
-  if (process.platform === 'darwin') {
-    mainWindow = new BrowserWindow({
-      frame: false,
-      titleBarStyle: 'hidden',
-      width: startWindowWidth,
-      height: startWindowHeight,
-      minWidth: 500,
-      minHeight: headerHeight,
-      icon: getAssetPath('icon.png'),
-      webPreferences: {
-        nodeIntegration: true,
-      },
-    });
-  } else {
-    mainWindow = new BrowserWindow({
-      frame: false,
-      titleBarStyle: 'hidden',
-      width: startWindowWidth,
-      height: startWindowHeight,
-      minWidth: 500,
-      minHeight: headerHeight + 50,
-      icon: getAssetPath('icon.png'),
-      webPreferences: {
-        nodeIntegration: true,
-      },
-    });
-  }
+  mainWindow = new BrowserWindow({
+    frame: false,
+    transparent: true,
+    titleBarStyle: 'hidden',
+    width: startWindowWidth,
+    height: startWindowHeight,
+    minWidth: 500,
+    minHeight: 500,
+    icon: getAssetPath('icon.png'),
+    webPreferences: {
+      nodeIntegration: true,
+      devTools: false,
+    },
+  });
+
+  mainWindow.webContents.loadURL(`file://${__dirname}/main-window.html`);
 
   // debugWindow.loadURL(`file://${__dirname}/index-debug.html`);
 
@@ -409,12 +401,6 @@ const createWindow = async () => {
   });
   mainWindow.setBrowserView(titleBarView);
   mainWindow.setTopBrowserView(titleBarView);
-  titleBarView.setBounds({
-    x: 0,
-    y: 0,
-    width: startWindowWidth,
-    height: headerHeight,
-  });
 
   titleBarView.webContents.loadURL(`file://${__dirname}/index.html`);
 
@@ -424,12 +410,6 @@ const createWindow = async () => {
     webPreferences: {
       nodeIntegration: true,
     },
-  });
-  urlPeekView.setBounds({
-    x: 0,
-    y: startWindowHeight - urlPeekHeight,
-    width: urlPeekWidth,
-    height: urlPeekHeight,
   });
 
   urlPeekView.webContents.loadURL(`file://${__dirname}/url-peek.html`);
@@ -446,40 +426,17 @@ const createWindow = async () => {
   mainWindow.addBrowserView(findView);
   mainWindow.setTopBrowserView(findView);
   mainWindow.removeBrowserView(findView);
-  findView.setBounds({
-    x: startWindowWidth - findViewWidth - findViewMarginRight,
-    y: headerHeight,
-    width: findViewWidth,
-    height: findViewHeight,
-  });
 
   findView.webContents.loadURL(`file://${__dirname}/find.html`);
 
-  addListeners(mainWindow, titleBarView, urlPeekView, findView);
+  let browserPadding = 0;
+  const displays = screen.getAllDisplays();
+  if (displays.length > 0) {
+    const display = displays[0];
+    browserPadding = display.size.height / 20.0;
+  }
 
-  mainWindow.on('resize', () => {
-    if (mainWindow) {
-      const windowSize = mainWindow.getSize();
-      titleBarView.setBounds({
-        x: 0,
-        y: 0,
-        width: windowSize[0],
-        height: headerHeight,
-      });
-      urlPeekView.setBounds({
-        x: 0,
-        y: windowSize[1] - urlPeekHeight,
-        width: urlPeekWidth,
-        height: urlPeekHeight,
-      });
-      findView.setBounds({
-        x: windowSize[0] - findViewWidth - findViewMarginRight,
-        y: headerHeight,
-        width: findViewWidth,
-        height: findViewHeight,
-      });
-    }
-  });
+  addListeners(mainWindow, titleBarView, urlPeekView, findView, browserPadding);
 
   if (!app.isPackaged) {
     // titleBarView.webContents.openDevTools({
@@ -506,25 +463,44 @@ const createWindow = async () => {
     }
   });
 
-  let tray: Tray;
-  app
-    .whenReady()
-    .then(() => {
-      tray = createTray();
-
-      mainWindow?.setKiosk(true);
-
-      globalShortcut.register('Alt+G', () => {
-        if (mainWindow?.isVisible()) {
-          mainWindow?.hide();
-        } else {
-          mainWindow?.show();
-        }
+  const resize = () => {
+    if (mainWindow) {
+      const windowSize = mainWindow.getSize();
+      titleBarView.setBounds({
+        x: browserPadding,
+        y: browserPadding,
+        width: windowSize[0] - browserPadding * 2,
+        height: headerHeight,
       });
+      urlPeekView.setBounds({
+        x: browserPadding,
+        y: windowSize[1] - urlPeekHeight + browserPadding,
+        width: urlPeekWidth,
+        height: urlPeekHeight,
+      });
+      findView.setBounds({
+        x: windowSize[0] - findViewWidth - findViewMarginRight - browserPadding,
+        y: headerHeight + browserPadding,
+        width: findViewWidth,
+        height: findViewHeight,
+      });
+    }
+  };
 
-      return null;
-    })
-    .catch(console.log);
+  resize();
+  mainWindow.on('resize', resize);
+
+  const tray = createTray();
+
+  // mainWindow?.setKiosk(true);
+
+  globalShortcut.register('CmdOrCtrl+\\', () => {
+    if (mainWindow?.isVisible()) {
+      mainWindow?.hide();
+    } else {
+      mainWindow?.show();
+    }
+  });
 
   mainWindow.on('closed', () => {
     tray.destroy();

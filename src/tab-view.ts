@@ -12,17 +12,21 @@ class TabView {
 
   view: BrowserView;
 
+  browserPadding: number;
+
   constructor(
     window: BrowserWindow,
     id: number,
     titleBarView: BrowserView,
     urlPeekView: BrowserView,
-    findView: BrowserView
+    findView: BrowserView,
+    browserPadding: number
   ) {
     if (!window) {
       throw new Error('"window" is not defined');
     }
     this.window = window;
+    this.browserPadding = browserPadding;
     this.view = new BrowserView({
       webPreferences: {
         nodeIntegration: false,
@@ -98,10 +102,11 @@ class TabView {
   resize() {
     const windowSize = this.window.getSize();
     this.view.setBounds({
-      x: 0,
-      y: headerHeight,
-      width: windowSize[0],
-      height: Math.max(windowSize[1] - headerHeight, 0),
+      x: this.browserPadding,
+      y: headerHeight + this.browserPadding,
+      width: windowSize[0] - this.browserPadding * 2,
+      height:
+        Math.max(windowSize[1] - headerHeight, 0) - this.browserPadding * 2,
     });
   }
 }

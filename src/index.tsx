@@ -6,6 +6,7 @@ import UrlPeek from './url-peek';
 import Find from './find';
 import { Provider, rootStore, tabStore } from './data';
 import './index.css';
+import MainWindow from './main-window';
 
 if (document.getElementById('root')) {
   render(
@@ -26,4 +27,8 @@ if (document.getElementById('url-peek')) {
 
 if (document.getElementById('find')) {
   render(<Find />, document.getElementById('find'));
+}
+
+if (document.getElementById('main-window')) {
+  render(<MainWindow />, document.getElementById('main-window'));
 }
