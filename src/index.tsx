@@ -7,6 +7,7 @@ import Find from './find';
 import { Provider, rootStore, tabStore } from './data';
 import './index.css';
 import MainWindow from './main-window';
+import Overlay from './overlay';
 
 if (document.getElementById('root')) {
   render(
@@ -31,4 +32,8 @@ if (document.getElementById('find')) {
 
 if (document.getElementById('main-window')) {
   render(<MainWindow />, document.getElementById('main-window'));
+}
+
+if (document.getElementById('overlay')) {
+  render(<Overlay />, document.getElementById('overlay'));
 }

@@ -9,12 +9,12 @@ const GlobalStyle = createGlobalStyle`
     padding: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0.25, 0.25, 0.25, 0.35);
-    //-webkit-app-region: drag;
+    //background-color: rgba(1, 0, 0, 0.5);
+    -webkit-app-region: drag;
   }
 `;
 
-const MainWindow = observer(() => {
+const Overlay = observer(() => {
   return (
     <>
       <GlobalStyle />
@@ -22,4 +22,4 @@ const MainWindow = observer(() => {
   );
 });
 
-export default MainWindow;
+export default Overlay;

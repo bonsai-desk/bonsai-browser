@@ -419,6 +419,14 @@ const createWindow = async () => {
 
   urlPeekView.webContents.loadURL(`file://${__dirname}/url-peek.html`);
 
+  const overlayView = new BrowserView({
+    webPreferences: {
+      nodeIntegration: true,
+    },
+  });
+
+  overlayView.webContents.loadURL(`file://${__dirname}/overlay.html`);
+
   const findViewWidth = 350;
   const findViewHeight = 50;
   const findViewMarginRight = 20;
@@ -484,11 +492,58 @@ const createWindow = async () => {
         width: findViewWidth,
         height: findViewHeight,
       });
+      overlayView.setBounds({
+        x: 0,
+        y: 0,
+        width: windowSize[0],
+        height: windowSize[1],
+      });
     }
   };
 
   resize();
   mainWindow.on('resize', resize);
+
+  let moving = false;
+
+  // mainWindow.on('will-move', () => {
+  //   // moving = true;
+  //   console.log('will-move');
+  // });
+  //
+  // mainWindow.on('move', () => {
+  //   moving = true;
+  //   console.log('move');
+  // });
+  //
+  // mainWindow.on('moved', () => {
+  //   moving = false;
+  //   console.log('has moved');
+  // });
+
+  let startTime: number | null = null;
+  let lastTime = 0;
+  setInterval(() => {
+    const currentTime = new Date().getTime() / 1000.0;
+    if (startTime === null) {
+      startTime = currentTime;
+    }
+    const time = currentTime - startTime;
+    const deltaTime = time - lastTime;
+    lastTime = time;
+
+    // console.log(moving);
+
+    if (windowFloating && !moving && mainWindow !== null) {
+      const bounds = mainWindow.getBounds();
+      bounds.x -= Math.floor(deltaTime * 800);
+      if (bounds.x < 25) {
+        bounds.x = 25;
+      }
+      mainWindow.setBounds(bounds);
+      // console.log(bounds.x);
+    }
+  }, 1);
 
   const tray = createTray();
 
@@ -501,6 +556,10 @@ const createWindow = async () => {
     } else {
       mainWindow?.show();
     }
+  });
+
+  app.on('before-quit', () => {
+    tray.destroy();
   });
 
   mainWindow.on('closed', () => {
@@ -516,6 +575,9 @@ const createWindow = async () => {
     event.preventDefault();
     shell.openExternal(url);
   });
+
+  // mainWindow.setIgnoreMouseEvents(true);
+  // mainWindow.setAlwaysOnTop(true);
 
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line
@@ -559,17 +621,40 @@ const createWindow = async () => {
           click: () => {
             if (mainWindow?.isVisible()) {
               windowFloating = !windowFloating;
+
+              if (windowFloating) {
+                // mainWindow?.setAlwaysOnTop(true);
+                if (!windowHasView(mainWindow, overlayView)) {
+                  mainWindow?.addBrowserView(overlayView);
+                  mainWindow?.setTopBrowserView(overlayView);
+                }
+                if (windowHasView(mainWindow, titleBarView)) {
+                  mainWindow?.removeBrowserView(titleBarView);
+                }
+                mainWindow?.setKiosk(false);
+                mainWindow?.setBounds({
+                  x: 100,
+                  y: 100,
+                  width: 600,
+                  height: 400,
+                });
+              } else {
+                // mainWindow?.setAlwaysOnTop(false);
+                if (windowHasView(mainWindow, overlayView)) {
+                  mainWindow?.removeBrowserView(overlayView);
+                }
+                if (!windowHasView(mainWindow, titleBarView)) {
+                  mainWindow?.addBrowserView(titleBarView);
+                  mainWindow?.setTopBrowserView(titleBarView);
+                }
+                mainWindow?.setKiosk(true);
+              }
+
               Object.values(tabViews).forEach((tabView) => {
                 tabView.windowFloating = windowFloating;
                 tabView.resize();
               });
-              if (windowHasView(mainWindow, titleBarView) && windowFloating) {
-                mainWindow?.removeBrowserView(titleBarView);
-              }
-              if (!windowHasView(mainWindow, titleBarView) && !windowFloating) {
-                mainWindow?.addBrowserView(titleBarView);
-                mainWindow?.setTopBrowserView(titleBarView);
-              }
+
               resize();
             }
           },
