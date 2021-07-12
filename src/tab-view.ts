@@ -1,7 +1,7 @@
 import { BrowserView, BrowserWindow } from 'electron';
 import path from 'path';
 // eslint-disable-next-line import/no-cycle
-import { windowHasView } from './main.dev';
+import { windowHasView } from './utils';
 
 export const headerHeight = 79;
 

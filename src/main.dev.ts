@@ -13,21 +13,28 @@ import 'regenerator-runtime/runtime';
 import path from 'path';
 import {
   app,
-  BrowserWindow,
   BrowserView,
-  shell,
+  BrowserWindow,
+  globalShortcut,
   ipcMain,
   Menu,
   MenuItem,
-  Tray,
-  globalShortcut,
   screen,
+  shell,
 } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
-// eslint-disable-next-line import/no-cycle
-import TabView, { headerHeight } from './tab-view';
+import { headerHeight } from './tab-view';
+import { moveTowards, validURL, windowHasView } from './utils';
+import {
+  createTray,
+  handleFindText,
+  installExtensions,
+  updateWebContents,
+} from './windows';
+import { closeFind, createNewTab, setTab } from './listeners';
+import WindowManager from './window-manager';
 
 export default class AppUpdater {
   constructor() {
@@ -38,16 +45,6 @@ export default class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
-
-// let debugWindow: BrowserWindow | null = null;
-
-// function hookDebugWindow(infoDebugger: WebContents) {
-//   ipcMain.on('meta-info', (_, data) => {
-//     // console.log(data);
-//     // debugWindow.event.reply('meta-info', data);
-//     infoDebugger.send('meta-info', data);
-//   });
-// }
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -61,132 +58,166 @@ if (
   require('electron-debug')();
 }
 
-const installExtensions = async () => {
-  const installer = require('electron-devtools-installer');
-  const forceDownload = !!process.env.UPGRADE_EXTENSIONS;
-  const extensions = ['REACT_DEVELOPER_TOOLS'];
+const RESOURCES_PATH = app.isPackaged
+  ? path.join(process.resourcesPath, 'assets')
+  : path.join(__dirname, '../assets');
 
-  return installer
-    .default(
-      extensions.map((name) => installer[name]),
-      forceDownload
-    )
-    .catch(console.log);
+const getAssetPath = (...paths: string[]): string => {
+  return path.join(RESOURCES_PATH, ...paths);
 };
 
-const tabViews: Record<number, TabView> = {};
-let activeTabId = -1;
+const wm = new WindowManager();
 
-export const windowHasView = (
-  window: BrowserWindow,
-  view: BrowserView
-): boolean => {
-  const views = window.getBrowserViews();
-  for (let i = 0; i < views.length; i += 1) {
-    if (views[i] === view) {
-      return true;
-    }
-  }
-  return false;
-};
-
-let findText = '';
-let lastFindTextSearch = '';
-
-function closeFind(window: BrowserWindow, findView: BrowserView) {
-  if (windowHasView(window, findView)) {
-    window.removeBrowserView(findView);
-    const tabView = tabViews[activeTabId];
-    if (typeof tabView !== 'undefined') {
-      tabView.view.webContents.stopFindInPage('clearSelection');
-      lastFindTextSearch = '';
-    }
-  }
-}
-
-const setTab = (
-  window: BrowserWindow,
-  titleBarView: BrowserView,
-  urlPeekView: BrowserView,
-  findView: BrowserView,
+function removeTab(
   id: number,
-  oldId: number
-) => {
-  if (id === oldId) {
-    return;
-  }
-
-  const oldTabView = tabViews[oldId];
-  if (typeof oldTabView !== 'undefined') {
-    window.removeBrowserView(oldTabView.view);
-    activeTabId = -1;
-  }
-
-  if (id === -1) {
-    return;
-  }
-  const tabView = tabViews[id];
-  if (typeof tabView === 'undefined') {
-    throw new Error(`setTab: tab with id ${id} does not exist`);
-  }
-
-  window.addBrowserView(tabView.view);
-  activeTabId = id;
-  window.setTopBrowserView(titleBarView);
-  closeFind(window, findView);
-  if (windowHasView(window, urlPeekView)) {
-    window.setTopBrowserView(urlPeekView);
-  }
-  tabView.resize();
-};
-
-function validURL(str: string): boolean {
-  const pattern = new RegExp(
-    '^(https?:\\/\\/)?' + // protocol
-    '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
-    '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
-    '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
-    '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
-      '(\\#[-a-z\\d_]*)?$',
-    'i'
-  ); // fragment locator
-  return pattern.test(str);
-}
-
-const updateWebContents = (
+  window: Electron.BrowserWindow,
+  findView: Electron.BrowserView,
+  urlPeekView: Electron.BrowserView,
   event: Electron.IpcMainEvent,
-  id: number,
-  tabView: TabView
-) => {
-  event.reply('web-contents-update', [
-    id,
-    tabView.view.webContents.canGoBack(),
-    tabView.view.webContents.canGoForward(),
-    tabView.view.webContents.getURL(),
-  ]);
-};
-
-function handleFindText(tabView: BrowserView, searchBack?: boolean) {
-  if (tabView === null) {
-    lastFindTextSearch = '';
-    return;
+  windowManager: WindowManager
+) {
+  const tabView = windowManager.allTabViews[id];
+  if (typeof tabView === 'undefined') {
+    throw new Error(`remove-tab: tab with id ${id} does not exist`);
   }
-  if (findText === '') {
-    // stop finding if find text is empty
-    tabView.webContents.stopFindInPage('clearSelection');
-    lastFindTextSearch = '';
-  } else {
-    const shouldSearchBack = typeof searchBack !== 'undefined' && searchBack;
-    const sameAsLastSearch = findText === lastFindTextSearch;
-    tabView.webContents.findInPage(findText, {
-      forward: !shouldSearchBack,
-      findNext: !sameAsLastSearch,
-    });
+  window.removeBrowserView(tabView.view);
+  windowManager.activeTabId = -1;
+  closeFind(window, findView, windowManager);
+  if (windowHasView(window, urlPeekView)) {
+    window.removeBrowserView(urlPeekView);
   }
-  lastFindTextSearch = findText;
+  // eslint-disable-line
+  (tabView.view.webContents as any).destroy();
+  delete windowManager.allTabViews[id];
+  event.reply('tab-removed', id);
 }
 
-let movingWindow = false;
+function loadUrlInTab(
+  id: number,
+  url: string,
+  event: Electron.IpcMainEvent,
+  window: Electron.BrowserWindow,
+  findView: Electron.BrowserView,
+  windowManager: WindowManager
+) {
+  if (id === -1 || url === '') {
+    return;
+  }
+  const tabView = windowManager.allTabViews[id];
+  if (typeof tabView === 'undefined') {
+    throw new Error(`load-url-in-active-tab: tab with id ${id} does not exist`);
+  }
+  let fullUrl = url;
+  if (!/^https?:\/\//i.test(url)) {
+    fullUrl = `http://${url}`;
+  }
+
+  // url is invalid
+  if (!validURL(fullUrl)) {
+    fullUrl = `https://www.google.com/search?q=${url}`;
+  }
+
+  event.reply('web-contents-update', [id, true, false, fullUrl]);
+
+  (async () => {
+    await tabView.view.webContents.loadURL(fullUrl).catch(() => {
+      // failed to load url
+      // todo: handle this
+      console.log(`error loading url: ${fullUrl}`);
+    });
+    const newUrl = tabView.view.webContents.getURL();
+    closeFind(window, findView, windowManager);
+    event.reply('url-changed', [id, newUrl]);
+    updateWebContents(event, id, tabView);
+  })();
+}
+
+function tabBack(
+  id: number,
+  window: Electron.BrowserWindow,
+  findView: Electron.BrowserView,
+  event: Electron.IpcMainEvent,
+  windowManager: WindowManager
+) {
+  if (windowManager.allTabViews[id].view.webContents.canGoBack()) {
+    closeFind(window, findView, windowManager);
+    windowManager.allTabViews[id].view.webContents.goBack();
+  }
+  updateWebContents(event, id, windowManager.allTabViews[id]);
+}
+
+function tabForward(
+  id: number,
+  window: Electron.BrowserWindow,
+  findView: Electron.BrowserView,
+  event: Electron.IpcMainEvent,
+  windowManager: WindowManager
+) {
+  if (windowManager.allTabViews[id].view.webContents.canGoForward()) {
+    closeFind(window, findView, windowManager);
+    windowManager.allTabViews[id].view.webContents.goForward();
+  }
+  updateWebContents(event, id, windowManager.allTabViews[id]);
+}
+
+function tabRefresh(
+  window: Electron.BrowserWindow,
+  findView: Electron.BrowserView,
+  id: number,
+  windowManager: WindowManager
+) {
+  closeFind(window, findView, windowManager);
+  windowManager.allTabViews[id].view.webContents.reload();
+}
+
+function findTextChange(boxText: string, windowManager: WindowManager) {
+  windowManager.findText = boxText;
+  const tabView = windowManager.allTabViews[windowManager.activeTabId];
+  if (typeof tabView !== 'undefined') {
+    windowManager.lastFindTextSearch = handleFindText(
+      tabView.view,
+      windowManager.findText,
+      windowManager.lastFindTextSearch
+    );
+  }
+}
+
+function findPrevious(windowManager: WindowManager) {
+  const tabView = windowManager.allTabViews[windowManager.activeTabId];
+  if (typeof tabView !== 'undefined') {
+    windowManager.lastFindTextSearch = handleFindText(
+      tabView.view,
+      windowManager.findText,
+      windowManager.lastFindTextSearch,
+      true
+    );
+  }
+}
+
+function findNext(windowManager: WindowManager) {
+  const tabView = windowManager.allTabViews[windowManager.activeTabId];
+  if (typeof tabView !== 'undefined') {
+    windowManager.lastFindTextSearch = handleFindText(
+      tabView.view,
+      windowManager.findText,
+      windowManager.lastFindTextSearch
+    );
+  }
+}
+
+function windowMoving(
+  mouseX: number,
+  mouseY: number,
+  windowManager: WindowManager
+) {
+  const { x, y } = screen.getCursorScreenPoint();
+  mainWindow?.setPosition(x - mouseX, y - mouseY);
+  windowManager.movingWindow = true;
+}
+
+function windowMoved(windowManager: WindowManager) {
+  windowManager.movingWindow = false;
+}
 
 function addListeners(
   window: BrowserWindow,
@@ -196,166 +227,53 @@ function addListeners(
   browserPadding: number
 ) {
   ipcMain.on('create-new-tab', (_, id) => {
-    const tabView = new TabView(
+    createNewTab(
       window,
       id,
       titleBarView,
       urlPeekView,
       findView,
-      browserPadding
+      browserPadding,
+      wm
     );
-    tabViews[id] = tabView;
   });
   ipcMain.on('remove-tab', (event, id) => {
-    const tabView = tabViews[id];
-    if (typeof tabView === 'undefined') {
-      throw new Error(`remove-tab: tab with id ${id} does not exist`);
-    }
-    window.removeBrowserView(tabView.view);
-    activeTabId = -1;
-    closeFind(window, findView);
-    if (windowHasView(window, urlPeekView)) {
-      window.removeBrowserView(urlPeekView);
-    }
-    // eslint-disable-line @typescript-eslint/no-explicit-any
-    (tabView.view.webContents as any).destroy();
-    delete tabViews[id];
-    event.reply('tab-removed', id);
+    removeTab(id, window, findView, urlPeekView, event, wm);
   });
   ipcMain.on('set-tab', (_, [id, oldId]) => {
-    setTab(window, titleBarView, urlPeekView, findView, id, oldId);
+    setTab(window, titleBarView, urlPeekView, findView, id, oldId, wm);
   });
   ipcMain.on('load-url-in-tab', (event, [id, url]) => {
-    if (id === -1 || url === '') {
-      return;
-    }
-    const tabView = tabViews[id];
-    if (typeof tabView === 'undefined') {
-      throw new Error(
-        `load-url-in-active-tab: tab with id ${id} does not exist`
-      );
-    }
-    let fullUrl = url;
-    if (!/^https?:\/\//i.test(url)) {
-      fullUrl = `http://${url}`;
-    }
-
-    // url is invalid
-    if (!validURL(fullUrl)) {
-      fullUrl = `https://www.google.com/search?q=${url}`;
-    }
-
-    event.reply('web-contents-update', [id, true, false, fullUrl]);
-
-    (async () => {
-      await tabView.view.webContents.loadURL(fullUrl).catch(() => {
-        // failed to load url
-        // todo: handle this
-        console.log(`error loading url: ${fullUrl}`);
-      });
-      const newUrl = tabView.view.webContents.getURL();
-      closeFind(window, findView);
-      event.reply('url-changed', [id, newUrl]);
-      updateWebContents(event, id, tabView);
-    })();
+    loadUrlInTab(id, url, event, window, findView, wm);
   });
   ipcMain.on('tab-back', (event, id) => {
-    if (tabViews[id].view.webContents.canGoBack()) {
-      closeFind(window, findView);
-      tabViews[id].view.webContents.goBack();
-    }
-    updateWebContents(event, id, tabViews[id]);
+    tabBack(id, window, findView, event, wm);
   });
   ipcMain.on('tab-forward', (event, id) => {
-    if (tabViews[id].view.webContents.canGoForward()) {
-      closeFind(window, findView);
-      tabViews[id].view.webContents.goForward();
-    }
-    updateWebContents(event, id, tabViews[id]);
+    tabForward(id, window, findView, event, wm);
   });
   ipcMain.on('tab-refresh', (_, id) => {
-    closeFind(window, findView);
-    tabViews[id].view.webContents.reload();
+    tabRefresh(window, findView, id, wm);
   });
   ipcMain.on('close-find', () => {
-    closeFind(window, findView);
+    closeFind(window, findView, wm);
   });
   ipcMain.on('find-text-change', (_, boxText) => {
-    findText = boxText;
-    const tabView = tabViews[activeTabId];
-    if (typeof tabView !== 'undefined') {
-      handleFindText(tabView.view);
-    }
+    findTextChange(boxText, wm);
   });
   ipcMain.on('find-previous', () => {
-    const tabView = tabViews[activeTabId];
-    if (typeof tabView !== 'undefined') {
-      handleFindText(tabView.view, true);
-    }
+    findPrevious(wm);
   });
   ipcMain.on('find-next', () => {
-    const tabView = tabViews[activeTabId];
-    if (typeof tabView !== 'undefined') {
-      handleFindText(tabView.view);
-    }
+    findNext(wm);
   });
   ipcMain.on('windowMoving', (_, { mouseX, mouseY }) => {
-    const { x, y } = screen.getCursorScreenPoint();
-    mainWindow?.setPosition(x - mouseX, y - mouseY);
-    movingWindow = true;
+    windowMoving(mouseX, mouseY, wm);
   });
-
   ipcMain.on('windowMoved', () => {
-    movingWindow = false;
+    windowMoved(wm);
   });
 }
-
-const RESOURCES_PATH = app.isPackaged
-  ? path.join(process.resourcesPath, 'assets')
-  : path.join(__dirname, '../assets');
-
-const getAssetPath = (...paths: string[]): string => {
-  return path.join(RESOURCES_PATH, ...paths);
-};
-
-function createTray() {
-  const appIcon = new Tray(getAssetPath('icon.png'));
-  const contextMenu = Menu.buildFromTemplate([
-    {
-      label: 'Open',
-      click() {
-        mainWindow?.show();
-      },
-    },
-    {
-      label: 'Close',
-      click() {
-        mainWindow?.hide();
-      },
-    },
-    {
-      label: 'Exit',
-      click() {
-        // app.isQuiting = true;
-        app.quit();
-      },
-    },
-  ]);
-
-  appIcon.on('double-click', () => {
-    mainWindow?.show();
-  });
-  appIcon.setToolTip('Bonsai Browser');
-  appIcon.setContextMenu(contextMenu);
-  return appIcon;
-}
-
-const moveTowards = (current: number, target: number, maxDelta: number) => {
-  if (Math.abs(target - current) <= maxDelta) {
-    return target;
-  }
-  return current + Math.sign(target - current) * maxDelta;
-};
 
 const createWindow = async () => {
   if (
@@ -364,17 +282,6 @@ const createWindow = async () => {
   ) {
     await installExtensions();
   }
-
-  // debugWindow = new BrowserWindow({
-  //   width: startWindowWidth,
-  //   height: startWindowHeight,
-  //   minWidth: 500,
-  //   minHeight: headerHeight,
-  //   icon: getAssetPath('icon.png'),
-  //   webPreferences: {
-  //     nodeIntegration: true,
-  //   },
-  // });
 
   let browserPadding = 35.0;
   const displays = screen.getAllDisplays();
@@ -405,19 +312,12 @@ const createWindow = async () => {
 
   let windowFloating = false;
 
-  // debugWindow.loadURL(`file://${__dirname}/index-debug.html`);
-
-  // hookDebugWindow(debugWindow.webContents);
-
   // open window before loading is complete
   if (process.env.START_MINIMIZED) {
     mainWindow.minimize();
-    // debugWindow.minimize();
   } else {
     mainWindow.show();
     mainWindow.focus();
-
-    // debugWindow.show();
   }
 
   const titleBarView = new BrowserView({
@@ -464,15 +364,6 @@ const createWindow = async () => {
   findView.webContents.loadURL(`file://${__dirname}/find.html`);
 
   addListeners(mainWindow, titleBarView, urlPeekView, findView, browserPadding);
-
-  if (!app.isPackaged) {
-    // titleBarView.webContents.openDevTools({
-    //   mode: 'detach',
-    // });
-    // findView.webContents.openDevTools({
-    //   mode: 'detach',
-    // });
-  }
 
   // used to wait until it is loaded before showing
   // // @TODO: Use 'ready-to-show' event
@@ -525,21 +416,6 @@ const createWindow = async () => {
   resize();
   mainWindow.on('resize', resize);
 
-  // mainWindow.on('will-move', () => {
-  //   // moving = true;
-  //   console.log('will-move');
-  // });
-
-  // mainWindow.on('move', () => {
-  //   // moving = true;
-  //   console.log('move');
-  // });
-  //
-  // mainWindow.on('moved', () => {
-  //   // moving = false;
-  //   console.log('has moved');
-  // });
-
   let startTime: number | null = null;
   let lastTime = 0;
   setInterval(() => {
@@ -551,7 +427,7 @@ const createWindow = async () => {
     const deltaTime = time - lastTime;
     lastTime = time;
 
-    if (windowFloating && !movingWindow && mainWindow !== null) {
+    if (windowFloating && !wm.movingWindow && mainWindow !== null) {
       const padding = 25;
       const speed = 3000;
 
@@ -578,11 +454,9 @@ const createWindow = async () => {
     }
   }, 1);
 
-  const tray = createTray();
+  const tray = createTray(getAssetPath('icon.png'), mainWindow);
 
   mainWindow?.setResizable(false);
-  // mainWindow?.setKiosk(true);
-  mainWindow?.setFullScreen(true);
 
   globalShortcut.register('CmdOrCtrl+\\', () => {
     if (mainWindow?.isVisible()) {
@@ -610,9 +484,6 @@ const createWindow = async () => {
     shell.openExternal(url);
   });
 
-  // mainWindow.setIgnoreMouseEvents(true);
-  // mainWindow.setAlwaysOnTop(true);
-
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line
   new AppUpdater();
@@ -632,11 +503,11 @@ const createWindow = async () => {
               mainWindow.setTopBrowserView(findView);
             }
 
-            const tabView = tabViews[activeTabId];
+            const tabView = wm.allTabViews[wm.activeTabId];
             if (typeof tabView !== 'undefined') {
               findView.webContents.focus();
               findView.webContents.send('open-find');
-              handleFindText(tabView.view);
+              handleFindText(tabView.view, wm.findText, wm.lastFindTextSearch);
             }
           },
         },
@@ -645,7 +516,7 @@ const createWindow = async () => {
           accelerator: 'Escape',
           click: () => {
             if (mainWindow !== null) {
-              closeFind(mainWindow, findView);
+              closeFind(mainWindow, findView, wm);
             }
           },
         },
@@ -655,8 +526,10 @@ const createWindow = async () => {
           click: () => {
             if (mainWindow?.isVisible()) {
               windowFloating = !windowFloating;
+              const { width, height } = display.workAreaSize;
 
               if (windowFloating) {
+                // snap to corner mode
                 if (!windowHasView(mainWindow, overlayView)) {
                   mainWindow?.addBrowserView(overlayView);
                   mainWindow?.setTopBrowserView(overlayView);
@@ -664,17 +537,23 @@ const createWindow = async () => {
                 if (windowHasView(mainWindow, titleBarView)) {
                   mainWindow?.removeBrowserView(titleBarView);
                 }
-                // mainWindow?.setKiosk(false);
-                mainWindow?.setFullScreen(false);
                 mainWindow?.setBounds({
                   x: 100,
                   y: 100,
-                  width: 600,
-                  height: 864,
+                  width: 500,
+                  height: 500,
                 });
                 mainWindow?.setAlwaysOnTop(true);
               } else {
-                mainWindow?.setAlwaysOnTop(false);
+                mainWindow?.setBounds({
+                  x: 0,
+                  y: 0,
+                  width,
+                  height,
+                });
+
+                // black border mode
+                mainWindow?.setAlwaysOnTop(true);
                 if (windowHasView(mainWindow, overlayView)) {
                   mainWindow?.removeBrowserView(overlayView);
                 }
@@ -682,11 +561,9 @@ const createWindow = async () => {
                   mainWindow?.addBrowserView(titleBarView);
                   mainWindow?.setTopBrowserView(titleBarView);
                 }
-                // mainWindow?.setKiosk(true);
-                mainWindow?.setFullScreen(true);
               }
 
-              Object.values(tabViews).forEach((tabView) => {
+              Object.values(wm.allTabViews).forEach((tabView) => {
                 tabView.windowFloating = windowFloating;
                 tabView.resize();
               });
@@ -702,10 +579,6 @@ const createWindow = async () => {
   // Menu.buildFromTemplate(menuItems).popup();
   Menu.setApplicationMenu(menu);
 };
-
-/**
- * Add event listeners...
- */
 
 app.on('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even
