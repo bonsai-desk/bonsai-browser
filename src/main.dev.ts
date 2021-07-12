@@ -350,6 +350,13 @@ function createTray() {
   return appIcon;
 }
 
+const moveTowards = (current: number, target: number, maxDelta: number) => {
+  if (Math.abs(target - current) <= maxDelta) {
+    return target;
+  }
+  return current + Math.sign(target - current) * maxDelta;
+};
+
 const createWindow = async () => {
   if (
     process.env.NODE_ENV === 'development' ||
@@ -544,50 +551,29 @@ const createWindow = async () => {
     const deltaTime = time - lastTime;
     lastTime = time;
 
-    // console.log(moving);
-
     if (windowFloating && !movingWindow && mainWindow !== null) {
+      const padding = 25;
+      const speed = 3000;
+
       const bounds = mainWindow.getBounds();
       const up = bounds.y;
       const down = display.workAreaSize.height - (bounds.y + bounds.height);
       const left = bounds.x;
       const right = display.workAreaSize.width - (bounds.x + bounds.width);
-      const directions = [up, down, left, right];
-      // const directions = [1000000, 1000000, left, right];
-      const maxIndex = directions.indexOf(Math.min(...directions));
-      const padding = 25;
-      const speed = 2000;
-      switch (maxIndex) {
-        case 0:
-          bounds.y -= Math.floor(deltaTime * speed);
-          if (bounds.y < padding) {
-            bounds.y = padding;
-          }
-          break;
-        case 1:
-          bounds.y += Math.floor(deltaTime * speed);
-          if (
-            bounds.y >
-            display.workAreaSize.height - bounds.height - padding
-          ) {
-            bounds.y = display.workAreaSize.height - bounds.height - padding;
-          }
-          break;
-        case 2:
-          bounds.x -= Math.floor(deltaTime * speed);
-          if (bounds.x < padding) {
-            bounds.x = padding;
-          }
-          break;
-        case 3:
-          bounds.x += Math.floor(deltaTime * speed);
-          if (bounds.x > display.workAreaSize.width - bounds.width - padding) {
-            bounds.x = display.workAreaSize.width - bounds.width - padding;
-          }
-          break;
-        default:
-          break;
-      }
+
+      const xTarget =
+        left < right
+          ? padding
+          : display.workAreaSize.width - bounds.width - padding;
+
+      const yTarget =
+        up < down
+          ? padding
+          : display.workAreaSize.height - bounds.height - padding;
+
+      bounds.x = Math.floor(moveTowards(bounds.x, xTarget, deltaTime * speed));
+      bounds.y = Math.floor(moveTowards(bounds.y, yTarget, deltaTime * speed));
+
       mainWindow.setBounds(bounds);
     }
   }, 1);
@@ -684,7 +670,7 @@ const createWindow = async () => {
                   x: 100,
                   y: 100,
                   width: 600,
-                  height: 400,
+                  height: 864,
                 });
                 mainWindow?.setAlwaysOnTop(true);
               } else {
