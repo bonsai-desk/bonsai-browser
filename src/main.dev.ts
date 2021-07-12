@@ -319,7 +319,7 @@ const getAssetPath = (...paths: string[]): string => {
 };
 
 function createTray() {
-  const appIcon = new Tray(getAssetPath('icon.ico'));
+  const appIcon = new Tray(getAssetPath('icon.png'));
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Open',
