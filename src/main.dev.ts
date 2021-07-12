@@ -186,6 +186,8 @@ function handleFindText(tabView: BrowserView, searchBack?: boolean) {
   lastFindTextSearch = findText;
 }
 
+let movingWindow = false;
+
 function addListeners(
   window: BrowserWindow,
   titleBarView: BrowserView,
@@ -297,6 +299,15 @@ function addListeners(
       handleFindText(tabView.view);
     }
   });
+  ipcMain.on('windowMoving', (_, { mouseX, mouseY }) => {
+    const { x, y } = screen.getCursorScreenPoint();
+    mainWindow?.setPosition(x - mouseX, y - mouseY);
+    movingWindow = true;
+  });
+
+  ipcMain.on('windowMoved', () => {
+    movingWindow = false;
+  });
 }
 
 const RESOURCES_PATH = app.isPackaged
@@ -360,8 +371,11 @@ const createWindow = async () => {
 
   let browserPadding = 35.0;
   const displays = screen.getAllDisplays();
+  if (displays.length === 0) {
+    throw new Error('No displays!');
+  }
+  const display = displays[0];
   if (displays.length > 0) {
-    const display = displays[0];
     browserPadding = Math.floor(display.workAreaSize.height / 15.0);
   }
 
@@ -504,20 +518,18 @@ const createWindow = async () => {
   resize();
   mainWindow.on('resize', resize);
 
-  let moving = false;
-
   // mainWindow.on('will-move', () => {
   //   // moving = true;
   //   console.log('will-move');
   // });
-  //
+
   // mainWindow.on('move', () => {
-  //   moving = true;
+  //   // moving = true;
   //   console.log('move');
   // });
   //
   // mainWindow.on('moved', () => {
-  //   moving = false;
+  //   // moving = false;
   //   console.log('has moved');
   // });
 
@@ -534,14 +546,49 @@ const createWindow = async () => {
 
     // console.log(moving);
 
-    if (windowFloating && !moving && mainWindow !== null) {
+    if (windowFloating && !movingWindow && mainWindow !== null) {
       const bounds = mainWindow.getBounds();
-      bounds.x -= Math.floor(deltaTime * 1600);
-      if (bounds.x < 25) {
-        bounds.x = 25;
+      const up = bounds.y;
+      const down = display.workAreaSize.height - (bounds.y + bounds.height);
+      const left = bounds.x;
+      const right = display.workAreaSize.width - (bounds.x + bounds.width);
+      const directions = [up, down, left, right];
+      // const directions = [1000000, 1000000, left, right];
+      const maxIndex = directions.indexOf(Math.min(...directions));
+      const padding = 25;
+      const speed = 2000;
+      switch (maxIndex) {
+        case 0:
+          bounds.y -= Math.floor(deltaTime * speed);
+          if (bounds.y < padding) {
+            bounds.y = padding;
+          }
+          break;
+        case 1:
+          bounds.y += Math.floor(deltaTime * speed);
+          if (
+            bounds.y >
+            display.workAreaSize.height - bounds.height - padding
+          ) {
+            bounds.y = display.workAreaSize.height - bounds.height - padding;
+          }
+          break;
+        case 2:
+          bounds.x -= Math.floor(deltaTime * speed);
+          if (bounds.x < padding) {
+            bounds.x = padding;
+          }
+          break;
+        case 3:
+          bounds.x += Math.floor(deltaTime * speed);
+          if (bounds.x > display.workAreaSize.width - bounds.width - padding) {
+            bounds.x = display.workAreaSize.width - bounds.width - padding;
+          }
+          break;
+        default:
+          break;
       }
       mainWindow.setBounds(bounds);
-      // console.log(bounds.x);
     }
   }, 1);
 
