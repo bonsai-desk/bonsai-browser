@@ -2,12 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import styled, { css } from 'styled-components';
 import { ipcRenderer } from 'electron';
-import { useStore } from './data';
-import Tab from './components/Tab';
-import TabObject from './interfaces/tab';
-import plusIcon from '../assets/plus.svg';
-import backIcon from '../assets/arrow-back.svg';
-import refreshIcon from '../assets/refresh.svg';
+import { useStore } from '../utils/data';
+import Tab from '../components/Tab';
+import TabObject from '../interfaces/tab';
+import plusIcon from '../../assets/plus.svg';
+import backIcon from '../../assets/arrow-back.svg';
+import refreshIcon from '../../assets/refresh.svg';
 
 const TitleBarFull = styled.div`
   width: 100vw;

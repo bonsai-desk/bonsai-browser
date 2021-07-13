@@ -1,6 +1,6 @@
 import { Instance, types } from 'mobx-state-tree';
 import { createContext, useContext } from 'react';
-import TabStore from './store/tabs';
+import TabStore from '../store/tabs';
 
 const User = types.model({
   id: types.identifier,
