@@ -39,7 +39,6 @@ export const createWindow = async () => {
     height: 1000,
     minWidth: 500,
     minHeight: 500,
-    titleBarStyle: 'hidden',
     icon: ICON_PNG,
     webPreferences: {
       nodeIntegration: true,
