@@ -11,7 +11,7 @@ import {
 import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
 import { createTray, handleFindText, installExtensions } from './windows';
-import { addListeners, closeFind } from './listeners';
+import addListeners from './listeners';
 import { headerHeight } from './tab-view';
 import { moveTowards, windowHasView } from './utils';
 import WindowManager from './window-manager';
@@ -236,7 +236,7 @@ export const createWindow = async () => {
           accelerator: 'Escape',
           click: () => {
             if (wm.mainWindow !== null) {
-              closeFind(wm);
+              wm.closeFind();
             }
           },
         },
