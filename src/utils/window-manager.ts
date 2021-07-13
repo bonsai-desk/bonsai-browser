@@ -23,44 +23,14 @@ const updateWebContents = (
   ]);
 };
 
-function makeTitleBar() {
-  const titleBarView = new BrowserView({
+function makeView(loadURL: string) {
+  const newView = new BrowserView({
     webPreferences: {
       nodeIntegration: true,
     },
   });
-  titleBarView.webContents.loadURL(INDEX_HTML);
-  return titleBarView;
-}
-
-function makeUrlPeekView() {
-  const urlPeekView = new BrowserView({
-    webPreferences: {
-      nodeIntegration: true,
-    },
-  });
-  urlPeekView.webContents.loadURL(URL_PEEK_HTML);
-  return urlPeekView;
-}
-
-function makeFindView() {
-  const findView = new BrowserView({
-    webPreferences: {
-      nodeIntegration: true,
-    },
-  });
-  findView.webContents.loadURL(FIND_HTML);
-  return findView;
-}
-
-function makeOverlayView() {
-  const overlayView = new BrowserView({
-    webPreferences: {
-      nodeIntegration: true,
-    },
-  });
-  overlayView.webContents.loadURL(OVERLAY_HTML);
-  return overlayView;
+  newView.webContents.loadURL(loadURL);
+  return newView;
 }
 
 export default class WindowManager {
@@ -100,19 +70,19 @@ export default class WindowManager {
     // todo: turned this off because it had a runtime exception
     this.mainWindow.on('resize', this.resize);
 
-    this.titleBarView = makeTitleBar();
+    this.titleBarView = makeView(INDEX_HTML);
     this.mainWindow.setBrowserView(this.titleBarView);
     this.mainWindow.setTopBrowserView(this.titleBarView);
 
-    this.urlPeekView = makeUrlPeekView();
+    this.urlPeekView = makeView(URL_PEEK_HTML);
 
-    this.findView = makeFindView();
+    this.findView = makeView(FIND_HTML);
     // findView does not show up from Ctrl+F unless you do this for some reason
     // mainWindow.addBrowserView(this.findView);
     // mainWindow.setTopBrowserView(this.findView);
     // mainWindow.removeBrowserView(this.findView);
 
-    this.overlayView = makeOverlayView();
+    this.overlayView = makeView(OVERLAY_HTML);
   }
 
   resetTextSearch() {
