@@ -12,9 +12,9 @@ export function closeFind(wm: WindowManager) {
 }
 
 export const setTab = (
+  windowManager: WindowManager,
   id: number,
-  oldId: number,
-  windowManager: WindowManager
+  oldId: number
 ) => {
   if (id === oldId) {
     return;
@@ -45,9 +45,9 @@ export const setTab = (
 };
 
 export function createNewTab(
+  windowManager: WindowManager,
   id: number,
-  browserPadding: number,
-  windowManager: WindowManager
+  browserPadding: number
 ) {
   windowManager.allTabViews[id] = new TabView(
     windowManager.mainWindow,
@@ -60,9 +60,9 @@ export function createNewTab(
 }
 
 export function removeTab(
+  windowManager: WindowManager,
   id: number,
-  event: Electron.IpcMainEvent,
-  windowManager: WindowManager
+  event: Electron.IpcMainEvent
 ) {
   const tabView = windowManager.allTabViews[id];
   if (typeof tabView === 'undefined') {
@@ -81,10 +81,10 @@ export function removeTab(
 }
 
 export function loadUrlInTab(
+  windowManager: WindowManager,
   id: number,
   url: string,
-  event: Electron.IpcMainEvent,
-  windowManager: WindowManager
+  event: Electron.IpcMainEvent
 ) {
   if (id === -1 || url === '') {
     return;
@@ -119,9 +119,9 @@ export function loadUrlInTab(
 }
 
 export function tabBack(
+  windowManager: WindowManager,
   id: number,
-  event: Electron.IpcMainEvent,
-  windowManager: WindowManager
+  event: Electron.IpcMainEvent
 ) {
   if (windowManager.allTabViews[id].view.webContents.canGoBack()) {
     closeFind(windowManager);
@@ -131,9 +131,9 @@ export function tabBack(
 }
 
 export function tabForward(
+  windowManager: WindowManager,
   id: number,
-  event: Electron.IpcMainEvent,
-  windowManager: WindowManager
+  event: Electron.IpcMainEvent
 ) {
   if (windowManager.allTabViews[id].view.webContents.canGoForward()) {
     closeFind(windowManager);
@@ -142,12 +142,12 @@ export function tabForward(
   updateWebContents(event, id, windowManager.allTabViews[id]);
 }
 
-export function tabRefresh(id: number, windowManager: WindowManager) {
+export function tabRefresh(windowManager: WindowManager, id: number) {
   closeFind(windowManager);
   windowManager.reloadTab(id);
 }
 
-export function findTextChange(boxText: string, windowManager: WindowManager) {
+export function findTextChange(windowManager: WindowManager, boxText: string) {
   windowManager.findText = boxText;
   const tabView = windowManager.allTabViews[windowManager.activeTabId];
   if (typeof tabView !== 'undefined') {
@@ -187,9 +187,9 @@ export function windowMoved(windowManager: WindowManager) {
 }
 
 export function windowMoving(
+  windowManager: WindowManager,
   mouseX: number,
-  mouseY: number,
-  windowManager: WindowManager
+  mouseY: number
 ) {
   const { x, y } = screen.getCursorScreenPoint();
   windowManager.mainWindow.setPosition(x - mouseX, y - mouseY);
@@ -198,31 +198,31 @@ export function windowMoving(
 
 export function addListeners(wm: WindowManager, browserPadding: number) {
   ipcMain.on('create-new-tab', (_, id) => {
-    createNewTab(id, browserPadding, wm);
+    createNewTab(wm, id, browserPadding);
   });
   ipcMain.on('remove-tab', (event, id) => {
-    removeTab(id, event, wm);
+    removeTab(wm, id, event);
   });
   ipcMain.on('set-tab', (_, [id, oldId]) => {
-    setTab(id, oldId, wm);
+    setTab(wm, id, oldId);
   });
   ipcMain.on('load-url-in-tab', (event, [id, url]) => {
-    loadUrlInTab(id, url, event, wm);
+    loadUrlInTab(wm, id, url, event);
   });
   ipcMain.on('tab-back', (event, id) => {
-    tabBack(id, event, wm);
+    tabBack(wm, id, event);
   });
   ipcMain.on('tab-forward', (event, id) => {
-    tabForward(id, event, wm);
+    tabForward(wm, id, event);
   });
   ipcMain.on('tab-refresh', (_, id) => {
-    tabRefresh(id, wm);
+    tabRefresh(wm, id);
   });
   ipcMain.on('close-find', () => {
     closeFind(wm);
   });
   ipcMain.on('find-text-change', (_, boxText) => {
-    findTextChange(boxText, wm);
+    findTextChange(wm, boxText);
   });
   ipcMain.on('find-previous', () => {
     findPrevious(wm);
@@ -231,7 +231,7 @@ export function addListeners(wm: WindowManager, browserPadding: number) {
     findNext(wm);
   });
   ipcMain.on('windowMoving', (_, { mouseX, mouseY }) => {
-    windowMoving(mouseX, mouseY, wm);
+    windowMoving(wm, mouseX, mouseY);
   });
   ipcMain.on('windowMoved', () => {
     windowMoved(wm);
