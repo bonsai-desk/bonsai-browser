@@ -1,23 +1,18 @@
 /* eslint no-console: off */
-import { BrowserView, BrowserWindow, ipcMain, screen } from 'electron';
+import { BrowserView, ipcMain, screen } from 'electron';
 import { closeSearch, handleFindText, updateWebContents } from './windows';
 import { validURL, windowHasView } from './utils';
 import WindowManager from './window-manager';
 import TabView from './tab-view';
 
-export function closeFind(
-  window: BrowserWindow,
-  findView: BrowserView,
-  wm: WindowManager
-) {
-  closeSearch(window, findView, wm, () => {
+export function closeFind(findView: BrowserView, wm: WindowManager) {
+  closeSearch(wm.mainWindow, findView, wm, () => {
     wm.resetTextSearch();
   });
 }
 
 export const setTab = (
   id: number,
-  window: Electron.BrowserWindow,
   titleBarView: Electron.BrowserView,
   urlPeekView: Electron.BrowserView,
   findView: Electron.BrowserView,
@@ -30,7 +25,7 @@ export const setTab = (
 
   const oldTabView = windowManager.allTabViews[oldId];
   if (typeof oldTabView !== 'undefined') {
-    window.removeBrowserView(oldTabView.view);
+    windowManager.mainWindow.removeBrowserView(oldTabView.view);
     windowManager.activeTabId = -1;
   }
 
@@ -42,19 +37,18 @@ export const setTab = (
     throw new Error(`setTab: tab with id ${id} does not exist`);
   }
 
-  window.addBrowserView(tabView.view);
+  windowManager.mainWindow.addBrowserView(tabView.view);
   windowManager.activeTabId = id;
-  window.setTopBrowserView(titleBarView);
-  closeFind(window, findView, windowManager);
-  if (windowHasView(window, urlPeekView)) {
-    window.setTopBrowserView(urlPeekView);
+  windowManager.mainWindow.setTopBrowserView(titleBarView);
+  closeFind(findView, windowManager);
+  if (windowHasView(windowManager.mainWindow, urlPeekView)) {
+    windowManager.mainWindow.setTopBrowserView(urlPeekView);
   }
   tabView.resize();
 };
 
 export function createNewTab(
   id: number,
-  window: Electron.BrowserWindow,
   titleBarView: Electron.BrowserView,
   urlPeekView: Electron.BrowserView,
   findView: Electron.BrowserView,
@@ -62,7 +56,7 @@ export function createNewTab(
   windowManager: WindowManager
 ) {
   windowManager.allTabViews[id] = new TabView(
-    window,
+    windowManager.mainWindow,
     id,
     titleBarView,
     urlPeekView,
@@ -73,7 +67,6 @@ export function createNewTab(
 
 export function removeTab(
   id: number,
-  window: Electron.BrowserWindow,
   findView: Electron.BrowserView,
   urlPeekView: Electron.BrowserView,
   event: Electron.IpcMainEvent,
@@ -83,11 +76,11 @@ export function removeTab(
   if (typeof tabView === 'undefined') {
     throw new Error(`remove-tab: tab with id ${id} does not exist`);
   }
-  window.removeBrowserView(tabView.view);
+  windowManager.mainWindow.removeBrowserView(tabView.view);
   windowManager.activeTabId = -1;
-  closeFind(window, findView, windowManager);
-  if (windowHasView(window, urlPeekView)) {
-    window.removeBrowserView(urlPeekView);
+  closeFind(findView, windowManager);
+  if (windowHasView(windowManager.mainWindow, urlPeekView)) {
+    windowManager.mainWindow.removeBrowserView(urlPeekView);
   }
   // eslint-disable-line
   (tabView.view.webContents as any).destroy();
@@ -99,7 +92,6 @@ export function loadUrlInTab(
   id: number,
   url: string,
   event: Electron.IpcMainEvent,
-  window: Electron.BrowserWindow,
   findView: Electron.BrowserView,
   windowManager: WindowManager
 ) {
@@ -129,7 +121,7 @@ export function loadUrlInTab(
       console.log(`error loading url: ${fullUrl}`);
     });
     const newUrl = tabView.view.webContents.getURL();
-    closeFind(window, findView, windowManager);
+    closeFind(findView, windowManager);
     event.reply('url-changed', [id, newUrl]);
     updateWebContents(event, id, tabView);
   })();
@@ -137,13 +129,12 @@ export function loadUrlInTab(
 
 export function tabBack(
   id: number,
-  window: Electron.BrowserWindow,
   findView: Electron.BrowserView,
   event: Electron.IpcMainEvent,
   windowManager: WindowManager
 ) {
   if (windowManager.allTabViews[id].view.webContents.canGoBack()) {
-    closeFind(window, findView, windowManager);
+    closeFind(findView, windowManager);
     windowManager.allTabViews[id].view.webContents.goBack();
   }
   updateWebContents(event, id, windowManager.allTabViews[id]);
@@ -151,13 +142,12 @@ export function tabBack(
 
 export function tabForward(
   id: number,
-  window: Electron.BrowserWindow,
   findView: Electron.BrowserView,
   event: Electron.IpcMainEvent,
   windowManager: WindowManager
 ) {
   if (windowManager.allTabViews[id].view.webContents.canGoForward()) {
-    closeFind(window, findView, windowManager);
+    closeFind(findView, windowManager);
     windowManager.allTabViews[id].view.webContents.goForward();
   }
   updateWebContents(event, id, windowManager.allTabViews[id]);
@@ -165,11 +155,10 @@ export function tabForward(
 
 export function tabRefresh(
   id: number,
-  window: Electron.BrowserWindow,
   findView: Electron.BrowserView,
   windowManager: WindowManager
 ) {
-  closeFind(window, findView, windowManager);
+  closeFind(findView, windowManager);
   windowManager.reloadTab(id);
 }
 
@@ -215,53 +204,43 @@ export function windowMoved(windowManager: WindowManager) {
 export function windowMoving(
   mouseX: number,
   mouseY: number,
-  windowManager: WindowManager,
-  mainWindow: BrowserWindow | null
+  windowManager: WindowManager
 ) {
   const { x, y } = screen.getCursorScreenPoint();
-  mainWindow?.setPosition(x - mouseX, y - mouseY);
+  windowManager.mainWindow.setPosition(x - mouseX, y - mouseY);
   windowManager.movingWindow = true;
 }
 
 export function addListeners(
-  mainWindow: Electron.BrowserWindow,
+  wm: WindowManager,
   titleBarView: Electron.BrowserView,
   urlPeekView: Electron.BrowserView,
   findView: Electron.BrowserView,
-  browserPadding: number,
-  wm: WindowManager
+  browserPadding: number
 ) {
   ipcMain.on('create-new-tab', (_, id) => {
-    createNewTab(
-      id,
-      mainWindow,
-      titleBarView,
-      urlPeekView,
-      findView,
-      browserPadding,
-      wm
-    );
+    createNewTab(id, titleBarView, urlPeekView, findView, browserPadding, wm);
   });
   ipcMain.on('remove-tab', (event, id) => {
-    removeTab(id, mainWindow, findView, urlPeekView, event, wm);
+    removeTab(id, findView, urlPeekView, event, wm);
   });
   ipcMain.on('set-tab', (_, [id, oldId]) => {
-    setTab(id, mainWindow, titleBarView, urlPeekView, findView, oldId, wm);
+    setTab(id, titleBarView, urlPeekView, findView, oldId, wm);
   });
   ipcMain.on('load-url-in-tab', (event, [id, url]) => {
-    loadUrlInTab(id, url, event, mainWindow, findView, wm);
+    loadUrlInTab(id, url, event, findView, wm);
   });
   ipcMain.on('tab-back', (event, id) => {
-    tabBack(id, mainWindow, findView, event, wm);
+    tabBack(id, findView, event, wm);
   });
   ipcMain.on('tab-forward', (event, id) => {
-    tabForward(id, mainWindow, findView, event, wm);
+    tabForward(id, findView, event, wm);
   });
   ipcMain.on('tab-refresh', (_, id) => {
-    tabRefresh(id, mainWindow, findView, wm);
+    tabRefresh(id, findView, wm);
   });
   ipcMain.on('close-find', () => {
-    closeFind(mainWindow, findView, wm);
+    closeFind(findView, wm);
   });
   ipcMain.on('find-text-change', (_, boxText) => {
     findTextChange(boxText, wm);
@@ -273,7 +252,7 @@ export function addListeners(
     findNext(wm);
   });
   ipcMain.on('windowMoving', (_, { mouseX, mouseY }) => {
-    windowMoving(mouseX, mouseY, wm, mainWindow);
+    windowMoving(mouseX, mouseY, wm);
   });
   ipcMain.on('windowMoved', () => {
     windowMoved(wm);

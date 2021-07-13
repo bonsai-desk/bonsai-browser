@@ -83,12 +83,11 @@ export const createWindow = async () => {
   const findViewMarginRight = 20;
 
   addListeners(
-    mainWindow,
+    wm,
     wm.titleBarView,
     wm.urlPeekView,
     wm.findView,
-    browserPadding,
-    wm
+    browserPadding
   );
 
   // used to wait until it is loaded before showing
@@ -243,7 +242,7 @@ export const createWindow = async () => {
           accelerator: 'Escape',
           click: () => {
             if (wm.mainWindow !== null) {
-              closeFind(wm.mainWindow, wm.findView, wm);
+              closeFind(wm.findView, wm);
             }
           },
         },
