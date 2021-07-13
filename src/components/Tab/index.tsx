@@ -3,7 +3,7 @@ import { ipcRenderer } from 'electron';
 import { runInAction } from 'mobx';
 import styled, { css } from 'styled-components';
 import { observer } from 'mobx-react-lite';
-import { tabStore as tabStoreStatic, useStore } from '../../data';
+import { tabStore as tabStoreStatic, useStore } from '../../utils/data';
 import TabObject from '../../interfaces/tab';
 import xIcon from '../../../assets/x-letter.svg';
 import TabStore from '../../store/tabs';
@@ -34,7 +34,7 @@ const TabParent = styled.div`
 `;
 
 const TabTileParent = styled.div`
-  width: calc(100% - 35px - 28px - 8px);
+  width: calc(100% - 8px - 16px - 35px);
   display: flex;
   align-items: center;
 `;

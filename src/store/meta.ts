@@ -40,7 +40,7 @@ export default class MetaStore {
   constructor() {
     makeAutoObservable(this);
     ipcRenderer.on('meta-info', (_, data) => {
-      console.log(data);
+      // console.log(data);
       this.title = title(data);
       this.authors = authors(data);
       this.abstract = abstract(data);

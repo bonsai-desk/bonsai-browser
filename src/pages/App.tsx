@@ -2,22 +2,21 @@ import React, { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import styled, { css } from 'styled-components';
 import { ipcRenderer } from 'electron';
-import { useStore } from './data';
-import Tab from './components/Tab';
-import TabObject from './interfaces/tab';
-import plusIcon from '../assets/plus.svg';
-import backIcon from '../assets/arrow-back.svg';
-import refreshIcon from '../assets/refresh.svg';
+import { useStore } from '../utils/data';
+import Tab from '../components/Tab';
+import TabObject from '../interfaces/tab';
+import plusIcon from '../../assets/plus.svg';
+import backIcon from '../../assets/arrow-back.svg';
+import refreshIcon from '../../assets/refresh.svg';
 
 const TitleBarFull = styled.div`
   width: 100vw;
   height: 100vh;
-  background-color: red;
   font-family: sans-serif;
 `;
 
 const TitleBarTop = styled.div`
-  -webkit-app-region: drag;
+  //-webkit-app-region: drag;
   -webkit-user-select: none;
   width: calc(100% - 16px);
   height: 32px;
@@ -156,41 +155,29 @@ const TitleBar = observer(() => {
         </NewTabButtonParent>
       </TitleBarTop>
       <TitleBarBottom>
-        <RoundButton color={canGoBack ? '#949494' : '#e3e3e3'}>
-          <RoundButtonIcon
-            src={backIcon}
-            onClick={() => {
-              ipcRenderer.send('tab-back', tabStore.activeTabId);
-            }}
-          />
+        <RoundButton
+          color={canGoBack ? '#949494' : '#e3e3e3'}
+          onClick={() => {
+            ipcRenderer.send('tab-back', tabStore.activeTabId);
+          }}
+        >
+          <RoundButtonIcon src={backIcon} />
         </RoundButton>
-        <RoundButton color={canGoForward ? '#949494' : '#e3e3e3'}>
-          <RoundButtonIconFlipped
-            src={backIcon}
-            onClick={() => {
-              ipcRenderer.send('tab-forward', tabStore.activeTabId);
-            }}
-          />
-        </RoundButton>
-        <RoundButton color="#949494">
-          <RoundButtonIcon
-            src={refreshIcon}
-            onClick={() => {
-              ipcRenderer.send('tab-refresh', tabStore.activeTabId);
-            }}
-          />
+        <RoundButton
+          color={canGoForward ? '#949494' : '#e3e3e3'}
+          onClick={() => {
+            ipcRenderer.send('tab-forward', tabStore.activeTabId);
+          }}
+        >
+          <RoundButtonIconFlipped src={backIcon} />
         </RoundButton>
         <RoundButton
           color="#949494"
           onClick={() => {
-            tabStore.setActiveTabSearchBar('https://arxiv.org/abs/2107.00014');
-            ipcRenderer.send('load-url-in-tab', [
-              tabStore.activeTabId,
-              tabStore.getActiveTabSearchBar(),
-            ]);
+            ipcRenderer.send('tab-refresh', tabStore.activeTabId);
           }}
         >
-          av
+          <RoundButtonIcon src={refreshIcon} />
         </RoundButton>
         <URLBox
           type="text"
