@@ -6,7 +6,6 @@ import {
   Menu,
   MenuItem,
   screen,
-  shell,
 } from 'electron';
 import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';

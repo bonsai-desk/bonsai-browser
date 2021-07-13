@@ -361,7 +361,6 @@ export default class WindowManager {
   resize() {
     const padding = this.windowFloating ? 0 : this.browserPadding;
     const hh = this.windowFloating ? 0 : headerHeight;
-    console.log('\n\nayy ', !!this.mainWindow);
     const windowSize = this.mainWindow.getSize();
 
     const urlPeekWidth = 475;
