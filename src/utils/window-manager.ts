@@ -269,14 +269,9 @@ export default class WindowManager {
       this.mainWindow !== null &&
       !windowHasView(this.mainWindow, this.findView)
     ) {
-      console.log('\n\nayy\n\n');
       this.mainWindow.addBrowserView(this.findView);
       this.mainWindow.setTopBrowserView(this.findView);
       this.resize();
-      console.log(this.mainWindow.getBounds());
-      console.log(this.findView.getBounds());
-    } else {
-      console.log('\n\nsad ayy\n\n');
     }
 
     const tabView = this.allTabViews[this.activeTabId];
@@ -287,10 +282,9 @@ export default class WindowManager {
     }
   }
 
-  float(display: Display) {
+  float(display: Display, floatingWidth: number, floatingHeight: number) {
     if (this.mainWindow?.isVisible()) {
       this.windowFloating = !this.windowFloating;
-      const { width, height } = display.workAreaSize;
 
       if (this.windowFloating) {
         // snap to corner mode
@@ -304,20 +298,18 @@ export default class WindowManager {
         this.mainWindow?.setBounds({
           x: 100,
           y: 100,
-          width: 500,
-          height: 500,
+          width: floatingWidth,
+          height: floatingHeight,
         });
-        this.mainWindow?.setAlwaysOnTop(true);
       } else {
         this.mainWindow?.setBounds({
           x: 0,
           y: 0,
-          width,
-          height,
+          width: display.workAreaSize.width - 1, // todo: without the -1, everything breaks!!??!?
+          height: display.workAreaSize.height - 1,
         });
 
         // black border mode
-        this.mainWindow?.setAlwaysOnTop(true);
         if (windowHasView(this.mainWindow, this.overlayView)) {
           this.mainWindow?.removeBrowserView(this.overlayView);
         }
@@ -374,6 +366,10 @@ export default class WindowManager {
       y: 0,
       width: windowSize[0],
       height: windowSize[1],
+    });
+
+    Object.values(this.allTabViews).forEach((tabView) => {
+      tabView.resize();
     });
   }
 }

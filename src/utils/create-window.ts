@@ -35,16 +35,18 @@ export const createWindow = async () => {
   let mainWindow: BrowserWindow | null = new BrowserWindow({
     frame: false,
     transparent: true,
-    width: 1000,
-    height: 1000,
-    minWidth: 500,
-    minHeight: 500,
+    width: 300,
+    height: 300,
+    minWidth: 50,
+    minHeight: 50,
     icon: ICON_PNG,
     webPreferences: {
       nodeIntegration: true,
       devTools: false,
     },
   });
+
+  mainWindow.setAlwaysOnTop(true);
 
   mainWindow.webContents.loadURL(MAIN_HTML);
 
@@ -55,17 +57,24 @@ export const createWindow = async () => {
     throw new Error('No displays!');
   }
   const display = displays[0];
-  if (displays.length > 0) {
-    wm.browserPadding = Math.floor(display.workAreaSize.height / 15.0);
-  }
+  wm.browserPadding = Math.floor(display.workAreaSize.height / 15.0);
+
+  mainWindow.setBounds({
+    x: 0,
+    y: 0,
+    width: display.workAreaSize.width - 1, // todo: without the -1, everything breaks!!??!?
+    height: display.workAreaSize.height - 1,
+  });
+
+  console.log();
 
   // open window before loading is complete
-  if (process.env.START_MINIMIZED) {
-    mainWindow.minimize();
-  } else {
-    mainWindow.show();
-    mainWindow.focus();
-  }
+  // if (process.env.START_MINIMIZED) {
+  //   mainWindow.minimize();
+  // } else {
+  mainWindow.show();
+  mainWindow.focus();
+  // }
 
   addListeners(wm, wm.browserPadding);
 
@@ -86,6 +95,10 @@ export const createWindow = async () => {
   });
 
   wm.resize();
+
+  const height80 = display.workAreaSize.height * 0.7;
+  const floatingWidth = Math.floor(height80 * 0.7);
+  const floatingHeight = Math.floor(height80);
 
   let startTime: number | null = null;
   let lastTime = 0;
@@ -119,10 +132,12 @@ export const createWindow = async () => {
           ? padding
           : display.workAreaSize.height - bounds.height - padding;
 
-      bounds.x = Math.floor(moveTowards(bounds.x, xTarget, deltaTime * speed));
-      bounds.y = Math.floor(moveTowards(bounds.y, yTarget, deltaTime * speed));
-
-      mainWindow.setBounds(bounds);
+      mainWindow.setBounds({
+        x: Math.floor(moveTowards(bounds.x, xTarget, deltaTime * speed)),
+        y: Math.floor(moveTowards(bounds.y, yTarget, deltaTime * speed)),
+        width: floatingWidth,
+        height: floatingHeight,
+      });
     }
   }, 1);
 
@@ -175,9 +190,43 @@ export const createWindow = async () => {
           label: 'Float',
           accelerator: 'CmdOrCtrl+M',
           click: () => {
-            wm.float(display);
+            wm.float(display, floatingWidth, floatingHeight);
           },
         },
+        // {
+        //   label: 'tt',
+        //   accelerator: 'CmdOrCtrl+U',
+        //   click: () => {
+        //     if (mainWindow === null) {
+        //       return;
+        //     }
+        //     mainWindow.show();
+        //     // mainWindow.setBounds({
+        //     //   x: 0,
+        //     //   y: 0,
+        //     //   width: display.workAreaSize.width,
+        //     //   height: display.workAreaSize.height,
+        //     // });
+        //     // wm.resize();
+        //   },
+        // },
+        // {
+        //   label: 'ttt',
+        //   accelerator: 'CmdOrCtrl+I',
+        //   click: () => {
+        //     if (mainWindow === null) {
+        //       return;
+        //     }
+        //     mainWindow.hide();
+        //     // mainWindow.setBounds({
+        //     //   x: 0,
+        //     //   y: 0,
+        //     //   width: display.workAreaSize.width - 100,
+        //     //   height: display.workAreaSize.height - 100,
+        //     // });
+        //     // wm.resize();
+        //   },
+        // },
       ],
     })
   );

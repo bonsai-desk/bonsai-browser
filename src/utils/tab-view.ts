@@ -40,10 +40,6 @@ class TabView {
 
     this.resize();
 
-    window.on('resize', () => {
-      this.resize();
-    });
-
     this.view.webContents.on('page-title-updated', (_, title) => {
       titleBarView.webContents.send('title-updated', [id, title]);
     });

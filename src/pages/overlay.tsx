@@ -34,13 +34,20 @@ function moveWindow() {
   animationId = requestAnimationFrame(moveWindow);
 }
 
-function onMouseUp() {
+function onMouseUp(e: MouseEvent) {
+  if (e.button !== 0) {
+    return;
+  }
   ipcRenderer.send('windowMoved');
   document.removeEventListener('mouseup', onMouseUp);
   cancelAnimationFrame(animationId);
 }
 
 function onMouseDown(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
+  if (e.button !== 0) {
+    return;
+  }
+
   mouseX = e.clientX;
   mouseY = e.clientY;
 
