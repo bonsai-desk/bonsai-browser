@@ -23,22 +23,6 @@ const updateWebContents = (
   ]);
 };
 
-export function closeSearch(
-  window: BrowserWindow,
-  findView: BrowserView,
-  windowManger: WindowManager,
-  callback: () => void
-) {
-  if (windowHasView(window, findView)) {
-    window.removeBrowserView(findView);
-    const tabView = windowManger.allTabViews[windowManger.activeTabId];
-    if (typeof tabView !== 'undefined') {
-      tabView.view.webContents.stopFindInPage('clearSelection');
-      callback();
-    }
-  }
-}
-
 function makeTitleBar() {
   const titleBarView = new BrowserView({
     webPreferences: {
