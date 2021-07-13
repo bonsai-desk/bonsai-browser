@@ -98,7 +98,7 @@ export default class WindowManager {
     });
 
     // todo: turned this off because it had a runtime exception
-    // this.mainWindow.on('resize', this.resize);
+    this.mainWindow.on('resize', this.resize);
 
     this.titleBarView = makeTitleBar();
     this.mainWindow.setBrowserView(this.titleBarView);
@@ -108,9 +108,9 @@ export default class WindowManager {
 
     this.findView = makeFindView();
     // findView does not show up from Ctrl+F unless you do this for some reason
-    mainWindow.addBrowserView(this.findView);
-    mainWindow.setTopBrowserView(this.findView);
-    mainWindow.removeBrowserView(this.findView);
+    // mainWindow.addBrowserView(this.findView);
+    // mainWindow.setTopBrowserView(this.findView);
+    // mainWindow.removeBrowserView(this.findView);
 
     this.overlayView = makeOverlayView();
   }
@@ -297,8 +297,14 @@ export default class WindowManager {
       this.mainWindow !== null &&
       !windowHasView(this.mainWindow, this.findView)
     ) {
+      console.log('\n\nayy\n\n');
       this.mainWindow.addBrowserView(this.findView);
       this.mainWindow.setTopBrowserView(this.findView);
+      this.resize();
+      console.log(this.mainWindow.getBounds());
+      console.log(this.findView.getBounds());
+    } else {
+      console.log('\n\nsad ayy\n\n');
     }
 
     const tabView = this.allTabViews[this.activeTabId];
@@ -359,6 +365,9 @@ export default class WindowManager {
   }
 
   resize() {
+    if (this.mainWindow === null || typeof this.mainWindow === 'undefined') {
+      return;
+    }
     const padding = this.windowFloating ? 0 : this.browserPadding;
     const hh = this.windowFloating ? 0 : headerHeight;
     const windowSize = this.mainWindow.getSize();
