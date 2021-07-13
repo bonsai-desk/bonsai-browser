@@ -144,6 +144,7 @@ export const createWindow = async () => {
 
   let startTime: number | null = null;
   let lastTime = 0;
+  // todo can this run at 60fps instead of every millisecond
   setInterval(() => {
     const currentTime = new Date().getTime() / 1000.0;
     if (startTime === null) {
@@ -201,9 +202,6 @@ export const createWindow = async () => {
     mainWindow = null;
   });
 
-  // const menuBuilder = new MenuBuilder(mainWindow);
-  // menuBuilder.buildMenu();
-
   // Open urls in the user's browser
   mainWindow.webContents.on('new-window', (event, url) => {
     event.preventDefault();
@@ -225,11 +223,11 @@ export const createWindow = async () => {
           accelerator: 'CmdOrCtrl+F',
           click: () => {
             if (
-              mainWindow !== null &&
-              !windowHasView(mainWindow, wm.findView)
+              wm.mainWindow !== null &&
+              !windowHasView(wm.mainWindow, wm.findView)
             ) {
-              mainWindow.addBrowserView(wm.findView);
-              mainWindow.setTopBrowserView(wm.findView);
+              wm.mainWindow.addBrowserView(wm.findView);
+              wm.mainWindow.setTopBrowserView(wm.findView);
             }
 
             const tabView = wm.allTabViews[wm.activeTabId];
@@ -244,8 +242,8 @@ export const createWindow = async () => {
           label: 'stop-find',
           accelerator: 'Escape',
           click: () => {
-            if (mainWindow !== null) {
-              closeFind(mainWindow, wm.findView, wm);
+            if (wm.mainWindow !== null) {
+              closeFind(wm.mainWindow, wm.findView, wm);
             }
           },
         },
@@ -253,28 +251,28 @@ export const createWindow = async () => {
           label: 'Float',
           accelerator: 'CmdOrCtrl+M',
           click: () => {
-            if (mainWindow?.isVisible()) {
+            if (wm.mainWindow?.isVisible()) {
               windowFloating = !windowFloating;
               const { width, height } = display.workAreaSize;
 
               if (windowFloating) {
                 // snap to corner mode
-                if (!windowHasView(mainWindow, wm.overlayView)) {
-                  mainWindow?.addBrowserView(wm.overlayView);
-                  mainWindow?.setTopBrowserView(wm.overlayView);
+                if (!windowHasView(wm.mainWindow, wm.overlayView)) {
+                  wm.mainWindow?.addBrowserView(wm.overlayView);
+                  wm.mainWindow?.setTopBrowserView(wm.overlayView);
                 }
-                if (windowHasView(mainWindow, wm.titleBarView)) {
-                  mainWindow?.removeBrowserView(wm.titleBarView);
+                if (windowHasView(wm.mainWindow, wm.titleBarView)) {
+                  wm.mainWindow?.removeBrowserView(wm.titleBarView);
                 }
-                mainWindow?.setBounds({
+                wm.mainWindow?.setBounds({
                   x: 100,
                   y: 100,
                   width: 500,
                   height: 500,
                 });
-                mainWindow?.setAlwaysOnTop(true);
+                wm.mainWindow?.setAlwaysOnTop(true);
               } else {
-                mainWindow?.setBounds({
+                wm.mainWindow?.setBounds({
                   x: 0,
                   y: 0,
                   width,
@@ -282,13 +280,13 @@ export const createWindow = async () => {
                 });
 
                 // black border mode
-                mainWindow?.setAlwaysOnTop(true);
-                if (windowHasView(mainWindow, wm.overlayView)) {
-                  mainWindow?.removeBrowserView(wm.overlayView);
+                wm.mainWindow?.setAlwaysOnTop(true);
+                if (windowHasView(wm.mainWindow, wm.overlayView)) {
+                  wm.mainWindow?.removeBrowserView(wm.overlayView);
                 }
-                if (!windowHasView(mainWindow, wm.titleBarView)) {
-                  mainWindow?.addBrowserView(wm.titleBarView);
-                  mainWindow?.setTopBrowserView(wm.titleBarView);
+                if (!windowHasView(wm.mainWindow, wm.titleBarView)) {
+                  wm.mainWindow?.addBrowserView(wm.titleBarView);
+                  wm.mainWindow?.setTopBrowserView(wm.titleBarView);
                 }
               }
 
