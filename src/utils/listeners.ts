@@ -1,9 +1,9 @@
 /* eslint no-console: off */
 import { BrowserView, BrowserWindow, ipcMain, screen } from 'electron';
-import { closeSearch, handleFindText, updateWebContents } from '../windows';
+import { closeSearch, handleFindText, updateWebContents } from './windows';
 import { validURL, windowHasView } from './utils';
-import WindowManager from '../window-manager';
-import TabView from '../tab-view';
+import WindowManager from './window-manager';
+import TabView from './tab-view';
 
 export function closeFind(
   window: BrowserWindow,

@@ -8,16 +8,15 @@ import {
   screen,
   shell,
 } from 'electron';
-import path from 'path';
 import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
 import { createTray, handleFindText, installExtensions } from './windows';
-import { addListeners, closeFind } from './utils/listeners';
+import { addListeners, closeFind } from './listeners';
 import { headerHeight } from './tab-view';
-import { moveTowards, windowHasView } from './utils/utils';
+import { moveTowards, windowHasView } from './utils';
 import MenuBuilder from './menu';
 import WindowManager from './window-manager';
-import RESOURCES_PATH from './vars';
+import { ICON_PNG, MAIN_HTML } from '../constants';
 
 class AppUpdater {
   constructor() {
@@ -26,10 +25,6 @@ class AppUpdater {
     autoUpdater.checkForUpdatesAndNotify();
   }
 }
-
-const getAssetPath = (...paths: string[]): string => {
-  return path.join(RESOURCES_PATH, ...paths);
-};
 
 // eslint-disable-next-line import/prefer-default-export
 export const createWindow = async () => {
@@ -58,7 +53,7 @@ export const createWindow = async () => {
     minWidth: 500,
     minHeight: 500,
     titleBarStyle: 'hidden',
-    icon: getAssetPath('icon.png'),
+    icon: ICON_PNG,
     webPreferences: {
       nodeIntegration: true,
       devTools: false,
@@ -67,7 +62,7 @@ export const createWindow = async () => {
 
   console.log(mainWindow);
 
-  mainWindow.webContents.loadURL(`file://${__dirname}/main-window.html`);
+  mainWindow.webContents.loadURL(MAIN_HTML);
 
   const wm = new WindowManager(mainWindow);
 
@@ -186,7 +181,7 @@ export const createWindow = async () => {
     }
   }, 1);
 
-  const tray = createTray(getAssetPath('icon.png'), mainWindow);
+  const tray = createTray(ICON_PNG, mainWindow);
 
   mainWindow?.setResizable(false);
 

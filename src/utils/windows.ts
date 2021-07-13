@@ -1,7 +1,7 @@
 /* eslint no-console: off */
 import { app, BrowserView, BrowserWindow, Menu, Tray } from 'electron';
 import TabView from './tab-view';
-import { windowHasView } from './utils/utils';
+import { windowHasView } from './utils';
 import WindowManager from './window-manager';
 
 const installer = require('electron-devtools-installer');

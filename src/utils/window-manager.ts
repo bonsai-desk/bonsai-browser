@@ -1,5 +1,11 @@
 import { BrowserView, BrowserWindow } from 'electron';
 import TabView from './tab-view';
+import {
+  FIND_HTML,
+  INDEX_HTML,
+  OVERLAY_HTML,
+  URL_PEEK_HTML,
+} from '../constants';
 
 function makeUrlPeekView() {
   const urlPeekView = new BrowserView({
@@ -7,7 +13,7 @@ function makeUrlPeekView() {
       nodeIntegration: true,
     },
   });
-  urlPeekView.webContents.loadURL(`file://${__dirname}/url-peek.html`);
+  urlPeekView.webContents.loadURL(URL_PEEK_HTML);
   return urlPeekView;
 }
 
@@ -40,7 +46,7 @@ export default class WindowManager {
     });
     this.mainWindow.setBrowserView(titleBarView);
     this.mainWindow.setTopBrowserView(titleBarView);
-    titleBarView.webContents.loadURL(`file://${__dirname}/index.html`);
+    titleBarView.webContents.loadURL(INDEX_HTML);
     return titleBarView;
   }
 
@@ -59,14 +65,14 @@ export default class WindowManager {
     mainWindow.addBrowserView(this.findView);
     mainWindow.setTopBrowserView(this.findView);
     mainWindow.removeBrowserView(this.findView);
-    this.findView.webContents.loadURL(`file://${__dirname}/find.html`);
+    this.findView.webContents.loadURL(FIND_HTML);
 
     this.overlayView = new BrowserView({
       webPreferences: {
         nodeIntegration: true,
       },
     });
-    this.overlayView.webContents.loadURL(`file://${__dirname}/overlay.html`);
+    this.overlayView.webContents.loadURL(OVERLAY_HTML);
   }
 
   resetTextSearch() {
