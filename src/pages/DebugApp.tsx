@@ -1,7 +1,7 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import styled from 'styled-components';
-import MetaStore from './store/meta';
+import MetaStore from '../store/meta';
 
 const metaStore = new MetaStore();
 

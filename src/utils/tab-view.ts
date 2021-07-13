@@ -1,7 +1,7 @@
 import { BrowserView, BrowserWindow } from 'electron';
 import path from 'path';
 // eslint-disable-next-line import/no-cycle
-import { windowHasView } from './main.dev';
+import { windowHasView } from './utils';
 
 export const headerHeight = 79;
 
@@ -31,7 +31,7 @@ class TabView {
       webPreferences: {
         nodeIntegration: false,
         sandbox: true,
-        preload: path.join(__dirname, './preload.js'),
+        preload: path.join(__dirname, './utils/preload.js'),
       },
     });
 
