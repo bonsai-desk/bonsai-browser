@@ -14,7 +14,6 @@ import { createTray, handleFindText, installExtensions } from './windows';
 import { addListeners, closeFind } from './listeners';
 import { headerHeight } from './tab-view';
 import { moveTowards, windowHasView } from './utils';
-import MenuBuilder from './menu';
 import WindowManager from './window-manager';
 import { ICON_PNG, MAIN_HTML } from '../constants';
 
@@ -202,8 +201,8 @@ export const createWindow = async () => {
     mainWindow = null;
   });
 
-  const menuBuilder = new MenuBuilder(mainWindow);
-  menuBuilder.buildMenu();
+  // const menuBuilder = new MenuBuilder(mainWindow);
+  // menuBuilder.buildMenu();
 
   // Open urls in the user's browser
   mainWindow.webContents.on('new-window', (event, url) => {
