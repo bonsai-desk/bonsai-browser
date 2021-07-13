@@ -82,13 +82,7 @@ export const createWindow = async () => {
   const findViewHeight = 50;
   const findViewMarginRight = 20;
 
-  addListeners(
-    wm,
-    wm.titleBarView,
-    wm.urlPeekView,
-    wm.findView,
-    browserPadding
-  );
+  addListeners(wm, browserPadding);
 
   // used to wait until it is loaded before showing
   // // @TODO: Use 'ready-to-show' event
@@ -242,7 +236,7 @@ export const createWindow = async () => {
           accelerator: 'Escape',
           click: () => {
             if (wm.mainWindow !== null) {
-              closeFind(wm.findView, wm);
+              closeFind(wm);
             }
           },
         },
