@@ -3,7 +3,7 @@ import { render } from 'react-dom';
 import App from './App';
 import DebugApp from './DebugApp';
 import UrlPeek from './url-peek';
-import Find from './find';
+import Find from './components/find';
 import { Provider, rootStore, tabStore } from './data';
 import './index.css';
 import MainWindow from './main-window';

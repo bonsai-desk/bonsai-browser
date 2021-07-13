@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import styled, { createGlobalStyle, css } from 'styled-components';
-import arrowIcon from '../assets/chevron-right-arrow.svg';
-import xIcon from '../assets/x-letter-black.svg';
 import { ipcRenderer } from 'electron';
 import { makeAutoObservable } from 'mobx';
+import arrowIcon from '../../assets/chevron-right-arrow.svg';
+import xIcon from '../../assets/x-letter-black.svg';
 
 const GlobalStyle = createGlobalStyle`
   html,

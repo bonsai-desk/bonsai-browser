@@ -11,7 +11,7 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 import { app, BrowserWindow } from 'electron';
-import { createWindow } from './createWindow';
+import { createWindow } from './create-window';
 
 const mainWindow: BrowserWindow | null = null;
 
