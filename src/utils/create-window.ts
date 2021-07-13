@@ -10,10 +10,9 @@ import {
 } from 'electron';
 import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
-import { createTray, handleFindText, installExtensions } from './windows';
+import { createTray, installExtensions } from './windows';
 import addListeners from './listeners';
-import { headerHeight } from './tab-view';
-import { moveTowards, windowHasView } from './utils';
+import { moveTowards } from './utils';
 import WindowManager from './window-manager';
 import { ICON_PNG, MAIN_HTML } from '../constants';
 
@@ -34,16 +33,6 @@ export const createWindow = async () => {
     await installExtensions();
   }
 
-  let browserPadding = 35.0;
-  const displays = screen.getAllDisplays();
-  if (displays.length === 0) {
-    throw new Error('No displays!');
-  }
-  const display = displays[0];
-  if (displays.length > 0) {
-    browserPadding = Math.floor(display.workAreaSize.height / 15.0);
-  }
-
   let mainWindow: BrowserWindow | null = new BrowserWindow({
     frame: false,
     transparent: true,
@@ -59,13 +48,18 @@ export const createWindow = async () => {
     },
   });
 
-  console.log(mainWindow);
-
   mainWindow.webContents.loadURL(MAIN_HTML);
 
   const wm = new WindowManager(mainWindow);
 
-  let windowFloating = false;
+  const displays = screen.getAllDisplays();
+  if (displays.length === 0) {
+    throw new Error('No displays!');
+  }
+  const display = displays[0];
+  if (displays.length > 0) {
+    wm.browserPadding = Math.floor(display.workAreaSize.height / 15.0);
+  }
 
   // open window before loading is complete
   if (process.env.START_MINIMIZED) {
@@ -75,14 +69,7 @@ export const createWindow = async () => {
     mainWindow.focus();
   }
 
-  const urlPeekWidth = 475;
-  const urlPeekHeight = 20;
-
-  const findViewWidth = 350;
-  const findViewHeight = 50;
-  const findViewMarginRight = 20;
-
-  addListeners(wm, browserPadding);
+  addListeners(wm, wm.browserPadding);
 
   // used to wait until it is loaded before showing
   // // @TODO: Use 'ready-to-show' event
@@ -100,40 +87,7 @@ export const createWindow = async () => {
     }
   });
 
-  const resize = () => {
-    if (mainWindow) {
-      const padding = windowFloating ? 0 : browserPadding;
-      const hh = windowFloating ? 0 : headerHeight;
-      const windowSize = mainWindow.getSize();
-      wm.titleBarView.setBounds({
-        x: padding,
-        y: padding,
-        width: windowSize[0] - padding * 2,
-        height: hh,
-      });
-      wm.urlPeekView.setBounds({
-        x: padding,
-        y: windowSize[1] - urlPeekHeight - padding,
-        width: urlPeekWidth,
-        height: urlPeekHeight,
-      });
-      wm.findView.setBounds({
-        x: windowSize[0] - findViewWidth - findViewMarginRight - padding,
-        y: hh + padding,
-        width: findViewWidth,
-        height: findViewHeight,
-      });
-      wm.overlayView.setBounds({
-        x: 0,
-        y: 0,
-        width: windowSize[0],
-        height: windowSize[1],
-      });
-    }
-  };
-
-  resize();
-  mainWindow.on('resize', resize);
+  wm.resize();
 
   let startTime: number | null = null;
   let lastTime = 0;
@@ -147,7 +101,7 @@ export const createWindow = async () => {
     const deltaTime = time - lastTime;
     lastTime = time;
 
-    if (windowFloating && !wm.movingWindow && mainWindow !== null) {
+    if (wm.windowFloating && !wm.movingWindow && mainWindow !== null) {
       const padding = 25;
       const speed = 3000;
 
@@ -195,12 +149,6 @@ export const createWindow = async () => {
     mainWindow = null;
   });
 
-  // Open urls in the user's browser
-  mainWindow.webContents.on('new-window', (event, url) => {
-    event.preventDefault();
-    shell.openExternal(url);
-  });
-
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line
   new AppUpdater();
@@ -215,87 +163,26 @@ export const createWindow = async () => {
           label: 'find',
           accelerator: 'CmdOrCtrl+F',
           click: () => {
-            if (
-              wm.mainWindow !== null &&
-              !windowHasView(wm.mainWindow, wm.findView)
-            ) {
-              wm.mainWindow.addBrowserView(wm.findView);
-              wm.mainWindow.setTopBrowserView(wm.findView);
-            }
-
-            const tabView = wm.allTabViews[wm.activeTabId];
-            if (typeof tabView !== 'undefined') {
-              wm.findView.webContents.focus();
-              wm.findView.webContents.send('open-find');
-              handleFindText(tabView.view, wm.findText, wm.lastFindTextSearch);
-            }
+            wm.clickFind();
           },
         },
         {
           label: 'stop-find',
           accelerator: 'Escape',
           click: () => {
-            if (wm.mainWindow !== null) {
-              wm.closeFind();
-            }
+            wm.closeFind();
           },
         },
         {
           label: 'Float',
           accelerator: 'CmdOrCtrl+M',
           click: () => {
-            if (wm.mainWindow?.isVisible()) {
-              windowFloating = !windowFloating;
-              const { width, height } = display.workAreaSize;
-
-              if (windowFloating) {
-                // snap to corner mode
-                if (!windowHasView(wm.mainWindow, wm.overlayView)) {
-                  wm.mainWindow?.addBrowserView(wm.overlayView);
-                  wm.mainWindow?.setTopBrowserView(wm.overlayView);
-                }
-                if (windowHasView(wm.mainWindow, wm.titleBarView)) {
-                  wm.mainWindow?.removeBrowserView(wm.titleBarView);
-                }
-                wm.mainWindow?.setBounds({
-                  x: 100,
-                  y: 100,
-                  width: 500,
-                  height: 500,
-                });
-                wm.mainWindow?.setAlwaysOnTop(true);
-              } else {
-                wm.mainWindow?.setBounds({
-                  x: 0,
-                  y: 0,
-                  width,
-                  height,
-                });
-
-                // black border mode
-                wm.mainWindow?.setAlwaysOnTop(true);
-                if (windowHasView(wm.mainWindow, wm.overlayView)) {
-                  wm.mainWindow?.removeBrowserView(wm.overlayView);
-                }
-                if (!windowHasView(wm.mainWindow, wm.titleBarView)) {
-                  wm.mainWindow?.addBrowserView(wm.titleBarView);
-                  wm.mainWindow?.setTopBrowserView(wm.titleBarView);
-                }
-              }
-
-              Object.values(wm.allTabViews).forEach((tabView) => {
-                tabView.windowFloating = windowFloating;
-                tabView.resize();
-              });
-
-              resize();
-            }
+            wm.float(display);
           },
         },
       ],
     })
   );
 
-  // Menu.buildFromTemplate(menuItems).popup();
   Menu.setApplicationMenu(menu);
 };

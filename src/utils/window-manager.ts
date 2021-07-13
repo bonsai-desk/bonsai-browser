@@ -1,6 +1,6 @@
 /* eslint no-console: off */
-import { BrowserView, BrowserWindow, screen } from 'electron';
-import TabView from './tab-view';
+import { BrowserView, BrowserWindow, Display, screen, shell } from 'electron';
+import TabView, { headerHeight } from './tab-view';
 import {
   FIND_HTML,
   INDEX_HTML,
@@ -64,6 +64,10 @@ function makeOverlayView() {
 }
 
 export default class WindowManager {
+  browserPadding = 35.0;
+
+  windowFloating = false;
+
   allTabViews: Record<number, TabView> = {};
 
   activeTabId = -1;
@@ -86,6 +90,15 @@ export default class WindowManager {
 
   constructor(mainWindow: BrowserWindow) {
     this.mainWindow = mainWindow;
+
+    this.mainWindow.webContents.on('new-window', (event, url) => {
+      event.preventDefault();
+      // todo: this should open new tab?
+      shell.openExternal(url);
+    });
+
+    // todo: turned this off because it had a runtime exception
+    // this.mainWindow.on('resize', this.resize);
 
     this.titleBarView = makeTitleBar();
     this.mainWindow.setBrowserView(this.titleBarView);
@@ -277,5 +290,110 @@ export default class WindowManager {
     const { x, y } = screen.getCursorScreenPoint();
     this.mainWindow.setPosition(x - mouseX, y - mouseY);
     this.movingWindow = true;
+  }
+
+  clickFind() {
+    if (
+      this.mainWindow !== null &&
+      !windowHasView(this.mainWindow, this.findView)
+    ) {
+      this.mainWindow.addBrowserView(this.findView);
+      this.mainWindow.setTopBrowserView(this.findView);
+    }
+
+    const tabView = this.allTabViews[this.activeTabId];
+    if (typeof tabView !== 'undefined') {
+      this.findView.webContents.focus();
+      this.findView.webContents.send('open-find');
+      handleFindText(tabView.view, this.findText, this.lastFindTextSearch);
+    }
+  }
+
+  float(display: Display) {
+    if (this.mainWindow?.isVisible()) {
+      this.windowFloating = !this.windowFloating;
+      const { width, height } = display.workAreaSize;
+
+      if (this.windowFloating) {
+        // snap to corner mode
+        if (!windowHasView(this.mainWindow, this.overlayView)) {
+          this.mainWindow?.addBrowserView(this.overlayView);
+          this.mainWindow?.setTopBrowserView(this.overlayView);
+        }
+        if (windowHasView(this.mainWindow, this.titleBarView)) {
+          this.mainWindow?.removeBrowserView(this.titleBarView);
+        }
+        this.mainWindow?.setBounds({
+          x: 100,
+          y: 100,
+          width: 500,
+          height: 500,
+        });
+        this.mainWindow?.setAlwaysOnTop(true);
+      } else {
+        this.mainWindow?.setBounds({
+          x: 0,
+          y: 0,
+          width,
+          height,
+        });
+
+        // black border mode
+        this.mainWindow?.setAlwaysOnTop(true);
+        if (windowHasView(this.mainWindow, this.overlayView)) {
+          this.mainWindow?.removeBrowserView(this.overlayView);
+        }
+        if (!windowHasView(this.mainWindow, this.titleBarView)) {
+          this.mainWindow?.addBrowserView(this.titleBarView);
+          this.mainWindow?.setTopBrowserView(this.titleBarView);
+        }
+      }
+
+      Object.values(this.allTabViews).forEach((tabView) => {
+        tabView.windowFloating = this.windowFloating;
+        tabView.resize();
+      });
+
+      this.resize();
+    }
+  }
+
+  resize() {
+    const padding = this.windowFloating ? 0 : this.browserPadding;
+    const hh = this.windowFloating ? 0 : headerHeight;
+    console.log('\n\nayy ', !!this.mainWindow);
+    const windowSize = this.mainWindow.getSize();
+
+    const urlPeekWidth = 475;
+    const urlPeekHeight = 20;
+
+    const findViewWidth = 350;
+    const findViewHeight = 50;
+    const findViewMarginRight = 20;
+
+    this.titleBarView.setBounds({
+      x: padding,
+      y: padding,
+      width: windowSize[0] - padding * 2,
+      height: hh,
+    });
+    this.urlPeekView.setBounds({
+      x: padding,
+      y: windowSize[1] - urlPeekHeight - padding,
+      width: urlPeekWidth,
+      height: urlPeekHeight,
+    });
+    this.findView.setBounds({
+      x: windowSize[0] - findViewWidth - findViewMarginRight - padding,
+      y: hh + padding,
+      width: findViewWidth,
+      height: findViewHeight,
+    });
+    this.overlayView.setBounds({
+      x: 0,
+      y: 0,
+      width: windowSize[0],
+      height: windowSize[1],
+    });
   }
 }
