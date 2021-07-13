@@ -18,7 +18,6 @@ export function closeSearch(
     if (typeof tabView !== 'undefined') {
       tabView.view.webContents.stopFindInPage('clearSelection');
       callback();
-      // lastFindTextSearch = '';
     }
   }
 }

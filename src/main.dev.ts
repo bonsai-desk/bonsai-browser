@@ -11,9 +11,6 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 import { app, BrowserWindow } from 'electron';
-// import { autoUpdater } from 'electron-updater';
-// import log from 'electron-log';
-import WindowManager from './window-manager';
 import { createWindow } from './createWindow';
 
 const mainWindow: BrowserWindow | null = null;
@@ -30,8 +27,6 @@ if (
   require('electron-debug')();
 }
 
-const wm = new WindowManager();
-
 app.on('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even
   // after all windows have been closed
@@ -40,15 +35,10 @@ app.on('window-all-closed', () => {
   }
 });
 
-app
-  .whenReady()
-  .then(() => {
-    return createWindow(wm);
-  })
-  .catch(console.log);
+app.whenReady().then(createWindow).catch(console.log);
 
 app.on('activate', () => {
   // On macOS it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
-  if (mainWindow === null) createWindow(wm);
+  if (mainWindow === null) createWindow();
 });

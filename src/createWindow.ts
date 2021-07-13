@@ -1,6 +1,6 @@
+/* eslint no-console: off */
 import {
   app,
-  BrowserView,
   BrowserWindow,
   globalShortcut,
   Menu,
@@ -32,7 +32,7 @@ const getAssetPath = (...paths: string[]): string => {
 };
 
 // eslint-disable-next-line import/prefer-default-export
-export const createWindow = async (wm: WindowManager) => {
+export const createWindow = async () => {
   if (
     process.env.NODE_ENV === 'development' ||
     process.env.DEBUG_PROD === 'true'
@@ -65,7 +65,11 @@ export const createWindow = async (wm: WindowManager) => {
     },
   });
 
+  console.log(mainWindow);
+
   mainWindow.webContents.loadURL(`file://${__dirname}/main-window.html`);
+
+  const wm = new WindowManager(mainWindow);
 
   let windowFloating = false;
 
@@ -77,57 +81,20 @@ export const createWindow = async (wm: WindowManager) => {
     mainWindow.focus();
   }
 
-  const titleBarView = new BrowserView({
-    webPreferences: {
-      nodeIntegration: true,
-    },
-  });
-  mainWindow.setBrowserView(titleBarView);
-  mainWindow.setTopBrowserView(titleBarView);
-
-  titleBarView.webContents.loadURL(`file://${__dirname}/index.html`);
-
   const urlPeekWidth = 475;
   const urlPeekHeight = 20;
-  const urlPeekView = new BrowserView({
-    webPreferences: {
-      nodeIntegration: true,
-    },
-  });
-
-  urlPeekView.webContents.loadURL(`file://${__dirname}/url-peek.html`);
-
-  const overlayView = new BrowserView({
-    webPreferences: {
-      nodeIntegration: true,
-    },
-  });
-
-  overlayView.webContents.loadURL(`file://${__dirname}/overlay.html`);
 
   const findViewWidth = 350;
   const findViewHeight = 50;
   const findViewMarginRight = 20;
-  const findView = new BrowserView({
-    webPreferences: {
-      nodeIntegration: true,
-    },
-  });
-  // findView does not show up from Ctrl+F unless you do this for some reason
-  mainWindow.addBrowserView(findView);
-  mainWindow.setTopBrowserView(findView);
-  mainWindow.removeBrowserView(findView);
-
-  findView.webContents.loadURL(`file://${__dirname}/find.html`);
 
   addListeners(
     mainWindow,
-    titleBarView,
-    urlPeekView,
-    findView,
+    wm.titleBarView,
+    wm.urlPeekView,
+    wm.findView,
     browserPadding,
-    wm,
-    mainWindow
+    wm
   );
 
   // used to wait until it is loaded before showing
@@ -151,25 +118,25 @@ export const createWindow = async (wm: WindowManager) => {
       const padding = windowFloating ? 0 : browserPadding;
       const hh = windowFloating ? 0 : headerHeight;
       const windowSize = mainWindow.getSize();
-      titleBarView.setBounds({
+      wm.titleBarView.setBounds({
         x: padding,
         y: padding,
         width: windowSize[0] - padding * 2,
         height: hh,
       });
-      urlPeekView.setBounds({
+      wm.urlPeekView.setBounds({
         x: padding,
         y: windowSize[1] - urlPeekHeight - padding,
         width: urlPeekWidth,
         height: urlPeekHeight,
       });
-      findView.setBounds({
+      wm.findView.setBounds({
         x: windowSize[0] - findViewWidth - findViewMarginRight - padding,
         y: hh + padding,
         width: findViewWidth,
         height: findViewHeight,
       });
-      overlayView.setBounds({
+      wm.overlayView.setBounds({
         x: 0,
         y: 0,
         width: windowSize[0],
@@ -263,15 +230,18 @@ export const createWindow = async (wm: WindowManager) => {
           label: 'find',
           accelerator: 'CmdOrCtrl+F',
           click: () => {
-            if (mainWindow !== null && !windowHasView(mainWindow, findView)) {
-              mainWindow.addBrowserView(findView);
-              mainWindow.setTopBrowserView(findView);
+            if (
+              mainWindow !== null &&
+              !windowHasView(mainWindow, wm.findView)
+            ) {
+              mainWindow.addBrowserView(wm.findView);
+              mainWindow.setTopBrowserView(wm.findView);
             }
 
             const tabView = wm.allTabViews[wm.activeTabId];
             if (typeof tabView !== 'undefined') {
-              findView.webContents.focus();
-              findView.webContents.send('open-find');
+              wm.findView.webContents.focus();
+              wm.findView.webContents.send('open-find');
               handleFindText(tabView.view, wm.findText, wm.lastFindTextSearch);
             }
           },
@@ -281,7 +251,7 @@ export const createWindow = async (wm: WindowManager) => {
           accelerator: 'Escape',
           click: () => {
             if (mainWindow !== null) {
-              closeFind(mainWindow, findView, wm);
+              closeFind(mainWindow, wm.findView, wm);
             }
           },
         },
@@ -295,12 +265,12 @@ export const createWindow = async (wm: WindowManager) => {
 
               if (windowFloating) {
                 // snap to corner mode
-                if (!windowHasView(mainWindow, overlayView)) {
-                  mainWindow?.addBrowserView(overlayView);
-                  mainWindow?.setTopBrowserView(overlayView);
+                if (!windowHasView(mainWindow, wm.overlayView)) {
+                  mainWindow?.addBrowserView(wm.overlayView);
+                  mainWindow?.setTopBrowserView(wm.overlayView);
                 }
-                if (windowHasView(mainWindow, titleBarView)) {
-                  mainWindow?.removeBrowserView(titleBarView);
+                if (windowHasView(mainWindow, wm.titleBarView)) {
+                  mainWindow?.removeBrowserView(wm.titleBarView);
                 }
                 mainWindow?.setBounds({
                   x: 100,
@@ -319,12 +289,12 @@ export const createWindow = async (wm: WindowManager) => {
 
                 // black border mode
                 mainWindow?.setAlwaysOnTop(true);
-                if (windowHasView(mainWindow, overlayView)) {
-                  mainWindow?.removeBrowserView(overlayView);
+                if (windowHasView(mainWindow, wm.overlayView)) {
+                  mainWindow?.removeBrowserView(wm.overlayView);
                 }
-                if (!windowHasView(mainWindow, titleBarView)) {
-                  mainWindow?.addBrowserView(titleBarView);
-                  mainWindow?.setTopBrowserView(titleBarView);
+                if (!windowHasView(mainWindow, wm.titleBarView)) {
+                  mainWindow?.addBrowserView(wm.titleBarView);
+                  mainWindow?.setTopBrowserView(wm.titleBarView);
                 }
               }
 
