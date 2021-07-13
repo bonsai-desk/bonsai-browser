@@ -2,6 +2,8 @@ import { BrowserView, BrowserWindow } from 'electron';
 import path from 'path';
 // eslint-disable-next-line import/no-cycle
 import { windowHasView } from './utils';
+// eslint-disable-next-line import/no-cycle
+import WindowManager from './window-manager';
 
 export const headerHeight = 79;
 
@@ -20,7 +22,8 @@ class TabView {
     titleBarView: BrowserView,
     urlPeekView: BrowserView,
     findView: BrowserView,
-    browserPadding: number
+    browserPadding: number,
+    windowManger: WindowManager
   ) {
     if (!window) {
       throw new Error('"window" is not defined');
@@ -84,6 +87,7 @@ class TabView {
         if (!windowHasView(window, urlPeekView)) {
           window.addBrowserView(urlPeekView);
           window.setTopBrowserView(urlPeekView);
+          windowManger.resize();
         }
         urlPeekView.webContents.send('peek-url-updated', url);
       }

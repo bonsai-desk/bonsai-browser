@@ -1,5 +1,6 @@
 /* eslint no-console: off */
 import { BrowserView, BrowserWindow, Display, screen, shell } from 'electron';
+// eslint-disable-next-line import/no-cycle
 import TabView, { headerHeight } from './tab-view';
 import {
   FIND_HTML,
@@ -130,7 +131,8 @@ export default class WindowManager {
       this.titleBarView,
       this.urlPeekView,
       this.findView,
-      browserPadding
+      browserPadding,
+      this
     );
   }
 
