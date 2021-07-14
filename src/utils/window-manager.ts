@@ -64,7 +64,7 @@ export default class WindowManager {
 
   windowPosition = { x: 0, y: 0 };
 
-  windowVelocity = { x: 0, y: 0 };
+  windowVelocity = { x: 25, y: -50 };
 
   windowSize = { width: 100, height: 100 };
 
@@ -313,10 +313,9 @@ export default class WindowManager {
         this.startMouseY = yDif;
         this.validFloatingClick = false;
       }
-      this.mainWindow.setPosition(
-        x - mouseX + this.startMouseX,
-        y - mouseY + this.startMouseY
-      );
+      this.windowPosition.x = x - mouseX + this.startMouseX;
+      this.windowPosition.y = y - mouseY + this.startMouseY;
+      this.updateMainWindowBounds();
       this.movingWindow = true;
     }
   }

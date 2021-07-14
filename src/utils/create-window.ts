@@ -109,34 +109,45 @@ export const createWindow = async () => {
     const padding = 25;
     const speed = 3000;
 
-    const bounds = mainWindow.getBounds();
-
     if (
-      Math.round(bounds.x) ===
+      Math.round(wm.windowPosition.x) ===
         Math.round(display.workAreaSize.width / 2.0 - floatingWidth / 2.0) &&
-      Math.round(bounds.y) ===
+      Math.round(wm.windowPosition.y) ===
         Math.round(display.workAreaSize.height / 2.0 - floatingHeight / 2.0)
     ) {
       return;
     }
 
-    const up = bounds.y;
-    const down = display.workAreaSize.height - (bounds.y + bounds.height);
-    const left = bounds.x;
-    const right = display.workAreaSize.width - (bounds.x + bounds.width);
+    const up = wm.windowPosition.y;
+    const down =
+      display.workAreaSize.height -
+      (wm.windowPosition.y + wm.windowSize.height);
+    const left = wm.windowPosition.x;
+    const right =
+      display.workAreaSize.width - (wm.windowPosition.x + wm.windowSize.width);
 
     const xTarget =
       left < right
         ? padding
-        : display.workAreaSize.width - bounds.width - padding;
+        : display.workAreaSize.width - wm.windowSize.width - padding;
 
     const yTarget =
       up < down
         ? padding
-        : display.workAreaSize.height - bounds.height - padding;
+        : display.workAreaSize.height - wm.windowSize.height - padding;
 
-    wm.windowPosition.x = moveTowards(bounds.x, xTarget, deltaTime * speed);
-    wm.windowPosition.y = moveTowards(bounds.y, yTarget, deltaTime * speed);
+    // wm.windowPosition.x += wm.windowVelocity.x * deltaTime;
+    // wm.windowPosition.y += wm.windowVelocity.y * deltaTime;
+    wm.windowPosition.x = moveTowards(
+      wm.windowPosition.x,
+      xTarget,
+      deltaTime * speed
+    );
+    wm.windowPosition.y = moveTowards(
+      wm.windowPosition.y,
+      yTarget,
+      deltaTime * speed
+    );
     wm.windowSize.width = floatingWidth;
     wm.windowSize.height = floatingHeight;
     wm.updateMainWindowBounds();
