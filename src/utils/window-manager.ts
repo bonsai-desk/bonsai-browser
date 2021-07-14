@@ -161,6 +161,11 @@ export default class WindowManager {
       this.mainWindow.setTopBrowserView(this.urlPeekView);
     }
     tabView.resize();
+
+    this.mainWindow.webContents.send(
+      'set-active',
+      tabView.view.webContents.getURL() !== ''
+    );
   }
 
   loadUrlInTab(id: number, url: string, event: Electron.IpcMainEvent) {
@@ -194,6 +199,7 @@ export default class WindowManager {
       const newUrl = tabView.view.webContents.getURL();
       this.closeFind();
       event.reply('url-changed', [id, newUrl]);
+      this.mainWindow.webContents.send('set-active', newUrl !== '');
       updateWebContents(event, id, tabView);
     })();
   }
@@ -283,23 +289,27 @@ export default class WindowManager {
   }
 
   float(display: Display, floatingWidth: number, floatingHeight: number) {
-    if (!this.windowFloating) {
-      this.windowFloating = true;
-      // snap to corner mode
-      if (!windowHasView(this.mainWindow, this.overlayView)) {
-        this.mainWindow?.addBrowserView(this.overlayView);
-        this.mainWindow?.setTopBrowserView(this.overlayView);
-      }
-      if (windowHasView(this.mainWindow, this.titleBarView)) {
-        this.mainWindow?.removeBrowserView(this.titleBarView);
-      }
-      this.mainWindow?.setBounds({
-        x: Math.round(display.workAreaSize.width / 2.0 - floatingWidth / 2.0),
-        y: Math.round(display.workAreaSize.height / 2.0 - floatingHeight / 2.0),
-        width: floatingWidth,
-        height: floatingHeight,
-      });
+    if (this.windowFloating) {
+      return;
     }
+
+    this.windowFloating = true;
+    // snap to corner mode
+    if (!windowHasView(this.mainWindow, this.overlayView)) {
+      this.mainWindow?.addBrowserView(this.overlayView);
+      this.mainWindow?.setTopBrowserView(this.overlayView);
+    }
+    if (windowHasView(this.mainWindow, this.titleBarView)) {
+      this.mainWindow?.removeBrowserView(this.titleBarView);
+    }
+    this.mainWindow?.setBounds({
+      x: Math.round(display.workAreaSize.width / 2.0 - floatingWidth / 2.0),
+      y: Math.round(display.workAreaSize.height / 2.0 - floatingHeight / 2.0),
+      width: floatingWidth,
+      height: floatingHeight,
+    });
+
+    this.mainWindow.webContents.send('set-padding', '5');
 
     Object.values(this.allTabViews).forEach((tabView) => {
       tabView.windowFloating = this.windowFloating;
@@ -310,24 +320,31 @@ export default class WindowManager {
   }
 
   unFloat(display: Display) {
-    if (this.windowFloating) {
-      this.windowFloating = false;
-      this.mainWindow?.setBounds({
-        x: 0,
-        y: 0,
-        width: display.workAreaSize.width - 1, // todo: without the -1, everything breaks!!??!?
-        height: display.workAreaSize.height - 1,
-      });
-
-      // black border mode
-      if (windowHasView(this.mainWindow, this.overlayView)) {
-        this.mainWindow?.removeBrowserView(this.overlayView);
-      }
-      if (!windowHasView(this.mainWindow, this.titleBarView)) {
-        this.mainWindow?.addBrowserView(this.titleBarView);
-        this.mainWindow?.setTopBrowserView(this.titleBarView);
-      }
+    if (!this.windowFloating) {
+      return;
     }
+
+    this.windowFloating = false;
+    this.mainWindow?.setBounds({
+      x: 0,
+      y: 0,
+      width: display.workAreaSize.width - 1, // todo: without the -1, everything breaks!!??!?
+      height: display.workAreaSize.height - 1,
+    });
+
+    // black border mode
+    if (windowHasView(this.mainWindow, this.overlayView)) {
+      this.mainWindow?.removeBrowserView(this.overlayView);
+    }
+    if (!windowHasView(this.mainWindow, this.titleBarView)) {
+      this.mainWindow?.addBrowserView(this.titleBarView);
+      this.mainWindow?.setTopBrowserView(this.titleBarView);
+    }
+
+    this.mainWindow.webContents.send(
+      'set-padding',
+      this.browserPadding.toString()
+    );
 
     Object.values(this.allTabViews).forEach((tabView) => {
       tabView.windowFloating = this.windowFloating;
