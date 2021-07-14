@@ -314,7 +314,7 @@ export default class WindowManager {
       height: floatingHeight,
     });
 
-    this.mainWindow.webContents.send('set-padding', '5');
+    this.mainWindow.webContents.send('set-padding', '');
 
     Object.values(this.allTabViews).forEach((tabView) => {
       tabView.windowFloating = this.windowFloating;
