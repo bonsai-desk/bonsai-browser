@@ -372,7 +372,7 @@ export default class WindowManager {
     if (this.mainWindow === null || typeof this.mainWindow === 'undefined') {
       return;
     }
-    const padding = this.windowFloating ? 5 : this.browserPadding;
+    const padding = this.windowFloating ? 10 : this.browserPadding;
     const hh = this.windowFloating ? 0 : headerHeight;
     const windowSize = this.mainWindow.getSize();
 

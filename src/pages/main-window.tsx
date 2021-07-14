@@ -32,7 +32,7 @@ const Background = styled.div`
   position: absolute;
   background-color: white;
 
-  box-shadow: 0 0 5px 0 rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.5);
 
   ${({ padding, isActive }: BackgroundProps) =>
     css`
@@ -65,7 +65,7 @@ const MainWindow = observer(() => {
     <>
       <GlobalStyle floating={padding === ''} />
       <Background
-        padding={padding === '' ? '5' : padding}
+        padding={padding === '' ? '10' : padding}
         isActive={isActive}
       />
     </>
