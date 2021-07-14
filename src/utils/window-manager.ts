@@ -283,48 +283,65 @@ export default class WindowManager {
   }
 
   float(display: Display, floatingWidth: number, floatingHeight: number) {
-    if (this.mainWindow?.isVisible()) {
-      this.windowFloating = !this.windowFloating;
-
-      if (this.windowFloating) {
-        // snap to corner mode
-        if (!windowHasView(this.mainWindow, this.overlayView)) {
-          this.mainWindow?.addBrowserView(this.overlayView);
-          this.mainWindow?.setTopBrowserView(this.overlayView);
-        }
-        if (windowHasView(this.mainWindow, this.titleBarView)) {
-          this.mainWindow?.removeBrowserView(this.titleBarView);
-        }
-        this.mainWindow?.setBounds({
-          x: 100,
-          y: 100,
-          width: floatingWidth,
-          height: floatingHeight,
-        });
-      } else {
-        this.mainWindow?.setBounds({
-          x: 0,
-          y: 0,
-          width: display.workAreaSize.width - 1, // todo: without the -1, everything breaks!!??!?
-          height: display.workAreaSize.height - 1,
-        });
-
-        // black border mode
-        if (windowHasView(this.mainWindow, this.overlayView)) {
-          this.mainWindow?.removeBrowserView(this.overlayView);
-        }
-        if (!windowHasView(this.mainWindow, this.titleBarView)) {
-          this.mainWindow?.addBrowserView(this.titleBarView);
-          this.mainWindow?.setTopBrowserView(this.titleBarView);
-        }
+    if (!this.windowFloating) {
+      this.windowFloating = true;
+      // snap to corner mode
+      if (!windowHasView(this.mainWindow, this.overlayView)) {
+        this.mainWindow?.addBrowserView(this.overlayView);
+        this.mainWindow?.setTopBrowserView(this.overlayView);
       }
+      if (windowHasView(this.mainWindow, this.titleBarView)) {
+        this.mainWindow?.removeBrowserView(this.titleBarView);
+      }
+      this.mainWindow?.setBounds({
+        x: Math.round(display.workAreaSize.width / 2.0 - floatingWidth / 2.0),
+        y: Math.round(display.workAreaSize.height / 2.0 - floatingHeight / 2.0),
+        width: floatingWidth,
+        height: floatingHeight,
+      });
+    }
 
-      Object.values(this.allTabViews).forEach((tabView) => {
-        tabView.windowFloating = this.windowFloating;
-        tabView.resize();
+    Object.values(this.allTabViews).forEach((tabView) => {
+      tabView.windowFloating = this.windowFloating;
+      tabView.resize();
+    });
+
+    this.resize();
+  }
+
+  unFloat(display: Display) {
+    if (this.windowFloating) {
+      this.windowFloating = false;
+      this.mainWindow?.setBounds({
+        x: 0,
+        y: 0,
+        width: display.workAreaSize.width - 1, // todo: without the -1, everything breaks!!??!?
+        height: display.workAreaSize.height - 1,
       });
 
-      this.resize();
+      // black border mode
+      if (windowHasView(this.mainWindow, this.overlayView)) {
+        this.mainWindow?.removeBrowserView(this.overlayView);
+      }
+      if (!windowHasView(this.mainWindow, this.titleBarView)) {
+        this.mainWindow?.addBrowserView(this.titleBarView);
+        this.mainWindow?.setTopBrowserView(this.titleBarView);
+      }
+    }
+
+    Object.values(this.allTabViews).forEach((tabView) => {
+      tabView.windowFloating = this.windowFloating;
+      tabView.resize();
+    });
+
+    this.resize();
+  }
+
+  toggleFloat(display: Display, floatingWidth: number, floatingHeight: number) {
+    if (this.windowFloating) {
+      this.unFloat(display);
+    } else {
+      this.float(display, floatingWidth, floatingHeight);
     }
   }
 
@@ -332,7 +349,7 @@ export default class WindowManager {
     if (this.mainWindow === null || typeof this.mainWindow === 'undefined') {
       return;
     }
-    const padding = this.windowFloating ? 0 : this.browserPadding;
+    const padding = this.windowFloating ? 5 : this.browserPadding;
     const hh = this.windowFloating ? 0 : headerHeight;
     const windowSize = this.mainWindow.getSize();
 

@@ -112,33 +112,45 @@ export const createWindow = async () => {
     const deltaTime = time - lastTime;
     lastTime = time;
 
-    if (wm.windowFloating && !wm.movingWindow && mainWindow !== null) {
-      const padding = 25;
-      const speed = 3000;
-
-      const bounds = mainWindow.getBounds();
-      const up = bounds.y;
-      const down = display.workAreaSize.height - (bounds.y + bounds.height);
-      const left = bounds.x;
-      const right = display.workAreaSize.width - (bounds.x + bounds.width);
-
-      const xTarget =
-        left < right
-          ? padding
-          : display.workAreaSize.width - bounds.width - padding;
-
-      const yTarget =
-        up < down
-          ? padding
-          : display.workAreaSize.height - bounds.height - padding;
-
-      mainWindow.setBounds({
-        x: Math.floor(moveTowards(bounds.x, xTarget, deltaTime * speed)),
-        y: Math.floor(moveTowards(bounds.y, yTarget, deltaTime * speed)),
-        width: floatingWidth,
-        height: floatingHeight,
-      });
+    if (!(wm.windowFloating && !wm.movingWindow && mainWindow !== null)) {
+      return;
     }
+
+    const padding = 25;
+    const speed = 3000;
+
+    const bounds = mainWindow.getBounds();
+
+    if (
+      Math.round(bounds.x) ===
+        Math.round(display.workAreaSize.width / 2.0 - floatingWidth / 2.0) &&
+      Math.round(bounds.y) ===
+        Math.round(display.workAreaSize.height / 2.0 - floatingHeight / 2.0)
+    ) {
+      return;
+    }
+
+    const up = bounds.y;
+    const down = display.workAreaSize.height - (bounds.y + bounds.height);
+    const left = bounds.x;
+    const right = display.workAreaSize.width - (bounds.x + bounds.width);
+
+    const xTarget =
+      left < right
+        ? padding
+        : display.workAreaSize.width - bounds.width - padding;
+
+    const yTarget =
+      up < down
+        ? padding
+        : display.workAreaSize.height - bounds.height - padding;
+
+    mainWindow.setBounds({
+      x: Math.floor(moveTowards(bounds.x, xTarget, deltaTime * speed)),
+      y: Math.floor(moveTowards(bounds.y, yTarget, deltaTime * speed)),
+      width: floatingWidth,
+      height: floatingHeight,
+    });
   }, 1);
 
   const tray = createTray(ICON_PNG, mainWindow);
@@ -146,10 +158,13 @@ export const createWindow = async () => {
   mainWindow?.setResizable(false);
 
   globalShortcut.register('CmdOrCtrl+\\', () => {
-    if (mainWindow?.isVisible()) {
-      mainWindow?.hide();
-    } else {
+    if (!mainWindow?.isVisible()) {
       mainWindow?.show();
+      wm.unFloat(display);
+    } else if (!wm.windowFloating) {
+      wm.float(display, floatingWidth, floatingHeight);
+    } else {
+      mainWindow?.hide();
     }
   });
 
@@ -190,43 +205,9 @@ export const createWindow = async () => {
           label: 'Float',
           accelerator: 'CmdOrCtrl+M',
           click: () => {
-            wm.float(display, floatingWidth, floatingHeight);
+            // wm.toggleFloat(display, floatingWidth, floatingHeight);
           },
         },
-        // {
-        //   label: 'tt',
-        //   accelerator: 'CmdOrCtrl+U',
-        //   click: () => {
-        //     if (mainWindow === null) {
-        //       return;
-        //     }
-        //     mainWindow.show();
-        //     // mainWindow.setBounds({
-        //     //   x: 0,
-        //     //   y: 0,
-        //     //   width: display.workAreaSize.width,
-        //     //   height: display.workAreaSize.height,
-        //     // });
-        //     // wm.resize();
-        //   },
-        // },
-        // {
-        //   label: 'ttt',
-        //   accelerator: 'CmdOrCtrl+I',
-        //   click: () => {
-        //     if (mainWindow === null) {
-        //       return;
-        //     }
-        //     mainWindow.hide();
-        //     // mainWindow.setBounds({
-        //     //   x: 0,
-        //     //   y: 0,
-        //     //   width: display.workAreaSize.width - 100,
-        //     //   height: display.workAreaSize.height - 100,
-        //     // });
-        //     // wm.resize();
-        //   },
-        // },
       ],
     })
   );

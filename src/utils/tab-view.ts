@@ -101,7 +101,7 @@ class TabView {
 
   resize() {
     const windowSize = this.window.getSize();
-    const padding = this.windowFloating ? 0 : this.browserPadding;
+    const padding = this.windowFloating ? 5 : this.browserPadding;
     const hh = this.windowFloating ? 0 : headerHeight;
     this.view.setBounds({
       x: padding,
