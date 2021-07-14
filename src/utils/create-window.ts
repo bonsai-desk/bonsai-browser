@@ -158,23 +158,29 @@ export const createWindow = async () => {
   mainWindow?.setResizable(false);
 
   globalShortcut.register('CmdOrCtrl+\\', () => {
+    const activeTabView = wm.allTabViews[wm.activeTabId];
     if (!mainWindow?.isVisible()) {
+      if (
+        activeTabView !== null &&
+        typeof activeTabView !== 'undefined' &&
+        activeTabView.view.webContents.getURL() === ''
+      ) {
+        wm.removeTab(wm.activeTabId);
+      }
       mainWindow?.show();
       wm.unFloat(display);
       mainWindow?.focus();
       wm.titleBarView.webContents.focus();
       wm.titleBarView.webContents.send('create-new-tab');
+    } else if (
+      !wm.windowFloating &&
+      activeTabView !== null &&
+      typeof activeTabView !== 'undefined' &&
+      activeTabView.view.webContents.getURL() !== ''
+    ) {
+      wm.float(display, floatingWidth, floatingHeight);
     } else {
-      const activeTabView = wm.allTabViews[wm.activeTabId];
-      if (
-        !wm.windowFloating &&
-        activeTabView !== null &&
-        activeTabView.view.webContents.getURL() !== ''
-      ) {
-        wm.float(display, floatingWidth, floatingHeight);
-      } else {
-        mainWindow?.hide();
-      }
+      mainWindow?.hide();
     }
   });
 

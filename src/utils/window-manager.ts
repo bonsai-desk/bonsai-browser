@@ -106,7 +106,7 @@ export default class WindowManager {
     );
   }
 
-  removeTab(id: number, event: Electron.IpcMainEvent) {
+  removeTab(id: number) {
     const tabView = this.allTabViews[id];
     if (typeof tabView === 'undefined') {
       throw new Error(`remove-tab: tab with id ${id} does not exist`);
@@ -120,7 +120,7 @@ export default class WindowManager {
     // eslint-disable-line
     (tabView.view.webContents as any).destroy();
     delete this.allTabViews[id];
-    event.reply('tab-removed', id);
+    this.titleBarView.webContents.send('tab-removed', id);
   }
 
   closeFind() {

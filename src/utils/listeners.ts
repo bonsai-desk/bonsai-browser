@@ -6,8 +6,8 @@ function addListeners(wm: WindowManager, browserPadding: number) {
   ipcMain.on('create-new-tab', (_, id) => {
     wm.createNewTab(id, browserPadding);
   });
-  ipcMain.on('remove-tab', (event, id) => {
-    wm.removeTab(id, event);
+  ipcMain.on('remove-tab', (_, id) => {
+    wm.removeTab(id);
   });
   ipcMain.on('set-tab', (_, [id, oldId]) => {
     wm.setTab(id, oldId);
