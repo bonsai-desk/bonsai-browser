@@ -62,6 +62,12 @@ export default class WindowManager {
 
   display: Display;
 
+  windowPosition = { x: 0, y: 0 };
+
+  windowVelocity = { x: 0, y: 0 };
+
+  windowSize = { width: 100, height: 100 };
+
   constructor(mainWindow: BrowserWindow, display: Display) {
     this.mainWindow = mainWindow;
     this.display = display;
@@ -93,6 +99,15 @@ export default class WindowManager {
     // mainWindow.removeBrowserView(this.findView);
 
     this.overlayView = makeView(OVERLAY_HTML);
+  }
+
+  updateMainWindowBounds() {
+    this.mainWindow.setBounds({
+      x: Math.round(this.windowPosition.x),
+      y: Math.round(this.windowPosition.y),
+      width: Math.round(this.windowSize.width),
+      height: Math.round(this.windowSize.height),
+    });
   }
 
   resetTextSearch() {
@@ -348,12 +363,13 @@ export default class WindowManager {
     if (windowHasView(this.mainWindow, this.titleBarView)) {
       this.mainWindow?.removeBrowserView(this.titleBarView);
     }
-    this.mainWindow?.setBounds({
-      x: Math.round(display.workAreaSize.width / 2.0 - floatingWidth / 2.0),
-      y: Math.round(display.workAreaSize.height / 2.0 - floatingHeight / 2.0),
-      width: floatingWidth,
-      height: floatingHeight,
-    });
+    this.windowPosition.x =
+      display.workAreaSize.width / 2.0 - floatingWidth / 2.0;
+    this.windowPosition.y =
+      display.workAreaSize.height / 2.0 - floatingHeight / 2.0;
+    this.windowSize.width = floatingWidth;
+    this.windowSize.height = floatingHeight;
+    this.updateMainWindowBounds();
 
     this.mainWindow.webContents.send('set-padding', '');
 
@@ -371,12 +387,11 @@ export default class WindowManager {
     }
 
     this.windowFloating = false;
-    this.mainWindow?.setBounds({
-      x: 0,
-      y: 0,
-      width: display.workAreaSize.width - 1, // todo: without the -1, everything breaks!!??!?
-      height: display.workAreaSize.height - 1,
-    });
+    this.windowPosition.x = 0;
+    this.windowPosition.y = 0;
+    this.windowSize.width = display.workAreaSize.width - 1; // todo: without the -1, everything breaks!!??!?
+    this.windowSize.height = display.workAreaSize.height - 1;
+    this.updateMainWindowBounds();
 
     // black border mode
     if (windowHasView(this.mainWindow, this.overlayView)) {

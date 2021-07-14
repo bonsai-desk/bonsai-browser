@@ -65,12 +65,11 @@ export const createWindow = async () => {
     wm.mainWindow.webContents.send('set-padding', wm.browserPadding.toString());
   });
 
-  mainWindow.setBounds({
-    x: 0,
-    y: 0,
-    width: display.workAreaSize.width - 1, // todo: without the -1, everything breaks!!??!?
-    height: display.workAreaSize.height - 1,
-  });
+  wm.windowPosition.x = 0;
+  wm.windowPosition.y = 0;
+  wm.windowSize.width = display.workAreaSize.width - 1; // todo: without the -1, everything breaks!!??!?
+  wm.windowSize.height = display.workAreaSize.height - 1;
+  wm.updateMainWindowBounds();
 
   // open window before loading is complete
   mainWindow.show();
@@ -136,12 +135,11 @@ export const createWindow = async () => {
         ? padding
         : display.workAreaSize.height - bounds.height - padding;
 
-    mainWindow.setBounds({
-      x: Math.floor(moveTowards(bounds.x, xTarget, deltaTime * speed)),
-      y: Math.floor(moveTowards(bounds.y, yTarget, deltaTime * speed)),
-      width: floatingWidth,
-      height: floatingHeight,
-    });
+    wm.windowPosition.x = moveTowards(bounds.x, xTarget, deltaTime * speed);
+    wm.windowPosition.y = moveTowards(bounds.y, yTarget, deltaTime * speed);
+    wm.windowSize.width = floatingWidth;
+    wm.windowSize.height = floatingHeight;
+    wm.updateMainWindowBounds();
   }, 1);
 
   const tray = createTray(ICON_PNG, mainWindow);
