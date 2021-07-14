@@ -10,19 +10,12 @@ const GlobalStyle = createGlobalStyle`
     padding: 0;
     width: 100vw;
     height: 100vh;
-    //background-color: rgba(1, 0, 0, 0.5);
-    //-webkit-app-region: drag;
-    //background-color: blue;
   }
 `;
 
 const Main = styled.div`
-  //width: 100vw;
-  //height: 100vh;
   width: 100vw;
   height: 100vh;
-  //-webkit-app-region: drag;
-  //background-color: red;
 `;
 
 let animationId: number;

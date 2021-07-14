@@ -266,14 +266,51 @@ export default class WindowManager {
     }
   }
 
-  windowMoved() {
-    this.movingWindow = false;
-  }
+  startMouseX: number | null = null;
+
+  startMouseY: number | null = null;
+
+  validFloatingClick = false;
+
+  static dragThresholdSquared = 5 * 5;
 
   windowMoving(mouseX: number, mouseY: number) {
     const { x, y } = screen.getCursorScreenPoint();
-    this.mainWindow.setPosition(x - mouseX, y - mouseY);
-    this.movingWindow = true;
+    if (this.startMouseX === null || this.startMouseY === null) {
+      this.startMouseX = x;
+      this.startMouseY = y;
+      this.validFloatingClick = true;
+    }
+
+    const xDif = this.startMouseX - x;
+    const yDif = this.startMouseY - y;
+    const distSquared = xDif * xDif + yDif * yDif;
+
+    if (
+      distSquared > WindowManager.dragThresholdSquared ||
+      !this.validFloatingClick
+    ) {
+      if (this.validFloatingClick) {
+        this.startMouseX = xDif;
+        this.startMouseY = yDif;
+        this.validFloatingClick = false;
+      }
+      this.mainWindow.setPosition(
+        x - mouseX + this.startMouseX,
+        y - mouseY + this.startMouseY
+      );
+      this.movingWindow = true;
+    }
+  }
+
+  windowMoved() {
+    this.startMouseX = null;
+    this.startMouseY = null;
+    this.movingWindow = false;
+    if (this.validFloatingClick) {
+      console.log('floating click');
+    }
+    this.validFloatingClick = false;
   }
 
   clickFind() {
