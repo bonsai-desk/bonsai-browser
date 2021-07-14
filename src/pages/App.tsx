@@ -112,7 +112,7 @@ const TitleBar = observer(() => {
   const { tabStore } = useStore();
   const urlBoxRef = useRef<HTMLInputElement>(null);
 
-  const [addedDefaultTab, setAddedDefaultTab] = useState(false);
+  const [hasRunOnce, setHasRunOnce] = useState(false);
   const [urlFocus, setUrlFocus] = useState(false);
 
   let canGoBack = false;
@@ -125,22 +125,16 @@ const TitleBar = observer(() => {
   }
 
   useEffect(() => {
-    if (addedDefaultTab) {
+    if (hasRunOnce) {
       return;
     }
-    setAddedDefaultTab(true);
-    tabStore.addTab();
-    tabStore.setActiveTabSearchBar('https://www.google.com');
-    ipcRenderer.send('load-url-in-tab', [
-      tabStore.activeTabId,
-      tabStore.getActiveTabSearchBar(),
-    ]);
+    setHasRunOnce(true);
     ipcRenderer.on('create-new-tab', () => {
       if (urlBoxRef.current != null) {
         urlBoxRef.current.focus();
       }
     });
-  }, [addedDefaultTab, tabStore]);
+  }, [hasRunOnce]);
 
   return (
     <TitleBarFull>

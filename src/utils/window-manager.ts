@@ -72,6 +72,11 @@ export default class WindowManager {
     this.mainWindow.on('resize', this.resize);
 
     this.titleBarView = makeView(INDEX_HTML);
+    this.titleBarView.webContents.on('did-finish-load', () => {
+      this.mainWindow.focus();
+      this.titleBarView.webContents.focus();
+      this.titleBarView.webContents.send('create-new-tab');
+    });
     this.mainWindow.setBrowserView(this.titleBarView);
     this.mainWindow.setTopBrowserView(this.titleBarView);
 
