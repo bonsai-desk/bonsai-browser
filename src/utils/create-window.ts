@@ -43,6 +43,7 @@ export const createWindow = async () => {
     webPreferences: {
       nodeIntegration: true,
       devTools: false,
+      contextIsolation: false, // todo: do we need this? security concern?
     },
   });
 
@@ -70,26 +71,11 @@ export const createWindow = async () => {
     height: display.workAreaSize.height - 1,
   });
 
-  console.log();
-
   // open window before loading is complete
-  // if (process.env.START_MINIMIZED) {
-  //   mainWindow.minimize();
-  // } else {
   mainWindow.show();
   mainWindow.focus();
-  // }
 
   addListeners(wm, wm.browserPadding);
-
-  // used to wait until it is loaded before showing
-  // // @TODO: Use 'ready-to-show' event
-  // //        https://github.com/electron/electron/blob/master/docs/api/browser-window.md#using-ready-to-show-event
-  // mainWindow.webContents.on('did-finish-load', () => {
-  //   if (!mainWindow) {
-  //     throw new Error('"mainWindow" is not defined');
-  //   }
-  // });
 
   mainWindow.on('minimize', (e: Event) => {
     if (mainWindow !== null) {

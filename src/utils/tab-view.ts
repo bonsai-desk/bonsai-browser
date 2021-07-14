@@ -35,6 +35,7 @@ class TabView {
         nodeIntegration: false,
         sandbox: true,
         preload: path.join(__dirname, './utils/preload.js'),
+        contextIsolation: false, // todo: do we need this? security concern?
       },
     });
 

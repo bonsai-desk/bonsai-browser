@@ -28,6 +28,7 @@ function makeView(loadURL: string) {
   const newView = new BrowserView({
     webPreferences: {
       nodeIntegration: true,
+      contextIsolation: false, // todo: do we need this? security concern?
     },
   });
   newView.webContents.loadURL(loadURL);
