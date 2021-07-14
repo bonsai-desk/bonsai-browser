@@ -75,6 +75,12 @@ ipcRenderer.on('url-changed', (_, [id, newUrl]) => {
   });
 });
 
+ipcRenderer.on('create-new-tab', () => {
+  runInAction(() => {
+    tabStoreStatic.addTab();
+  });
+});
+
 const Tab = observer(({ tab }: ITab) => {
   const { tabStore } = useStore();
   const active = tabStore.activeTabId === tab.id;

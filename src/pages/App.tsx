@@ -135,6 +135,11 @@ const TitleBar = observer(() => {
       tabStore.activeTabId,
       tabStore.getActiveTabSearchBar(),
     ]);
+    ipcRenderer.on('create-new-tab', () => {
+      if (urlBoxRef.current != null) {
+        urlBoxRef.current.focus();
+      }
+    });
   }, [addedDefaultTab, tabStore]);
 
   return (

@@ -161,10 +161,20 @@ export const createWindow = async () => {
     if (!mainWindow?.isVisible()) {
       mainWindow?.show();
       wm.unFloat(display);
-    } else if (!wm.windowFloating) {
-      wm.float(display, floatingWidth, floatingHeight);
+      mainWindow?.focus();
+      wm.titleBarView.webContents.focus();
+      wm.titleBarView.webContents.send('create-new-tab');
     } else {
-      mainWindow?.hide();
+      const activeTabView = wm.allTabViews[wm.activeTabId];
+      if (
+        !wm.windowFloating &&
+        activeTabView !== null &&
+        activeTabView.view.webContents.getURL() !== ''
+      ) {
+        wm.float(display, floatingWidth, floatingHeight);
+      } else {
+        mainWindow?.hide();
+      }
     }
   });
 
