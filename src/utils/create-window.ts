@@ -212,6 +212,9 @@ export const createWindow = async () => {
           accelerator: 'CmdOrCtrl+M',
           click: () => {
             // wm.toggleFloat(display, floatingWidth, floatingHeight);
+            // wm.allTabViews[wm.activeTabId].view.webContents.executeJavaScript(`
+            //   window.scrollBy(0, 100);
+            // `);
           },
         },
       ],

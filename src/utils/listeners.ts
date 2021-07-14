@@ -42,6 +42,14 @@ function addListeners(wm: WindowManager, browserPadding: number) {
   ipcMain.on('windowMoved', () => {
     wm.windowMoved();
   });
+  ipcMain.on('wheel', (_, [deltaX, deltaY]) => {
+    const activeTabView = wm.allTabViews[wm.activeTabId];
+    if (activeTabView !== null) {
+      activeTabView.view.webContents.executeJavaScript(`
+        window.scrollBy(${deltaX}, ${deltaY});
+      `);
+    }
+  });
 }
 
 export default addListeners;

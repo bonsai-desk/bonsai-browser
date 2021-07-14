@@ -55,11 +55,15 @@ function onMouseDown(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
   requestAnimationFrame(moveWindow);
 }
 
+const sendWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+  ipcRenderer.send('wheel', [e.nativeEvent.deltaX, e.nativeEvent.deltaY]);
+};
+
 const Overlay = observer(() => {
   return (
     <>
       <GlobalStyle />
-      <Main id="draggable" onMouseDown={onMouseDown} />
+      <Main id="draggable" onMouseDown={onMouseDown} onWheel={sendWheel} />
     </>
   );
 });
