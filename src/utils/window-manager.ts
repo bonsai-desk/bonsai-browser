@@ -60,8 +60,11 @@ export default class WindowManager {
 
   overlayView: BrowserView;
 
-  constructor(mainWindow: BrowserWindow) {
+  display: Display;
+
+  constructor(mainWindow: BrowserWindow, display: Display) {
     this.mainWindow = mainWindow;
+    this.display = display;
 
     this.mainWindow.webContents.on('new-window', (event, url) => {
       event.preventDefault();
@@ -308,7 +311,7 @@ export default class WindowManager {
     this.startMouseY = null;
     this.movingWindow = false;
     if (this.validFloatingClick) {
-      console.log('floating click');
+      this.unFloat(this.display);
     }
     this.validFloatingClick = false;
   }

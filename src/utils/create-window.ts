@@ -51,13 +51,14 @@ export const createWindow = async () => {
 
   mainWindow.webContents.loadURL(MAIN_HTML);
 
-  const wm = new WindowManager(mainWindow);
-
   const displays = screen.getAllDisplays();
   if (displays.length === 0) {
     throw new Error('No displays!');
   }
   const display = displays[0];
+
+  const wm = new WindowManager(mainWindow, display);
+
   wm.browserPadding = Math.floor(display.workAreaSize.height / 15.0);
 
   mainWindow.webContents.on('did-finish-load', () => {
