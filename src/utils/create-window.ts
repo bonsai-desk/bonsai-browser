@@ -11,9 +11,10 @@ import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
 import { createTray, installExtensions } from './windows';
 import addListeners from './listeners';
-import { moveTowards } from './utils';
 import WindowManager from './window-manager';
 import { ICON_PNG, MAIN_HTML } from '../constants';
+
+const glMatrix = require('gl-matrix');
 
 class AppUpdater {
   constructor() {
@@ -107,7 +108,7 @@ export const createWindow = async () => {
     }
 
     const padding = 25;
-    const speed = 3000;
+    // const speed = 3000;
 
     if (
       Math.round(wm.windowPosition.x) ===
@@ -135,6 +136,13 @@ export const createWindow = async () => {
       up < down
         ? padding
         : display.workAreaSize.height - wm.windowSize.height - padding;
+
+    const xDif = xTarget - wm.windowPosition.x;
+    const yDif = yTarget - wm.windowPosition.y;
+    const distance = Math.sqrt(xDif * xDif + yDif * yDif);
+
+    const v = glMatrix.vec2.fromValues(1, 2);
+    console.log(v);
 
     wm.windowPosition.x += wm.windowVelocity.x * deltaTime;
     wm.windowPosition.y += wm.windowVelocity.y * deltaTime;
