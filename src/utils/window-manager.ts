@@ -11,6 +11,8 @@ import {
 import { validURL, windowHasView } from './utils';
 import { handleFindText } from './windows';
 
+const glMatrix = require('gl-matrix');
+
 const updateWebContents = (
   event: Electron.IpcMainEvent,
   id: number,
@@ -62,11 +64,11 @@ export default class WindowManager {
 
   display: Display;
 
-  windowPosition = { x: 0, y: 0 };
+  windowPosition = glMatrix.vec2.create();
 
-  windowVelocity = { x: 25, y: -50 };
+  windowVelocity = glMatrix.vec2.create();
 
-  windowSize = { width: 100, height: 100 };
+  windowSize = { width: 0, height: 0 };
 
   constructor(mainWindow: BrowserWindow, display: Display) {
     this.mainWindow = mainWindow;
@@ -102,12 +104,29 @@ export default class WindowManager {
   }
 
   updateMainWindowBounds() {
-    this.mainWindow.setBounds({
-      x: Math.round(this.windowPosition.x),
-      y: Math.round(this.windowPosition.y),
+    let x = Math.round(this.windowPosition[0]);
+    if (Object.is(x, -0)) {
+      // why do you do this to me JavaScript?
+      x = 0;
+    }
+    let y = Math.round(this.windowPosition[1]);
+    if (Object.is(y, -0)) {
+      y = 0;
+    }
+    const rect = {
+      x,
+      y,
       width: Math.round(this.windowSize.width),
       height: Math.round(this.windowSize.height),
-    });
+    };
+    try {
+      this.mainWindow.setBounds(rect);
+    } catch {
+      // console.log(e);
+      console.log(
+        `updateMainWindowBounds error with rect: ${JSON.stringify(rect)}`
+      );
+    }
   }
 
   resetTextSearch() {
@@ -288,12 +307,102 @@ export default class WindowManager {
 
   startMouseY: number | null = null;
 
+  lastX: number | null = null;
+
+  lastY: number | null = null;
+
   validFloatingClick = false;
+
+  lastTime = 0;
+
+  targetWindowPosition = glMatrix.vec2.create();
 
   static dragThresholdSquared = 5 * 5;
 
   windowMoving(mouseX: number, mouseY: number) {
+    this.movingWindow = true;
     const { x, y } = screen.getCursorScreenPoint();
+    const currentTime = new Date().getTime() / 1000.0;
+    if (this.lastX !== null && this.lastY !== null) {
+      const deltaTime = currentTime - this.lastTime;
+      const multiple = 1 / deltaTime;
+      const augment = 0.75;
+      this.windowVelocity[0] = (x - this.lastX) * multiple * augment;
+      this.windowVelocity[1] = (y - this.lastY) * multiple * augment;
+      const maxSpeed = 3500;
+      if (glMatrix.vec2.len(this.windowVelocity) > maxSpeed) {
+        glMatrix.vec2.normalize(this.windowVelocity, this.windowVelocity);
+        glMatrix.vec2.scale(this.windowVelocity, this.windowVelocity, maxSpeed);
+      }
+
+      const padding = 25;
+
+      const targets = [
+        glMatrix.vec2.fromValues(padding, padding),
+        glMatrix.vec2.fromValues(
+          this.display.workAreaSize.width - this.windowSize.width - padding,
+          padding
+        ),
+        glMatrix.vec2.fromValues(
+          this.display.workAreaSize.width - this.windowSize.width - padding,
+          this.display.workAreaSize.height - this.windowSize.height - padding
+        ),
+        glMatrix.vec2.fromValues(
+          padding,
+          this.display.workAreaSize.height - this.windowSize.height - padding
+        ),
+      ];
+
+      const toTargets = [
+        glMatrix.vec2.create(),
+        glMatrix.vec2.create(),
+        glMatrix.vec2.create(),
+        glMatrix.vec2.create(),
+      ];
+
+      const angles = [0, 0, 0, 0];
+
+      const radToDeg = 180 / Math.PI;
+
+      for (let i = 0; i < toTargets.length; i += 1) {
+        glMatrix.vec2.sub(toTargets[i], targets[i], this.windowPosition);
+        angles[i] =
+          glMatrix.vec2.angle(this.windowVelocity, toTargets[i]) * radToDeg;
+      }
+
+      const indexOfClosestAngle = angles.indexOf(Math.min(...angles));
+      let indexOfClosest = 0;
+      let smallestSqrDist = 100000000;
+      for (let i = 0; i < targets.length; i += 1) {
+        const sqrDist = glMatrix.vec2.sqrDist(targets[i], this.windowPosition);
+        if (sqrDist < smallestSqrDist) {
+          smallestSqrDist = sqrDist;
+          indexOfClosest = i;
+        }
+      }
+
+      const windowSpeed = glMatrix.vec2.len(this.windowVelocity);
+      if (
+        typeof this.targetWindowPosition !== 'undefined' &&
+        typeof targets[indexOfClosest] !== 'undefined' &&
+        typeof targets[indexOfClosestAngle] !== 'undefined'
+      ) {
+        if (windowSpeed < 1500 || angles[indexOfClosestAngle] > 45) {
+          // eslint-disable-next-line prefer-destructuring
+          this.targetWindowPosition[0] = targets[indexOfClosest][0];
+          // eslint-disable-next-line prefer-destructuring
+          this.targetWindowPosition[1] = targets[indexOfClosest][1];
+        } else {
+          // eslint-disable-next-line prefer-destructuring
+          this.targetWindowPosition[0] = targets[indexOfClosestAngle][0];
+          // eslint-disable-next-line prefer-destructuring
+          this.targetWindowPosition[1] = targets[indexOfClosestAngle][1];
+        }
+      }
+    }
+    this.lastTime = currentTime;
+    this.lastX = x;
+    this.lastY = y;
     if (this.startMouseX === null || this.startMouseY === null) {
       this.startMouseX = x;
       this.startMouseY = y;
@@ -313,16 +422,17 @@ export default class WindowManager {
         this.startMouseY = yDif;
         this.validFloatingClick = false;
       }
-      this.windowPosition.x = x - mouseX + this.startMouseX;
-      this.windowPosition.y = y - mouseY + this.startMouseY;
+      this.windowPosition[0] = x - mouseX + this.startMouseX;
+      this.windowPosition[1] = y - mouseY + this.startMouseY;
       this.updateMainWindowBounds();
-      this.movingWindow = true;
     }
   }
 
   windowMoved() {
     this.startMouseX = null;
     this.startMouseY = null;
+    this.lastX = null;
+    this.lastY = null;
     this.movingWindow = false;
     if (this.validFloatingClick) {
       this.unFloat(this.display);
@@ -362,12 +472,14 @@ export default class WindowManager {
     if (windowHasView(this.mainWindow, this.titleBarView)) {
       this.mainWindow?.removeBrowserView(this.titleBarView);
     }
-    this.windowPosition.x =
+    this.windowPosition[0] =
       display.workAreaSize.width / 2.0 - floatingWidth / 2.0;
-    this.windowPosition.y =
+    this.windowPosition[1] =
       display.workAreaSize.height / 2.0 - floatingHeight / 2.0;
     this.windowSize.width = floatingWidth;
     this.windowSize.height = floatingHeight;
+    this.windowVelocity[0] = 0;
+    this.windowVelocity[1] = 0;
     this.updateMainWindowBounds();
 
     this.mainWindow.webContents.send('set-padding', '');
@@ -386,8 +498,8 @@ export default class WindowManager {
     }
 
     this.windowFloating = false;
-    this.windowPosition.x = 0;
-    this.windowPosition.y = 0;
+    this.windowPosition[0] = 0;
+    this.windowPosition[1] = 0;
     this.windowSize.width = display.workAreaSize.width - 1; // todo: without the -1, everything breaks!!??!?
     this.windowSize.height = display.workAreaSize.height - 1;
     this.updateMainWindowBounds();

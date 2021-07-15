@@ -11,9 +11,11 @@ import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
 import { createTray, installExtensions } from './windows';
 import addListeners from './listeners';
-import { moveTowards } from './utils';
 import WindowManager from './window-manager';
 import { ICON_PNG, MAIN_HTML } from '../constants';
+import { moveTowards } from './utils';
+
+const glMatrix = require('gl-matrix');
 
 class AppUpdater {
   constructor() {
@@ -65,8 +67,8 @@ export const createWindow = async () => {
     wm.mainWindow.webContents.send('set-padding', wm.browserPadding.toString());
   });
 
-  wm.windowPosition.x = 0;
-  wm.windowPosition.y = 0;
+  wm.windowPosition[0] = 0;
+  wm.windowPosition[1] = 0;
   wm.windowSize.width = display.workAreaSize.width - 1; // todo: without the -1, everything breaks!!??!?
   wm.windowSize.height = display.workAreaSize.height - 1;
   wm.updateMainWindowBounds();
@@ -90,68 +92,136 @@ export const createWindow = async () => {
   const floatingWidth = Math.floor(height80 * 0.7);
   const floatingHeight = Math.floor(height80);
 
-  let startTime: number | null = null;
-  let lastTime = 0;
-  // todo can this run at 60fps instead of every millisecond
-  setInterval(() => {
-    const currentTime = new Date().getTime() / 1000.0;
-    if (startTime === null) {
-      startTime = currentTime;
-    }
-    const time = currentTime - startTime;
-    const deltaTime = time - lastTime;
-    lastTime = time;
+  const fixedTimeStep = 0.01;
+  let lastFixedUpdateTime = 0;
+  const fixedUpdate = () => {
+    const deltaTime = fixedTimeStep;
 
     if (!(wm.windowFloating && !wm.movingWindow && mainWindow !== null)) {
       return;
     }
 
     const padding = 25;
-    const speed = 3000;
 
     if (
-      Math.round(wm.windowPosition.x) ===
+      Math.round(wm.windowPosition[0]) ===
         Math.round(display.workAreaSize.width / 2.0 - floatingWidth / 2.0) &&
-      Math.round(wm.windowPosition.y) ===
+      Math.round(wm.windowPosition[1]) ===
         Math.round(display.workAreaSize.height / 2.0 - floatingHeight / 2.0)
     ) {
       return;
     }
 
-    const up = wm.windowPosition.y;
+    const up = wm.windowPosition[1];
     const down =
       display.workAreaSize.height -
-      (wm.windowPosition.y + wm.windowSize.height);
-    const left = wm.windowPosition.x;
+      (wm.windowPosition[1] + wm.windowSize.height);
+    const left = wm.windowPosition[0];
     const right =
-      display.workAreaSize.width - (wm.windowPosition.x + wm.windowSize.width);
+      display.workAreaSize.width - (wm.windowPosition[0] + wm.windowSize.width);
 
-    const xTarget =
-      left < right
-        ? padding
-        : display.workAreaSize.width - wm.windowSize.width - padding;
-
-    const yTarget =
-      up < down
-        ? padding
-        : display.workAreaSize.height - wm.windowSize.height - padding;
-
-    // wm.windowPosition.x += wm.windowVelocity.x * deltaTime;
-    // wm.windowPosition.y += wm.windowVelocity.y * deltaTime;
-    wm.windowPosition.x = moveTowards(
-      wm.windowPosition.x,
-      xTarget,
-      deltaTime * speed
+    const distance = glMatrix.vec2.distance(
+      wm.windowPosition,
+      wm.targetWindowPosition
     );
-    wm.windowPosition.y = moveTowards(
-      wm.windowPosition.y,
-      yTarget,
-      deltaTime * speed
-    );
+    const moveTowardsThreshold = display.workAreaSize.height * 0.02;
+    if (distance < moveTowardsThreshold) {
+      wm.windowVelocity[0] = 0;
+      wm.windowVelocity[1] = 0;
+
+      const moveTowardsSpeed = 500;
+      wm.windowPosition[0] = moveTowards(
+        wm.windowPosition[0],
+        wm.targetWindowPosition[0],
+        deltaTime * moveTowardsSpeed
+      );
+      wm.windowPosition[1] = moveTowards(
+        wm.windowPosition[1],
+        wm.targetWindowPosition[1],
+        deltaTime * moveTowardsSpeed
+      );
+    } else {
+      // calculate vector pointing towards target position
+      const towardsTarget = glMatrix.vec2.create();
+      glMatrix.vec2.sub(
+        towardsTarget,
+        wm.targetWindowPosition,
+        wm.windowPosition
+      );
+      glMatrix.vec2.normalize(towardsTarget, towardsTarget);
+
+      // apply drag
+      const distanceScaled = Math.min(
+        distance / (display.workAreaSize.width / 3),
+        1
+      );
+      const drag = Math.max(40 * (1 - distanceScaled), 5);
+      glMatrix.vec2.scale(
+        wm.windowVelocity,
+        wm.windowVelocity,
+        1 - deltaTime * drag
+      );
+
+      // force to keep inside screen
+      const springConstant = 75;
+      if (up < padding) {
+        wm.windowVelocity[1] +=
+          deltaTime * springConstant * -(wm.windowPosition[1] - padding);
+      }
+      if (down < padding) {
+        const bottomY = wm.windowPosition[1] + wm.windowSize.height;
+        wm.windowVelocity[1] +=
+          deltaTime *
+          springConstant *
+          (display.workAreaSize.height - bottomY - padding);
+      }
+      if (left < padding) {
+        wm.windowVelocity[0] +=
+          deltaTime * springConstant * -(wm.windowPosition[0] - padding);
+      }
+      if (right < padding) {
+        const rightX = wm.windowPosition[0] + wm.windowSize.width;
+        wm.windowVelocity[0] +=
+          deltaTime *
+          springConstant *
+          (display.workAreaSize.width - rightX - padding);
+      }
+
+      // calculate force to target
+      const forceToTarget = glMatrix.vec2.create();
+      glMatrix.vec2.scale(forceToTarget, towardsTarget, deltaTime * 40000);
+      glMatrix.vec2.add(wm.windowVelocity, wm.windowVelocity, forceToTarget);
+
+      // apply velocity
+      wm.windowPosition[0] += wm.windowVelocity[0] * deltaTime;
+      wm.windowPosition[1] += wm.windowVelocity[1] * deltaTime;
+    }
+
     wm.windowSize.width = floatingWidth;
     wm.windowSize.height = floatingHeight;
     wm.updateMainWindowBounds();
-  }, 1);
+  };
+
+  let startTime: number | null = null;
+  // let lastTime = 0;
+
+  const update = () => {
+    const currentTime = new Date().getTime() / 1000.0;
+    if (startTime === null) {
+      startTime = currentTime;
+    }
+    const time = currentTime - startTime;
+    // const deltaTime = time - lastTime;
+    // lastTime = time;
+
+    while (lastFixedUpdateTime < time) {
+      lastFixedUpdateTime += fixedTimeStep;
+      fixedUpdate();
+    }
+  };
+
+  // todo can this run at 60fps instead of every millisecond
+  setInterval(update, 1);
 
   const tray = createTray(ICON_PNG, mainWindow);
 

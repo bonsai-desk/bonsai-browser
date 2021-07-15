@@ -254,6 +254,7 @@
     "electron-debug": "^3.1.0",
     "electron-log": "^4.2.4",
     "electron-updater": "^4.3.4",
+    "gl-matrix": "^3.3.0",
     "history": "^5.0.0",
     "mobx": "^6.3.2",
     "mobx-react-lite": "^3.2.0",
