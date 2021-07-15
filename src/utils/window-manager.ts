@@ -500,8 +500,8 @@ export default class WindowManager {
     this.windowFloating = false;
     this.windowPosition[0] = 0;
     this.windowPosition[1] = 0;
-    this.windowSize.width = display.workAreaSize.width - 1; // todo: without the -1, everything breaks!!??!?
-    this.windowSize.height = display.workAreaSize.height - 1;
+    this.windowSize.width = display.workAreaSize.width;
+    this.windowSize.height = display.workAreaSize.height - 1; // todo: without the -1, everything breaks!!??!?
     this.updateMainWindowBounds();
 
     // black border mode

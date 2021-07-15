@@ -69,8 +69,8 @@ export const createWindow = async () => {
 
   wm.windowPosition[0] = 0;
   wm.windowPosition[1] = 0;
-  wm.windowSize.width = display.workAreaSize.width - 1; // todo: without the -1, everything breaks!!??!?
-  wm.windowSize.height = display.workAreaSize.height - 1;
+  wm.windowSize.width = display.workAreaSize.width;
+  wm.windowSize.height = display.workAreaSize.height - 1; // todo: without the -1, everything breaks!!??!?
   wm.updateMainWindowBounds();
 
   // open window before loading is complete
