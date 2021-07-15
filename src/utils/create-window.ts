@@ -151,7 +151,11 @@ export const createWindow = async () => {
       glMatrix.vec2.normalize(towardsTarget, towardsTarget);
 
       // apply drag
-      const drag = 20;
+      const distanceScaled = Math.min(
+        distance / (display.workAreaSize.width / 3),
+        1
+      );
+      const drag = Math.max(40 * (1 - distanceScaled), 5);
       glMatrix.vec2.scale(
         wm.windowVelocity,
         wm.windowVelocity,

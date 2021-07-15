@@ -370,7 +370,7 @@ export default class WindowManager {
           glMatrix.vec2.angle(this.windowVelocity, toTargets[i]) * radToDeg;
       }
 
-      let indexOfClosestAngle = angles.indexOf(Math.min(...angles));
+      const indexOfClosestAngle = angles.indexOf(Math.min(...angles));
       let indexOfClosest = 0;
       let smallestSqrDist = 100000000;
       for (let i = 0; i < targets.length; i += 1) {
@@ -382,16 +382,22 @@ export default class WindowManager {
       }
 
       const windowSpeed = glMatrix.vec2.len(this.windowVelocity);
-      if (windowSpeed < 1500) {
-        // eslint-disable-next-line prefer-destructuring
-        this.targetWindowPosition[0] = targets[indexOfClosest][0];
-        // eslint-disable-next-line prefer-destructuring
-        this.targetWindowPosition[1] = targets[indexOfClosest][1];
-      } else {
-        // eslint-disable-next-line prefer-destructuring
-        this.targetWindowPosition[0] = targets[indexOfClosestAngle][0];
-        // eslint-disable-next-line prefer-destructuring
-        this.targetWindowPosition[1] = targets[indexOfClosestAngle][1];
+      if (
+        typeof this.targetWindowPosition !== 'undefined' &&
+        typeof targets[indexOfClosest] !== 'undefined' &&
+        typeof targets[indexOfClosestAngle] !== 'undefined'
+      ) {
+        if (windowSpeed < 1500 || angles[indexOfClosestAngle] > 45) {
+          // eslint-disable-next-line prefer-destructuring
+          this.targetWindowPosition[0] = targets[indexOfClosest][0];
+          // eslint-disable-next-line prefer-destructuring
+          this.targetWindowPosition[1] = targets[indexOfClosest][1];
+        } else {
+          // eslint-disable-next-line prefer-destructuring
+          this.targetWindowPosition[0] = targets[indexOfClosestAngle][0];
+          // eslint-disable-next-line prefer-destructuring
+          this.targetWindowPosition[1] = targets[indexOfClosestAngle][1];
+        }
       }
     }
     this.lastTime = currentTime;
