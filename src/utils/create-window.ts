@@ -120,19 +120,10 @@ export const createWindow = async () => {
     const right =
       display.workAreaSize.width - (wm.windowPosition[0] + wm.windowSize.width);
 
-    const xTarget =
-      left < right
-        ? padding
-        : display.workAreaSize.width - wm.windowSize.width - padding;
-
-    const yTarget =
-      up < down
-        ? padding
-        : display.workAreaSize.height - wm.windowSize.height - padding;
-
-    const targetPosition = glMatrix.vec2.fromValues(xTarget, yTarget);
-
-    const distance = glMatrix.vec2.distance(wm.windowPosition, targetPosition);
+    const distance = glMatrix.vec2.distance(
+      wm.windowPosition,
+      wm.targetWindowPosition
+    );
     const moveTowardsThreshold = display.workAreaSize.height * 0.02;
     if (distance < moveTowardsThreshold) {
       wm.windowVelocity[0] = 0;
@@ -141,22 +132,26 @@ export const createWindow = async () => {
       const moveTowardsSpeed = 500;
       wm.windowPosition[0] = moveTowards(
         wm.windowPosition[0],
-        xTarget,
+        wm.targetWindowPosition[0],
         deltaTime * moveTowardsSpeed
       );
       wm.windowPosition[1] = moveTowards(
         wm.windowPosition[1],
-        yTarget,
+        wm.targetWindowPosition[1],
         deltaTime * moveTowardsSpeed
       );
     } else {
       // calculate vector pointing towards target position
       const towardsTarget = glMatrix.vec2.create();
-      glMatrix.vec2.sub(towardsTarget, targetPosition, wm.windowPosition);
+      glMatrix.vec2.sub(
+        towardsTarget,
+        wm.targetWindowPosition,
+        wm.windowPosition
+      );
       glMatrix.vec2.normalize(towardsTarget, towardsTarget);
 
       // apply drag
-      const drag = 0.5;
+      const drag = 20;
       glMatrix.vec2.scale(
         wm.windowVelocity,
         wm.windowVelocity,
@@ -164,7 +159,7 @@ export const createWindow = async () => {
       );
 
       // force to keep inside screen
-      const springConstant = 100;
+      const springConstant = 75;
       if (up < padding) {
         wm.windowVelocity[1] +=
           deltaTime * springConstant * -(wm.windowPosition[1] - padding);
@@ -188,9 +183,9 @@ export const createWindow = async () => {
           (display.workAreaSize.width - rightX - padding);
       }
 
-      // calculate force to targetasdf
+      // calculate force to target
       const forceToTarget = glMatrix.vec2.create();
-      glMatrix.vec2.scale(forceToTarget, towardsTarget, deltaTime * 5000);
+      glMatrix.vec2.scale(forceToTarget, towardsTarget, deltaTime * 40000);
       glMatrix.vec2.add(wm.windowVelocity, wm.windowVelocity, forceToTarget);
 
       // apply velocity

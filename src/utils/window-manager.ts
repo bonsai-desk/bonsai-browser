@@ -315,6 +315,8 @@ export default class WindowManager {
 
   lastTime = 0;
 
+  targetWindowPosition = glMatrix.vec2.create();
+
   static dragThresholdSquared = 5 * 5;
 
   windowMoving(mouseX: number, mouseY: number) {
@@ -331,6 +333,65 @@ export default class WindowManager {
       if (glMatrix.vec2.len(this.windowVelocity) > maxSpeed) {
         glMatrix.vec2.normalize(this.windowVelocity, this.windowVelocity);
         glMatrix.vec2.scale(this.windowVelocity, this.windowVelocity, maxSpeed);
+      }
+
+      const padding = 25;
+
+      const targets = [
+        glMatrix.vec2.fromValues(padding, padding),
+        glMatrix.vec2.fromValues(
+          this.display.workAreaSize.width - this.windowSize.width - padding,
+          padding
+        ),
+        glMatrix.vec2.fromValues(
+          this.display.workAreaSize.width - this.windowSize.width - padding,
+          this.display.workAreaSize.height - this.windowSize.height - padding
+        ),
+        glMatrix.vec2.fromValues(
+          padding,
+          this.display.workAreaSize.height - this.windowSize.height - padding
+        ),
+      ];
+
+      const toTargets = [
+        glMatrix.vec2.create(),
+        glMatrix.vec2.create(),
+        glMatrix.vec2.create(),
+        glMatrix.vec2.create(),
+      ];
+
+      const angles = [0, 0, 0, 0];
+
+      const radToDeg = 180 / Math.PI;
+
+      for (let i = 0; i < toTargets.length; i += 1) {
+        glMatrix.vec2.sub(toTargets[i], targets[i], this.windowPosition);
+        angles[i] =
+          glMatrix.vec2.angle(this.windowVelocity, toTargets[i]) * radToDeg;
+      }
+
+      let indexOfClosestAngle = angles.indexOf(Math.min(...angles));
+      let indexOfClosest = 0;
+      let smallestSqrDist = 100000000;
+      for (let i = 0; i < targets.length; i += 1) {
+        const sqrDist = glMatrix.vec2.sqrDist(targets[i], this.windowPosition);
+        if (sqrDist < smallestSqrDist) {
+          smallestSqrDist = sqrDist;
+          indexOfClosest = i;
+        }
+      }
+
+      const windowSpeed = glMatrix.vec2.len(this.windowVelocity);
+      if (windowSpeed < 1500) {
+        // eslint-disable-next-line prefer-destructuring
+        this.targetWindowPosition[0] = targets[indexOfClosest][0];
+        // eslint-disable-next-line prefer-destructuring
+        this.targetWindowPosition[1] = targets[indexOfClosest][1];
+      } else {
+        // eslint-disable-next-line prefer-destructuring
+        this.targetWindowPosition[0] = targets[indexOfClosestAngle][0];
+        // eslint-disable-next-line prefer-destructuring
+        this.targetWindowPosition[1] = targets[indexOfClosestAngle][1];
       }
     }
     this.lastTime = currentTime;
