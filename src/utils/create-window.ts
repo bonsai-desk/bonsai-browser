@@ -135,6 +135,9 @@ export const createWindow = async () => {
     const distance = glMatrix.vec2.distance(wm.windowPosition, targetPosition);
     const moveTowardsThreshold = display.workAreaSize.height * 0.02;
     if (distance < moveTowardsThreshold) {
+      wm.windowVelocity[0] = 0;
+      wm.windowVelocity[1] = 0;
+
       const moveTowardsSpeed = 500;
       wm.windowPosition[0] = moveTowards(
         wm.windowPosition[0],
@@ -147,17 +150,50 @@ export const createWindow = async () => {
         deltaTime * moveTowardsSpeed
       );
     } else {
+      // calculate vector pointing towards target position
       const towardsTarget = glMatrix.vec2.create();
       glMatrix.vec2.sub(towardsTarget, targetPosition, wm.windowPosition);
       glMatrix.vec2.normalize(towardsTarget, towardsTarget);
 
-      const gravityForce = glMatrix.vec2.create();
-      glMatrix.vec2.scale(gravityForce, towardsTarget, deltaTime * 5000);
+      // apply drag
+      const drag = 0.5;
+      glMatrix.vec2.scale(
+        wm.windowVelocity,
+        wm.windowVelocity,
+        1 - deltaTime * drag
+      );
 
-      glMatrix.vec2.scale(wm.windowVelocity, wm.windowVelocity, 0.9);
+      // force to keep inside screen
+      const springConstant = 100;
+      if (up < padding) {
+        wm.windowVelocity[1] +=
+          deltaTime * springConstant * -(wm.windowPosition[1] - padding);
+      }
+      if (down < padding) {
+        const bottomY = wm.windowPosition[1] + wm.windowSize.height;
+        wm.windowVelocity[1] +=
+          deltaTime *
+          springConstant *
+          (display.workAreaSize.height - bottomY - padding);
+      }
+      if (left < padding) {
+        wm.windowVelocity[0] +=
+          deltaTime * springConstant * -(wm.windowPosition[0] - padding);
+      }
+      if (right < padding) {
+        const rightX = wm.windowPosition[0] + wm.windowSize.width;
+        wm.windowVelocity[0] +=
+          deltaTime *
+          springConstant *
+          (display.workAreaSize.width - rightX - padding);
+      }
 
-      glMatrix.vec2.add(wm.windowVelocity, wm.windowVelocity, gravityForce);
+      // calculate force to targetasdf
+      const forceToTarget = glMatrix.vec2.create();
+      glMatrix.vec2.scale(forceToTarget, towardsTarget, deltaTime * 5000);
+      glMatrix.vec2.add(wm.windowVelocity, wm.windowVelocity, forceToTarget);
 
+      // apply velocity
       wm.windowPosition[0] += wm.windowVelocity[0] * deltaTime;
       wm.windowPosition[1] += wm.windowVelocity[1] * deltaTime;
     }
