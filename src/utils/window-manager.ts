@@ -64,9 +64,9 @@ export default class WindowManager {
 
   windowPosition = { x: 0, y: 0 };
 
-  windowVelocity = { x: 25, y: -50 };
+  windowVelocity = { x: 0, y: 0 };
 
-  windowSize = { width: 100, height: 100 };
+  windowSize = { width: 0, height: 0 };
 
   constructor(mainWindow: BrowserWindow, display: Display) {
     this.mainWindow = mainWindow;
@@ -102,12 +102,27 @@ export default class WindowManager {
   }
 
   updateMainWindowBounds() {
-    this.mainWindow.setBounds({
-      x: Math.round(this.windowPosition.x),
-      y: Math.round(this.windowPosition.y),
+    let x = Math.round(this.windowPosition.x);
+    if (Object.is(x, -0)) {
+      // why do you do this to me JavaScript?
+      x = 0;
+    }
+    let y = Math.round(this.windowPosition.y);
+    if (Object.is(y, -0)) {
+      y = 0;
+    }
+    const rect = {
+      x,
+      y,
       width: Math.round(this.windowSize.width),
       height: Math.round(this.windowSize.height),
-    });
+    };
+    try {
+      this.mainWindow.setBounds(rect);
+    } catch (e) {
+      console.log(e);
+      console.log(rect);
+    }
   }
 
   resetTextSearch() {
@@ -288,12 +303,29 @@ export default class WindowManager {
 
   startMouseY: number | null = null;
 
+  lastX: number | null = null;
+
+  lastY: number | null = null;
+
   validFloatingClick = false;
+
+  lastTime = 0;
 
   static dragThresholdSquared = 5 * 5;
 
   windowMoving(mouseX: number, mouseY: number) {
     const { x, y } = screen.getCursorScreenPoint();
+    const currentTime = new Date().getTime() / 1000.0;
+    if (this.lastX !== null && this.lastY !== null) {
+      const deltaTime = currentTime - this.lastTime;
+      const multiple = 1 / deltaTime;
+      const augment = 0.75;
+      this.windowVelocity.x = (x - this.lastX) * multiple * augment;
+      this.windowVelocity.y = (y - this.lastY) * multiple * augment;
+    }
+    this.lastTime = currentTime;
+    this.lastX = x;
+    this.lastY = y;
     if (this.startMouseX === null || this.startMouseY === null) {
       this.startMouseX = x;
       this.startMouseY = y;
@@ -323,6 +355,8 @@ export default class WindowManager {
   windowMoved() {
     this.startMouseX = null;
     this.startMouseY = null;
+    this.lastX = null;
+    this.lastY = null;
     this.movingWindow = false;
     if (this.validFloatingClick) {
       this.unFloat(this.display);
@@ -368,6 +402,8 @@ export default class WindowManager {
       display.workAreaSize.height / 2.0 - floatingHeight / 2.0;
     this.windowSize.width = floatingWidth;
     this.windowSize.height = floatingHeight;
+    this.windowVelocity.x = 0;
+    this.windowVelocity.y = 0;
     this.updateMainWindowBounds();
 
     this.mainWindow.webContents.send('set-padding', '');

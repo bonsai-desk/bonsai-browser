@@ -136,18 +136,18 @@ export const createWindow = async () => {
         ? padding
         : display.workAreaSize.height - wm.windowSize.height - padding;
 
-    // wm.windowPosition.x += wm.windowVelocity.x * deltaTime;
-    // wm.windowPosition.y += wm.windowVelocity.y * deltaTime;
-    wm.windowPosition.x = moveTowards(
-      wm.windowPosition.x,
-      xTarget,
-      deltaTime * speed
-    );
-    wm.windowPosition.y = moveTowards(
-      wm.windowPosition.y,
-      yTarget,
-      deltaTime * speed
-    );
+    wm.windowPosition.x += wm.windowVelocity.x * deltaTime;
+    wm.windowPosition.y += wm.windowVelocity.y * deltaTime;
+    // wm.windowPosition.x = moveTowards(
+    //   wm.windowPosition.x,
+    //   xTarget,
+    //   deltaTime * speed
+    // );
+    // wm.windowPosition.y = moveTowards(
+    //   wm.windowPosition.y,
+    //   yTarget,
+    //   deltaTime * speed
+    // );
     wm.windowSize.width = floatingWidth;
     wm.windowSize.height = floatingHeight;
     wm.updateMainWindowBounds();
