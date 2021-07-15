@@ -65,6 +65,7 @@ export const createWindow = async () => {
 
   mainWindow.webContents.on('did-finish-load', () => {
     wm.mainWindow.webContents.send('set-padding', wm.browserPadding.toString());
+    mainWindow?.show();
   });
 
   wm.windowPosition[0] = 0;
@@ -74,8 +75,9 @@ export const createWindow = async () => {
   wm.updateMainWindowBounds();
 
   // open window before loading is complete
-  mainWindow.show();
-  mainWindow.focus();
+  // mainWindow.show();
+  // mainWindow.focus();
+  mainWindow.hide();
 
   addListeners(wm, wm.browserPadding);
 
