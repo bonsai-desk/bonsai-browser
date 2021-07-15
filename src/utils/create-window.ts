@@ -13,6 +13,7 @@ import { createTray, installExtensions } from './windows';
 import addListeners from './listeners';
 import WindowManager from './window-manager';
 import { ICON_PNG, MAIN_HTML } from '../constants';
+import { moveTowards } from './utils';
 
 const glMatrix = require('gl-matrix');
 
@@ -66,8 +67,8 @@ export const createWindow = async () => {
     wm.mainWindow.webContents.send('set-padding', wm.browserPadding.toString());
   });
 
-  wm.windowPosition.x = 0;
-  wm.windowPosition.y = 0;
+  wm.windowPosition[0] = 0;
+  wm.windowPosition[1] = 0;
   wm.windowSize.width = display.workAreaSize.width - 1; // todo: without the -1, everything breaks!!??!?
   wm.windowSize.height = display.workAreaSize.height - 1;
   wm.updateMainWindowBounds();
@@ -91,41 +92,33 @@ export const createWindow = async () => {
   const floatingWidth = Math.floor(height80 * 0.7);
   const floatingHeight = Math.floor(height80);
 
-  let startTime: number | null = null;
-  let lastTime = 0;
-  // todo can this run at 60fps instead of every millisecond
-  setInterval(() => {
-    const currentTime = new Date().getTime() / 1000.0;
-    if (startTime === null) {
-      startTime = currentTime;
-    }
-    const time = currentTime - startTime;
-    const deltaTime = time - lastTime;
-    lastTime = time;
+  const fixedTimeStep = 0.01;
+  let lastFixedUpdateTime = 0;
+  const fixedUpdate = () => {
+    const deltaTime = fixedTimeStep;
 
     if (!(wm.windowFloating && !wm.movingWindow && mainWindow !== null)) {
       return;
     }
 
     const padding = 25;
-    // const speed = 3000;
 
     if (
-      Math.round(wm.windowPosition.x) ===
+      Math.round(wm.windowPosition[0]) ===
         Math.round(display.workAreaSize.width / 2.0 - floatingWidth / 2.0) &&
-      Math.round(wm.windowPosition.y) ===
+      Math.round(wm.windowPosition[1]) ===
         Math.round(display.workAreaSize.height / 2.0 - floatingHeight / 2.0)
     ) {
       return;
     }
 
-    const up = wm.windowPosition.y;
+    const up = wm.windowPosition[1];
     const down =
       display.workAreaSize.height -
-      (wm.windowPosition.y + wm.windowSize.height);
-    const left = wm.windowPosition.x;
+      (wm.windowPosition[1] + wm.windowSize.height);
+    const left = wm.windowPosition[0];
     const right =
-      display.workAreaSize.width - (wm.windowPosition.x + wm.windowSize.width);
+      display.workAreaSize.width - (wm.windowPosition[0] + wm.windowSize.width);
 
     const xTarget =
       left < right
@@ -137,29 +130,63 @@ export const createWindow = async () => {
         ? padding
         : display.workAreaSize.height - wm.windowSize.height - padding;
 
-    const xDif = xTarget - wm.windowPosition.x;
-    const yDif = yTarget - wm.windowPosition.y;
-    const distance = Math.sqrt(xDif * xDif + yDif * yDif);
+    const targetPosition = glMatrix.vec2.fromValues(xTarget, yTarget);
 
-    const v = glMatrix.vec2.fromValues(1, 2);
-    console.log(v);
+    const distance = glMatrix.vec2.distance(wm.windowPosition, targetPosition);
+    const moveTowardsThreshold = display.workAreaSize.height * 0.02;
+    if (distance < moveTowardsThreshold) {
+      const moveTowardsSpeed = 500;
+      wm.windowPosition[0] = moveTowards(
+        wm.windowPosition[0],
+        xTarget,
+        deltaTime * moveTowardsSpeed
+      );
+      wm.windowPosition[1] = moveTowards(
+        wm.windowPosition[1],
+        yTarget,
+        deltaTime * moveTowardsSpeed
+      );
+    } else {
+      const towardsTarget = glMatrix.vec2.create();
+      glMatrix.vec2.sub(towardsTarget, targetPosition, wm.windowPosition);
+      glMatrix.vec2.normalize(towardsTarget, towardsTarget);
 
-    wm.windowPosition.x += wm.windowVelocity.x * deltaTime;
-    wm.windowPosition.y += wm.windowVelocity.y * deltaTime;
-    // wm.windowPosition.x = moveTowards(
-    //   wm.windowPosition.x,
-    //   xTarget,
-    //   deltaTime * speed
-    // );
-    // wm.windowPosition.y = moveTowards(
-    //   wm.windowPosition.y,
-    //   yTarget,
-    //   deltaTime * speed
-    // );
+      const gravityForce = glMatrix.vec2.create();
+      glMatrix.vec2.scale(gravityForce, towardsTarget, deltaTime * 5000);
+
+      glMatrix.vec2.scale(wm.windowVelocity, wm.windowVelocity, 0.9);
+
+      glMatrix.vec2.add(wm.windowVelocity, wm.windowVelocity, gravityForce);
+
+      wm.windowPosition[0] += wm.windowVelocity[0] * deltaTime;
+      wm.windowPosition[1] += wm.windowVelocity[1] * deltaTime;
+    }
+
     wm.windowSize.width = floatingWidth;
     wm.windowSize.height = floatingHeight;
     wm.updateMainWindowBounds();
-  }, 1);
+  };
+
+  let startTime: number | null = null;
+  // let lastTime = 0;
+
+  const update = () => {
+    const currentTime = new Date().getTime() / 1000.0;
+    if (startTime === null) {
+      startTime = currentTime;
+    }
+    const time = currentTime - startTime;
+    // const deltaTime = time - lastTime;
+    // lastTime = time;
+
+    while (lastFixedUpdateTime < time) {
+      lastFixedUpdateTime += fixedTimeStep;
+      fixedUpdate();
+    }
+  };
+
+  // todo can this run at 60fps instead of every millisecond
+  setInterval(update, 1);
 
   const tray = createTray(ICON_PNG, mainWindow);
 

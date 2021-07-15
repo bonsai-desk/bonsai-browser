@@ -11,6 +11,8 @@ import {
 import { validURL, windowHasView } from './utils';
 import { handleFindText } from './windows';
 
+const glMatrix = require('gl-matrix');
+
 const updateWebContents = (
   event: Electron.IpcMainEvent,
   id: number,
@@ -62,9 +64,9 @@ export default class WindowManager {
 
   display: Display;
 
-  windowPosition = { x: 0, y: 0 };
+  windowPosition = glMatrix.vec2.create();
 
-  windowVelocity = { x: 0, y: 0 };
+  windowVelocity = glMatrix.vec2.create();
 
   windowSize = { width: 0, height: 0 };
 
@@ -102,12 +104,12 @@ export default class WindowManager {
   }
 
   updateMainWindowBounds() {
-    let x = Math.round(this.windowPosition.x);
+    let x = Math.round(this.windowPosition[0]);
     if (Object.is(x, -0)) {
       // why do you do this to me JavaScript?
       x = 0;
     }
-    let y = Math.round(this.windowPosition.y);
+    let y = Math.round(this.windowPosition[1]);
     if (Object.is(y, -0)) {
       y = 0;
     }
@@ -119,9 +121,11 @@ export default class WindowManager {
     };
     try {
       this.mainWindow.setBounds(rect);
-    } catch (e) {
-      console.log(e);
-      console.log(rect);
+    } catch {
+      // console.log(e);
+      console.log(
+        `updateMainWindowBounds error with rect: ${JSON.stringify(rect)}`
+      );
     }
   }
 
@@ -314,14 +318,20 @@ export default class WindowManager {
   static dragThresholdSquared = 5 * 5;
 
   windowMoving(mouseX: number, mouseY: number) {
+    this.movingWindow = true;
     const { x, y } = screen.getCursorScreenPoint();
     const currentTime = new Date().getTime() / 1000.0;
     if (this.lastX !== null && this.lastY !== null) {
       const deltaTime = currentTime - this.lastTime;
       const multiple = 1 / deltaTime;
       const augment = 0.75;
-      this.windowVelocity.x = (x - this.lastX) * multiple * augment;
-      this.windowVelocity.y = (y - this.lastY) * multiple * augment;
+      this.windowVelocity[0] = (x - this.lastX) * multiple * augment;
+      this.windowVelocity[1] = (y - this.lastY) * multiple * augment;
+      const maxSpeed = 3500;
+      if (glMatrix.vec2.len(this.windowVelocity) > maxSpeed) {
+        glMatrix.vec2.normalize(this.windowVelocity, this.windowVelocity);
+        glMatrix.vec2.scale(this.windowVelocity, this.windowVelocity, maxSpeed);
+      }
     }
     this.lastTime = currentTime;
     this.lastX = x;
@@ -345,10 +355,9 @@ export default class WindowManager {
         this.startMouseY = yDif;
         this.validFloatingClick = false;
       }
-      this.windowPosition.x = x - mouseX + this.startMouseX;
-      this.windowPosition.y = y - mouseY + this.startMouseY;
+      this.windowPosition[0] = x - mouseX + this.startMouseX;
+      this.windowPosition[1] = y - mouseY + this.startMouseY;
       this.updateMainWindowBounds();
-      this.movingWindow = true;
     }
   }
 
@@ -396,14 +405,14 @@ export default class WindowManager {
     if (windowHasView(this.mainWindow, this.titleBarView)) {
       this.mainWindow?.removeBrowserView(this.titleBarView);
     }
-    this.windowPosition.x =
+    this.windowPosition[0] =
       display.workAreaSize.width / 2.0 - floatingWidth / 2.0;
-    this.windowPosition.y =
+    this.windowPosition[1] =
       display.workAreaSize.height / 2.0 - floatingHeight / 2.0;
     this.windowSize.width = floatingWidth;
     this.windowSize.height = floatingHeight;
-    this.windowVelocity.x = 0;
-    this.windowVelocity.y = 0;
+    this.windowVelocity[0] = 0;
+    this.windowVelocity[1] = 0;
     this.updateMainWindowBounds();
 
     this.mainWindow.webContents.send('set-padding', '');
@@ -422,8 +431,8 @@ export default class WindowManager {
     }
 
     this.windowFloating = false;
-    this.windowPosition.x = 0;
-    this.windowPosition.y = 0;
+    this.windowPosition[0] = 0;
+    this.windowPosition[1] = 0;
     this.windowSize.width = display.workAreaSize.width - 1; // todo: without the -1, everything breaks!!??!?
     this.windowSize.height = display.workAreaSize.height - 1;
     this.updateMainWindowBounds();
