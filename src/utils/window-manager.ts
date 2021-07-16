@@ -322,7 +322,7 @@ export default class WindowManager {
     const { x, y } = screen.getCursorScreenPoint();
     const currentTime = new Date().getTime() / 1000.0;
 
-    const speedAverageRange = 0.15;
+    const speedAverageRange = 0.1;
     this.windowSpeeds.push([currentTime, x, y]);
     while (
       this.windowSpeeds.length > 0 &&
@@ -362,11 +362,17 @@ export default class WindowManager {
   windowMoved() {
     let setTarget = false;
     let firstTarget: number[] | null = null;
+    let firstVelocity: number[] | null = null;
     let i = this.windowSpeeds.length - 1;
     while (i >= 1) {
       const current = this.windowSpeeds[i];
       const last = this.windowSpeeds[i - 1];
-      const [valid, hasVelocity, target] = calculateWindowTarget(
+      const [
+        valid,
+        hasVelocity,
+        target,
+        windowVelocity,
+      ] = calculateWindowTarget(
         current[0],
         last[0],
         current[1],
@@ -379,6 +385,7 @@ export default class WindowManager {
 
       if (firstTarget === null && valid) {
         firstTarget = target;
+        firstVelocity = windowVelocity;
       }
 
       if (valid && hasVelocity) {
@@ -387,6 +394,11 @@ export default class WindowManager {
         // eslint-disable-next-line prefer-destructuring
         this.targetWindowPosition[1] = target[1];
 
+        // eslint-disable-next-line prefer-destructuring
+        this.windowVelocity[0] = windowVelocity[0];
+        // eslint-disable-next-line prefer-destructuring
+        this.windowVelocity[1] = windowVelocity[1];
+
         setTarget = true;
         break;
       }
@@ -394,11 +406,16 @@ export default class WindowManager {
       i -= 1;
     }
 
-    if (!setTarget && firstTarget !== null) {
+    if (!setTarget && firstTarget !== null && firstVelocity !== null) {
       // eslint-disable-next-line prefer-destructuring
       this.targetWindowPosition[0] = firstTarget[0];
       // eslint-disable-next-line prefer-destructuring
       this.targetWindowPosition[1] = firstTarget[1];
+
+      // eslint-disable-next-line prefer-destructuring
+      this.windowVelocity[0] = firstVelocity[0];
+      // eslint-disable-next-line prefer-destructuring
+      this.windowVelocity[1] = firstVelocity[1];
     }
 
     this.startMouseX = null;

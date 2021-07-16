@@ -13,7 +13,7 @@ export default function calculateWindowTarget(
   windowSize: { width: number; height: number },
   windowPosition: number[]
   // valid, hasVelocity, target vec2s
-): [boolean, boolean, number[]] {
+): [boolean, boolean, number[], number[]] {
   const deltaTime = currentTime - lastTime;
   const multiple = 1 / deltaTime;
   const augment = 0.75;
@@ -79,13 +79,13 @@ export default function calculateWindowTarget(
     typeof targets[indexOfClosest] !== 'undefined' &&
     typeof targets[indexOfClosestAngle] !== 'undefined'
   ) {
-    if (windowSpeed < 750 || angles[indexOfClosestAngle] > 45) {
+    if (windowSpeed < 750 || angles[indexOfClosestAngle] > 91) {
       // eslint-disable-next-line prefer-destructuring
       target[0] = targets[indexOfClosest][0];
       // eslint-disable-next-line prefer-destructuring
       target[1] = targets[indexOfClosest][1];
 
-      return [true, false, target];
+      return [true, false, target, windowVelocity];
     }
 
     // eslint-disable-next-line prefer-destructuring
@@ -93,8 +93,8 @@ export default function calculateWindowTarget(
     // eslint-disable-next-line prefer-destructuring
     target[1] = targets[indexOfClosestAngle][1];
 
-    return [true, true, target];
+    return [true, true, target, windowVelocity];
   }
 
-  return [false, false, [0, 0]];
+  return [false, false, [0, 0], [0, 0]];
 }
