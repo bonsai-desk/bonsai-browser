@@ -162,13 +162,14 @@ export const createWindow = async () => {
       let yDrag = drag;
 
       // force to keep inside screen
-      const springConstant = 75000;
+      const springConstant = 100000;
+      const maxSpring = 40000;
       const minEdgeDrag = 2;
       if (up < padding) {
         const dist =
           -(wm.windowPosition[1] - padding) / display.workAreaSize.height;
         wm.windowVelocity[1] +=
-          deltaTime * Math.min(dist * springConstant, 25000);
+          deltaTime * Math.min(dist * springConstant, maxSpring);
         if (wm.windowVelocity[1] > 0) {
           const edgeDrag = clamp(dist * wm.windowVelocity[1], minEdgeDrag, 10);
           yDrag = Math.max(yDrag, edgeDrag);
@@ -184,7 +185,7 @@ export const createWindow = async () => {
           -(display.workAreaSize.height - bottomY - padding) /
           display.workAreaSize.height;
         wm.windowVelocity[1] +=
-          deltaTime * Math.min(-dist * springConstant, 25000);
+          deltaTime * Math.min(-dist * springConstant, maxSpring);
         if (wm.windowVelocity[1] < 0) {
           const edgeDrag = clamp(dist * -wm.windowVelocity[1], minEdgeDrag, 10);
           yDrag = Math.max(yDrag, edgeDrag);
@@ -198,7 +199,7 @@ export const createWindow = async () => {
         const dist =
           -(wm.windowPosition[0] - padding) / display.workAreaSize.height;
         wm.windowVelocity[0] +=
-          deltaTime * Math.min(dist * springConstant, 25000);
+          deltaTime * Math.min(dist * springConstant, maxSpring);
         if (wm.windowVelocity[0] > 0) {
           const edgeDrag = clamp(dist * wm.windowVelocity[0], minEdgeDrag, 10);
           xDrag = Math.max(xDrag, edgeDrag);
@@ -214,7 +215,7 @@ export const createWindow = async () => {
           -(display.workAreaSize.width - rightX - padding) /
           display.workAreaSize.height;
         wm.windowVelocity[0] +=
-          deltaTime * Math.min(-dist * springConstant, 25000);
+          deltaTime * Math.min(-dist * springConstant, maxSpring);
         if (wm.windowVelocity[0] < 0) {
           const edgeDrag = clamp(dist * -wm.windowVelocity[0], minEdgeDrag, 10);
           xDrag = Math.max(xDrag, edgeDrag);
