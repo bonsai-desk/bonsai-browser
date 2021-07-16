@@ -10,6 +10,8 @@ import {
 } from '../constants';
 import { validURL, windowHasView } from './utils';
 import { handleFindText } from './windows';
+// eslint-disable-next-line import/no-cycle
+import calculateWindowTarget from './calculateWindowTarget';
 
 const glMatrix = require('gl-matrix');
 
@@ -62,7 +64,7 @@ export default class WindowManager {
 
   overlayView: BrowserView;
 
-  display: Display;
+  static display: Display;
 
   windowPosition = glMatrix.vec2.create();
 
@@ -72,7 +74,7 @@ export default class WindowManager {
 
   constructor(mainWindow: BrowserWindow, display: Display) {
     this.mainWindow = mainWindow;
-    this.display = display;
+    WindowManager.display = display;
 
     this.mainWindow.webContents.on('new-window', (event, url) => {
       event.preventDefault();
@@ -93,13 +95,7 @@ export default class WindowManager {
     this.mainWindow.setTopBrowserView(this.titleBarView);
 
     this.urlPeekView = makeView(URL_PEEK_HTML);
-
     this.findView = makeView(FIND_HTML);
-    // findView does not show up from Ctrl+F unless you do this for some reason
-    // mainWindow.addBrowserView(this.findView);
-    // mainWindow.setTopBrowserView(this.findView);
-    // mainWindow.removeBrowserView(this.findView);
-
     this.overlayView = makeView(OVERLAY_HTML);
   }
 
@@ -317,89 +313,24 @@ export default class WindowManager {
 
   targetWindowPosition = glMatrix.vec2.create();
 
+  windowSpeeds: number[][] = [];
+
   static dragThresholdSquared = 5 * 5;
 
   windowMoving(mouseX: number, mouseY: number) {
     this.movingWindow = true;
     const { x, y } = screen.getCursorScreenPoint();
     const currentTime = new Date().getTime() / 1000.0;
-    if (this.lastX !== null && this.lastY !== null) {
-      const deltaTime = currentTime - this.lastTime;
-      const multiple = 1 / deltaTime;
-      const augment = 0.75;
-      this.windowVelocity[0] = (x - this.lastX) * multiple * augment;
-      this.windowVelocity[1] = (y - this.lastY) * multiple * augment;
-      const maxSpeed = 3500;
-      if (glMatrix.vec2.len(this.windowVelocity) > maxSpeed) {
-        glMatrix.vec2.normalize(this.windowVelocity, this.windowVelocity);
-        glMatrix.vec2.scale(this.windowVelocity, this.windowVelocity, maxSpeed);
-      }
 
-      const padding = 25;
-
-      const targets = [
-        glMatrix.vec2.fromValues(padding, padding),
-        glMatrix.vec2.fromValues(
-          this.display.workAreaSize.width - this.windowSize.width - padding,
-          padding
-        ),
-        glMatrix.vec2.fromValues(
-          this.display.workAreaSize.width - this.windowSize.width - padding,
-          this.display.workAreaSize.height - this.windowSize.height - padding
-        ),
-        glMatrix.vec2.fromValues(
-          padding,
-          this.display.workAreaSize.height - this.windowSize.height - padding
-        ),
-      ];
-
-      const toTargets = [
-        glMatrix.vec2.create(),
-        glMatrix.vec2.create(),
-        glMatrix.vec2.create(),
-        glMatrix.vec2.create(),
-      ];
-
-      const angles = [0, 0, 0, 0];
-
-      const radToDeg = 180 / Math.PI;
-
-      for (let i = 0; i < toTargets.length; i += 1) {
-        glMatrix.vec2.sub(toTargets[i], targets[i], this.windowPosition);
-        angles[i] =
-          glMatrix.vec2.angle(this.windowVelocity, toTargets[i]) * radToDeg;
-      }
-
-      const indexOfClosestAngle = angles.indexOf(Math.min(...angles));
-      let indexOfClosest = 0;
-      let smallestSqrDist = 100000000;
-      for (let i = 0; i < targets.length; i += 1) {
-        const sqrDist = glMatrix.vec2.sqrDist(targets[i], this.windowPosition);
-        if (sqrDist < smallestSqrDist) {
-          smallestSqrDist = sqrDist;
-          indexOfClosest = i;
-        }
-      }
-
-      const windowSpeed = glMatrix.vec2.len(this.windowVelocity);
-      if (
-        typeof this.targetWindowPosition !== 'undefined' &&
-        typeof targets[indexOfClosest] !== 'undefined' &&
-        typeof targets[indexOfClosestAngle] !== 'undefined'
-      ) {
-        if (windowSpeed < 1500 || angles[indexOfClosestAngle] > 45) {
-          // eslint-disable-next-line prefer-destructuring
-          this.targetWindowPosition[0] = targets[indexOfClosest][0];
-          // eslint-disable-next-line prefer-destructuring
-          this.targetWindowPosition[1] = targets[indexOfClosest][1];
-        } else {
-          // eslint-disable-next-line prefer-destructuring
-          this.targetWindowPosition[0] = targets[indexOfClosestAngle][0];
-          // eslint-disable-next-line prefer-destructuring
-          this.targetWindowPosition[1] = targets[indexOfClosestAngle][1];
-        }
-      }
+    const speedAverageRange = 0.15;
+    this.windowSpeeds.push([currentTime, x, y]);
+    while (
+      this.windowSpeeds.length > 0 &&
+      currentTime - this.windowSpeeds[0][0] > speedAverageRange
+    ) {
+      this.windowSpeeds.shift();
     }
+
     this.lastTime = currentTime;
     this.lastX = x;
     this.lastY = y;
@@ -429,13 +360,55 @@ export default class WindowManager {
   }
 
   windowMoved() {
+    let setTarget = false;
+    let firstTarget: number[] | null = null;
+    let i = this.windowSpeeds.length - 1;
+    while (i >= 1) {
+      const current = this.windowSpeeds[i];
+      const last = this.windowSpeeds[i - 1];
+      const [valid, hasVelocity, target] = calculateWindowTarget(
+        current[0],
+        last[0],
+        current[1],
+        current[2],
+        last[1],
+        last[2],
+        this.windowSize,
+        this.windowPosition
+      );
+
+      if (firstTarget === null && valid) {
+        firstTarget = target;
+      }
+
+      if (valid && hasVelocity) {
+        // eslint-disable-next-line prefer-destructuring
+        this.targetWindowPosition[0] = target[0];
+        // eslint-disable-next-line prefer-destructuring
+        this.targetWindowPosition[1] = target[1];
+
+        setTarget = true;
+        break;
+      }
+
+      i -= 1;
+    }
+
+    if (!setTarget && firstTarget !== null) {
+      // eslint-disable-next-line prefer-destructuring
+      this.targetWindowPosition[0] = firstTarget[0];
+      // eslint-disable-next-line prefer-destructuring
+      this.targetWindowPosition[1] = firstTarget[1];
+    }
+
     this.startMouseX = null;
     this.startMouseY = null;
     this.lastX = null;
     this.lastY = null;
+    this.windowSpeeds = [];
     this.movingWindow = false;
     if (this.validFloatingClick) {
-      this.unFloat(this.display);
+      this.unFloat(WindowManager.display);
     }
     this.validFloatingClick = false;
   }
