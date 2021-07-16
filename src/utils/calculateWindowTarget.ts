@@ -21,7 +21,7 @@ export default function calculateWindowTarget(
     (x - lastX) * multiple * augment,
     (y - lastY) * multiple * augment
   );
-  const maxSpeed = 3500;
+  const maxSpeed = 5000;
   if (glMatrix.vec2.len(windowVelocity) > maxSpeed) {
     glMatrix.vec2.normalize(windowVelocity, windowVelocity);
     glMatrix.vec2.scale(windowVelocity, windowVelocity, maxSpeed);

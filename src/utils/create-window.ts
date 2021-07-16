@@ -13,7 +13,7 @@ import { createTray, installExtensions } from './windows';
 import addListeners from './listeners';
 import WindowManager from './window-manager';
 import { ICON_PNG, MAIN_HTML } from '../constants';
-import { clamp, moveTowards } from './utils';
+import { clamp } from './utils';
 
 const glMatrix = require('gl-matrix');
 
@@ -131,7 +131,7 @@ export const createWindow = async () => {
       1
     );
     const distanceScaledOpposite = 1 - distanceScaled;
-    const moveTowardsThreshold = display.workAreaSize.height * 0.01; // 0.02
+    const moveTowardsThreshold = display.workAreaSize.height * 0.005;
     const moveTowardsSpeedThreshold = 100;
     const windowSpeed = glMatrix.vec2.len(wm.windowVelocity);
     if (
@@ -140,20 +140,6 @@ export const createWindow = async () => {
     ) {
       wm.windowVelocity[0] = 0;
       wm.windowVelocity[1] = 0;
-
-      // if (distance > 1) {
-      //   console.log(`move towards at speed: ${moveTowardsSpeed}`);
-      //   wm.windowPosition[0] = moveTowards(
-      //     wm.windowPosition[0],
-      //     wm.targetWindowPosition[0],
-      //     deltaTime * moveTowardsSpeed
-      //   );
-      //   wm.windowPosition[1] = moveTowards(
-      //     wm.windowPosition[1],
-      //     wm.targetWindowPosition[1],
-      //     deltaTime * moveTowardsSpeed
-      //   );
-      // }
     } else {
       // calculate vector pointing towards target position
       const towardsTarget = glMatrix.vec2.create();
@@ -176,57 +162,67 @@ export const createWindow = async () => {
       let yDrag = drag;
 
       // force to keep inside screen
-      const springConstant = 50;
+      const springConstant = 75000;
       const minEdgeDrag = 2;
       if (up < padding) {
-        const dist = -(wm.windowPosition[1] - padding);
-        wm.windowVelocity[1] += deltaTime * springConstant * dist;
+        const dist =
+          -(wm.windowPosition[1] - padding) / display.workAreaSize.height;
+        wm.windowVelocity[1] +=
+          deltaTime * Math.min(dist * springConstant, 25000);
         if (wm.windowVelocity[1] > 0) {
-          const edgeDrag = clamp(
-            (dist / display.workAreaSize.height) * wm.windowVelocity[1],
-            minEdgeDrag,
-            10
-          );
+          const edgeDrag = clamp(dist * wm.windowVelocity[1], minEdgeDrag, 10);
           yDrag = Math.max(yDrag, edgeDrag);
         }
+        wm.windowVelocity[1] = Math.min(
+          wm.windowVelocity[1],
+          dist * dist * 1000 * 1000
+        );
       }
       if (down < padding) {
         const bottomY = wm.windowPosition[1] + wm.windowSize.height;
-        const dist = -(display.workAreaSize.height - bottomY - padding);
-        wm.windowVelocity[1] += deltaTime * springConstant * -dist;
+        const dist =
+          -(display.workAreaSize.height - bottomY - padding) /
+          display.workAreaSize.height;
+        wm.windowVelocity[1] +=
+          deltaTime * Math.min(-dist * springConstant, 25000);
         if (wm.windowVelocity[1] < 0) {
-          const edgeDrag = clamp(
-            (dist / display.workAreaSize.height) * -wm.windowVelocity[1],
-            minEdgeDrag,
-            10
-          );
+          const edgeDrag = clamp(dist * -wm.windowVelocity[1], minEdgeDrag, 10);
           yDrag = Math.max(yDrag, edgeDrag);
         }
+        wm.windowVelocity[1] = Math.max(
+          wm.windowVelocity[1],
+          -dist * dist * 1000 * 1000
+        );
       }
       if (left < padding) {
-        const dist = -(wm.windowPosition[0] - padding);
-        wm.windowVelocity[0] += deltaTime * springConstant * dist;
+        const dist =
+          -(wm.windowPosition[0] - padding) / display.workAreaSize.height;
+        wm.windowVelocity[0] +=
+          deltaTime * Math.min(dist * springConstant, 25000);
         if (wm.windowVelocity[0] > 0) {
-          const edgeDrag = clamp(
-            (dist / display.workAreaSize.height) * wm.windowVelocity[0],
-            minEdgeDrag,
-            10
-          );
+          const edgeDrag = clamp(dist * wm.windowVelocity[0], minEdgeDrag, 10);
           xDrag = Math.max(xDrag, edgeDrag);
         }
+        wm.windowVelocity[0] = Math.min(
+          wm.windowVelocity[0],
+          dist * dist * 1000 * 1000
+        );
       }
       if (right < padding) {
         const rightX = wm.windowPosition[0] + wm.windowSize.width;
-        const dist = -(display.workAreaSize.width - rightX - padding);
-        wm.windowVelocity[0] += deltaTime * springConstant * -dist;
+        const dist =
+          -(display.workAreaSize.width - rightX - padding) /
+          display.workAreaSize.height;
+        wm.windowVelocity[0] +=
+          deltaTime * Math.min(-dist * springConstant, 25000);
         if (wm.windowVelocity[0] < 0) {
-          const edgeDrag = clamp(
-            (dist / display.workAreaSize.height) * -wm.windowVelocity[0],
-            minEdgeDrag,
-            10
-          );
+          const edgeDrag = clamp(dist * -wm.windowVelocity[0], minEdgeDrag, 10);
           xDrag = Math.max(xDrag, edgeDrag);
         }
+        wm.windowVelocity[0] = Math.max(
+          wm.windowVelocity[0],
+          -dist * dist * 1000 * 1000
+        );
       }
 
       wm.windowVelocity[0] *= 1 - deltaTime * xDrag;
@@ -235,8 +231,6 @@ export const createWindow = async () => {
       if (windowSpeed < Math.max(distanceScaled * 3500, 500)) {
         // calculate force to target
         const forceToTarget = glMatrix.vec2.create();
-        // let force = Math.max(50000 * (1 - distanceScaled), 0);
-        // // force = clamp(force, )
         const force = Math.max(distanceScaled * 2500, 1500);
         glMatrix.vec2.scale(forceToTarget, towardsTarget, deltaTime * force);
         glMatrix.vec2.add(wm.windowVelocity, wm.windowVelocity, forceToTarget);
