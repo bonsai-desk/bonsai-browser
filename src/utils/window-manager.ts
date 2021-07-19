@@ -11,7 +11,7 @@ import {
 import { validURL, windowHasView } from './utils';
 import { handleFindText } from './windows';
 // eslint-disable-next-line import/no-cycle
-import calculateWindowTarget from './calculateWindowTarget';
+import calculateWindowTarget from './calculate-window-target';
 
 const glMatrix = require('gl-matrix');
 
