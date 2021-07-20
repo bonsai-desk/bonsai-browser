@@ -538,17 +538,11 @@ export default class WindowManager {
     if (windowHasView(this.mainWindow, this.overlayView)) {
       this.mainWindow?.removeBrowserView(this.overlayView);
     }
-    // if (!windowHasView(this.mainWindow, this.titleBarView)) {
-    //   this.mainWindow?.addBrowserView(this.titleBarView);
-    //   this.mainWindow?.setTopBrowserView(this.titleBarView);
-    // }
-    if (windowHasView(this.mainWindow, this.titleBarView)) {
-      this.mainWindow?.removeBrowserView(this.titleBarView);
+
+    if (!windowHasView(this.mainWindow, this.titleBarView)) {
+      this.mainWindow?.addBrowserView(this.titleBarView);
+      this.mainWindow?.setTopBrowserView(this.titleBarView);
     }
-    // if (!windowHasView(this.mainWindow, this.tabPageView)) {
-    //   this.mainWindow?.addBrowserView(this.tabPageView);
-    //   this.mainWindow?.setTopBrowserView(this.tabPageView);
-    // }
 
     this.mainWindow.webContents.send(
       'set-padding',

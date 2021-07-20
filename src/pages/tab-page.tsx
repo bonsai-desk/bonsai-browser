@@ -37,6 +37,9 @@ const Tab = styled.div`
   height: 100px;
   background-color: green;
   border: 2px solid black;
+  word-wrap: break-word;
+  text-overflow: ellipsis;
+  overflow: hidden;
 `;
 
 const URLBox = styled.input`
@@ -53,6 +56,8 @@ interface TabPageTab {
   id: number;
 
   url: string;
+
+  title: string;
 }
 
 export class TabPageStore {
@@ -63,7 +68,7 @@ export class TabPageStore {
 
     ipcRenderer.on('tabView-created-with-id', (_, id) => {
       runInAction(() => {
-        this.tabs[id] = { id, url: '' };
+        this.tabs[id] = { id, url: '', title: '' };
       });
     });
     ipcRenderer.on('tab-removed', (_, id) => {
@@ -76,26 +81,59 @@ export class TabPageStore {
         this.tabs[id].url = url;
       });
     });
+    ipcRenderer.on('title-updated', (_, [id, title]) => {
+      runInAction(() => {
+        this.tabs[id].title = title;
+      });
+    });
   }
 }
 
+function getRootDomain(url: string): string {
+  const ex = /\w*\./g;
+  const result = url.matchAll(ex);
+  if (result !== null) {
+    const results = [...result];
+    if (results.length > 0) {
+      const r = results[results.length - 1][0];
+      return r.substring(0, r.length - 1);
+    }
+  }
+  return '';
+}
+
 function createTabs(tabPageStore: TabPageStore) {
-  return (
-    <Column>
-      {Object.values(tabPageStore.tabs).map((tab) => {
-        return (
-          <Tab
-            key={tab.id}
-            onClick={() => {
-              ipcRenderer.send('set-tab', tab.id);
-            }}
-          >
-            {tab.url === '' ? 'New Tab' : tab.url}
-          </Tab>
-        );
-      })}
-    </Column>
-  );
+  const columns: Record<string, TabPageTab[]> = {};
+
+  Object.values(tabPageStore.tabs).forEach((tab) => {
+    const domain = getRootDomain(tab.url);
+    if (!columns[domain]) {
+      columns[domain] = [];
+    }
+    columns[domain].push(tab);
+  });
+
+  return Object.keys(columns).map((key) => {
+    return (
+      <Column key={key}>
+        {[
+          <div key={key}>{key}</div>,
+          Object.values(columns[key]).map((tab) => {
+            return (
+              <Tab
+                key={tab.id}
+                onClick={() => {
+                  ipcRenderer.send('set-tab', tab.id);
+                }}
+              >
+                {tab.url === '' ? 'New Tab' : tab.title}
+              </Tab>
+            );
+          }),
+        ]}
+      </Column>
+    );
+  });
 }
 
 const TabPage = observer(({ tabPageStore }: { tabPageStore: TabPageStore }) => {
