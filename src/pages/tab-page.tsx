@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import styled, { createGlobalStyle } from 'styled-components';
 import { makeAutoObservable, runInAction } from 'mobx';
@@ -20,8 +20,6 @@ const Background = styled.div`
   height: 100vh;
 `;
 
-const NewTabButton = styled.button``;
-
 const Tabs = styled.div`
   display: flex;
   background-color: blue;
@@ -39,6 +37,16 @@ const Tab = styled.div`
   height: 100px;
   background-color: green;
   border: 2px solid black;
+`;
+
+const URLBox = styled.input`
+  border-radius: 10000000px;
+  outline: none;
+  border: 2px solid black;
+  height: 22px;
+  padding: 2px 2px 2px 10px;
+  margin: 10px;
+  width: calc(100% - 2px - 10px - 4px - 20px);
 `;
 
 interface TabPageTab {
@@ -91,18 +99,56 @@ function createTabs(tabPageStore: TabPageStore) {
 }
 
 const TabPage = observer(({ tabPageStore }: { tabPageStore: TabPageStore }) => {
+  const urlBoxRef = useRef<HTMLInputElement>(null);
+  const [urlFocus, setUrlFocus] = useState(false);
+  const [urlText, setUrlText] = useState('');
+
+  const [hasRunOnce, setHasRunOnce] = useState(false);
+  useEffect(() => {
+    if (hasRunOnce) {
+      return;
+    }
+    setHasRunOnce(true);
+    ipcRenderer.on('focus-search', () => {
+      if (urlBoxRef.current != null) {
+        // urlBoxRef.current.focus();
+        urlBoxRef.current.select();
+      }
+    });
+  }, [hasRunOnce]);
+
   return (
     <>
       <GlobalStyle />
       <Background>
-        <NewTabButton
-          type="button"
-          onClick={() => {
-            ipcRenderer.send('create-new-tab');
+        <URLBox
+          type="text"
+          ref={urlBoxRef}
+          placeholder="Search Google or type a URL"
+          value={urlText}
+          onInput={(e) => {
+            setUrlText(e.currentTarget.value);
           }}
-        >
-          Create New Tab
-        </NewTabButton>
+          onKeyDown={(e) => {
+            if (e.nativeEvent.code === 'Enter') {
+              setUrlText('');
+              ipcRenderer.send('search-url', urlText);
+            }
+          }}
+          onClick={() => {
+            if (urlBoxRef.current != null && !urlFocus) {
+              setUrlFocus(true);
+              urlBoxRef.current.select();
+            }
+          }}
+          onBlur={() => {
+            setUrlFocus(false);
+            if (urlBoxRef.current != null) {
+              urlBoxRef.current.blur();
+              window.getSelection()?.removeAllRanges();
+            }
+          }}
+        />
         <Tabs>{createTabs(tabPageStore)}</Tabs>
       </Background>
     </>

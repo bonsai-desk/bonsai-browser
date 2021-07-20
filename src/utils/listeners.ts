@@ -50,6 +50,11 @@ function addListeners(wm: WindowManager) {
       `);
     }
   });
+  ipcMain.on('search-url', (event, url) => {
+    const newTabId = wm.createNewTab();
+    wm.loadUrlInTab(newTabId, url, event);
+    wm.setTab(newTabId);
+  });
 }
 
 export default addListeners;

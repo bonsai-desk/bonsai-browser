@@ -147,7 +147,7 @@ export default class WindowManager {
     this.allTabViews[id]?.view.webContents.reload();
   }
 
-  createNewTab() {
+  createNewTab(): number {
     this.tabId += 1;
     const id = this.tabId;
     this.allTabViews[id] = new TabView(
@@ -161,6 +161,7 @@ export default class WindowManager {
     );
     this.titleBarView.webContents.send('tabView-created-with-id', id);
     this.tabPageView.webContents.send('tabView-created-with-id', id);
+    return id;
   }
 
   removeTab(id: number) {
@@ -193,6 +194,12 @@ export default class WindowManager {
   }
 
   setTab(id: number) {
+    if (id === -1) {
+      this.mainWindow.setBrowserView(this.tabPageView);
+      this.tabPageView.webContents.focus();
+      this.tabPageView.webContents.send('focus-search');
+    }
+
     if (id === this.activeTabId) {
       return;
     }
@@ -205,7 +212,6 @@ export default class WindowManager {
 
     if (id === -1) {
       this.mainWindow.webContents.send('set-active', false);
-      this.mainWindow.setBrowserView(this.tabPageView);
       return;
     }
     const tabView = this.allTabViews[id];

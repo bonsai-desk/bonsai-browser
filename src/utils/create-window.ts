@@ -138,6 +138,7 @@ export const createWindow = async () => {
       wm.mainWindow.show();
       wm.unFloat(display);
       mainWindow?.focus();
+      wm.tabPageView.webContents.focus();
       wm.setTab(-1);
       // wm.titleBarView.webContents.focus();
       // wm.createNewTab();
@@ -176,7 +177,9 @@ export const createWindow = async () => {
           label: 'find',
           accelerator: 'CmdOrCtrl+F',
           click: () => {
-            wm.clickFind();
+            if (windowHasView(wm.mainWindow, wm.titleBarView)) {
+              wm.clickFind();
+            }
           },
         },
         {
