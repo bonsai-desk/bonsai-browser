@@ -5,7 +5,7 @@ import { windowHasView } from './utils';
 // eslint-disable-next-line import/no-cycle
 import WindowManager from './window-manager';
 
-export const headerHeight = 79; // 79 or 79 - 32 - 10
+export const headerHeight = 79 - 32 - 10; // 79 or 79 - 32 - 10
 
 class TabView {
   window: BrowserWindow;

@@ -92,13 +92,13 @@ export default class WindowManager {
     // this.mainWindow.webContents.openDevTools({ mode: 'detach' });
 
     this.titleBarView = makeView(INDEX_HTML);
-    this.titleBarView.webContents.openDevTools({ mode: 'detach' });
+    // this.titleBarView.webContents.openDevTools({ mode: 'detach' });
     // this.titleBarView.webContents.on('did-finish-load', () => {
     //   this.mainWindow.focus();
     //   this.titleBarView.webContents.focus();
     //   this.createNewTab();
     // });
-    this.mainWindow.addBrowserView(this.titleBarView);
+    // this.mainWindow.addBrowserView(this.titleBarView);
     // this.mainWindow.setBrowserView(this.titleBarView);
     // this.mainWindow.setTopBrowserView(this.titleBarView);
 
@@ -107,8 +107,7 @@ export default class WindowManager {
     this.overlayView = makeView(OVERLAY_HTML);
 
     this.tabPageView = makeView(TAB_PAGE);
-    // this.mainWindow.addBrowserView(this.tabPageView);
-    // this.mainWindow.setTopBrowserView(this.tabPageView);
+    this.mainWindow.setBrowserView(this.tabPageView);
     // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.resize();
@@ -170,11 +169,11 @@ export default class WindowManager {
       throw new Error(`remove-tab: tab with id ${id} does not exist`);
     }
     this.mainWindow.removeBrowserView(tabView.view);
-    this.activeTabId = -1;
-    this.closeFind();
-    if (windowHasView(this.mainWindow, this.urlPeekView)) {
-      this.mainWindow.removeBrowserView(this.urlPeekView);
+    if (id === this.activeTabId) {
+      this.setTab(-1);
     }
+    this.closeFind();
+    this.mainWindow.removeBrowserView(this.urlPeekView);
     // eslint-disable-line
     (tabView.view.webContents as any).destroy();
     delete this.allTabViews[id];
@@ -206,6 +205,7 @@ export default class WindowManager {
 
     if (id === -1) {
       this.mainWindow.webContents.send('set-active', false);
+      this.mainWindow.setBrowserView(this.tabPageView);
       return;
     }
     const tabView = this.allTabViews[id];
@@ -213,21 +213,15 @@ export default class WindowManager {
       throw new Error(`setTab: tab with id ${id} does not exist`);
     }
 
+    this.mainWindow.setBrowserView(this.titleBarView);
+
     this.mainWindow.addBrowserView(tabView.view);
     this.activeTabId = id;
     this.titleBarView.webContents.send('tab-was-set', id);
 
-    // if (!windowHasView(this.mainWindow, this.titleBarView)) {
-    //   // this.mainWindow?.setBrowserView(this.titleBarView);
-    //
-    //   this.mainWindow.addBrowserView(this.titleBarView);
-    // }
-    //
-    // this.mainWindow.setTopBrowserView(this.titleBarView);
-
-    // if (windowHasView(this.mainWindow, this.tabPageView)) {
-    //   this.mainWindow.removeBrowserView(this.tabPageView);
-    // }
+    if (windowHasView(this.mainWindow, this.tabPageView)) {
+      this.mainWindow.removeBrowserView(this.tabPageView);
+    }
 
     this.closeFind();
 
@@ -237,11 +231,6 @@ export default class WindowManager {
 
     this.resize();
     tabView.resize();
-
-    // this.mainWindow.webContents.send(
-    //   'set-active',
-    //   tabView.view.webContents.getURL() !== ''
-    // );
   }
 
   loadUrlInTab(id: number, url: string, event: Electron.IpcMainEvent) {
@@ -566,14 +555,6 @@ export default class WindowManager {
     });
 
     this.resize();
-  }
-
-  toggleFloat(display: Display, floatingWidth: number, floatingHeight: number) {
-    if (this.windowFloating) {
-      this.unFloat(display);
-    } else {
-      this.float(display, floatingWidth, floatingHeight);
-    }
   }
 
   resize() {

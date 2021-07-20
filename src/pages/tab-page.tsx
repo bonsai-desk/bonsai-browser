@@ -79,7 +79,7 @@ function createTabs(tabPageStore: TabPageStore) {
           <Tab
             key={tab.id}
             onClick={() => {
-              // ipcRenderer.send('remove-tab', tab.id);
+              ipcRenderer.send('set-tab', tab.id);
             }}
           >
             {tab.url === '' ? 'New Tab' : tab.url}

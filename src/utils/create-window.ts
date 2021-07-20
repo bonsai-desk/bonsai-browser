@@ -14,6 +14,7 @@ import addListeners from './listeners';
 import WindowManager from './window-manager';
 import { ICON_PNG, MAIN_HTML } from '../constants';
 import windowFixedUpdate from './calculate-window-physics';
+import { windowHasView } from './utils';
 
 class AppUpdater {
   constructor() {
@@ -137,6 +138,7 @@ export const createWindow = async () => {
       wm.mainWindow.show();
       wm.unFloat(display);
       mainWindow?.focus();
+      wm.setTab(-1);
       // wm.titleBarView.webContents.focus();
       // wm.createNewTab();
     } else if (
@@ -178,20 +180,20 @@ export const createWindow = async () => {
           },
         },
         {
-          label: 'stop-find',
+          label: 'escape',
           accelerator: 'Escape',
           click: () => {
-            wm.closeFind();
-          },
-        },
-        {
-          label: 'Float',
-          accelerator: 'CmdOrCtrl+M',
-          click: () => {
-            // wm.toggleFloat(display, floatingWidth, floatingHeight);
-            // wm.allTabViews[wm.activeTabId].view.webContents.executeJavaScript(`
-            //   window.scrollBy(0, 100);
-            // `);
+            if (wm.windowFloating) {
+              mainWindow?.hide();
+            } else if (windowHasView(wm.mainWindow, wm.tabPageView)) {
+              mainWindow?.hide();
+            } else if (windowHasView(wm.mainWindow, wm.titleBarView)) {
+              if (windowHasView(wm.mainWindow, wm.findView)) {
+                wm.closeFind();
+              } else {
+                wm.setTab(-1);
+              }
+            }
           },
         },
       ],
