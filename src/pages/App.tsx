@@ -186,9 +186,9 @@ const TitleBar = observer(() => {
           placeholder="Search Google or type a URL"
           value={tabStore.getActiveTabSearchBar()}
           onInput={(e) => {
-            if (tabStore.activeTabId === -1) {
-              TabStore.requestAddTab();
-            }
+            // if (tabStore.activeTabId === -1) {
+            //   TabStore.requestAddTab();
+            // }
             tabStore.setActiveTabSearchBar(e.currentTarget.value);
           }}
           onKeyDown={(e) => {

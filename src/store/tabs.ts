@@ -11,25 +11,28 @@ export default class TabStore {
     makeAutoObservable(this);
 
     ipcRenderer.on('tab-removed', (_, id) => {
+      // if (id === this.activeTabId) {
+      //   let setNewTab = false;
+      //   for (let i = 0; i < this.tabs.length; i += 1) {
+      //     if (this.tabs[i].id === id) {
+      //       if (i === this.tabs.length - 1 && i > 0) {
+      //         this.setActiveTab(this.tabs[i - 1].id);
+      //         setNewTab = true;
+      //         break;
+      //       }
+      //       if (i !== this.tabs.length - 1) {
+      //         this.setActiveTab(this.tabs[i + 1].id);
+      //         setNewTab = true;
+      //         break;
+      //       }
+      //     }
+      //   }
+      //   if (!setNewTab) {
+      //     this.setActiveTab(-1);
+      //   }
+      // }
       if (id === this.activeTabId) {
-        let setNewTab = false;
-        for (let i = 0; i < this.tabs.length; i += 1) {
-          if (this.tabs[i].id === id) {
-            if (i === this.tabs.length - 1 && i > 0) {
-              this.setActiveTab(this.tabs[i - 1].id);
-              setNewTab = true;
-              break;
-            }
-            if (i !== this.tabs.length - 1) {
-              this.setActiveTab(this.tabs[i + 1].id);
-              setNewTab = true;
-              break;
-            }
-          }
-        }
-        if (!setNewTab) {
-          this.setActiveTab(-1);
-        }
+        this.activeTabId = -1;
       }
       this.popTab(id);
     });
@@ -53,7 +56,9 @@ export default class TabStore {
     });
     ipcRenderer.on('tabView-created-with-id', (_, id) => {
       this.pushTab(id);
-      this.setActiveTab(id);
+    });
+    ipcRenderer.on('tab-was-set', (_, id) => {
+      this.activeTabId = id;
     });
   }
 
@@ -64,12 +69,6 @@ export default class TabStore {
       }
     }
     throw new Error(`Could not getTab with id ${id}`);
-  }
-
-  setActiveTab(id: number) {
-    const oldId = this.activeTabId;
-    this.activeTabId = id;
-    ipcRenderer.send('set-tab', [id, oldId]);
   }
 
   pushTab(id: number) {

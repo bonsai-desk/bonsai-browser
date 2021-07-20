@@ -127,13 +127,13 @@ export const createWindow = async () => {
   globalShortcut.register('CmdOrCtrl+\\', () => {
     const activeTabView = wm.allTabViews[wm.activeTabId];
     if (!mainWindow?.isVisible()) {
-      if (
-        activeTabView !== null &&
-        typeof activeTabView !== 'undefined' &&
-        activeTabView.view.webContents.getURL() === ''
-      ) {
-        wm.removeTab(wm.activeTabId);
-      }
+      // if (
+      //   activeTabView !== null &&
+      //   typeof activeTabView !== 'undefined' &&
+      //   activeTabView.view.webContents.getURL() === ''
+      // ) {
+      //   wm.removeTab(wm.activeTabId);
+      // }
       wm.mainWindow.show();
       wm.unFloat(display);
       mainWindow?.focus();

@@ -86,7 +86,7 @@ const Tab = observer(({ tab }: ITab) => {
     <TabParent
       color={active ? activeColor : defaultColor}
       onMouseDown={() => {
-        tabStore.setActiveTab(tab.id);
+        ipcRenderer.send('set-tab', tab.id);
       }}
     >
       <Favicon src={tab.faviconUrl} />

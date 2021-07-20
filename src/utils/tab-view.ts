@@ -99,7 +99,8 @@ class TabView {
       ]);
     });
 
-    window.addBrowserView(this.view);
+    // window.addBrowserView(this.view);
+    // resize();
   }
 
   resize() {

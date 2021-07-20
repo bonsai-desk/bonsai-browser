@@ -92,13 +92,14 @@ export default class WindowManager {
     // this.mainWindow.webContents.openDevTools({ mode: 'detach' });
 
     this.titleBarView = makeView(INDEX_HTML);
-    // this.titleBarView.webContents.openDevTools({ mode: 'detach' });
+    this.titleBarView.webContents.openDevTools({ mode: 'detach' });
     // this.titleBarView.webContents.on('did-finish-load', () => {
     //   this.mainWindow.focus();
     //   this.titleBarView.webContents.focus();
     //   this.createNewTab();
     // });
-    this.mainWindow.setBrowserView(this.titleBarView);
+    this.mainWindow.addBrowserView(this.titleBarView);
+    // this.mainWindow.setBrowserView(this.titleBarView);
     // this.mainWindow.setTopBrowserView(this.titleBarView);
 
     this.urlPeekView = makeView(URL_PEEK_HTML);
@@ -107,7 +108,6 @@ export default class WindowManager {
 
     this.tabPageView = makeView(TAB_PAGE);
     // this.mainWindow.addBrowserView(this.tabPageView);
-
     // this.mainWindow.setTopBrowserView(this.tabPageView);
     // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
@@ -145,7 +145,7 @@ export default class WindowManager {
   }
 
   reloadTab(id: number) {
-    this.allTabViews[id].view.webContents.reload();
+    this.allTabViews[id]?.view.webContents.reload();
   }
 
   createNewTab() {
@@ -161,7 +161,7 @@ export default class WindowManager {
       this
     );
     this.titleBarView.webContents.send('tabView-created-with-id', id);
-    // this.tabPageView.webContents.send('tabView-created-with-id', id);
+    this.tabPageView.webContents.send('tabView-created-with-id', id);
   }
 
   removeTab(id: number) {
@@ -193,12 +193,12 @@ export default class WindowManager {
     }
   }
 
-  setTab(id: number, oldId: number) {
-    if (id === oldId) {
+  setTab(id: number) {
+    if (id === this.activeTabId) {
       return;
     }
 
-    const oldTabView = this.allTabViews[oldId];
+    const oldTabView = this.allTabViews[this.activeTabId];
     if (typeof oldTabView !== 'undefined') {
       this.mainWindow.removeBrowserView(oldTabView.view);
       this.activeTabId = -1;
@@ -215,14 +215,15 @@ export default class WindowManager {
 
     this.mainWindow.addBrowserView(tabView.view);
     this.activeTabId = id;
+    this.titleBarView.webContents.send('tab-was-set', id);
 
-    if (!windowHasView(this.mainWindow, this.titleBarView)) {
-      // this.mainWindow?.setBrowserView(this.titleBarView);
-
-      this.mainWindow.addBrowserView(this.titleBarView);
-    }
-
-    this.mainWindow.setTopBrowserView(this.titleBarView);
+    // if (!windowHasView(this.mainWindow, this.titleBarView)) {
+    //   // this.mainWindow?.setBrowserView(this.titleBarView);
+    //
+    //   this.mainWindow.addBrowserView(this.titleBarView);
+    // }
+    //
+    // this.mainWindow.setTopBrowserView(this.titleBarView);
 
     // if (windowHasView(this.mainWindow, this.tabPageView)) {
     //   this.mainWindow.removeBrowserView(this.tabPageView);
@@ -237,10 +238,10 @@ export default class WindowManager {
     this.resize();
     tabView.resize();
 
-    this.mainWindow.webContents.send(
-      'set-active',
-      tabView.view.webContents.getURL() !== ''
-    );
+    // this.mainWindow.webContents.send(
+    //   'set-active',
+    //   tabView.view.webContents.getURL() !== ''
+    // );
   }
 
   loadUrlInTab(id: number, url: string, event: Electron.IpcMainEvent) {
@@ -280,6 +281,9 @@ export default class WindowManager {
   }
 
   tabBack(id: number, event: Electron.IpcMainEvent) {
+    if (!this.allTabViews[id]) {
+      return;
+    }
     if (this.allTabViews[id].view.webContents.canGoBack()) {
       this.closeFind();
       this.allTabViews[id].view.webContents.goBack();
@@ -288,6 +292,9 @@ export default class WindowManager {
   }
 
   tabForward(id: number, event: Electron.IpcMainEvent) {
+    if (!this.allTabViews[id]) {
+      return;
+    }
     if (this.allTabViews[id].view.webContents.canGoForward()) {
       this.closeFind();
       this.allTabViews[id].view.webContents.goForward();

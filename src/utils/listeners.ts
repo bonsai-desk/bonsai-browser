@@ -9,8 +9,8 @@ function addListeners(wm: WindowManager) {
   ipcMain.on('remove-tab', (_, id) => {
     wm.removeTab(id);
   });
-  ipcMain.on('set-tab', (_, [id, oldId]) => {
-    wm.setTab(id, oldId);
+  ipcMain.on('set-tab', (_, id) => {
+    wm.setTab(id);
   });
   ipcMain.on('load-url-in-tab', (event, [id, url]) => {
     wm.loadUrlInTab(id, url, event);
