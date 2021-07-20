@@ -77,7 +77,7 @@ export const createWindow = async () => {
   // mainWindow.focus();
   mainWindow.hide();
 
-  addListeners(wm, wm.browserPadding);
+  addListeners(wm);
 
   mainWindow.on('minimize', (e: Event) => {
     if (mainWindow !== null) {
@@ -134,11 +134,11 @@ export const createWindow = async () => {
       ) {
         wm.removeTab(wm.activeTabId);
       }
-      mainWindow?.show();
+      wm.mainWindow.show();
       wm.unFloat(display);
       mainWindow?.focus();
-      wm.titleBarView.webContents.focus();
-      wm.titleBarView.webContents.send('create-new-tab');
+      // wm.titleBarView.webContents.focus();
+      // wm.createNewTab();
     } else if (
       !wm.windowFloating &&
       activeTabView !== null &&

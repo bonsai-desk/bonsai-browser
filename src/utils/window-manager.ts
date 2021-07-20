@@ -6,6 +6,7 @@ import {
   FIND_HTML,
   INDEX_HTML,
   OVERLAY_HTML,
+  TAB_PAGE,
   URL_PEEK_HTML,
 } from '../constants';
 import { validURL, windowHasView } from './utils';
@@ -46,6 +47,8 @@ export default class WindowManager {
 
   allTabViews: Record<number, TabView> = {};
 
+  tabId = 0; // auto increment to give unique id to each tab
+
   activeTabId = -1;
 
   findText = '';
@@ -63,6 +66,8 @@ export default class WindowManager {
   findView: BrowserView;
 
   overlayView: BrowserView;
+
+  tabPageView: BrowserView;
 
   static display: Display;
 
@@ -82,27 +87,37 @@ export default class WindowManager {
       shell.openExternal(url);
     });
 
-    // todo: turned this off because it had a runtime exception
     this.mainWindow.on('resize', this.resize);
 
+    // this.mainWindow.webContents.openDevTools({ mode: 'detach' });
+
     this.titleBarView = makeView(INDEX_HTML);
-    this.titleBarView.webContents.on('did-finish-load', () => {
-      this.mainWindow.focus();
-      this.titleBarView.webContents.focus();
-      this.titleBarView.webContents.send('create-new-tab');
-    });
+    // this.titleBarView.webContents.openDevTools({ mode: 'detach' });
+    // this.titleBarView.webContents.on('did-finish-load', () => {
+    //   this.mainWindow.focus();
+    //   this.titleBarView.webContents.focus();
+    //   this.createNewTab();
+    // });
     this.mainWindow.setBrowserView(this.titleBarView);
-    this.mainWindow.setTopBrowserView(this.titleBarView);
+    // this.mainWindow.setTopBrowserView(this.titleBarView);
 
     this.urlPeekView = makeView(URL_PEEK_HTML);
     this.findView = makeView(FIND_HTML);
     this.overlayView = makeView(OVERLAY_HTML);
+
+    this.tabPageView = makeView(TAB_PAGE);
+    // this.mainWindow.addBrowserView(this.tabPageView);
+
+    // this.mainWindow.setTopBrowserView(this.tabPageView);
+    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+
+    this.resize();
   }
 
   updateMainWindowBounds() {
     let x = Math.round(this.windowPosition[0]);
+    // why do you do this to me JavaScript?
     if (Object.is(x, -0)) {
-      // why do you do this to me JavaScript?
       x = 0;
     }
     let y = Math.round(this.windowPosition[1]);
@@ -133,16 +148,20 @@ export default class WindowManager {
     this.allTabViews[id].view.webContents.reload();
   }
 
-  createNewTab(id: number, browserPadding: number) {
+  createNewTab() {
+    this.tabId += 1;
+    const id = this.tabId;
     this.allTabViews[id] = new TabView(
       this.mainWindow,
       id,
       this.titleBarView,
       this.urlPeekView,
       this.findView,
-      browserPadding,
+      this.browserPadding,
       this
     );
+    this.titleBarView.webContents.send('tabView-created-with-id', id);
+    // this.tabPageView.webContents.send('tabView-created-with-id', id);
   }
 
   removeTab(id: number) {
@@ -160,6 +179,7 @@ export default class WindowManager {
     (tabView.view.webContents as any).destroy();
     delete this.allTabViews[id];
     this.titleBarView.webContents.send('tab-removed', id);
+    this.tabPageView.webContents.send('tab-removed', id);
   }
 
   closeFind() {
@@ -185,6 +205,7 @@ export default class WindowManager {
     }
 
     if (id === -1) {
+      this.mainWindow.webContents.send('set-active', false);
       return;
     }
     const tabView = this.allTabViews[id];
@@ -194,11 +215,26 @@ export default class WindowManager {
 
     this.mainWindow.addBrowserView(tabView.view);
     this.activeTabId = id;
+
+    if (!windowHasView(this.mainWindow, this.titleBarView)) {
+      // this.mainWindow?.setBrowserView(this.titleBarView);
+
+      this.mainWindow.addBrowserView(this.titleBarView);
+    }
+
     this.mainWindow.setTopBrowserView(this.titleBarView);
+
+    // if (windowHasView(this.mainWindow, this.tabPageView)) {
+    //   this.mainWindow.removeBrowserView(this.tabPageView);
+    // }
+
     this.closeFind();
+
     if (windowHasView(this.mainWindow, this.urlPeekView)) {
       this.mainWindow.setTopBrowserView(this.urlPeekView);
     }
+
+    this.resize();
     tabView.resize();
 
     this.mainWindow.webContents.send(
@@ -462,6 +498,9 @@ export default class WindowManager {
     if (windowHasView(this.mainWindow, this.titleBarView)) {
       this.mainWindow?.removeBrowserView(this.titleBarView);
     }
+    // if (windowHasView(this.mainWindow, this.tabPageView)) {
+    //   this.mainWindow?.removeBrowserView(this.tabPageView);
+    // }
     this.windowPosition[0] =
       display.workAreaSize.width / 2.0 - floatingWidth / 2.0;
     this.windowPosition[1] =
@@ -494,14 +533,20 @@ export default class WindowManager {
     this.windowSize.height = display.workAreaSize.height - 1; // todo: without the -1, everything breaks!!??!?
     this.updateMainWindowBounds();
 
-    // black border mode
     if (windowHasView(this.mainWindow, this.overlayView)) {
       this.mainWindow?.removeBrowserView(this.overlayView);
     }
-    if (!windowHasView(this.mainWindow, this.titleBarView)) {
-      this.mainWindow?.addBrowserView(this.titleBarView);
-      this.mainWindow?.setTopBrowserView(this.titleBarView);
+    // if (!windowHasView(this.mainWindow, this.titleBarView)) {
+    //   this.mainWindow?.addBrowserView(this.titleBarView);
+    //   this.mainWindow?.setTopBrowserView(this.titleBarView);
+    // }
+    if (windowHasView(this.mainWindow, this.titleBarView)) {
+      this.mainWindow?.removeBrowserView(this.titleBarView);
     }
+    // if (!windowHasView(this.mainWindow, this.tabPageView)) {
+    //   this.mainWindow?.addBrowserView(this.tabPageView);
+    //   this.mainWindow?.setTopBrowserView(this.tabPageView);
+    // }
 
     this.mainWindow.webContents.send(
       'set-padding',
@@ -562,6 +607,12 @@ export default class WindowManager {
       y: 0,
       width: windowSize[0],
       height: windowSize[1],
+    });
+    this.tabPageView.setBounds({
+      x: padding,
+      y: padding,
+      width: windowSize[0] - padding * 2,
+      height: windowSize[1] - padding * 2,
     });
 
     Object.values(this.allTabViews).forEach((tabView) => {

@@ -2,9 +2,9 @@
 import { ipcMain } from 'electron';
 import WindowManager from './window-manager';
 
-function addListeners(wm: WindowManager, browserPadding: number) {
-  ipcMain.on('create-new-tab', (_, id) => {
-    wm.createNewTab(id, browserPadding);
+function addListeners(wm: WindowManager) {
+  ipcMain.on('create-new-tab', () => {
+    wm.createNewTab();
   });
   ipcMain.on('remove-tab', (_, id) => {
     wm.removeTab(id);

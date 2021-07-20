@@ -3,16 +3,18 @@ import { observer } from 'mobx-react-lite';
 import styled, { css } from 'styled-components';
 import { ipcRenderer } from 'electron';
 import { useStore } from '../utils/data';
+import backIcon from '../../assets/arrow-back.svg';
+import refreshIcon from '../../assets/refresh.svg';
+import TabStore from '../store/tabs';
 import Tab from '../components/Tab';
 import TabObject from '../interfaces/tab';
 import plusIcon from '../../assets/plus.svg';
-import backIcon from '../../assets/arrow-back.svg';
-import refreshIcon from '../../assets/refresh.svg';
 
 const TitleBarFull = styled.div`
   width: 100vw;
   height: 100vh;
   font-family: sans-serif;
+  background-color: blue;
 `;
 
 const TitleBarTop = styled.div`
@@ -129,7 +131,7 @@ const TitleBar = observer(() => {
       return;
     }
     setHasRunOnce(true);
-    ipcRenderer.on('create-new-tab', () => {
+    ipcRenderer.on('tabView-created-with-id', () => {
       if (urlBoxRef.current != null) {
         urlBoxRef.current.focus();
       }
@@ -144,7 +146,7 @@ const TitleBar = observer(() => {
         ))}
         <NewTabButtonParent
           onClick={() => {
-            tabStore.addTab();
+            TabStore.requestAddTab();
             if (urlBoxRef.current != null) {
               urlBoxRef.current.focus();
             }
@@ -185,7 +187,7 @@ const TitleBar = observer(() => {
           value={tabStore.getActiveTabSearchBar()}
           onInput={(e) => {
             if (tabStore.activeTabId === -1) {
-              tabStore.addTab();
+              TabStore.requestAddTab();
             }
             tabStore.setActiveTabSearchBar(e.currentTarget.value);
           }}

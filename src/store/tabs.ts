@@ -3,8 +3,6 @@ import { ipcRenderer } from 'electron';
 import TabObject from '../interfaces/tab';
 
 export default class TabStore {
-  id = 0; // auto increment to give unique id to each tab
-
   tabs: TabObject[] = [];
 
   activeTabId = -1;
@@ -53,6 +51,10 @@ export default class TabStore {
     ipcRenderer.on('favicon-updated', (_, [id, faviconUrl]) => {
       this.tabs[this.getTabIndex(id)].faviconUrl = faviconUrl;
     });
+    ipcRenderer.on('tabView-created-with-id', (_, id) => {
+      this.pushTab(id);
+      this.setActiveTab(id);
+    });
   }
 
   getTabIndex(id: number): number {
@@ -85,11 +87,8 @@ export default class TabStore {
     this.tabs = this.tabs.filter((tab) => tab.id !== id);
   }
 
-  addTab() {
-    ipcRenderer.send('create-new-tab', this.id);
-    this.pushTab(this.id);
-    this.setActiveTab(this.id);
-    this.id += 1;
+  static requestAddTab() {
+    ipcRenderer.send('create-new-tab');
   }
 
   static removeTab(id: number) {

@@ -36,7 +36,8 @@ const Background = styled.div`
 
   ${({ padding, isActive }: BackgroundProps) =>
     css`
-      display: ${isActive ? 'block' : 'none'};
+      //display: ${isActive ? 'block' : 'none'};
+      //display: none;
       width: calc(100% - ${padding}px - ${padding}px);
       height: calc(100% - ${padding}px - ${padding}px);
       margin: ${padding}px;
