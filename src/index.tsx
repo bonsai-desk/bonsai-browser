@@ -8,6 +8,7 @@ import { Provider, rootStore, tabStore } from './utils/data';
 import './index.css';
 import MainWindow from './pages/main-window';
 import Overlay from './pages/overlay';
+import TabPage, { TabPageStore } from './pages/tab-page';
 
 if (document.getElementById('root')) {
   render(
@@ -36,4 +37,12 @@ if (document.getElementById('main-window')) {
 
 if (document.getElementById('overlay')) {
   render(<Overlay />, document.getElementById('overlay'));
+}
+
+if (document.getElementById('tab-page')) {
+  const tabPageStore = new TabPageStore();
+  render(
+    <TabPage tabPageStore={tabPageStore} />,
+    document.getElementById('tab-page')
+  );
 }

@@ -5,7 +5,7 @@ import { windowHasView } from './utils';
 // eslint-disable-next-line import/no-cycle
 import WindowManager from './window-manager';
 
-export const headerHeight = 79;
+export const headerHeight = 79 - 32 - 10; // 79 or 79 - 32 - 10
 
 class TabView {
   window: BrowserWindow;
@@ -23,7 +23,7 @@ class TabView {
     urlPeekView: BrowserView,
     findView: BrowserView,
     browserPadding: number,
-    windowManger: WindowManager
+    wm: WindowManager
   ) {
     if (!window) {
       throw new Error('"window" is not defined');
@@ -41,6 +41,7 @@ class TabView {
 
     this.view.webContents.on('page-title-updated', (_, title) => {
       titleBarView.webContents.send('title-updated', [id, title]);
+      wm.tabPageView.webContents.send('title-updated', [id, title]);
     });
 
     const updateContents = () => {
@@ -48,6 +49,10 @@ class TabView {
         id,
         this.view.webContents.canGoBack(),
         this.view.webContents.canGoForward(),
+        this.view.webContents.getURL(),
+      ]);
+      wm.tabPageView.webContents.send('url-changed', [
+        id,
         this.view.webContents.getURL(),
       ]);
     };
@@ -82,7 +87,7 @@ class TabView {
         if (!windowHasView(window, urlPeekView)) {
           window.addBrowserView(urlPeekView);
           window.setTopBrowserView(urlPeekView);
-          windowManger.resize();
+          wm.resize();
         }
         urlPeekView.webContents.send('peek-url-updated', url);
       }
@@ -95,7 +100,8 @@ class TabView {
       ]);
     });
 
-    window.addBrowserView(this.view);
+    // window.addBrowserView(this.view);
+    // resize();
   }
 
   resize() {

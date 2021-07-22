@@ -75,12 +75,6 @@ ipcRenderer.on('url-changed', (_, [id, newUrl]) => {
   });
 });
 
-ipcRenderer.on('create-new-tab', () => {
-  runInAction(() => {
-    tabStoreStatic.addTab();
-  });
-});
-
 const Tab = observer(({ tab }: ITab) => {
   const { tabStore } = useStore();
   const active = tabStore.activeTabId === tab.id;
@@ -92,7 +86,7 @@ const Tab = observer(({ tab }: ITab) => {
     <TabParent
       color={active ? activeColor : defaultColor}
       onMouseDown={() => {
-        tabStore.setActiveTab(tab.id);
+        ipcRenderer.send('set-tab', tab.id);
       }}
     >
       <Favicon src={tab.faviconUrl} />

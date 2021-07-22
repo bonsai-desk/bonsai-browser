@@ -14,6 +14,7 @@ import addListeners from './listeners';
 import WindowManager from './window-manager';
 import { ICON_PNG, MAIN_HTML } from '../constants';
 import windowFixedUpdate from './calculate-window-physics';
+import { windowHasView } from './utils';
 
 class AppUpdater {
   constructor() {
@@ -77,7 +78,7 @@ export const createWindow = async () => {
   // mainWindow.focus();
   mainWindow.hide();
 
-  addListeners(wm, wm.browserPadding);
+  addListeners(wm);
 
   mainWindow.on('minimize', (e: Event) => {
     if (mainWindow !== null) {
@@ -124,21 +125,23 @@ export const createWindow = async () => {
 
   mainWindow?.setResizable(false);
 
-  globalShortcut.register('CmdOrCtrl+\\', () => {
+  // was CmdOrCtrl+\\
+  globalShortcut.register('Alt+Space', () => {
     const activeTabView = wm.allTabViews[wm.activeTabId];
     if (!mainWindow?.isVisible()) {
-      if (
-        activeTabView !== null &&
-        typeof activeTabView !== 'undefined' &&
-        activeTabView.view.webContents.getURL() === ''
-      ) {
-        wm.removeTab(wm.activeTabId);
-      }
-      mainWindow?.show();
+      // if (
+      //   activeTabView !== null &&
+      //   typeof activeTabView !== 'undefined' &&
+      //   activeTabView.view.webContents.getURL() === ''
+      // ) {
+      //   wm.removeTab(wm.activeTabId);
+      // }
+      wm.mainWindow.show();
       wm.unFloat(display);
       mainWindow?.focus();
-      wm.titleBarView.webContents.focus();
-      wm.titleBarView.webContents.send('create-new-tab');
+      wm.setTab(-1);
+      // wm.titleBarView.webContents.focus();
+      // wm.createNewTab();
     } else if (
       !wm.windowFloating &&
       activeTabView !== null &&
@@ -174,24 +177,26 @@ export const createWindow = async () => {
           label: 'find',
           accelerator: 'CmdOrCtrl+F',
           click: () => {
-            wm.clickFind();
+            if (windowHasView(wm.mainWindow, wm.titleBarView)) {
+              wm.clickFind();
+            }
           },
         },
         {
-          label: 'stop-find',
+          label: 'escape',
           accelerator: 'Escape',
           click: () => {
-            wm.closeFind();
-          },
-        },
-        {
-          label: 'Float',
-          accelerator: 'CmdOrCtrl+M',
-          click: () => {
-            // wm.toggleFloat(display, floatingWidth, floatingHeight);
-            // wm.allTabViews[wm.activeTabId].view.webContents.executeJavaScript(`
-            //   window.scrollBy(0, 100);
-            // `);
+            if (wm.windowFloating) {
+              mainWindow?.hide();
+            } else if (windowHasView(wm.mainWindow, wm.tabPageView)) {
+              mainWindow?.hide();
+            } else if (windowHasView(wm.mainWindow, wm.titleBarView)) {
+              if (windowHasView(wm.mainWindow, wm.findView)) {
+                wm.closeFind();
+              } else {
+                wm.setTab(-1);
+              }
+            }
           },
         },
       ],

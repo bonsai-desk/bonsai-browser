@@ -6,6 +6,7 @@ import {
   FIND_HTML,
   INDEX_HTML,
   OVERLAY_HTML,
+  TAB_PAGE,
   URL_PEEK_HTML,
 } from '../constants';
 import { validURL, windowHasView } from './utils';
@@ -46,6 +47,8 @@ export default class WindowManager {
 
   allTabViews: Record<number, TabView> = {};
 
+  tabId = 0; // auto increment to give unique id to each tab
+
   activeTabId = -1;
 
   findText = '';
@@ -63,6 +66,8 @@ export default class WindowManager {
   findView: BrowserView;
 
   overlayView: BrowserView;
+
+  tabPageView: BrowserView;
 
   static display: Display;
 
@@ -82,27 +87,36 @@ export default class WindowManager {
       shell.openExternal(url);
     });
 
-    // todo: turned this off because it had a runtime exception
     this.mainWindow.on('resize', this.resize);
 
+    // this.mainWindow.webContents.openDevTools({ mode: 'detach' });
+
     this.titleBarView = makeView(INDEX_HTML);
-    this.titleBarView.webContents.on('did-finish-load', () => {
-      this.mainWindow.focus();
-      this.titleBarView.webContents.focus();
-      this.titleBarView.webContents.send('create-new-tab');
-    });
-    this.mainWindow.setBrowserView(this.titleBarView);
-    this.mainWindow.setTopBrowserView(this.titleBarView);
+    // this.titleBarView.webContents.openDevTools({ mode: 'detach' });
+    // this.titleBarView.webContents.on('did-finish-load', () => {
+    //   this.mainWindow.focus();
+    //   this.titleBarView.webContents.focus();
+    //   this.createNewTab();
+    // });
+    // this.mainWindow.addBrowserView(this.titleBarView);
+    // this.mainWindow.setBrowserView(this.titleBarView);
+    // this.mainWindow.setTopBrowserView(this.titleBarView);
 
     this.urlPeekView = makeView(URL_PEEK_HTML);
     this.findView = makeView(FIND_HTML);
     this.overlayView = makeView(OVERLAY_HTML);
+
+    this.tabPageView = makeView(TAB_PAGE);
+    this.mainWindow.setBrowserView(this.tabPageView);
+    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+
+    this.resize();
   }
 
   updateMainWindowBounds() {
     let x = Math.round(this.windowPosition[0]);
+    // why do you do this to me JavaScript?
     if (Object.is(x, -0)) {
-      // why do you do this to me JavaScript?
       x = 0;
     }
     let y = Math.round(this.windowPosition[1]);
@@ -130,19 +144,24 @@ export default class WindowManager {
   }
 
   reloadTab(id: number) {
-    this.allTabViews[id].view.webContents.reload();
+    this.allTabViews[id]?.view.webContents.reload();
   }
 
-  createNewTab(id: number, browserPadding: number) {
+  createNewTab(): number {
+    this.tabId += 1;
+    const id = this.tabId;
     this.allTabViews[id] = new TabView(
       this.mainWindow,
       id,
       this.titleBarView,
       this.urlPeekView,
       this.findView,
-      browserPadding,
+      this.browserPadding,
       this
     );
+    this.titleBarView.webContents.send('tabView-created-with-id', id);
+    this.tabPageView.webContents.send('tabView-created-with-id', id);
+    return id;
   }
 
   removeTab(id: number) {
@@ -151,15 +170,16 @@ export default class WindowManager {
       throw new Error(`remove-tab: tab with id ${id} does not exist`);
     }
     this.mainWindow.removeBrowserView(tabView.view);
-    this.activeTabId = -1;
-    this.closeFind();
-    if (windowHasView(this.mainWindow, this.urlPeekView)) {
-      this.mainWindow.removeBrowserView(this.urlPeekView);
+    if (id === this.activeTabId) {
+      this.setTab(-1);
     }
+    this.closeFind();
+    this.mainWindow.removeBrowserView(this.urlPeekView);
     // eslint-disable-line
     (tabView.view.webContents as any).destroy();
     delete this.allTabViews[id];
     this.titleBarView.webContents.send('tab-removed', id);
+    this.tabPageView.webContents.send('tab-removed', id);
   }
 
   closeFind() {
@@ -173,38 +193,54 @@ export default class WindowManager {
     }
   }
 
-  setTab(id: number, oldId: number) {
-    if (id === oldId) {
+  setTab(id: number) {
+    if (id === -1) {
+      this.mainWindow.setBrowserView(this.tabPageView);
+      this.tabPageView.webContents.focus();
+      this.tabPageView.webContents.send('focus-search');
+    }
+
+    if (id === this.activeTabId) {
       return;
     }
 
-    const oldTabView = this.allTabViews[oldId];
+    const oldTabView = this.allTabViews[this.activeTabId];
     if (typeof oldTabView !== 'undefined') {
       this.mainWindow.removeBrowserView(oldTabView.view);
       this.activeTabId = -1;
     }
 
     if (id === -1) {
+      this.mainWindow.webContents.send('set-active', false);
+      this.resize();
       return;
     }
+    this.mainWindow.webContents.send('set-active', true);
     const tabView = this.allTabViews[id];
     if (typeof tabView === 'undefined') {
       throw new Error(`setTab: tab with id ${id} does not exist`);
     }
 
+    this.mainWindow.setBrowserView(this.titleBarView);
+
     this.mainWindow.addBrowserView(tabView.view);
     this.activeTabId = id;
-    this.mainWindow.setTopBrowserView(this.titleBarView);
+    this.titleBarView.webContents.send('tab-was-set', id);
+
+    if (windowHasView(this.mainWindow, this.tabPageView)) {
+      this.mainWindow.removeBrowserView(this.tabPageView);
+    }
+
     this.closeFind();
+
     if (windowHasView(this.mainWindow, this.urlPeekView)) {
       this.mainWindow.setTopBrowserView(this.urlPeekView);
     }
-    tabView.resize();
 
-    this.mainWindow.webContents.send(
-      'set-active',
-      tabView.view.webContents.getURL() !== ''
-    );
+    this.tabPageView.webContents.send('access-tab', id);
+
+    this.resize();
+    tabView.resize();
   }
 
   loadUrlInTab(id: number, url: string, event: Electron.IpcMainEvent) {
@@ -238,12 +274,14 @@ export default class WindowManager {
       const newUrl = tabView.view.webContents.getURL();
       this.closeFind();
       event.reply('url-changed', [id, newUrl]);
-      this.mainWindow.webContents.send('set-active', newUrl !== '');
       updateWebContents(event, id, tabView);
     })();
   }
 
   tabBack(id: number, event: Electron.IpcMainEvent) {
+    if (!this.allTabViews[id]) {
+      return;
+    }
     if (this.allTabViews[id].view.webContents.canGoBack()) {
       this.closeFind();
       this.allTabViews[id].view.webContents.goBack();
@@ -252,6 +290,9 @@ export default class WindowManager {
   }
 
   tabForward(id: number, event: Electron.IpcMainEvent) {
+    if (!this.allTabViews[id]) {
+      return;
+    }
     if (this.allTabViews[id].view.webContents.canGoForward()) {
       this.closeFind();
       this.allTabViews[id].view.webContents.goForward();
@@ -462,6 +503,9 @@ export default class WindowManager {
     if (windowHasView(this.mainWindow, this.titleBarView)) {
       this.mainWindow?.removeBrowserView(this.titleBarView);
     }
+    // if (windowHasView(this.mainWindow, this.tabPageView)) {
+    //   this.mainWindow?.removeBrowserView(this.tabPageView);
+    // }
     this.windowPosition[0] =
       display.workAreaSize.width / 2.0 - floatingWidth / 2.0;
     this.windowPosition[1] =
@@ -494,10 +538,10 @@ export default class WindowManager {
     this.windowSize.height = display.workAreaSize.height - 1; // todo: without the -1, everything breaks!!??!?
     this.updateMainWindowBounds();
 
-    // black border mode
     if (windowHasView(this.mainWindow, this.overlayView)) {
       this.mainWindow?.removeBrowserView(this.overlayView);
     }
+
     if (!windowHasView(this.mainWindow, this.titleBarView)) {
       this.mainWindow?.addBrowserView(this.titleBarView);
       this.mainWindow?.setTopBrowserView(this.titleBarView);
@@ -514,14 +558,6 @@ export default class WindowManager {
     });
 
     this.resize();
-  }
-
-  toggleFloat(display: Display, floatingWidth: number, floatingHeight: number) {
-    if (this.windowFloating) {
-      this.unFloat(display);
-    } else {
-      this.float(display, floatingWidth, floatingHeight);
-    }
   }
 
   resize() {
@@ -562,6 +598,12 @@ export default class WindowManager {
       y: 0,
       width: windowSize[0],
       height: windowSize[1],
+    });
+    this.tabPageView.setBounds({
+      x: padding,
+      y: padding,
+      width: windowSize[0] - padding * 2,
+      height: windowSize[1] - padding * 2,
     });
 
     Object.values(this.allTabViews).forEach((tabView) => {

@@ -2,15 +2,15 @@
 import { ipcMain } from 'electron';
 import WindowManager from './window-manager';
 
-function addListeners(wm: WindowManager, browserPadding: number) {
-  ipcMain.on('create-new-tab', (_, id) => {
-    wm.createNewTab(id, browserPadding);
+function addListeners(wm: WindowManager) {
+  ipcMain.on('create-new-tab', () => {
+    wm.createNewTab();
   });
   ipcMain.on('remove-tab', (_, id) => {
     wm.removeTab(id);
   });
-  ipcMain.on('set-tab', (_, [id, oldId]) => {
-    wm.setTab(id, oldId);
+  ipcMain.on('set-tab', (_, id) => {
+    wm.setTab(id);
   });
   ipcMain.on('load-url-in-tab', (event, [id, url]) => {
     wm.loadUrlInTab(id, url, event);
@@ -49,6 +49,11 @@ function addListeners(wm: WindowManager, browserPadding: number) {
         window.scrollBy(${deltaX}, ${deltaY});
       `);
     }
+  });
+  ipcMain.on('search-url', (event, url) => {
+    const newTabId = wm.createNewTab();
+    wm.loadUrlInTab(newTabId, url, event);
+    wm.setTab(newTabId);
   });
 }
 
