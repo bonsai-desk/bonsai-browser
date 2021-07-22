@@ -138,7 +138,6 @@ export const createWindow = async () => {
       wm.mainWindow.show();
       wm.unFloat(display);
       mainWindow?.focus();
-      wm.tabPageView.webContents.focus();
       wm.setTab(-1);
       // wm.titleBarView.webContents.focus();
       // wm.createNewTab();

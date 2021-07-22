@@ -212,6 +212,7 @@ export default class WindowManager {
 
     if (id === -1) {
       this.mainWindow.webContents.send('set-active', false);
+      this.resize();
       return;
     }
     const tabView = this.allTabViews[id];
