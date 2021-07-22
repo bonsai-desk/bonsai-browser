@@ -77,6 +77,8 @@ const ColumnHeader = styled.div`
 interface TabPageTab {
   id: number;
 
+  lastAccessTime: number;
+
   url: string;
 
   title: string;
@@ -90,7 +92,12 @@ export class TabPageStore {
 
     ipcRenderer.on('tabView-created-with-id', (_, id) => {
       runInAction(() => {
-        this.tabs[id] = { id, url: '', title: '' };
+        this.tabs[id] = {
+          id,
+          lastAccessTime: new Date().getTime(),
+          url: '',
+          title: '',
+        };
       });
     });
     ipcRenderer.on('tab-removed', (_, id) => {
@@ -106,6 +113,11 @@ export class TabPageStore {
     ipcRenderer.on('title-updated', (_, [id, title]) => {
       runInAction(() => {
         this.tabs[id].title = title;
+      });
+    });
+    ipcRenderer.on('access-tab', (_, id) => {
+      runInAction(() => {
+        this.tabs[id].lastAccessTime = new Date().getTime();
       });
     });
   }
@@ -124,6 +136,12 @@ function getRootDomain(url: string): string {
   return '';
 }
 
+interface TabPageColumn {
+  domain: string;
+
+  tabs: TabPageTab[];
+}
+
 function createTabs(tabPageStore: TabPageStore) {
   const columns: Record<string, TabPageTab[]> = {};
 
@@ -135,12 +153,29 @@ function createTabs(tabPageStore: TabPageStore) {
     columns[domain].push(tab);
   });
 
-  return Object.keys(columns).map((key) => {
+  const tabPageColumns: TabPageColumn[] = [];
+
+  Object.keys(columns).forEach((key) => {
+    const column: TabPageColumn = { domain: key, tabs: columns[key] };
+    tabPageColumns.push(column);
+  });
+
+  tabPageColumns.sort((a: TabPageColumn, b: TabPageColumn): number => {
+    return b.tabs.length - a.tabs.length;
+  });
+
+  tabPageColumns.forEach((column) => {
+    column.tabs.sort((a: TabPageTab, b: TabPageTab): number => {
+      return b.lastAccessTime - a.lastAccessTime;
+    });
+  });
+
+  return tabPageColumns.map((column) => {
     return (
-      <Column key={key}>
+      <Column key={column.domain}>
         {[
-          <ColumnHeader key={key}>{key}</ColumnHeader>,
-          Object.values(columns[key]).map((tab) => {
+          <ColumnHeader key={column.domain}>{column.domain}</ColumnHeader>,
+          column.tabs.map((tab) => {
             return (
               <Tab
                 key={tab.id}

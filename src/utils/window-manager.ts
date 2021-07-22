@@ -237,6 +237,8 @@ export default class WindowManager {
       this.mainWindow.setTopBrowserView(this.urlPeekView);
     }
 
+    this.tabPageView.webContents.send('access-tab', id);
+
     this.resize();
     tabView.resize();
   }
