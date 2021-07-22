@@ -160,14 +160,17 @@ function createTabs(tabPageStore: TabPageStore) {
     tabPageColumns.push(column);
   });
 
-  tabPageColumns.sort((a: TabPageColumn, b: TabPageColumn): number => {
-    return b.tabs.length - a.tabs.length;
-  });
-
   tabPageColumns.forEach((column) => {
     column.tabs.sort((a: TabPageTab, b: TabPageTab): number => {
       return b.lastAccessTime - a.lastAccessTime;
     });
+  });
+
+  tabPageColumns.sort((a: TabPageColumn, b: TabPageColumn): number => {
+    if (b.tabs.length === a.tabs.length && b.tabs.length > 0) {
+      return b.tabs[0].lastAccessTime - a.tabs[0].lastAccessTime;
+    }
+    return b.tabs.length - a.tabs.length;
   });
 
   return tabPageColumns.map((column) => {
