@@ -11,6 +11,7 @@ const GlobalStyle = createGlobalStyle`
     padding: 0;
     width: 100vw;
     height: 100vh;
+    font-family: sans-serif;
   }
 `;
 
@@ -18,28 +19,41 @@ const Background = styled.div`
   background-color: gray;
   width: 100vw;
   height: 100vh;
+  border-radius: 25px;
 `;
 
 const Tabs = styled.div`
   display: flex;
-  background-color: blue;
-  border: 2px solid black;
+  align-items: flex-start;
+  //background-color: blue;
+  //border: 2px solid black;
+  padding-left: 25px;
 `;
 
 const Column = styled.div`
-  background-color: red;
+  user-select: none;
+  background-color: darkgrey;
+  padding: 5px 10px 5px 10px;
   border: 2px solid black;
-  margin: 5px;
+  margin-right: 25px;
+  border-radius: 25px;
 `;
 
 const Tab = styled.div`
-  width: 100px;
-  height: 100px;
-  background-color: green;
+  width: 250px;
+  height: 125px;
+  background-color: lightgrey;
   border: 2px solid black;
+  border-radius: 25px;
+  padding: 20px;
   word-wrap: break-word;
   text-overflow: ellipsis;
   overflow: hidden;
+  margin-bottom: 5px;
+
+  :hover {
+    cursor: pointer;
+  }
 `;
 
 const URLBox = styled.input`
@@ -50,6 +64,14 @@ const URLBox = styled.input`
   padding: 2px 2px 2px 10px;
   margin: 10px;
   width: calc(100% - 2px - 10px - 4px - 20px);
+`;
+
+const ColumnHeader = styled.div`
+  //background-color: yellow;
+  text-align: center;
+  font-weight: bold;
+  font-size: 40px;
+  margin-bottom: 10px;
 `;
 
 interface TabPageTab {
@@ -117,7 +139,7 @@ function createTabs(tabPageStore: TabPageStore) {
     return (
       <Column key={key}>
         {[
-          <div key={key}>{key}</div>,
+          <ColumnHeader key={key}>{key}</ColumnHeader>,
           Object.values(columns[key]).map((tab) => {
             return (
               <Tab

@@ -125,7 +125,8 @@ export const createWindow = async () => {
 
   mainWindow?.setResizable(false);
 
-  globalShortcut.register('CmdOrCtrl+\\', () => {
+  // was CmdOrCtrl+\\
+  globalShortcut.register('Alt+Space', () => {
     const activeTabView = wm.allTabViews[wm.activeTabId];
     if (!mainWindow?.isVisible()) {
       // if (

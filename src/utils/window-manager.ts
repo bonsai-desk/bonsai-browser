@@ -215,6 +215,7 @@ export default class WindowManager {
       this.resize();
       return;
     }
+    this.mainWindow.webContents.send('set-active', true);
     const tabView = this.allTabViews[id];
     if (typeof tabView === 'undefined') {
       throw new Error(`setTab: tab with id ${id} does not exist`);
@@ -271,7 +272,6 @@ export default class WindowManager {
       const newUrl = tabView.view.webContents.getURL();
       this.closeFind();
       event.reply('url-changed', [id, newUrl]);
-      this.mainWindow.webContents.send('set-active', newUrl !== '');
       updateWebContents(event, id, tabView);
     })();
   }
