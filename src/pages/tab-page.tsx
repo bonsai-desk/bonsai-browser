@@ -40,6 +40,7 @@ const Column = styled.div`
 `;
 
 const Tab = styled.div`
+  //display: flex;
   width: 250px;
   height: 125px;
   background-color: lightgrey;
@@ -74,6 +75,14 @@ const ColumnHeader = styled.div`
   margin-bottom: 10px;
 `;
 
+const TabTitle = styled.div`
+  text-align: center;
+`;
+
+const TabImage = styled.img`
+  max-width: 100%;
+`;
+
 interface TabPageTab {
   id: number;
 
@@ -82,6 +91,8 @@ interface TabPageTab {
   url: string;
 
   title: string;
+
+  image: string;
 }
 
 export class TabPageStore {
@@ -97,6 +108,7 @@ export class TabPageStore {
           lastAccessTime: new Date().getTime(),
           url: '',
           title: '',
+          image: '',
         };
       });
     });
@@ -118,6 +130,13 @@ export class TabPageStore {
     ipcRenderer.on('access-tab', (_, id) => {
       runInAction(() => {
         this.tabs[id].lastAccessTime = new Date().getTime();
+      });
+    });
+    ipcRenderer.on('tab-image', (_, [id, image]) => {
+      runInAction(() => {
+        if (typeof this.tabs[id] !== 'undefined') {
+          this.tabs[id].image = image;
+        }
       });
     });
   }
@@ -186,7 +205,8 @@ function createTabs(tabPageStore: TabPageStore) {
                   ipcRenderer.send('set-tab', tab.id);
                 }}
               >
-                {tab.url === '' ? 'New Tab' : tab.title}
+                <TabTitle>{tab.url === '' ? 'New Tab' : tab.title}</TabTitle>
+                <TabImage src={tab.image} alt="tab_image" />
               </Tab>
             );
           }),

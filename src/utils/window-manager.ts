@@ -1,5 +1,12 @@
 /* eslint no-console: off */
-import { BrowserView, BrowserWindow, Display, screen, shell } from 'electron';
+import {
+  BrowserView,
+  BrowserWindow,
+  Display,
+  NativeImage,
+  screen,
+  shell,
+} from 'electron';
 // eslint-disable-next-line import/no-cycle
 import TabView, { headerHeight } from './tab-view';
 import {
@@ -108,7 +115,7 @@ export default class WindowManager {
 
     this.tabPageView = makeView(TAB_PAGE);
     this.mainWindow.setBrowserView(this.tabPageView);
-    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.resize();
   }
@@ -194,6 +201,23 @@ export default class WindowManager {
   }
 
   setTab(id: number) {
+    const oldTabView = this.allTabViews[this.activeTabId];
+    if (id !== this.activeTabId && typeof oldTabView !== 'undefined') {
+      ((cachedId: number) => {
+        oldTabView.view.webContents
+          .capturePage()
+          .then((image: NativeImage) => {
+            const imgString = image.toDataURL();
+            this.tabPageView.webContents.send('tab-image', [
+              cachedId,
+              imgString,
+            ]);
+            return null;
+          })
+          .catch(console.log);
+      })(this.activeTabId);
+    }
+
     if (id === -1) {
       this.mainWindow.setBrowserView(this.tabPageView);
       this.tabPageView.webContents.focus();
@@ -204,10 +228,10 @@ export default class WindowManager {
       return;
     }
 
-    const oldTabView = this.allTabViews[this.activeTabId];
+    this.activeTabId = id;
+
     if (typeof oldTabView !== 'undefined') {
       this.mainWindow.removeBrowserView(oldTabView.view);
-      this.activeTabId = -1;
     }
 
     if (id === -1) {
