@@ -43,6 +43,8 @@ function makeView(loadURL: string) {
       contextIsolation: false, // todo: do we need this? security concern?
     },
   });
+  // newView.webContents.setZoomLevel(1);
+  // newView.webContents.setZoomFactor(1);
   newView.webContents.loadURL(loadURL);
   return newView;
 }
@@ -115,7 +117,9 @@ export default class WindowManager {
 
     this.tabPageView = makeView(TAB_PAGE);
     this.mainWindow.setBrowserView(this.tabPageView);
-    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    // if (!app.isPackaged) {
+    //   this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    // }
 
     this.resize();
   }

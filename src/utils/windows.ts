@@ -18,18 +18,18 @@ export const installExtensions = async () => {
 export function createTray(appIconPath: string, mainWindow: BrowserWindow) {
   const appIcon = new Tray(appIconPath);
   const contextMenu = Menu.buildFromTemplate([
-    {
-      label: 'Open',
-      click() {
-        mainWindow?.show();
-      },
-    },
-    {
-      label: 'Close',
-      click() {
-        mainWindow?.hide();
-      },
-    },
+    // {
+    //   label: 'Open',
+    //   click() {
+    //     mainWindow?.show();
+    //   },
+    // },
+    // {
+    //   label: 'Close',
+    //   click() {
+    //     mainWindow?.hide();
+    //   },
+    // },
     {
       label: 'Exit',
       click() {
