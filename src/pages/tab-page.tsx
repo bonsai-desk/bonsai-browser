@@ -218,7 +218,7 @@ function createTabs(tabPageStore: TabPageStore) {
               Object.keys(tabPageStore.tabs).forEach((key: string) => {
                 const tab = tabPageStore.tabs[key];
                 if (getRootDomain(tab.url) === column.domain) {
-                  delete tabPageStore.tabs[key];
+                  ipcRenderer.send('remove-tab', tab.id);
                 }
               });
             }}
