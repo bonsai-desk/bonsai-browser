@@ -31,6 +31,10 @@ const Tabs = styled.div`
 `;
 
 const Column = styled.div`
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
   user-select: none;
   background-color: darkgrey;
   padding: 5px 10px 5px 10px;
@@ -41,6 +45,7 @@ const Column = styled.div`
 
 const Tab = styled.div`
   //display: flex;
+  flex-grow: 0;
   width: 250px;
   height: 125px;
   background-color: lightgrey;
@@ -85,6 +90,13 @@ const TabImage = styled.img`
   -webkit-user-drag: none;
 `;
 
+const CloseColumnButton = styled.button`
+  flex-grow: 0;
+  margin-bottom: 5px;
+  width: 50px;
+  height: 30px;
+`;
+
 interface TabPageTab {
   id: number;
 
@@ -98,7 +110,7 @@ interface TabPageTab {
 }
 
 export class TabPageStore {
-  tabs: Record<number, TabPageTab> = {};
+  tabs: Record<string, TabPageTab> = {};
 
   constructor() {
     makeAutoObservable(this);
@@ -199,6 +211,20 @@ function createTabs(tabPageStore: TabPageStore) {
       <Column key={column.domain}>
         {[
           <ColumnHeader key={column.domain}>{column.domain}</ColumnHeader>,
+          <CloseColumnButton
+            key={column.domain}
+            type="button"
+            onClick={() => {
+              Object.keys(tabPageStore.tabs).forEach((key: string) => {
+                const tab = tabPageStore.tabs[key];
+                if (getRootDomain(tab.url) === column.domain) {
+                  delete tabPageStore.tabs[key];
+                }
+              });
+            }}
+          >
+            X
+          </CloseColumnButton>,
           column.tabs.map((tab) => {
             return (
               <Tab
