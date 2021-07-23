@@ -200,9 +200,20 @@ export default class WindowManager {
     }
   }
 
-  setTab(id: number) {
+  setTab(id: number, shouldScreenshot = true) {
     const oldTabView = this.allTabViews[this.activeTabId];
-    if (id !== this.activeTabId && typeof oldTabView !== 'undefined') {
+    if (
+      shouldScreenshot &&
+      shouldScreenshot.valueOf() &&
+      id !== this.activeTabId &&
+      typeof oldTabView !== 'undefined'
+    ) {
+      if (id === -1) {
+        this.mainWindow.addBrowserView(this.tabPageView);
+        this.mainWindow.setTopBrowserView(this.tabPageView);
+        this.tabPageView.webContents.focus();
+        this.tabPageView.webContents.send('focus-search');
+      }
       ((cachedId: number) => {
         oldTabView.view.webContents
           .capturePage()
@@ -212,10 +223,15 @@ export default class WindowManager {
               cachedId,
               imgString,
             ]);
+            this.setTab(id, false);
             return null;
           })
-          .catch(console.log);
+          .catch((e) => {
+            console.log(e);
+            this.setTab(id, false);
+          });
       })(this.activeTabId);
+      return;
     }
 
     if (id === -1) {

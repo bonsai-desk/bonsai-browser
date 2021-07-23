@@ -81,6 +81,8 @@ const TabTitle = styled.div`
 
 const TabImage = styled.img`
   max-width: 100%;
+  user-select: none;
+  -webkit-user-drag: none;
 `;
 
 interface TabPageTab {
@@ -169,7 +171,7 @@ function createTabs(tabPageStore: TabPageStore) {
     if (!columns[domain]) {
       columns[domain] = [];
     }
-    columns[domain].push(tab);
+    columns[domain].unshift(tab);
   });
 
   const tabPageColumns: TabPageColumn[] = [];
@@ -179,18 +181,18 @@ function createTabs(tabPageStore: TabPageStore) {
     tabPageColumns.push(column);
   });
 
-  tabPageColumns.forEach((column) => {
-    column.tabs.sort((a: TabPageTab, b: TabPageTab): number => {
-      return b.lastAccessTime - a.lastAccessTime;
-    });
-  });
-
-  tabPageColumns.sort((a: TabPageColumn, b: TabPageColumn): number => {
-    if (b.tabs.length === a.tabs.length && b.tabs.length > 0) {
-      return b.tabs[0].lastAccessTime - a.tabs[0].lastAccessTime;
-    }
-    return b.tabs.length - a.tabs.length;
-  });
+  // tabPageColumns.forEach((column) => {
+  //   column.tabs.sort((a: TabPageTab, b: TabPageTab): number => {
+  //     return b.lastAccessTime - a.lastAccessTime;
+  //   });
+  // });
+  //
+  // tabPageColumns.sort((a: TabPageColumn, b: TabPageColumn): number => {
+  //   if (b.tabs.length === a.tabs.length && b.tabs.length > 0) {
+  //     return b.tabs[0].lastAccessTime - a.tabs[0].lastAccessTime;
+  //   }
+  //   return b.tabs.length - a.tabs.length;
+  // });
 
   return tabPageColumns.map((column) => {
     return (

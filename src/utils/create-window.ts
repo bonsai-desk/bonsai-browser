@@ -125,8 +125,8 @@ export const createWindow = async () => {
 
   mainWindow?.setResizable(false);
 
-  // was CmdOrCtrl+\\
-  globalShortcut.register('Alt+Space', () => {
+  const shortCut = app.isPackaged ? 'Alt+Space' : 'CmdOrCtrl+\\';
+  globalShortcut.register(shortCut, () => {
     const activeTabView = wm.allTabViews[wm.activeTabId];
     if (!mainWindow?.isVisible()) {
       // if (
@@ -150,6 +150,8 @@ export const createWindow = async () => {
     ) {
       wm.float(display, floatingWidth, floatingHeight);
     } else {
+      wm.unFloat(display);
+      wm.setTab(-1);
       mainWindow?.hide();
     }
   });
