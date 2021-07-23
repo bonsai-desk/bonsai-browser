@@ -217,6 +217,7 @@ export default class WindowManager {
         this.mainWindow.setTopBrowserView(this.tabPageView);
         this.tabPageView.webContents.focus();
         this.tabPageView.webContents.send('focus-search');
+        this.resize();
       }
       ((cachedId: number) => {
         oldTabView.view.webContents
