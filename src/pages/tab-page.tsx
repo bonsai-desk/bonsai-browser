@@ -41,11 +41,13 @@ const Column = styled.div`
   border: 2px solid black;
   margin-right: 25px;
   border-radius: 25px;
+  //overflow: scroll;
+  //height: 500px;
 `;
 
 const Tab = styled.div`
   //display: flex;
-  flex-grow: 0;
+  flex-shrink: 0;
   width: 250px;
   height: 125px;
   background-color: lightgrey;
@@ -146,7 +148,32 @@ const HistoryModal = styled.div`
   padding: 20px;
 `;
 
-const HistorySearch = styled.input``;
+const HistorySearch = styled.input`
+  margin-bottom: 10px;
+  outline: none;
+  padding: 5px 10px 5px 10px;
+  border-radius: 10000px;
+  border: 2px solid black;
+  width: 500px;
+`;
+
+const HistoryResult = styled.div`
+  background-color: gray;
+  width: 500px;
+  height: 50px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 50px;
+  text-align: center;
+  border-radius: 25px;
+  margin-bottom: 5px;
+  user-select: none;
+
+  :hover {
+    cursor: pointer;
+  }
+`;
 
 interface TabPageTab {
   id: number;
@@ -163,9 +190,9 @@ interface TabPageTab {
 export class TabPageStore {
   tabs: Record<string, TabPageTab> = {};
 
-  history: [string, number][] = [];
+  history: [string, number, string][] = [];
 
-  searchResult: [string, number][] | null = null;
+  searchResult: [string, number, string][] | null = null;
 
   constructor() {
     makeAutoObservable(this);
@@ -208,9 +235,9 @@ export class TabPageStore {
         }
       });
     });
-    ipcRenderer.on('add-history', (_, [url, time]) => {
+    ipcRenderer.on('add-history', (_, [url, time, title]) => {
       runInAction(() => {
-        this.history.push([url, time]);
+        this.history.push([url, time, title]);
         if (this.history.length > 50) {
           this.history.shift();
         }
@@ -225,18 +252,27 @@ export class TabPageStore {
 }
 
 function getHistory(tabPageStore: TabPageStore) {
+  let results;
   if (tabPageStore.searchResult === null) {
-    return tabPageStore.history.map((_, index, array) => {
-      return (
-        <div key={array[array.length - 1 - index][1]}>
-          {array[array.length - 1 - index][0]}
-        </div>
-      );
+    results = tabPageStore.history.map((_, index, array) => {
+      return array[array.length - 1 - index];
     });
+  } else {
+    results = tabPageStore.searchResult;
   }
 
-  return tabPageStore.searchResult.map((entry) => {
-    return <div key={entry[1]}>{entry[0]}</div>;
+  return results.map((entry) => {
+    return (
+      <HistoryResult
+        key={entry[1]}
+        onClick={() => {
+          const url = entry[0];
+          ipcRenderer.send('search-url', url);
+        }}
+      >
+        {`${entry[2]} - ${entry[0]}`}
+      </HistoryResult>
+    );
   });
 }
 
@@ -293,36 +329,33 @@ function createTabs(tabPageStore: TabPageStore) {
   return tabPageColumns.map((column) => {
     return (
       <Column key={column.domain}>
-        {[
-          <ColumnHeader key={column.domain}>{column.domain}</ColumnHeader>,
-          <CloseColumnButton
-            key={column.domain}
-            type="button"
-            onClick={() => {
-              Object.keys(tabPageStore.tabs).forEach((key: string) => {
-                const tab = tabPageStore.tabs[key];
-                if (getRootDomain(tab.url) === column.domain) {
-                  ipcRenderer.send('remove-tab', tab.id);
-                }
-              });
-            }}
-          >
-            X
-          </CloseColumnButton>,
-          column.tabs.map((tab) => {
-            return (
-              <Tab
-                key={tab.id}
-                onClick={() => {
-                  ipcRenderer.send('set-tab', tab.id);
-                }}
-              >
-                <TabTitle>{tab.url === '' ? 'New Tab' : tab.title}</TabTitle>
-                <TabImage src={tab.image} alt="tab_image" />
-              </Tab>
-            );
-          }),
-        ]}
+        <ColumnHeader>{column.domain}</ColumnHeader>
+        <CloseColumnButton
+          type="button"
+          onClick={() => {
+            Object.keys(tabPageStore.tabs).forEach((key: string) => {
+              const tab = tabPageStore.tabs[key];
+              if (getRootDomain(tab.url) === column.domain) {
+                ipcRenderer.send('remove-tab', tab.id);
+              }
+            });
+          }}
+        >
+          X
+        </CloseColumnButton>
+        {column.tabs.map((tab) => {
+          return (
+            <Tab
+              key={tab.id}
+              onClick={() => {
+                ipcRenderer.send('set-tab', tab.id);
+              }}
+            >
+              <TabTitle>{tab.url === '' ? 'New Tab' : tab.title}</TabTitle>
+              <TabImage src={tab.image} alt="tab_image" />
+            </Tab>
+          );
+        })}
       </Column>
     );
   });

@@ -87,7 +87,7 @@ export default class WindowManager {
 
   windowSize = { width: 0, height: 0 };
 
-  history = new Fuse([], { keys: ['url'] });
+  history = new Fuse([], { keys: ['url', 'title'] });
 
   lastHistoryAdd = '';
 

@@ -51,6 +51,7 @@ function addListeners(wm: WindowManager) {
     }
   });
   ipcMain.on('search-url', (event, url) => {
+    wm.tabPageView.webContents.send('close-history-modal');
     const newTabId = wm.createNewTab();
     wm.loadUrlInTab(newTabId, url, event);
     wm.setTab(newTabId);
@@ -62,9 +63,11 @@ function addListeners(wm: WindowManager) {
       const result = wm.history.search(query, { limit: 50 });
       wm.tabPageView.webContents.send(
         'history-search-result',
-        result.map((entry: { item: { url: string; time: number } }) => {
-          return [entry.item.url, entry.item.time];
-        })
+        result.map(
+          (entry: { item: { url: string; time: number; title: string } }) => {
+            return [entry.item.url, entry.item.time, entry.item.title];
+          }
+        )
       );
     }
   });

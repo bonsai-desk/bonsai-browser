@@ -16,6 +16,8 @@ class TabView {
 
   windowFloating = false;
 
+  historyEntry: { url: string; time: number; title: string } | null = null;
+
   constructor(
     window: BrowserWindow,
     id: number,
@@ -40,6 +42,15 @@ class TabView {
     });
 
     this.view.webContents.on('page-title-updated', (_, title) => {
+      if (this.historyEntry?.title === '') {
+        this.historyEntry.title = title;
+        wm.history.add(this.historyEntry);
+        wm.tabPageView.webContents.send('add-history', [
+          this.historyEntry.url,
+          this.historyEntry.time,
+          this.historyEntry.title,
+        ]);
+      }
       titleBarView.webContents.send('title-updated', [id, title]);
       wm.tabPageView.webContents.send('title-updated', [id, title]);
     });
@@ -49,8 +60,7 @@ class TabView {
       if (wm.lastHistoryAdd !== url) {
         wm.lastHistoryAdd = url;
         const time = new Date().getTime();
-        wm.history.add({ url, time });
-        wm.tabPageView.webContents.send('add-history', [url, time]);
+        this.historyEntry = { url, time, title: '' };
       }
       titleBarView.webContents.send('web-contents-update', [
         id,
