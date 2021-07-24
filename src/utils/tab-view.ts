@@ -45,16 +45,20 @@ class TabView {
     });
 
     const updateContents = () => {
+      const url = this.view.webContents.getURL();
+      if (wm.lastHistoryAdd !== url) {
+        wm.lastHistoryAdd = url;
+        const time = new Date().getTime();
+        wm.history.add({ url, time });
+        wm.tabPageView.webContents.send('add-history', [url, time]);
+      }
       titleBarView.webContents.send('web-contents-update', [
         id,
         this.view.webContents.canGoBack(),
         this.view.webContents.canGoForward(),
-        this.view.webContents.getURL(),
+        url,
       ]);
-      wm.tabPageView.webContents.send('url-changed', [
-        id,
-        this.view.webContents.getURL(),
-      ]);
+      wm.tabPageView.webContents.send('url-changed', [id, url]);
     };
 
     this.view.webContents.on('did-navigate', () => {

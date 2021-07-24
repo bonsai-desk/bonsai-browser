@@ -55,6 +55,22 @@ function addListeners(wm: WindowManager) {
     wm.loadUrlInTab(newTabId, url, event);
     wm.setTab(newTabId);
   });
+  ipcMain.on('history-search', (_, query) => {
+    if (query === '') {
+      wm.tabPageView.webContents.send('history-search-result', null);
+    } else {
+      const result = wm.history.search(query, { limit: 50 });
+      wm.tabPageView.webContents.send(
+        'history-search-result',
+        result.map((entry: { item: { url: string; time: number } }) => {
+          return [entry.item.url, entry.item.time];
+        })
+      );
+    }
+  });
+  ipcMain.on('history-modal-active-update', (_, historyModalActive) => {
+    wm.historyModalActive = historyModalActive;
+  });
 }
 
 export default addListeners;

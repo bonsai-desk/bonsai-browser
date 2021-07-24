@@ -191,7 +191,11 @@ export const createWindow = async () => {
             if (wm.windowFloating) {
               mainWindow?.hide();
             } else if (windowHasView(wm.mainWindow, wm.tabPageView)) {
-              mainWindow?.hide();
+              if (wm.historyModalActive) {
+                wm.tabPageView.webContents.send('close-history-modal');
+              } else {
+                mainWindow?.hide();
+              }
             } else if (windowHasView(wm.mainWindow, wm.titleBarView)) {
               if (windowHasView(wm.mainWindow, wm.findView)) {
                 wm.closeFind();

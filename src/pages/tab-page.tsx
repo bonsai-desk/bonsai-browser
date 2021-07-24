@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import styled, { createGlobalStyle } from 'styled-components';
+import styled, { createGlobalStyle, css } from 'styled-components';
 import { makeAutoObservable, runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
 
@@ -97,6 +97,57 @@ const CloseColumnButton = styled.button`
   height: 30px;
 `;
 
+const HistoryButton = styled.button`
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 100px;
+  height: 100px;
+  border-radius: 25px;
+  border: 2px solid black;
+  outline: none;
+`;
+
+const HistoryModalParent = styled.div`
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+
+  ${({ active }: { active: boolean }) =>
+    css`
+      display: ${active ? 'block' : 'none'};
+    `}
+`;
+
+const HistoryModalBackground = styled.div`
+  background-color: rgba(0.25, 0.25, 0.25, 0.35);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+`;
+
+const HistoryModal = styled.div`
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  margin: auto;
+  width: 80vw;
+  height: 80vh;
+  background-color: lightgrey;
+  border-radius: 25px;
+  border: 2px solid black;
+  box-shadow: 0 0 5px 0 rgba(0, 0, 0, 1);
+  padding: 20px;
+`;
+
+const HistorySearch = styled.input``;
+
 interface TabPageTab {
   id: number;
 
@@ -111,6 +162,10 @@ interface TabPageTab {
 
 export class TabPageStore {
   tabs: Record<string, TabPageTab> = {};
+
+  history: [string, number][] = [];
+
+  searchResult: [string, number][] | null = null;
 
   constructor() {
     makeAutoObservable(this);
@@ -153,7 +208,36 @@ export class TabPageStore {
         }
       });
     });
+    ipcRenderer.on('add-history', (_, [url, time]) => {
+      runInAction(() => {
+        this.history.push([url, time]);
+        if (this.history.length > 50) {
+          this.history.shift();
+        }
+      });
+    });
+    ipcRenderer.on('history-search-result', (_, result) => {
+      runInAction(() => {
+        this.searchResult = result;
+      });
+    });
   }
+}
+
+function getHistory(tabPageStore: TabPageStore) {
+  if (tabPageStore.searchResult === null) {
+    return tabPageStore.history.map((_, index, array) => {
+      return (
+        <div key={array[array.length - 1 - index][1]}>
+          {array[array.length - 1 - index][0]}
+        </div>
+      );
+    });
+  }
+
+  return tabPageStore.searchResult.map((entry) => {
+    return <div key={entry[1]}>{entry[0]}</div>;
+  });
 }
 
 function getRootDomain(url: string): string {
@@ -249,6 +333,16 @@ const TabPage = observer(({ tabPageStore }: { tabPageStore: TabPageStore }) => {
   const [urlFocus, setUrlFocus] = useState(false);
   const [urlText, setUrlText] = useState('');
 
+  const historyBoxRef = useRef<HTMLInputElement>(null);
+  const [historyText, setHistoryText] = useState('');
+  const [historyModalActive, setHistoryModalActive] = useState(false);
+  useEffect(() => {
+    ipcRenderer.send('history-modal-active-update', historyModalActive);
+    if (historyModalActive) {
+      ipcRenderer.send('history-search', historyText);
+    }
+  }, [historyModalActive]);
+
   const [hasRunOnce, setHasRunOnce] = useState(false);
   useEffect(() => {
     if (hasRunOnce) {
@@ -260,6 +354,9 @@ const TabPage = observer(({ tabPageStore }: { tabPageStore: TabPageStore }) => {
         // urlBoxRef.current.focus();
         urlBoxRef.current.select();
       }
+    });
+    ipcRenderer.on('close-history-modal', () => {
+      setHistoryModalActive(false);
     });
   }, [hasRunOnce]);
 
@@ -297,6 +394,33 @@ const TabPage = observer(({ tabPageStore }: { tabPageStore: TabPageStore }) => {
         />
         <Tabs>{createTabs(tabPageStore)}</Tabs>
       </Background>
+      <HistoryButton
+        type="button"
+        onClick={() => {
+          setHistoryModalActive(!historyModalActive);
+        }}
+      >
+        History
+      </HistoryButton>
+      <HistoryModalParent active={historyModalActive}>
+        <HistoryModalBackground
+          onClick={() => {
+            setHistoryModalActive(false);
+          }}
+        />
+        <HistoryModal>
+          <HistorySearch
+            ref={historyBoxRef}
+            placeholder="search history"
+            value={historyText}
+            onInput={(e) => {
+              setHistoryText(e.currentTarget.value);
+              ipcRenderer.send('history-search', e.currentTarget.value);
+            }}
+          />
+          {getHistory(tabPageStore)}
+        </HistoryModal>
+      </HistoryModalParent>
     </>
   );
 });

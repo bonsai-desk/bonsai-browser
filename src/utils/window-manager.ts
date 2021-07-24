@@ -22,6 +22,7 @@ import { handleFindText } from './windows';
 import calculateWindowTarget from './calculate-window-target';
 
 const glMatrix = require('gl-matrix');
+const Fuse = require('fuse.js');
 
 const updateWebContents = (
   event: Electron.IpcMainEvent,
@@ -86,6 +87,12 @@ export default class WindowManager {
 
   windowSize = { width: 0, height: 0 };
 
+  history = new Fuse([], { keys: ['url'] });
+
+  lastHistoryAdd = '';
+
+  historyModalActive = false;
+
   constructor(mainWindow: BrowserWindow, display: Display) {
     this.mainWindow = mainWindow;
     WindowManager.display = display;
@@ -118,7 +125,7 @@ export default class WindowManager {
     this.tabPageView = makeView(TAB_PAGE);
     this.mainWindow.setBrowserView(this.tabPageView);
     // if (!app.isPackaged) {
-    //   this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
     // }
 
     this.resize();
