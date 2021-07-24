@@ -205,6 +205,16 @@ export const createWindow = async () => {
             }
           },
         },
+        {
+          label: 'history',
+          accelerator: 'CmdOrCtrl+H',
+          click: () => {
+            if (windowHasView(wm.mainWindow, wm.tabPageView)) {
+              console.log('toggle');
+              wm.tabPageView.webContents.send('toggle-history-modal');
+            }
+          },
+        },
       ],
     })
   );

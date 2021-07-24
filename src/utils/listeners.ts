@@ -64,8 +64,15 @@ function addListeners(wm: WindowManager) {
       wm.tabPageView.webContents.send(
         'history-search-result',
         result.map(
-          (entry: { item: { url: string; time: number; title: string } }) => {
-            return [entry.item.url, entry.item.time, entry.item.title];
+          (entry: {
+            item: { url: string; time: number; title: string; favicon: string };
+          }) => {
+            return [
+              entry.item.url,
+              entry.item.time,
+              entry.item.title,
+              entry.item.favicon,
+            ];
           }
         )
       );

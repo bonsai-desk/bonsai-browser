@@ -125,7 +125,7 @@ export default class WindowManager {
     this.tabPageView = makeView(TAB_PAGE);
     this.mainWindow.setBrowserView(this.tabPageView);
     // if (!app.isPackaged) {
-    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
     // }
 
     this.resize();

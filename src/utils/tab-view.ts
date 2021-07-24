@@ -16,7 +16,12 @@ class TabView {
 
   windowFloating = false;
 
-  historyEntry: { url: string; time: number; title: string } | null = null;
+  historyEntry: {
+    url: string;
+    time: number;
+    title: string;
+    favicon: string;
+  } | null = null;
 
   constructor(
     window: BrowserWindow,
@@ -41,15 +46,24 @@ class TabView {
       },
     });
 
-    this.view.webContents.on('page-title-updated', (_, title) => {
-      if (this.historyEntry?.title === '') {
-        this.historyEntry.title = title;
+    const updateHistory = () => {
+      if (this.historyEntry !== null) {
         wm.history.add(this.historyEntry);
         wm.tabPageView.webContents.send('add-history', [
           this.historyEntry.url,
           this.historyEntry.time,
           this.historyEntry.title,
+          this.historyEntry.favicon,
         ]);
+      }
+    };
+
+    this.view.webContents.on('page-title-updated', (_, title) => {
+      if (this.historyEntry?.title === '') {
+        this.historyEntry.title = title;
+        if (this.historyEntry.favicon !== '') {
+          updateHistory();
+        }
       }
       titleBarView.webContents.send('title-updated', [id, title]);
       wm.tabPageView.webContents.send('title-updated', [id, title]);
@@ -60,7 +74,7 @@ class TabView {
       if (wm.lastHistoryAdd !== url) {
         wm.lastHistoryAdd = url;
         const time = new Date().getTime();
-        this.historyEntry = { url, time, title: '' };
+        this.historyEntry = { url, time, title: '', favicon: '' };
       }
       titleBarView.webContents.send('web-contents-update', [
         id,
@@ -87,6 +101,13 @@ class TabView {
     this.view.webContents.on('page-favicon-updated', (_, favicons) => {
       // favicons.map((url) => console.log(url));
       if (favicons.length > 0) {
+        if (this.historyEntry?.favicon === '') {
+          // eslint-disable-next-line prefer-destructuring
+          this.historyEntry.favicon = favicons[0];
+          if (this.historyEntry.title !== '') {
+            updateHistory();
+          }
+        }
         titleBarView.webContents.send('favicon-updated', [id, favicons[0]]);
       }
     });

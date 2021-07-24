@@ -154,13 +154,13 @@ const HistorySearch = styled.input`
   padding: 5px 10px 5px 10px;
   border-radius: 10000px;
   border: 2px solid black;
-  width: 500px;
+  width: calc(100% - 20px - 4px);
 `;
 
 const HistoryResult = styled.div`
   background-color: gray;
-  width: 500px;
-  height: 50px;
+  //width: 500px;
+  //height: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -168,11 +168,34 @@ const HistoryResult = styled.div`
   text-align: center;
   border-radius: 25px;
   margin-bottom: 5px;
+  padding-left: 20px;
   user-select: none;
+  display: flex;
+  align-items: center;
 
   :hover {
     cursor: pointer;
   }
+`;
+
+const HistoryTitleDiv = styled.div`
+  //background-color: red;
+  line-height: 25px;
+  margin: 10px;
+  color: white;
+`;
+
+const HistoryUrlDiv = styled.div`
+  //background-color: red;
+  line-height: 25px;
+  margin: 10px;
+  color: lightgrey;
+  font-size: 15px;
+`;
+
+const Favicon = styled.img`
+  width: 16px;
+  height: 16px;
 `;
 
 interface TabPageTab {
@@ -190,9 +213,11 @@ interface TabPageTab {
 export class TabPageStore {
   tabs: Record<string, TabPageTab> = {};
 
-  history: [string, number, string][] = [];
+  history: [string, number, string, string][] = [];
 
-  searchResult: [string, number, string][] | null = null;
+  searchResult: [string, number, string, string][] | null = null;
+
+  historyModalActive = false;
 
   constructor() {
     makeAutoObservable(this);
@@ -235,9 +260,9 @@ export class TabPageStore {
         }
       });
     });
-    ipcRenderer.on('add-history', (_, [url, time, title]) => {
+    ipcRenderer.on('add-history', (_, [url, time, title, favicon]) => {
       runInAction(() => {
-        this.history.push([url, time, title]);
+        this.history.push([url, time, title, favicon]);
         if (this.history.length > 50) {
           this.history.shift();
         }
@@ -247,6 +272,15 @@ export class TabPageStore {
       runInAction(() => {
         this.searchResult = result;
       });
+    });
+    ipcRenderer.on('close-history-modal', () => {
+      this.historyModalActive = false;
+    });
+    ipcRenderer.on('open-history-modal', () => {
+      this.historyModalActive = true;
+    });
+    ipcRenderer.on('toggle-history-modal', () => {
+      this.historyModalActive = !this.historyModalActive;
     });
   }
 }
@@ -270,7 +304,9 @@ function getHistory(tabPageStore: TabPageStore) {
           ipcRenderer.send('search-url', url);
         }}
       >
-        {`${entry[2]} - ${entry[0]}`}
+        <Favicon src={entry[3]} alt="favicon" />
+        <HistoryTitleDiv>{entry[2]}</HistoryTitleDiv>
+        <HistoryUrlDiv>{entry[0]}</HistoryUrlDiv>
       </HistoryResult>
     );
   });
@@ -368,15 +404,18 @@ const TabPage = observer(({ tabPageStore }: { tabPageStore: TabPageStore }) => {
 
   const historyBoxRef = useRef<HTMLInputElement>(null);
   const [historyText, setHistoryText] = useState('');
-  const [historyModalActive, setHistoryModalActive] = useState(false);
   useEffect(() => {
-    ipcRenderer.send('history-modal-active-update', historyModalActive);
-    if (historyModalActive) {
+    ipcRenderer.send(
+      'history-modal-active-update',
+      tabPageStore.historyModalActive
+    );
+    if (tabPageStore.historyModalActive) {
       ipcRenderer.send('history-search', historyText);
     }
-  }, [historyModalActive]);
+  }, [tabPageStore.historyModalActive]);
 
   const [hasRunOnce, setHasRunOnce] = useState(false);
+
   useEffect(() => {
     if (hasRunOnce) {
       return;
@@ -384,12 +423,8 @@ const TabPage = observer(({ tabPageStore }: { tabPageStore: TabPageStore }) => {
     setHasRunOnce(true);
     ipcRenderer.on('focus-search', () => {
       if (urlBoxRef.current != null) {
-        // urlBoxRef.current.focus();
         urlBoxRef.current.select();
       }
-    });
-    ipcRenderer.on('close-history-modal', () => {
-      setHistoryModalActive(false);
     });
   }, [hasRunOnce]);
 
@@ -430,15 +465,15 @@ const TabPage = observer(({ tabPageStore }: { tabPageStore: TabPageStore }) => {
       <HistoryButton
         type="button"
         onClick={() => {
-          setHistoryModalActive(!historyModalActive);
+          tabPageStore.historyModalActive = !tabPageStore.historyModalActive;
         }}
       >
         History
       </HistoryButton>
-      <HistoryModalParent active={historyModalActive}>
+      <HistoryModalParent active={tabPageStore.historyModalActive}>
         <HistoryModalBackground
           onClick={() => {
-            setHistoryModalActive(false);
+            tabPageStore.historyModalActive = false;
           }}
         />
         <HistoryModal>
