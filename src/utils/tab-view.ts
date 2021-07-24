@@ -109,6 +109,7 @@ class TabView {
           }
         }
         titleBarView.webContents.send('favicon-updated', [id, favicons[0]]);
+        wm.tabPageView.webContents.send('favicon-updated', [id, favicons[0]]);
       }
     });
 

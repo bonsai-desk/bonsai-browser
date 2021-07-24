@@ -82,6 +82,12 @@ const ColumnHeader = styled.div`
   margin-bottom: 10px;
 `;
 
+const TabTitleParent = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
 const TabTitle = styled.div`
   text-align: center;
 `;
@@ -208,6 +214,8 @@ interface TabPageTab {
   title: string;
 
   image: string;
+
+  favicon: string;
 }
 
 export class TabPageStore {
@@ -230,6 +238,7 @@ export class TabPageStore {
           url: '',
           title: '',
           image: '',
+          favicon: '',
         };
       });
     });
@@ -282,6 +291,9 @@ export class TabPageStore {
     ipcRenderer.on('toggle-history-modal', () => {
       this.historyModalActive = !this.historyModalActive;
     });
+    ipcRenderer.on('favicon-updated', (_, [id, favicon]) => {
+      this.tabs[id].favicon = favicon;
+    });
   }
 }
 
@@ -313,8 +325,16 @@ function getHistory(tabPageStore: TabPageStore) {
 }
 
 function getRootDomain(url: string): string {
+  let testUrl;
+  try {
+    const { hostname } = new URL(url);
+    testUrl = `http://${hostname}`;
+  } catch {
+    testUrl = url;
+  }
+
   const ex = /\w*\./g;
-  const result = url.matchAll(ex);
+  const result = testUrl.matchAll(ex);
   if (result !== null) {
     const results = [...result];
     if (results.length > 0) {
@@ -363,8 +383,14 @@ function createTabs(tabPageStore: TabPageStore) {
   // });
 
   return tabPageColumns.map((column) => {
+    let columnFavicon = '';
+    if (column.tabs.length > 0) {
+      columnFavicon = column.tabs[0].favicon;
+    }
+
     return (
       <Column key={column.domain}>
+        <Favicon src={columnFavicon} />
         <ColumnHeader>{column.domain}</ColumnHeader>
         <CloseColumnButton
           type="button"
