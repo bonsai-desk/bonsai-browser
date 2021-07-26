@@ -16,14 +16,14 @@ function addListeners(wm: WindowManager) {
   ipcMain.on('set-tab', (_, id) => {
     wm.setTab(id);
   });
-  ipcMain.on('load-url-in-tab', (event, [id, url]) => {
-    wm.loadUrlInTab(id, url, event);
+  ipcMain.on('load-url-in-tab', (_, [id, url]) => {
+    wm.loadUrlInTab(id, url);
   });
-  ipcMain.on('tab-back', (event, id) => {
-    wm.tabBack(id, event);
+  ipcMain.on('tab-back', (_, id) => {
+    wm.tabBack(id);
   });
-  ipcMain.on('tab-forward', (event, id) => {
-    wm.tabForward(id, event);
+  ipcMain.on('tab-forward', (_, id) => {
+    wm.tabForward(id);
   });
   ipcMain.on('tab-refresh', (_, id) => {
     wm.tabRefresh(id);
@@ -54,10 +54,10 @@ function addListeners(wm: WindowManager) {
       `);
     }
   });
-  ipcMain.on('search-url', (event, url) => {
+  ipcMain.on('search-url', (_, url) => {
     wm.tabPageView.webContents.send('close-history-modal');
     const newTabId = wm.createNewTab();
-    wm.loadUrlInTab(newTabId, url, event);
+    wm.loadUrlInTab(newTabId, url);
     wm.setTab(newTabId);
   });
   ipcMain.on('history-search', (_, query) => {

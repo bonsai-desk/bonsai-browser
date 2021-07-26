@@ -25,11 +25,11 @@ const glMatrix = require('gl-matrix');
 const Fuse = require('fuse.js');
 
 const updateWebContents = (
-  event: Electron.IpcMainEvent,
+  titleBarView: BrowserView,
   id: number,
   tabView: TabView
 ) => {
-  event.reply('web-contents-update', [
+  titleBarView.webContents.send('web-contents-update', [
     id,
     tabView.view.webContents.canGoBack(),
     tabView.view.webContents.canGoForward(),
@@ -226,10 +226,10 @@ export default class WindowManager {
       return;
     }
 
-    // this.tabPageView.webContents.send('close-history-modal');
+    this.tabPageView.webContents.send('close-history-modal');
     for (let i = 0; i < urls.length; i += 1) {
-      // const newTabId = this..createNewTab();
-      // this.loadUrlInTab(newTabId, url, event);
+      const newTabId = this.createNewTab();
+      this.loadUrlInTab(newTabId, urls[i]);
     }
   }
 
@@ -328,7 +328,7 @@ export default class WindowManager {
     tabView.resize();
   }
 
-  loadUrlInTab(id: number, url: string, event: Electron.IpcMainEvent) {
+  loadUrlInTab(id: number, url: string) {
     if (id === -1 || url === '') {
       return;
     }
@@ -348,7 +348,12 @@ export default class WindowManager {
       fullUrl = `https://www.google.com/search?q=${url}`;
     }
 
-    event.reply('web-contents-update', [id, true, false, fullUrl]);
+    this.titleBarView.webContents.send('web-contents-update', [
+      id,
+      true,
+      false,
+      fullUrl,
+    ]);
 
     (async () => {
       await tabView.view.webContents.loadURL(fullUrl).catch(() => {
@@ -358,12 +363,13 @@ export default class WindowManager {
       });
       const newUrl = tabView.view.webContents.getURL();
       this.closeFind();
-      event.reply('url-changed', [id, newUrl]);
-      updateWebContents(event, id, tabView);
+      this.titleBarView.webContents.send('url-changed', [id, newUrl]);
+      this.tabPageView.webContents.send('url-changed', [id, newUrl]);
+      updateWebContents(this.titleBarView, id, tabView);
     })();
   }
 
-  tabBack(id: number, event: Electron.IpcMainEvent) {
+  tabBack(id: number) {
     if (!this.allTabViews[id]) {
       return;
     }
@@ -371,10 +377,10 @@ export default class WindowManager {
       this.closeFind();
       this.allTabViews[id].view.webContents.goBack();
     }
-    updateWebContents(event, id, this.allTabViews[id]);
+    updateWebContents(this.titleBarView, id, this.allTabViews[id]);
   }
 
-  tabForward(id: number, event: Electron.IpcMainEvent) {
+  tabForward(id: number) {
     if (!this.allTabViews[id]) {
       return;
     }
@@ -382,7 +388,7 @@ export default class WindowManager {
       this.closeFind();
       this.allTabViews[id].view.webContents.goForward();
     }
-    updateWebContents(event, id, this.allTabViews[id]);
+    updateWebContents(this.titleBarView, id, this.allTabViews[id]);
   }
 
   tabRefresh(id: number) {
