@@ -41,7 +41,7 @@
       "main.prod.js",
       "main.prod.js.map",
       "package.json",
-      "preload.js"
+      "utils/preload.js"
     ],
     "afterSign": ".erb/scripts/Notarize.js",
     "mac": {

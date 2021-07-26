@@ -1,13 +1,22 @@
-import { BrowserView, BrowserWindow } from 'electron';
-import path from 'path';
+import { BrowserView, BrowserWindow, ipcMain } from 'electron';
 // eslint-disable-next-line import/no-cycle
 import { windowHasView } from './utils';
 // eslint-disable-next-line import/no-cycle
 import WindowManager from './window-manager';
+import { PRELOAD } from '../constants';
 
 export const headerHeight = 79 - 32 - 10; // 79 or 79 - 32 - 10
 
+export interface OpenGraphInfo {
+  title: string;
+  type: string;
+  image: string;
+  url: string;
+}
+
 class TabView {
+  id: number;
+
   window: BrowserWindow;
 
   view: BrowserView;
@@ -21,11 +30,11 @@ class TabView {
     time: number;
     title: string;
     favicon: string;
+    openGraphData: OpenGraphInfo | null;
   } | null = null;
 
   constructor(
     window: BrowserWindow,
-    id: number,
     titleBarView: BrowserView,
     urlPeekView: BrowserView,
     findView: BrowserView,
@@ -41,10 +50,12 @@ class TabView {
       webPreferences: {
         nodeIntegration: false,
         sandbox: true,
-        preload: path.join(__dirname, './utils/preload.js'),
+        preload: PRELOAD,
         contextIsolation: false, // todo: do we need this? security concern?
       },
     });
+    const { id } = this.view.webContents;
+    this.id = id;
 
     const updateHistory = () => {
       if (this.historyEntry !== null) {
@@ -54,6 +65,7 @@ class TabView {
           this.historyEntry.time,
           this.historyEntry.title,
           this.historyEntry.favicon,
+          this.historyEntry.openGraphData,
         ]);
       }
     };
@@ -61,7 +73,10 @@ class TabView {
     this.view.webContents.on('page-title-updated', (_, title) => {
       if (this.historyEntry?.title === '') {
         this.historyEntry.title = title;
-        if (this.historyEntry.favicon !== '') {
+        if (
+          this.historyEntry.favicon !== '' &&
+          this.historyEntry.openGraphData !== null
+        ) {
           updateHistory();
         }
       }
@@ -74,7 +89,13 @@ class TabView {
       if (wm.lastHistoryAdd !== url) {
         wm.lastHistoryAdd = url;
         const time = new Date().getTime();
-        this.historyEntry = { url, time, title: '', favicon: '' };
+        this.historyEntry = {
+          url,
+          time,
+          title: '',
+          favicon: '',
+          openGraphData: null,
+        };
       }
       titleBarView.webContents.send('web-contents-update', [
         id,
@@ -104,7 +125,10 @@ class TabView {
         if (this.historyEntry?.favicon === '') {
           // eslint-disable-next-line prefer-destructuring
           this.historyEntry.favicon = favicons[0];
-          if (this.historyEntry.title !== '') {
+          if (
+            this.historyEntry.openGraphData !== null &&
+            this.historyEntry.title !== ''
+          ) {
             updateHistory();
           }
         }
@@ -134,6 +158,20 @@ class TabView {
         result.activeMatchOrdinal,
         result.matches,
       ]);
+    });
+
+    ipcMain.on('open-graph-data', (event, data: OpenGraphInfo) => {
+      if (event.sender.id === id) {
+        if (this.historyEntry?.openGraphData === null) {
+          this.historyEntry.openGraphData = data;
+          if (
+            this.historyEntry.favicon !== '' &&
+            this.historyEntry.title !== ''
+          ) {
+            updateHistory();
+          }
+        }
+      }
     });
 
     // window.addBrowserView(this.view);

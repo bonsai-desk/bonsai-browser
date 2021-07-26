@@ -3,6 +3,7 @@ import { observer } from 'mobx-react-lite';
 import styled, { createGlobalStyle, css } from 'styled-components';
 import { makeAutoObservable, runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
+import { OpenGraphInfo } from '../utils/tab-view';
 
 const GlobalStyle = createGlobalStyle`
   html,
@@ -46,14 +47,17 @@ const Column = styled.div`
 `;
 
 const Tab = styled.div`
-  //display: flex;
+  display: flex;
+  flex-direction: column;
+  //justify-content: center;
+  align-items: center;
   flex-shrink: 0;
   width: 250px;
-  height: 125px;
+  height: 175px;
   background-color: lightgrey;
   border: 2px solid black;
   border-radius: 25px;
-  padding: 20px;
+  padding: 5px 20px 5px 20px;
   word-wrap: break-word;
   text-overflow: ellipsis;
   overflow: hidden;
@@ -82,14 +86,23 @@ const ColumnHeader = styled.div`
   margin-bottom: 10px;
 `;
 
-const TabTitleParent = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
+// const TabTitleParent = styled.div`
+//   display: flex;
+//   align-items: center;
+//   justify-content: center;
+// `;
 
 const TabTitle = styled.div`
   text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+`;
+
+const CloseTabButton = styled.button`
+  width: 50px;
+  height: 25px;
 `;
 
 const TabImage = styled.img`
@@ -101,7 +114,7 @@ const TabImage = styled.img`
 const CloseColumnButton = styled.button`
   flex-grow: 0;
   margin-bottom: 5px;
-  width: 50px;
+  width: 100px;
   height: 30px;
 `;
 
@@ -221,9 +234,9 @@ interface TabPageTab {
 export class TabPageStore {
   tabs: Record<string, TabPageTab> = {};
 
-  history: [string, number, string, string][] = [];
+  history: [string, number, string, string, OpenGraphInfo][] = [];
 
-  searchResult: [string, number, string, string][] | null = null;
+  searchResult: [string, number, string, string, OpenGraphInfo][] | null = null;
 
   historyModalActive = false;
 
@@ -269,30 +282,41 @@ export class TabPageStore {
         }
       });
     });
-    ipcRenderer.on('add-history', (_, [url, time, title, favicon]) => {
-      runInAction(() => {
-        this.history.push([url, time, title, favicon]);
-        if (this.history.length > 50) {
-          this.history.shift();
-        }
-      });
-    });
+    ipcRenderer.on(
+      'add-history',
+      (_, [url, time, title, favicon, openGraphData]) => {
+        runInAction(() => {
+          this.history.push([url, time, title, favicon, openGraphData]);
+          if (this.history.length > 50) {
+            this.history.shift();
+          }
+        });
+      }
+    );
     ipcRenderer.on('history-search-result', (_, result) => {
       runInAction(() => {
         this.searchResult = result;
       });
     });
     ipcRenderer.on('close-history-modal', () => {
-      this.historyModalActive = false;
+      runInAction(() => {
+        this.historyModalActive = false;
+      });
     });
     ipcRenderer.on('open-history-modal', () => {
-      this.historyModalActive = true;
+      runInAction(() => {
+        this.historyModalActive = true;
+      });
     });
     ipcRenderer.on('toggle-history-modal', () => {
-      this.historyModalActive = !this.historyModalActive;
+      runInAction(() => {
+        this.historyModalActive = !this.historyModalActive;
+      });
     });
     ipcRenderer.on('favicon-updated', (_, [id, favicon]) => {
-      this.tabs[id].favicon = favicon;
+      runInAction(() => {
+        this.tabs[id].favicon = favicon;
+      });
     });
   }
 }
@@ -395,12 +419,14 @@ function createTabs(tabPageStore: TabPageStore) {
         <CloseColumnButton
           type="button"
           onClick={() => {
+            const ids: number[] = [];
             Object.keys(tabPageStore.tabs).forEach((key: string) => {
               const tab = tabPageStore.tabs[key];
               if (getRootDomain(tab.url) === column.domain) {
-                ipcRenderer.send('remove-tab', tab.id);
+                ids.push(tab.id);
               }
             });
+            ipcRenderer.send('remove-tabs', ids);
           }}
         >
           X
@@ -414,6 +440,15 @@ function createTabs(tabPageStore: TabPageStore) {
               }}
             >
               <TabTitle>{tab.url === '' ? 'New Tab' : tab.title}</TabTitle>
+              <CloseTabButton
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  ipcRenderer.send('remove-tab', tab.id);
+                }}
+              >
+                X
+              </CloseTabButton>
               <TabImage src={tab.image} alt="tab_image" />
             </Tab>
           );
@@ -491,7 +526,9 @@ const TabPage = observer(({ tabPageStore }: { tabPageStore: TabPageStore }) => {
       <HistoryButton
         type="button"
         onClick={() => {
-          tabPageStore.historyModalActive = !tabPageStore.historyModalActive;
+          runInAction(() => {
+            tabPageStore.historyModalActive = !tabPageStore.historyModalActive;
+          });
         }}
       >
         History
@@ -499,7 +536,9 @@ const TabPage = observer(({ tabPageStore }: { tabPageStore: TabPageStore }) => {
       <HistoryModalParent active={tabPageStore.historyModalActive}>
         <HistoryModalBackground
           onClick={() => {
-            tabPageStore.historyModalActive = false;
+            runInAction(() => {
+              tabPageStore.historyModalActive = false;
+            });
           }}
         />
         <HistoryModal>

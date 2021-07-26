@@ -57,7 +57,7 @@ export default class WindowManager {
 
   allTabViews: Record<number, TabView> = {};
 
-  tabId = 0; // auto increment to give unique id to each tab
+  // tabId = 0; // auto increment to give unique id to each tab
 
   activeTabId = -1;
 
@@ -87,11 +87,13 @@ export default class WindowManager {
 
   windowSize = { width: 0, height: 0 };
 
-  history = new Fuse([], { keys: ['url', 'title'] });
+  history = new Fuse([], { keys: ['url', 'title', 'openGraphData.title'] });
 
   lastHistoryAdd = '';
 
   historyModalActive = false;
+
+  removedTabsStack: string[][] = [];
 
   constructor(mainWindow: BrowserWindow, display: Display) {
     this.mainWindow = mainWindow;
@@ -166,17 +168,17 @@ export default class WindowManager {
   }
 
   createNewTab(): number {
-    this.tabId += 1;
-    const id = this.tabId;
-    this.allTabViews[id] = new TabView(
+    // this.tabId += 1;
+    const newTabView = new TabView(
       this.mainWindow,
-      id,
       this.titleBarView,
       this.urlPeekView,
       this.findView,
       this.browserPadding,
       this
     );
+    const { id } = newTabView;
+    this.allTabViews[id] = newTabView;
     this.titleBarView.webContents.send('tabView-created-with-id', id);
     this.tabPageView.webContents.send('tabView-created-with-id', id);
     return id;
@@ -198,6 +200,37 @@ export default class WindowManager {
     delete this.allTabViews[id];
     this.titleBarView.webContents.send('tab-removed', id);
     this.tabPageView.webContents.send('tab-removed', id);
+  }
+
+  removeTabs(ids: number[]) {
+    if (ids.length === 0) {
+      return;
+    }
+
+    const urls = ids.map((id) => {
+      return this.allTabViews[id].view.webContents.getURL();
+    });
+    this.removedTabsStack.push(urls);
+    for (let i = 0; i < ids.length; i += 1) {
+      this.removeTab(ids[i]);
+    }
+  }
+
+  undoRemovedTabs() {
+    if (this.removedTabsStack.length === 0) {
+      return;
+    }
+
+    const urls = this.removedTabsStack.pop();
+    if (typeof urls === 'undefined') {
+      return;
+    }
+
+    // this.tabPageView.webContents.send('close-history-modal');
+    for (let i = 0; i < urls.length; i += 1) {
+      // const newTabId = this..createNewTab();
+      // this.loadUrlInTab(newTabId, url, event);
+    }
   }
 
   closeFind() {

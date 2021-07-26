@@ -118,7 +118,6 @@ export const createWindow = async () => {
     }
   };
 
-  // todo can this run at 60fps instead of every millisecond
   setInterval(update, 1);
 
   const tray = createTray(ICON_PNG, mainWindow);
@@ -211,6 +210,15 @@ export const createWindow = async () => {
           click: () => {
             if (windowHasView(wm.mainWindow, wm.tabPageView)) {
               wm.tabPageView.webContents.send('toggle-history-modal');
+            }
+          },
+        },
+        {
+          label: 'undo removed tabs',
+          accelerator: 'CmdOrCtrl+Shift+T',
+          click: () => {
+            if (windowHasView(wm.mainWindow, wm.tabPageView)) {
+              wm.undoRemovedTabs();
             }
           },
         },

@@ -1,13 +1,17 @@
 /* eslint no-console: off */
 import { ipcMain } from 'electron';
 import WindowManager from './window-manager';
+import { OpenGraphInfo } from './tab-view';
 
 function addListeners(wm: WindowManager) {
   ipcMain.on('create-new-tab', () => {
     wm.createNewTab();
   });
   ipcMain.on('remove-tab', (_, id) => {
-    wm.removeTab(id);
+    wm.removeTabs([id]);
+  });
+  ipcMain.on('remove-tabs', (_, ids) => {
+    wm.removeTabs(ids);
   });
   ipcMain.on('set-tab', (_, id) => {
     wm.setTab(id);
@@ -65,13 +69,20 @@ function addListeners(wm: WindowManager) {
         'history-search-result',
         result.map(
           (entry: {
-            item: { url: string; time: number; title: string; favicon: string };
+            item: {
+              url: string;
+              time: number;
+              title: string;
+              favicon: string;
+              openGraphData: OpenGraphInfo;
+            };
           }) => {
             return [
               entry.item.url,
               entry.item.time,
               entry.item.title,
               entry.item.favicon,
+              entry.item.openGraphData,
             ];
           }
         )
