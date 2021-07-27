@@ -1,4 +1,4 @@
-import { BrowserView, BrowserWindow, ipcMain } from 'electron';
+import { BrowserView, BrowserWindow, ipcMain, shell } from 'electron';
 // eslint-disable-next-line import/no-cycle
 import { windowHasView } from './utils';
 // eslint-disable-next-line import/no-cycle
@@ -58,6 +58,13 @@ class TabView {
     });
     const { id } = this.view.webContents;
     this.id = id;
+
+    this.view.webContents.on('new-window', (event, url) => {
+      event.preventDefault();
+      // shell.openExternal(url);
+      const newTabId = wm.createNewTab();
+      wm.loadUrlInTab(newTabId, url);
+    });
 
     const updateHistory = () => {
       if (this.historyEntry !== null) {

@@ -6,7 +6,6 @@ import {
   Display,
   NativeImage,
   screen,
-  shell,
 } from 'electron';
 import fs from 'fs';
 import Fuse from 'fuse.js';
@@ -105,12 +104,6 @@ export default class WindowManager {
   constructor(mainWindow: BrowserWindow, display: Display) {
     this.mainWindow = mainWindow;
     WindowManager.display = display;
-
-    this.mainWindow.webContents.on('new-window', (event, url) => {
-      event.preventDefault();
-      // todo: this should open new tab?
-      shell.openExternal(url);
-    });
 
     this.mainWindow.on('resize', this.resize);
     // this.mainWindow.webContents.openDevTools({ mode: 'detach' });
