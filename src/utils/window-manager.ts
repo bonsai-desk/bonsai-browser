@@ -233,6 +233,11 @@ export default class WindowManager {
     }
   }
 
+  clearHistory() {
+    this.history.setCollection([]);
+    this.tabPageView.webContents.send('history-cleared');
+  }
+
   closeFind() {
     if (windowHasView(this.mainWindow, this.findView)) {
       this.mainWindow.removeBrowserView(this.findView);

@@ -92,6 +92,9 @@ function addListeners(wm: WindowManager) {
   ipcMain.on('history-modal-active-update', (_, historyModalActive) => {
     wm.historyModalActive = historyModalActive;
   });
+  ipcMain.on('clear-history', () => {
+    wm.clearHistory();
+  });
 }
 
 export default addListeners;

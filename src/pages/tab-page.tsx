@@ -167,13 +167,30 @@ const HistoryModal = styled.div`
   padding: 20px;
 `;
 
+const HistoryHeader = styled.div`
+  width: 100%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+`;
+
 const HistorySearch = styled.input`
-  margin-bottom: 10px;
   outline: none;
   padding: 5px 10px 5px 10px;
   border-radius: 10000px;
   border: 2px solid black;
-  width: calc(100% - 20px - 4px);
+  //width: calc(100% - 20px - 4px);
+  flex-grow: 1;
+`;
+
+const ClearHistory = styled.button`
+  width: 100px;
+  height: 28px;
+  border-radius: 1000000px;
+  border: 2px solid black;
+  outline: none;
+  margin-left: 5px;
 `;
 
 const HistoryResult = styled.div`
@@ -316,6 +333,12 @@ export class TabPageStore {
     ipcRenderer.on('favicon-updated', (_, [id, favicon]) => {
       runInAction(() => {
         this.tabs[id].favicon = favicon;
+      });
+    });
+    ipcRenderer.on('history-cleared', () => {
+      runInAction(() => {
+        this.history = [];
+        this.searchResult = [];
       });
     });
   }
@@ -542,15 +565,25 @@ const TabPage = observer(({ tabPageStore }: { tabPageStore: TabPageStore }) => {
           }}
         />
         <HistoryModal>
-          <HistorySearch
-            ref={historyBoxRef}
-            placeholder="search history"
-            value={historyText}
-            onInput={(e) => {
-              setHistoryText(e.currentTarget.value);
-              ipcRenderer.send('history-search', e.currentTarget.value);
-            }}
-          />
+          <HistoryHeader>
+            <HistorySearch
+              ref={historyBoxRef}
+              placeholder="search history"
+              value={historyText}
+              onInput={(e) => {
+                setHistoryText(e.currentTarget.value);
+                ipcRenderer.send('history-search', e.currentTarget.value);
+              }}
+            />
+            <ClearHistory
+              type="button"
+              onClick={() => {
+                ipcRenderer.send('clear-history');
+              }}
+            >
+              Clear History
+            </ClearHistory>
+          </HistoryHeader>
           {getHistory(tabPageStore)}
         </HistoryModal>
       </HistoryModalParent>
