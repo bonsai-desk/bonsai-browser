@@ -1,7 +1,18 @@
 /* eslint no-console: off */
-import { BrowserView, BrowserWindow, Display, screen, shell } from 'electron';
+import {
+  app,
+  BrowserView,
+  BrowserWindow,
+  Display,
+  NativeImage,
+  screen,
+  shell,
+} from 'electron';
+import fs from 'fs';
+import Fuse from 'fuse.js';
+import path from 'path';
 // eslint-disable-next-line import/no-cycle
-import TabView, { headerHeight } from './tab-view';
+import TabView, { headerHeight, HistoryEntry } from './tab-view';
 import {
   FIND_HTML,
   INDEX_HTML,
@@ -17,11 +28,11 @@ import calculateWindowTarget from './calculate-window-target';
 const glMatrix = require('gl-matrix');
 
 const updateWebContents = (
-  event: Electron.IpcMainEvent,
+  titleBarView: BrowserView,
   id: number,
   tabView: TabView
 ) => {
-  event.reply('web-contents-update', [
+  titleBarView.webContents.send('web-contents-update', [
     id,
     tabView.view.webContents.canGoBack(),
     tabView.view.webContents.canGoForward(),
@@ -36,6 +47,8 @@ function makeView(loadURL: string) {
       contextIsolation: false, // todo: do we need this? security concern?
     },
   });
+  // newView.webContents.setZoomLevel(1);
+  // newView.webContents.setZoomFactor(1);
   newView.webContents.loadURL(loadURL);
   return newView;
 }
@@ -47,7 +60,7 @@ export default class WindowManager {
 
   allTabViews: Record<number, TabView> = {};
 
-  tabId = 0; // auto increment to give unique id to each tab
+  // tabId = 0; // auto increment to give unique id to each tab
 
   activeTabId = -1;
 
@@ -77,6 +90,18 @@ export default class WindowManager {
 
   windowSize = { width: 0, height: 0 };
 
+  historyList: HistoryEntry[] = [];
+
+  historyFuse = new Fuse<HistoryEntry>([], {
+    keys: ['url', 'title', 'openGraphData.title'],
+  });
+
+  lastHistoryAdd = '';
+
+  historyModalActive = false;
+
+  removedTabsStack: string[][] = [];
+
   constructor(mainWindow: BrowserWindow, display: Display) {
     this.mainWindow = mainWindow;
     WindowManager.display = display;
@@ -88,29 +113,37 @@ export default class WindowManager {
     });
 
     this.mainWindow.on('resize', this.resize);
-
     // this.mainWindow.webContents.openDevTools({ mode: 'detach' });
 
     this.titleBarView = makeView(INDEX_HTML);
     // this.titleBarView.webContents.openDevTools({ mode: 'detach' });
-    // this.titleBarView.webContents.on('did-finish-load', () => {
-    //   this.mainWindow.focus();
-    //   this.titleBarView.webContents.focus();
-    //   this.createNewTab();
-    // });
-    // this.mainWindow.addBrowserView(this.titleBarView);
-    // this.mainWindow.setBrowserView(this.titleBarView);
-    // this.mainWindow.setTopBrowserView(this.titleBarView);
 
     this.urlPeekView = makeView(URL_PEEK_HTML);
+    // this.urlPeekView.webContents.openDevTools({ mode: 'detach' });
+
     this.findView = makeView(FIND_HTML);
+    // this.findView.webContents.openDevTools({ mode: 'detach' });
+
     this.overlayView = makeView(OVERLAY_HTML);
+    // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    this.mainWindow.setBrowserView(this.tabPageView);
     // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
+    this.mainWindow.setBrowserView(this.tabPageView);
+    this.tabPageView.webContents.on('did-finish-load', () => {
+      this.loadHistory();
+    });
+
     this.resize();
+
+    setInterval(() => {
+      this.saveTabs();
+    }, 1000 * 15);
+
+    setInterval(() => {
+      this.saveHistory();
+    }, 1000 * 60 * 5);
   }
 
   updateMainWindowBounds() {
@@ -148,17 +181,17 @@ export default class WindowManager {
   }
 
   createNewTab(): number {
-    this.tabId += 1;
-    const id = this.tabId;
-    this.allTabViews[id] = new TabView(
+    // this.tabId += 1;
+    const newTabView = new TabView(
       this.mainWindow,
-      id,
       this.titleBarView,
       this.urlPeekView,
       this.findView,
       this.browserPadding,
       this
     );
+    const { id } = newTabView;
+    this.allTabViews[id] = newTabView;
     this.titleBarView.webContents.send('tabView-created-with-id', id);
     this.tabPageView.webContents.send('tabView-created-with-id', id);
     return id;
@@ -182,6 +215,144 @@ export default class WindowManager {
     this.tabPageView.webContents.send('tab-removed', id);
   }
 
+  removeTabs(ids: number[]) {
+    if (ids.length === 0) {
+      return;
+    }
+
+    const urls = ids.map((id) => {
+      return this.allTabViews[id].view.webContents.getURL();
+    });
+    this.removedTabsStack.push(urls);
+    for (let i = 0; i < ids.length; i += 1) {
+      this.removeTab(ids[i]);
+    }
+  }
+
+  undoRemovedTabs() {
+    if (this.removedTabsStack.length === 0) {
+      return;
+    }
+
+    const urls = this.removedTabsStack.pop();
+    if (typeof urls === 'undefined') {
+      return;
+    }
+
+    this.tabPageView.webContents.send('close-history-modal');
+    for (let i = 0; i < urls.length; i += 1) {
+      const newTabId = this.createNewTab();
+      this.loadUrlInTab(newTabId, urls[i]);
+    }
+  }
+
+  addHistoryEntry(entry: HistoryEntry) {
+    // prevent two in a row duplicate entries
+    if (
+      this.historyList.length > 0 &&
+      this.historyList[this.historyList.length - 1].url === entry.url
+    ) {
+      return;
+    }
+
+    // prevent duplicate keys
+    for (let i = 0; i < this.historyList.length; i += 1) {
+      if (this.historyList[i].time === entry.time) {
+        return;
+      }
+    }
+
+    this.historyList.push(entry);
+    while (this.historyList.length > 10000) {
+      this.historyList.shift();
+    }
+    this.historyFuse.add(entry);
+    this.tabPageView.webContents.send('add-history', [
+      entry.url,
+      entry.time,
+      entry.title,
+      entry.favicon,
+      entry.openGraphData,
+    ]);
+  }
+
+  clearHistory() {
+    this.historyList = [];
+    this.historyFuse.setCollection([]);
+    this.tabPageView.webContents.send('history-cleared');
+    this.saveHistory();
+  }
+
+  saveHistory() {
+    try {
+      const savePath = path.join(app.getPath('userData'), 'history.json');
+      const saveData = this.historyList;
+      fs.writeFileSync(savePath, JSON.stringify(saveData));
+      this.saveTabs();
+    } catch {
+      // console.log('saveHistory error');
+      // console.log(e);
+    }
+  }
+
+  saveTabs() {
+    try {
+      const savePath = path.join(app.getPath('userData'), 'openTabs.json');
+      const saveData = Object.values(this.allTabViews).map((tabView) => {
+        return tabView.view.webContents.getURL();
+      });
+      fs.writeFileSync(savePath, JSON.stringify(saveData));
+    } catch {
+      //
+    }
+  }
+
+  loadHistory() {
+    try {
+      const savePath = path.join(app.getPath('userData'), 'history.json');
+      const saveString = fs.readFileSync(savePath, 'utf8');
+      const saveData = JSON.parse(saveString);
+      this.historyList = saveData;
+      this.historyFuse.setCollection(saveData);
+
+      for (
+        let i = Math.max(saveData.length - 50, 0);
+        i < saveData.length;
+        i += 1
+      ) {
+        if (i >= 0) {
+          const entry = saveData[i];
+          this.tabPageView.webContents.send('add-history', [
+            entry.url,
+            entry.time,
+            entry.title,
+            entry.favicon,
+            entry.openGraphData,
+          ]);
+        }
+      }
+      this.loadTabs();
+    } catch {
+      // console.log('loadHistory error');
+      // console.log(e);
+    }
+  }
+
+  loadTabs() {
+    try {
+      const savePath = path.join(app.getPath('userData'), 'openTabs.json');
+      const saveString = fs.readFileSync(savePath, 'utf8');
+      const saveData = JSON.parse(saveString);
+
+      saveData.forEach((url: string) => {
+        const newTabId = this.createNewTab();
+        this.loadUrlInTab(newTabId, url);
+      });
+    } catch {
+      //
+    }
+  }
+
   closeFind() {
     if (windowHasView(this.mainWindow, this.findView)) {
       this.mainWindow.removeBrowserView(this.findView);
@@ -193,7 +364,41 @@ export default class WindowManager {
     }
   }
 
-  setTab(id: number) {
+  setTab(id: number, shouldScreenshot = true) {
+    const oldTabView = this.allTabViews[this.activeTabId];
+    if (
+      shouldScreenshot &&
+      shouldScreenshot.valueOf() &&
+      id !== this.activeTabId &&
+      typeof oldTabView !== 'undefined'
+    ) {
+      if (id === -1) {
+        this.mainWindow.addBrowserView(this.tabPageView);
+        this.mainWindow.setTopBrowserView(this.tabPageView);
+        this.tabPageView.webContents.focus();
+        this.tabPageView.webContents.send('focus-search');
+        this.resize();
+      }
+      ((cachedId: number) => {
+        oldTabView.view.webContents
+          .capturePage()
+          .then((image: NativeImage) => {
+            const imgString = image.toDataURL();
+            this.tabPageView.webContents.send('tab-image', [
+              cachedId,
+              imgString,
+            ]);
+            this.setTab(id, false);
+            return null;
+          })
+          .catch((e) => {
+            console.log(e);
+            this.setTab(id, false);
+          });
+      })(this.activeTabId);
+      return;
+    }
+
     if (id === -1) {
       this.mainWindow.setBrowserView(this.tabPageView);
       this.tabPageView.webContents.focus();
@@ -204,10 +409,10 @@ export default class WindowManager {
       return;
     }
 
-    const oldTabView = this.allTabViews[this.activeTabId];
+    this.activeTabId = id;
+
     if (typeof oldTabView !== 'undefined') {
       this.mainWindow.removeBrowserView(oldTabView.view);
-      this.activeTabId = -1;
     }
 
     if (id === -1) {
@@ -243,7 +448,7 @@ export default class WindowManager {
     tabView.resize();
   }
 
-  loadUrlInTab(id: number, url: string, event: Electron.IpcMainEvent) {
+  loadUrlInTab(id: number, url: string) {
     if (id === -1 || url === '') {
       return;
     }
@@ -263,7 +468,12 @@ export default class WindowManager {
       fullUrl = `https://www.google.com/search?q=${url}`;
     }
 
-    event.reply('web-contents-update', [id, true, false, fullUrl]);
+    this.titleBarView.webContents.send('web-contents-update', [
+      id,
+      true,
+      false,
+      fullUrl,
+    ]);
 
     (async () => {
       await tabView.view.webContents.loadURL(fullUrl).catch(() => {
@@ -273,12 +483,13 @@ export default class WindowManager {
       });
       const newUrl = tabView.view.webContents.getURL();
       this.closeFind();
-      event.reply('url-changed', [id, newUrl]);
-      updateWebContents(event, id, tabView);
+      this.titleBarView.webContents.send('url-changed', [id, newUrl]);
+      this.tabPageView.webContents.send('url-changed', [id, newUrl]);
+      updateWebContents(this.titleBarView, id, tabView);
     })();
   }
 
-  tabBack(id: number, event: Electron.IpcMainEvent) {
+  tabBack(id: number) {
     if (!this.allTabViews[id]) {
       return;
     }
@@ -286,10 +497,10 @@ export default class WindowManager {
       this.closeFind();
       this.allTabViews[id].view.webContents.goBack();
     }
-    updateWebContents(event, id, this.allTabViews[id]);
+    updateWebContents(this.titleBarView, id, this.allTabViews[id]);
   }
 
-  tabForward(id: number, event: Electron.IpcMainEvent) {
+  tabForward(id: number) {
     if (!this.allTabViews[id]) {
       return;
     }
@@ -297,7 +508,7 @@ export default class WindowManager {
       this.closeFind();
       this.allTabViews[id].view.webContents.goForward();
     }
-    updateWebContents(event, id, this.allTabViews[id]);
+    updateWebContents(this.titleBarView, id, this.allTabViews[id]);
   }
 
   tabRefresh(id: number) {

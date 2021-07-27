@@ -23,4 +23,6 @@ export const MAIN_HTML = `file://${__dirname}/main-window.html`;
 
 export const ICON_PNG = getAssetPath('icon.png');
 
+export const PRELOAD = `${__dirname}/utils/preload.js`;
+
 export default RESOURCES_PATH;

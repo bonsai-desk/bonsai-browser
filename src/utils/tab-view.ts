@@ -1,13 +1,30 @@
-import { BrowserView, BrowserWindow } from 'electron';
-import path from 'path';
+import { BrowserView, BrowserWindow, ipcMain } from 'electron';
 // eslint-disable-next-line import/no-cycle
 import { windowHasView } from './utils';
 // eslint-disable-next-line import/no-cycle
 import WindowManager from './window-manager';
+import { PRELOAD } from '../constants';
 
 export const headerHeight = 79 - 32 - 10; // 79 or 79 - 32 - 10
 
+export interface OpenGraphInfo {
+  title: string;
+  type: string;
+  image: string;
+  url: string;
+}
+
+export interface HistoryEntry {
+  url: string;
+  time: number;
+  title: string;
+  favicon: string;
+  openGraphData: OpenGraphInfo;
+}
+
 class TabView {
+  id: number;
+
   window: BrowserWindow;
 
   view: BrowserView;
@@ -16,9 +33,10 @@ class TabView {
 
   windowFloating = false;
 
+  historyEntry: HistoryEntry | null = null;
+
   constructor(
     window: BrowserWindow,
-    id: number,
     titleBarView: BrowserView,
     urlPeekView: BrowserView,
     findView: BrowserView,
@@ -34,27 +52,53 @@ class TabView {
       webPreferences: {
         nodeIntegration: false,
         sandbox: true,
-        preload: path.join(__dirname, './utils/preload.js'),
+        preload: PRELOAD,
         contextIsolation: false, // todo: do we need this? security concern?
       },
     });
+    const { id } = this.view.webContents;
+    this.id = id;
+
+    const updateHistory = () => {
+      if (this.historyEntry !== null) {
+        wm.addHistoryEntry(this.historyEntry);
+      }
+    };
 
     this.view.webContents.on('page-title-updated', (_, title) => {
+      if (this.historyEntry?.title === '') {
+        this.historyEntry.title = title;
+        if (
+          this.historyEntry.favicon !== '' &&
+          this.historyEntry.openGraphData.title !== 'null'
+        ) {
+          updateHistory();
+        }
+      }
       titleBarView.webContents.send('title-updated', [id, title]);
       wm.tabPageView.webContents.send('title-updated', [id, title]);
     });
 
     const updateContents = () => {
+      const url = this.view.webContents.getURL();
+      if (wm.lastHistoryAdd !== url) {
+        wm.lastHistoryAdd = url;
+        const time = new Date().getTime();
+        this.historyEntry = {
+          url,
+          time,
+          title: '',
+          favicon: '',
+          openGraphData: { title: 'null', type: '', image: '', url: '' },
+        };
+      }
       titleBarView.webContents.send('web-contents-update', [
         id,
         this.view.webContents.canGoBack(),
         this.view.webContents.canGoForward(),
-        this.view.webContents.getURL(),
+        url,
       ]);
-      wm.tabPageView.webContents.send('url-changed', [
-        id,
-        this.view.webContents.getURL(),
-      ]);
+      wm.tabPageView.webContents.send('url-changed', [id, url]);
     };
 
     this.view.webContents.on('did-navigate', () => {
@@ -73,7 +117,18 @@ class TabView {
     this.view.webContents.on('page-favicon-updated', (_, favicons) => {
       // favicons.map((url) => console.log(url));
       if (favicons.length > 0) {
+        if (this.historyEntry?.favicon === '') {
+          // eslint-disable-next-line prefer-destructuring
+          this.historyEntry.favicon = favicons[0];
+          if (
+            this.historyEntry.openGraphData.title !== 'null' &&
+            this.historyEntry.title !== ''
+          ) {
+            updateHistory();
+          }
+        }
         titleBarView.webContents.send('favicon-updated', [id, favicons[0]]);
+        wm.tabPageView.webContents.send('favicon-updated', [id, favicons[0]]);
       }
     });
 
@@ -98,6 +153,20 @@ class TabView {
         result.activeMatchOrdinal,
         result.matches,
       ]);
+    });
+
+    ipcMain.on('open-graph-data', (event, data: OpenGraphInfo) => {
+      if (event.sender.id === id) {
+        if (this.historyEntry?.openGraphData.title === 'null') {
+          this.historyEntry.openGraphData = data;
+          if (
+            this.historyEntry.favicon !== '' &&
+            this.historyEntry.title !== ''
+          ) {
+            updateHistory();
+          }
+        }
+      }
     });
 
     // window.addBrowserView(this.view);

@@ -59,8 +59,11 @@ export const createWindow = async () => {
   const display = displays[0];
 
   const wm = new WindowManager(mainWindow, display);
-
   wm.browserPadding = Math.floor(display.workAreaSize.height / 15.0);
+
+  wm.mainWindow.on('close', () => {
+    wm.saveHistory();
+  });
 
   mainWindow.webContents.on('did-finish-load', () => {
     wm.mainWindow.webContents.send('set-padding', wm.browserPadding.toString());
@@ -118,15 +121,14 @@ export const createWindow = async () => {
     }
   };
 
-  // todo can this run at 60fps instead of every millisecond
   setInterval(update, 1);
 
   const tray = createTray(ICON_PNG, mainWindow);
 
   mainWindow?.setResizable(false);
 
-  // was CmdOrCtrl+\\
-  globalShortcut.register('Alt+Space', () => {
+  const shortCut = app.isPackaged ? 'Alt+Space' : 'CmdOrCtrl+\\';
+  globalShortcut.register(shortCut, () => {
     const activeTabView = wm.allTabViews[wm.activeTabId];
     if (!mainWindow?.isVisible()) {
       // if (
@@ -150,6 +152,8 @@ export const createWindow = async () => {
     ) {
       wm.float(display, floatingWidth, floatingHeight);
     } else {
+      wm.unFloat(display);
+      wm.setTab(-1);
       mainWindow?.hide();
     }
   });
@@ -189,13 +193,35 @@ export const createWindow = async () => {
             if (wm.windowFloating) {
               mainWindow?.hide();
             } else if (windowHasView(wm.mainWindow, wm.tabPageView)) {
-              mainWindow?.hide();
+              if (wm.historyModalActive) {
+                wm.tabPageView.webContents.send('close-history-modal');
+              } else {
+                mainWindow?.hide();
+              }
             } else if (windowHasView(wm.mainWindow, wm.titleBarView)) {
               if (windowHasView(wm.mainWindow, wm.findView)) {
                 wm.closeFind();
               } else {
                 wm.setTab(-1);
               }
+            }
+          },
+        },
+        {
+          label: 'history',
+          accelerator: 'CmdOrCtrl+H',
+          click: () => {
+            if (windowHasView(wm.mainWindow, wm.tabPageView)) {
+              wm.tabPageView.webContents.send('toggle-history-modal');
+            }
+          },
+        },
+        {
+          label: 'undo removed tabs',
+          accelerator: 'CmdOrCtrl+Shift+T',
+          click: () => {
+            if (windowHasView(wm.mainWindow, wm.tabPageView)) {
+              wm.undoRemovedTabs();
             }
           },
         },
