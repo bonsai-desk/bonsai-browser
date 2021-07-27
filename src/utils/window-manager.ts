@@ -9,6 +9,7 @@ import {
   shell,
 } from 'electron';
 import fs from 'fs';
+import Fuse from 'fuse.js';
 import path from 'path';
 // eslint-disable-next-line import/no-cycle
 import TabView, { headerHeight, HistoryEntry } from './tab-view';
@@ -25,7 +26,6 @@ import { handleFindText } from './windows';
 import calculateWindowTarget from './calculate-window-target';
 
 const glMatrix = require('gl-matrix');
-const Fuse = require('fuse.js');
 
 const updateWebContents = (
   titleBarView: BrowserView,
@@ -92,7 +92,9 @@ export default class WindowManager {
 
   historyList: HistoryEntry[] = [];
 
-  historyFuse = new Fuse([], { keys: ['url', 'title', 'openGraphData.title'] });
+  historyFuse = new Fuse<HistoryEntry>([], {
+    keys: ['url', 'title', 'openGraphData.title'],
+  });
 
   lastHistoryAdd = '';
 
@@ -111,32 +113,27 @@ export default class WindowManager {
     });
 
     this.mainWindow.on('resize', this.resize);
-
     // this.mainWindow.webContents.openDevTools({ mode: 'detach' });
 
     this.titleBarView = makeView(INDEX_HTML);
     // this.titleBarView.webContents.openDevTools({ mode: 'detach' });
-    // this.titleBarView.webContents.on('did-finish-load', () => {
-    //   this.mainWindow.focus();
-    //   this.titleBarView.webContents.focus();
-    //   this.createNewTab();
-    // });
-    // this.mainWindow.addBrowserView(this.titleBarView);
-    // this.mainWindow.setBrowserView(this.titleBarView);
-    // this.mainWindow.setTopBrowserView(this.titleBarView);
 
     this.urlPeekView = makeView(URL_PEEK_HTML);
+    // this.urlPeekView.webContents.openDevTools({ mode: 'detach' });
+
     this.findView = makeView(FIND_HTML);
+    // this.findView.webContents.openDevTools({ mode: 'detach' });
+
     this.overlayView = makeView(OVERLAY_HTML);
+    // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
+    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
       this.loadHistory();
     });
-    // if (!app.isPackaged) {
-    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
-    // }
 
     this.resize();
 
@@ -256,6 +253,13 @@ export default class WindowManager {
       this.historyList[this.historyList.length - 1].url === entry.url
     ) {
       return;
+    }
+
+    // prevent duplicate keys
+    for (let i = 0; i < this.historyList.length; i += 1) {
+      if (this.historyList[i].time === entry.time) {
+        return;
+      }
     }
 
     this.historyList.push(entry);
