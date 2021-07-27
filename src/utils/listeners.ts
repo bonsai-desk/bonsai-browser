@@ -64,7 +64,7 @@ function addListeners(wm: WindowManager) {
     if (query === '') {
       wm.tabPageView.webContents.send('history-search-result', null);
     } else {
-      const result = wm.history.search(query, { limit: 50 });
+      const result = wm.historyFuse.search(query, { limit: 50 });
       wm.tabPageView.webContents.send(
         'history-search-result',
         result.map(

@@ -59,8 +59,11 @@ export const createWindow = async () => {
   const display = displays[0];
 
   const wm = new WindowManager(mainWindow, display);
-
   wm.browserPadding = Math.floor(display.workAreaSize.height / 15.0);
+
+  wm.mainWindow.on('close', () => {
+    wm.saveHistory();
+  });
 
   mainWindow.webContents.on('did-finish-load', () => {
     wm.mainWindow.webContents.send('set-padding', wm.browserPadding.toString());

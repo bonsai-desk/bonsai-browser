@@ -14,6 +14,14 @@ export interface OpenGraphInfo {
   url: string;
 }
 
+export interface HistoryEntry {
+  url: string;
+  time: number;
+  title: string;
+  favicon: string;
+  openGraphData: OpenGraphInfo;
+}
+
 class TabView {
   id: number;
 
@@ -25,13 +33,7 @@ class TabView {
 
   windowFloating = false;
 
-  historyEntry: {
-    url: string;
-    time: number;
-    title: string;
-    favicon: string;
-    openGraphData: OpenGraphInfo | null;
-  } | null = null;
+  historyEntry: HistoryEntry | null = null;
 
   constructor(
     window: BrowserWindow,
@@ -59,14 +61,7 @@ class TabView {
 
     const updateHistory = () => {
       if (this.historyEntry !== null) {
-        wm.history.add(this.historyEntry);
-        wm.tabPageView.webContents.send('add-history', [
-          this.historyEntry.url,
-          this.historyEntry.time,
-          this.historyEntry.title,
-          this.historyEntry.favicon,
-          this.historyEntry.openGraphData,
-        ]);
+        wm.addHistoryEntry(this.historyEntry);
       }
     };
 
@@ -75,7 +70,7 @@ class TabView {
         this.historyEntry.title = title;
         if (
           this.historyEntry.favicon !== '' &&
-          this.historyEntry.openGraphData !== null
+          this.historyEntry.openGraphData.title !== 'null'
         ) {
           updateHistory();
         }
@@ -94,7 +89,7 @@ class TabView {
           time,
           title: '',
           favicon: '',
-          openGraphData: null,
+          openGraphData: { title: 'null', type: '', image: '', url: '' },
         };
       }
       titleBarView.webContents.send('web-contents-update', [
@@ -126,7 +121,7 @@ class TabView {
           // eslint-disable-next-line prefer-destructuring
           this.historyEntry.favicon = favicons[0];
           if (
-            this.historyEntry.openGraphData !== null &&
+            this.historyEntry.openGraphData.title !== 'null' &&
             this.historyEntry.title !== ''
           ) {
             updateHistory();
@@ -162,7 +157,7 @@ class TabView {
 
     ipcMain.on('open-graph-data', (event, data: OpenGraphInfo) => {
       if (event.sender.id === id) {
-        if (this.historyEntry?.openGraphData === null) {
+        if (this.historyEntry?.openGraphData.title === 'null') {
           this.historyEntry.openGraphData = data;
           if (
             this.historyEntry.favicon !== '' &&

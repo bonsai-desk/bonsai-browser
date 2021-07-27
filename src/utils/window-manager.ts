@@ -1,5 +1,6 @@
 /* eslint no-console: off */
 import {
+  app,
   BrowserView,
   BrowserWindow,
   Display,
@@ -7,8 +8,10 @@ import {
   screen,
   shell,
 } from 'electron';
+import fs from 'fs';
+import path from 'path';
 // eslint-disable-next-line import/no-cycle
-import TabView, { headerHeight } from './tab-view';
+import TabView, { headerHeight, HistoryEntry } from './tab-view';
 import {
   FIND_HTML,
   INDEX_HTML,
@@ -87,7 +90,9 @@ export default class WindowManager {
 
   windowSize = { width: 0, height: 0 };
 
-  history = new Fuse([], { keys: ['url', 'title', 'openGraphData.title'] });
+  historyList: HistoryEntry[] = [];
+
+  historyFuse = new Fuse([], { keys: ['url', 'title', 'openGraphData.title'] });
 
   lastHistoryAdd = '';
 
@@ -126,8 +131,11 @@ export default class WindowManager {
 
     this.tabPageView = makeView(TAB_PAGE);
     this.mainWindow.setBrowserView(this.tabPageView);
+    this.tabPageView.webContents.on('did-finish-load', () => {
+      this.loadHistory();
+    });
     // if (!app.isPackaged) {
-    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
     // }
 
     this.resize();
@@ -233,9 +241,104 @@ export default class WindowManager {
     }
   }
 
+  addHistoryEntry(entry: HistoryEntry) {
+    // prevent two in a row duplicate entries
+    if (
+      this.historyList.length > 0 &&
+      this.historyList[this.historyList.length - 1].url === entry.url
+    ) {
+      return;
+    }
+
+    this.historyList.push(entry);
+    while (this.historyList.length > 10000) {
+      this.historyList.shift();
+    }
+    this.historyFuse.add(entry);
+    this.tabPageView.webContents.send('add-history', [
+      entry.url,
+      entry.time,
+      entry.title,
+      entry.favicon,
+      entry.openGraphData,
+    ]);
+  }
+
   clearHistory() {
-    this.history.setCollection([]);
+    this.historyList = [];
+    this.historyFuse.setCollection([]);
     this.tabPageView.webContents.send('history-cleared');
+    this.saveHistory();
+  }
+
+  saveHistory() {
+    try {
+      const savePath = path.join(app.getPath('userData'), 'history.json');
+      const saveData = this.historyList;
+      fs.writeFileSync(savePath, JSON.stringify(saveData));
+      this.saveTabs();
+    } catch {
+      // console.log('saveHistory error');
+      // console.log(e);
+    }
+  }
+
+  saveTabs() {
+    try {
+      const savePath = path.join(app.getPath('userData'), 'openTabs.json');
+      const saveData = Object.values(this.allTabViews).map((tabView) => {
+        return tabView.view.webContents.getURL();
+      });
+      fs.writeFileSync(savePath, JSON.stringify(saveData));
+    } catch {
+      //
+    }
+  }
+
+  loadHistory() {
+    try {
+      const savePath = path.join(app.getPath('userData'), 'history.json');
+      const saveString = fs.readFileSync(savePath, 'utf8');
+      const saveData = JSON.parse(saveString);
+      this.historyList = saveData;
+      this.historyFuse.setCollection(saveData);
+
+      for (
+        let i = Math.max(saveData.length - 50, 0);
+        i < saveData.length;
+        i += 1
+      ) {
+        if (i >= 0) {
+          const entry = saveData[i];
+          this.tabPageView.webContents.send('add-history', [
+            entry.url,
+            entry.time,
+            entry.title,
+            entry.favicon,
+            entry.openGraphData,
+          ]);
+        }
+      }
+      this.loadTabs();
+    } catch {
+      // console.log('loadHistory error');
+      // console.log(e);
+    }
+  }
+
+  loadTabs() {
+    try {
+      const savePath = path.join(app.getPath('userData'), 'openTabs.json');
+      const saveString = fs.readFileSync(savePath, 'utf8');
+      const saveData = JSON.parse(saveString);
+
+      saveData.forEach((url: string) => {
+        const newTabId = this.createNewTab();
+        this.loadUrlInTab(newTabId, url);
+      });
+    } catch {
+      //
+    }
   }
 
   closeFind() {
