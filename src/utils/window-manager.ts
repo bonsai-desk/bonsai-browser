@@ -139,6 +139,14 @@ export default class WindowManager {
     // }
 
     this.resize();
+
+    setInterval(() => {
+      this.saveTabs();
+    }, 1000 * 15);
+
+    setInterval(() => {
+      this.saveHistory();
+    }, 1000 * 60 * 5);
   }
 
   updateMainWindowBounds() {
