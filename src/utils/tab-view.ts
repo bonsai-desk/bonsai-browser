@@ -1,6 +1,6 @@
 import { BrowserView, BrowserWindow, ipcMain } from 'electron';
 // eslint-disable-next-line import/no-cycle
-import { windowHasView } from './utils';
+import { urlToMapKey, windowHasView } from './utils';
 // eslint-disable-next-line import/no-cycle
 import WindowManager from './window-manager';
 import { PRELOAD } from '../constants';
@@ -16,10 +16,24 @@ export interface OpenGraphInfo {
 
 export interface HistoryEntry {
   url: string;
-  time: number;
+  key: string;
   title: string;
   favicon: string;
   openGraphData: OpenGraphInfo;
+}
+
+function createOpenGraphInfo(): OpenGraphInfo {
+  return { title: '', type: '', image: '', url: '' };
+}
+
+export function createHistoryEntry(url: string): HistoryEntry {
+  return {
+    url,
+    key: urlToMapKey(url),
+    title: '',
+    favicon: '',
+    openGraphData: createOpenGraphInfo(),
+  };
 }
 
 class TabView {
@@ -75,12 +89,7 @@ class TabView {
     this.view.webContents.on('page-title-updated', (_, title) => {
       if (this.historyEntry?.title === '') {
         this.historyEntry.title = title;
-        if (
-          this.historyEntry.favicon !== '' &&
-          this.historyEntry.openGraphData.title !== 'null'
-        ) {
-          updateHistory();
-        }
+        updateHistory();
       }
       titleBarView.webContents.send('title-updated', [id, title]);
       wm.tabPageView.webContents.send('title-updated', [id, title]);
@@ -88,17 +97,19 @@ class TabView {
 
     const updateContents = () => {
       const url = this.view.webContents.getURL();
-      if (wm.lastHistoryAdd !== url) {
-        wm.lastHistoryAdd = url;
-        const time = new Date().getTime();
+      const key = urlToMapKey(url);
+      if (this.historyEntry === null || this.historyEntry.key !== key) {
         this.historyEntry = {
           url,
-          time,
+          key,
           title: '',
           favicon: '',
           openGraphData: { title: 'null', type: '', image: '', url: '' },
         };
+      } else {
+        this.historyEntry.url = url;
       }
+
       titleBarView.webContents.send('web-contents-update', [
         id,
         this.view.webContents.canGoBack(),
@@ -127,12 +138,7 @@ class TabView {
         if (this.historyEntry?.favicon === '') {
           // eslint-disable-next-line prefer-destructuring
           this.historyEntry.favicon = favicons[0];
-          if (
-            this.historyEntry.openGraphData.title !== 'null' &&
-            this.historyEntry.title !== ''
-          ) {
-            updateHistory();
-          }
+          updateHistory();
         }
         titleBarView.webContents.send('favicon-updated', [id, favicons[0]]);
         wm.tabPageView.webContents.send('favicon-updated', [id, favicons[0]]);
@@ -166,12 +172,7 @@ class TabView {
       if (event.sender.id === id) {
         if (this.historyEntry?.openGraphData.title === 'null') {
           this.historyEntry.openGraphData = data;
-          if (
-            this.historyEntry.favicon !== '' &&
-            this.historyEntry.title !== ''
-          ) {
-            updateHistory();
-          }
+          updateHistory();
         }
       }
     });

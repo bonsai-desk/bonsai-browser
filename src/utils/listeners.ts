@@ -1,7 +1,7 @@
 /* eslint no-console: off */
 import { ipcMain } from 'electron';
 import WindowManager from './window-manager';
-import { OpenGraphInfo } from './tab-view';
+import { HistoryEntry } from './tab-view';
 
 function addListeners(wm: WindowManager) {
   ipcMain.on('create-new-tab', () => {
@@ -67,25 +67,9 @@ function addListeners(wm: WindowManager) {
       const result = wm.historyFuse.search(query, { limit: 50 });
       wm.tabPageView.webContents.send(
         'history-search-result',
-        result.map(
-          (entry: {
-            item: {
-              url: string;
-              time: number;
-              title: string;
-              favicon: string;
-              openGraphData: OpenGraphInfo;
-            };
-          }) => {
-            return [
-              entry.item.url,
-              entry.item.time,
-              entry.item.title,
-              entry.item.favicon,
-              entry.item.openGraphData,
-            ];
-          }
-        )
+        result.map((entry: { item: HistoryEntry }) => {
+          return entry.item;
+        })
       );
     }
   });

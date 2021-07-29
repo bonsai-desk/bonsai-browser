@@ -3,7 +3,7 @@ import { observer } from 'mobx-react-lite';
 import styled, { createGlobalStyle, css } from 'styled-components';
 import { makeAutoObservable, runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
-import { OpenGraphInfo } from '../utils/tab-view';
+import { HistoryEntry } from '../utils/tab-view';
 
 const GlobalStyle = createGlobalStyle`
   html,
@@ -251,9 +251,9 @@ interface TabPageTab {
 export class TabPageStore {
   tabs: Record<string, TabPageTab> = {};
 
-  history: [string, number, string, string, OpenGraphInfo][] = [];
+  historyMap = new Map<string, HistoryEntry>();
 
-  searchResult: [string, number, string, string, OpenGraphInfo][] | null = null;
+  searchResult: HistoryEntry[] | null = null;
 
   historyModalActive = false;
 
@@ -299,17 +299,21 @@ export class TabPageStore {
         }
       });
     });
-    ipcRenderer.on(
-      'add-history',
-      (_, [url, time, title, favicon, openGraphData]) => {
-        runInAction(() => {
-          this.history.push([url, time, title, favicon, openGraphData]);
-          if (this.history.length > 50) {
-            this.history.shift();
+    ipcRenderer.on('add-history', (_, entry: HistoryEntry) => {
+      runInAction(() => {
+        this.historyMap.delete(entry.key);
+        this.historyMap.set(entry.key, entry);
+        const keys = this.historyMap.keys();
+        let result = keys.next();
+        while (!result.done) {
+          if (this.historyMap.size <= 50) {
+            break;
           }
-        });
-      }
-    );
+          this.historyMap.delete(result.value);
+          result = keys.next();
+        }
+      });
+    });
     ipcRenderer.on('history-search-result', (_, result) => {
       runInAction(() => {
         this.searchResult = result;
@@ -337,7 +341,7 @@ export class TabPageStore {
     });
     ipcRenderer.on('history-cleared', () => {
       runInAction(() => {
-        this.history = [];
+        this.historyMap.clear();
         this.searchResult = [];
       });
     });
@@ -347,9 +351,11 @@ export class TabPageStore {
 function getHistory(tabPageStore: TabPageStore) {
   let results;
   if (tabPageStore.searchResult === null) {
-    results = tabPageStore.history.map((_, index, array) => {
-      return array[array.length - 1 - index];
-    });
+    results = Array.from(tabPageStore.historyMap.values()).map(
+      (_, index, array) => {
+        return array[array.length - 1 - index];
+      }
+    );
   } else {
     results = tabPageStore.searchResult;
   }
@@ -357,15 +363,14 @@ function getHistory(tabPageStore: TabPageStore) {
   return results.map((entry) => {
     return (
       <HistoryResult
-        key={entry[1]}
+        key={entry.key}
         onClick={() => {
-          const url = entry[0];
-          ipcRenderer.send('search-url', url);
+          ipcRenderer.send('search-url', entry.url);
         }}
       >
-        <Favicon src={entry[3]} alt="favicon" />
-        <HistoryTitleDiv>{entry[2]}</HistoryTitleDiv>
-        <HistoryUrlDiv>{entry[0]}</HistoryUrlDiv>
+        <Favicon src={entry.favicon} />
+        <HistoryTitleDiv>{entry.title}</HistoryTitleDiv>
+        <HistoryUrlDiv>{entry.url}</HistoryUrlDiv>
       </HistoryResult>
     );
   });
@@ -496,7 +501,7 @@ const TabPage = observer(({ tabPageStore }: { tabPageStore: TabPageStore }) => {
     if (tabPageStore.historyModalActive) {
       ipcRenderer.send('history-search', historyText);
     }
-  }, [tabPageStore.historyModalActive]);
+  }, [tabPageStore.historyModalActive, historyText]);
 
   const [hasRunOnce, setHasRunOnce] = useState(false);
 
@@ -572,7 +577,6 @@ const TabPage = observer(({ tabPageStore }: { tabPageStore: TabPageStore }) => {
               value={historyText}
               onInput={(e) => {
                 setHistoryText(e.currentTarget.value);
-                ipcRenderer.send('history-search', e.currentTarget.value);
               }}
             />
             <ClearHistory

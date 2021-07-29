@@ -19,7 +19,14 @@ import {
   TAB_PAGE,
   URL_PEEK_HTML,
 } from '../constants';
-import { validURL, windowHasView } from './utils';
+// eslint-disable-next-line import/no-cycle
+import {
+  parseMap,
+  stringifyMap,
+  stringToUrl,
+  urlToMapKey,
+  windowHasView,
+} from './utils';
 import { handleFindText } from './windows';
 // eslint-disable-next-line import/no-cycle
 import calculateWindowTarget from './calculate-window-target';
@@ -89,13 +96,11 @@ export default class WindowManager {
 
   windowSize = { width: 0, height: 0 };
 
-  historyList: HistoryEntry[] = [];
+  historyMap = new Map<string, HistoryEntry>();
 
   historyFuse = new Fuse<HistoryEntry>([], {
     keys: ['url', 'title', 'openGraphData.title'],
   });
-
-  lastHistoryAdd = '';
 
   historyModalActive = false;
 
@@ -240,37 +245,33 @@ export default class WindowManager {
   }
 
   addHistoryEntry(entry: HistoryEntry) {
-    // prevent two in a row duplicate entries
-    if (
-      this.historyList.length > 0 &&
-      this.historyList[this.historyList.length - 1].url === entry.url
-    ) {
-      return;
-    }
+    // if key exists, delete it. it will be added again to the end of the map
+    const entryKey = urlToMapKey(entry.url);
+    this.historyMap.delete(entryKey);
 
-    // prevent duplicate keys
-    for (let i = 0; i < this.historyList.length; i += 1) {
-      if (this.historyList[i].time === entry.time) {
-        return;
+    // add entry to end of map
+    this.historyMap.set(entryKey, entry);
+
+    const keys = this.historyMap.keys();
+
+    let result = keys.next();
+    while (!result.done) {
+      if (this.historyMap.size < 10000) {
+        break;
       }
+      this.historyMap.delete(result.value);
+      result = keys.next();
     }
 
-    this.historyList.push(entry);
-    while (this.historyList.length > 10000) {
-      this.historyList.shift();
-    }
+    this.historyFuse.remove((removeEntry) => {
+      return removeEntry.key === entryKey;
+    });
     this.historyFuse.add(entry);
-    this.tabPageView.webContents.send('add-history', [
-      entry.url,
-      entry.time,
-      entry.title,
-      entry.favicon,
-      entry.openGraphData,
-    ]);
+    this.tabPageView.webContents.send('add-history', entry);
   }
 
   clearHistory() {
-    this.historyList = [];
+    this.historyMap.clear();
     this.historyFuse.setCollection([]);
     this.tabPageView.webContents.send('history-cleared');
     this.saveHistory();
@@ -279,8 +280,8 @@ export default class WindowManager {
   saveHistory() {
     try {
       const savePath = path.join(app.getPath('userData'), 'history.json');
-      const saveData = this.historyList;
-      fs.writeFileSync(savePath, JSON.stringify(saveData));
+      const saveString = stringifyMap(this.historyMap);
+      fs.writeFileSync(savePath, saveString);
       this.saveTabs();
     } catch {
       // console.log('saveHistory error');
@@ -304,8 +305,10 @@ export default class WindowManager {
     try {
       const savePath = path.join(app.getPath('userData'), 'history.json');
       const saveString = fs.readFileSync(savePath, 'utf8');
-      const saveData = JSON.parse(saveString);
-      this.historyList = saveData;
+      const saveMap = parseMap(saveString);
+      this.historyMap = saveMap;
+
+      const saveData = Array.from(saveMap.values());
       this.historyFuse.setCollection(saveData);
 
       for (
@@ -315,13 +318,7 @@ export default class WindowManager {
       ) {
         if (i >= 0) {
           const entry = saveData[i];
-          this.tabPageView.webContents.send('add-history', [
-            entry.url,
-            entry.time,
-            entry.title,
-            entry.favicon,
-            entry.openGraphData,
-          ]);
+          this.tabPageView.webContents.send('add-history', entry);
         }
       }
       this.loadTabs();
@@ -441,7 +438,7 @@ export default class WindowManager {
     tabView.resize();
   }
 
-  loadUrlInTab(id: number, url: string) {
+  loadUrlInTab(id: number, url: string, dontActuallyLoadUrl = false) {
     if (id === -1 || url === '') {
       return;
     }
@@ -451,15 +448,8 @@ export default class WindowManager {
         `load-url-in-active-tab: tab with id ${id} does not exist`
       );
     }
-    let fullUrl = url;
-    if (!/^https?:\/\//i.test(url)) {
-      fullUrl = `http://${url}`;
-    }
 
-    // url is invalid
-    if (!validURL(fullUrl)) {
-      fullUrl = `https://www.google.com/search?q=${url}`;
-    }
+    const fullUrl = stringToUrl(url);
 
     this.titleBarView.webContents.send('web-contents-update', [
       id,
@@ -469,12 +459,16 @@ export default class WindowManager {
     ]);
 
     (async () => {
-      await tabView.view.webContents.loadURL(fullUrl).catch(() => {
-        // failed to load url
-        // todo: handle this
-        console.log(`error loading url: ${fullUrl}`);
-      });
-      const newUrl = tabView.view.webContents.getURL();
+      if (!dontActuallyLoadUrl) {
+        await tabView.view.webContents.loadURL(fullUrl).catch(() => {
+          // failed to load url
+          // todo: handle this
+          console.log(`error loading url: ${fullUrl}`);
+        });
+      }
+      const newUrl = dontActuallyLoadUrl
+        ? fullUrl
+        : tabView.view.webContents.getURL();
       this.closeFind();
       this.titleBarView.webContents.send('url-changed', [id, newUrl]);
       this.tabPageView.webContents.send('url-changed', [id, newUrl]);

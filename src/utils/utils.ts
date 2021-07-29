@@ -1,4 +1,6 @@
 import { BrowserView, BrowserWindow } from 'electron';
+// eslint-disable-next-line import/no-cycle
+import { HistoryEntry } from './tab-view';
 
 export const windowHasView = (
   window: BrowserWindow,
@@ -24,6 +26,55 @@ export function validURL(str: string): boolean {
     'i'
   ); // fragment locator
   return pattern.test(str);
+}
+
+export function stringToUrl(url: string): string {
+  let fullUrl = url;
+  if (!/^https?:\/\//i.test(url)) {
+    fullUrl = `http://${url}`;
+  }
+
+  // url is invalid
+  if (!validURL(fullUrl)) {
+    fullUrl = `https://www.google.com/search?q=${url}`;
+  }
+  return fullUrl;
+}
+
+function replacer(_: string, value: any) {
+  if (value instanceof Map) {
+    return {
+      dataType: 'Map',
+      value: Array.from(value.entries()),
+    };
+  }
+  return value;
+}
+
+function reviver(_: string, value: any) {
+  if (typeof value === 'object' && value !== null) {
+    if (value.dataType === 'Map') {
+      return new Map(value.value);
+    }
+  }
+  return value;
+}
+
+export function stringifyMap(map: Map<string, HistoryEntry>): string {
+  return JSON.stringify(map, replacer);
+}
+
+export function parseMap(jsonString: string): Map<string, HistoryEntry> {
+  return JSON.parse(jsonString, reviver);
+}
+
+function getDateString(): string {
+  const date = new Date();
+  return `${date.getMonth()}-${date.getDate()}-${date.getFullYear()}`;
+}
+
+export function urlToMapKey(url: string): string {
+  return `${getDateString()}_${url}`;
 }
 
 export const moveTowards = (
