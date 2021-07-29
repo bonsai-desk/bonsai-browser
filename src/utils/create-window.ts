@@ -70,6 +70,14 @@ export const createWindow = async () => {
     mainWindow?.show();
   });
 
+  mainWindow.on('blur', () => {
+    if (!wm.windowFloating && wm.mainWindow.isVisible()) {
+      wm.unFloat(display);
+      wm.setTab(-1);
+      mainWindow?.hide();
+    }
+  });
+
   wm.windowPosition[0] = 0;
   wm.windowPosition[1] = 0;
   wm.windowSize.width = display.workAreaSize.width;

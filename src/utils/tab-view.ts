@@ -1,4 +1,4 @@
-import { BrowserView, BrowserWindow, ipcMain, shell } from 'electron';
+import { BrowserView, BrowserWindow, ipcMain } from 'electron';
 // eslint-disable-next-line import/no-cycle
 import { windowHasView } from './utils';
 // eslint-disable-next-line import/no-cycle
