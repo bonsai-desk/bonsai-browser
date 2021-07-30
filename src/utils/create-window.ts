@@ -57,6 +57,7 @@ export const createWindow = async () => {
   if (displays.length === 0) {
     throw new Error('No displays!');
   }
+  console.log(displays);
   const display = displays[0];
 
   const wm = new WindowManager(mainWindow, display);
@@ -153,10 +154,16 @@ export const createWindow = async () => {
   globalShortcut.register(shortCut, () => {
     const activeTabView = wm.allTabViews[wm.activeTabId];
     if (!mainWindow?.isVisible()) {
+      wm.mainWindow.setVisibleOnAllWorkspaces(true, {
+        visibleOnFullScreen: true,
+      });
       wm.mainWindow.show();
+      wm.mainWindow.setVisibleOnAllWorkspaces(false, {
+        visibleOnFullScreen: true,
+      });
       wm.unFloat(display);
       setTimeout(() => {
-        // todo: search box does not get highlited on macos unless we do this hack
+        // todo: search box does not get highlighted on macos unless we do this hack
         wm.setTab(-1);
       }, 10);
     } else if (
