@@ -170,6 +170,7 @@ class TabView {
 
     ipcMain.on('open-graph-data', (event, data: OpenGraphInfo) => {
       if (event.sender.id === id) {
+        // console.log(data.image);
         if (this.historyEntry?.openGraphData.title === 'null') {
           this.historyEntry.openGraphData = data;
           updateHistory();

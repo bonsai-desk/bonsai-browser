@@ -3,7 +3,7 @@ import { observer } from 'mobx-react-lite';
 import styled, { createGlobalStyle, css } from 'styled-components';
 import { makeAutoObservable, runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
-import { HistoryEntry } from '../utils/tab-view';
+import { HistoryEntry, OpenGraphInfo } from '../utils/tab-view';
 
 const GlobalStyle = createGlobalStyle`
   html,
@@ -57,7 +57,7 @@ const Tab = styled.div`
   background-color: lightgrey;
   border: 2px solid black;
   border-radius: 25px;
-  padding: 5px 20px 5px 20px;
+  padding: 5px 20px 0 20px;
   word-wrap: break-word;
   text-overflow: ellipsis;
   overflow: hidden;
@@ -106,7 +106,9 @@ const CloseTabButton = styled.button`
 `;
 
 const TabImage = styled.img`
-  max-width: 100%;
+  width: 100%;
+  height: 120px;
+  object-fit: contain;
   user-select: none;
   -webkit-user-drag: none;
 `;
@@ -246,6 +248,8 @@ interface TabPageTab {
   image: string;
 
   favicon: string;
+
+  openGraphInfo: OpenGraphInfo | null;
 }
 
 export class TabPageStore {
@@ -269,6 +273,7 @@ export class TabPageStore {
           title: '',
           image: '',
           favicon: '',
+          openGraphInfo: null,
         };
       });
     });
@@ -301,6 +306,13 @@ export class TabPageStore {
     });
     ipcRenderer.on('add-history', (_, entry: HistoryEntry) => {
       runInAction(() => {
+        if (entry.openGraphData.title !== 'null') {
+          Object.values(this.tabs).forEach((tab) => {
+            if (tab.url === entry.url) {
+              tab.openGraphInfo = entry.openGraphData;
+            }
+          });
+        }
         this.historyMap.delete(entry.key);
         this.historyMap.set(entry.key, entry);
         const keys = this.historyMap.keys();
@@ -460,6 +472,15 @@ function createTabs(tabPageStore: TabPageStore) {
           X
         </CloseColumnButton>
         {column.tabs.map((tab) => {
+          const imgUrl =
+            tab.openGraphInfo?.image !== ''
+              ? tab.openGraphInfo?.image
+              : tab.image;
+          const title =
+            tab.openGraphInfo?.title !== '' &&
+            tab.openGraphInfo?.title !== 'null'
+              ? tab.openGraphInfo?.title
+              : tab.title;
           return (
             <Tab
               key={tab.id}
@@ -467,7 +488,7 @@ function createTabs(tabPageStore: TabPageStore) {
                 ipcRenderer.send('set-tab', tab.id);
               }}
             >
-              <TabTitle>{tab.url === '' ? 'New Tab' : tab.title}</TabTitle>
+              <TabTitle>{title === '' ? 'New Tab' : title}</TabTitle>
               <CloseTabButton
                 type="button"
                 onClick={(e) => {
@@ -477,7 +498,7 @@ function createTabs(tabPageStore: TabPageStore) {
               >
                 X
               </CloseTabButton>
-              <TabImage src={tab.image} alt="tab_image" />
+              <TabImage src={imgUrl} alt="tab_image" />
             </Tab>
           );
         })}
