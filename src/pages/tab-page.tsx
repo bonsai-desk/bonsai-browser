@@ -514,6 +514,26 @@ const TabPage = observer(({ tabPageStore }: { tabPageStore: TabPageStore }) => {
 
   const historyBoxRef = useRef<HTMLInputElement>(null);
   const [historyText, setHistoryText] = useState('');
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      switch (e.key) {
+        case 'Enter':
+          break;
+        case 'Escape':
+          break;
+        default:
+          // when you start typing, move the cursor back up to "Google"
+          urlBoxRef.current?.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   useEffect(() => {
     ipcRenderer.send(
       'history-modal-active-update',

@@ -5,6 +5,7 @@ import {
   globalShortcut,
   Menu,
   MenuItem,
+  MenuItemConstructorOptions,
   screen,
 } from 'electron';
 import log from 'electron-log';
@@ -61,6 +62,19 @@ export const createWindow = async () => {
   const wm = new WindowManager(mainWindow, display);
   wm.browserPadding = Math.floor(display.workAreaSize.height / 15.0);
 
+  app.on('activate', () => {
+    // On macOS it's common to re-create a window in the app when the
+    // dock icon is clicked and there are no other windows open.
+    if (!mainWindow?.isVisible()) {
+      wm.mainWindow.show();
+      wm.unFloat(display);
+      setTimeout(() => {
+        // todo: search box does not get highlited on macos unless we do this hack
+        wm.setTab(-1);
+      }, 10);
+    }
+  });
+
   wm.mainWindow.on('close', () => {
     wm.saveHistory();
   });
@@ -68,6 +82,9 @@ export const createWindow = async () => {
   mainWindow.webContents.on('did-finish-load', () => {
     wm.mainWindow.webContents.send('set-padding', wm.browserPadding.toString());
     mainWindow?.show();
+    setTimeout(() => {
+      wm.setTab(-1);
+    }, 10);
   });
 
   mainWindow.on('blur', () => {
@@ -84,9 +101,6 @@ export const createWindow = async () => {
   wm.windowSize.height = display.workAreaSize.height - 1; // todo: without the -1, everything breaks!!??!?
   wm.updateMainWindowBounds();
 
-  // open window before loading is complete
-  // mainWindow.show();
-  // mainWindow.focus();
   mainWindow.hide();
 
   addListeners(wm);
@@ -139,19 +153,12 @@ export const createWindow = async () => {
   globalShortcut.register(shortCut, () => {
     const activeTabView = wm.allTabViews[wm.activeTabId];
     if (!mainWindow?.isVisible()) {
-      // if (
-      //   activeTabView !== null &&
-      //   typeof activeTabView !== 'undefined' &&
-      //   activeTabView.view.webContents.getURL() === ''
-      // ) {
-      //   wm.removeTab(wm.activeTabId);
-      // }
       wm.mainWindow.show();
       wm.unFloat(display);
-      mainWindow?.focus();
-      wm.setTab(-1);
-      // wm.titleBarView.webContents.focus();
-      // wm.createNewTab();
+      setTimeout(() => {
+        // todo: search box does not get highlited on macos unless we do this hack
+        wm.setTab(-1);
+      }, 10);
     } else if (
       !wm.windowFloating &&
       activeTabView !== null &&
@@ -179,63 +186,106 @@ export const createWindow = async () => {
   // eslint-disable-next-line
   new AppUpdater();
 
-  const menu = new Menu();
+  // const menu = new Menu();
 
-  menu.append(
-    new MenuItem({
-      label: 'Electron',
-      submenu: [
-        {
-          label: 'find',
-          accelerator: 'CmdOrCtrl+F',
-          click: () => {
-            if (windowHasView(wm.mainWindow, wm.titleBarView)) {
-              wm.clickFind();
-            }
-          },
+  const edit: MenuItemConstructorOptions = {
+    label: 'Edit',
+    submenu: [
+      {
+        label: 'Undo',
+        accelerator: 'CmdOrCtrl+Z',
+        role: 'undo',
+      },
+      {
+        label: 'Redo',
+        accelerator: 'Shift+CmdOrCtrl+Z',
+        role: 'redo',
+      },
+      {
+        type: 'separator',
+      },
+      {
+        label: 'Cut',
+        accelerator: 'CmdOrCtrl+X',
+        role: 'cut',
+      },
+      {
+        label: 'Copy',
+        accelerator: 'CmdOrCtrl+C',
+        role: 'copy',
+      },
+      {
+        label: 'Paste',
+        accelerator: 'CmdOrCtrl+V',
+        role: 'paste',
+      },
+      {
+        label: 'Select All',
+        accelerator: 'CmdOrCtrl+A',
+        role: 'selectAll',
+      },
+    ],
+  };
+
+  const main: MenuItem = new MenuItem({
+    label: 'Main',
+    submenu: [
+      {
+        label: 'find',
+        accelerator: 'CmdOrCtrl+F',
+        click: () => {
+          if (windowHasView(wm.mainWindow, wm.titleBarView)) {
+            wm.clickFind();
+          }
         },
-        {
-          label: 'escape',
-          accelerator: 'Escape',
-          click: () => {
-            if (wm.windowFloating) {
+      },
+      {
+        label: 'escape',
+        accelerator: 'Escape',
+        click: () => {
+          if (wm.windowFloating) {
+            mainWindow?.hide();
+          } else if (windowHasView(wm.mainWindow, wm.tabPageView)) {
+            if (wm.historyModalActive) {
+              wm.tabPageView.webContents.send('close-history-modal');
+            } else {
               mainWindow?.hide();
-            } else if (windowHasView(wm.mainWindow, wm.tabPageView)) {
-              if (wm.historyModalActive) {
-                wm.tabPageView.webContents.send('close-history-modal');
-              } else {
-                mainWindow?.hide();
-              }
-            } else if (windowHasView(wm.mainWindow, wm.titleBarView)) {
-              if (windowHasView(wm.mainWindow, wm.findView)) {
-                wm.closeFind();
-              } else {
-                wm.setTab(-1);
-              }
             }
-          },
-        },
-        {
-          label: 'history',
-          accelerator: 'CmdOrCtrl+H',
-          click: () => {
-            if (windowHasView(wm.mainWindow, wm.tabPageView)) {
-              wm.tabPageView.webContents.send('toggle-history-modal');
+          } else if (windowHasView(wm.mainWindow, wm.titleBarView)) {
+            if (windowHasView(wm.mainWindow, wm.findView)) {
+              wm.closeFind();
+            } else {
+              wm.setTab(-1);
             }
-          },
+          }
         },
-        {
-          label: 'undo removed tabs',
-          accelerator: 'CmdOrCtrl+Shift+T',
-          click: () => {
-            if (windowHasView(wm.mainWindow, wm.tabPageView)) {
-              wm.undoRemovedTabs();
-            }
-          },
+      },
+      {
+        label: 'history',
+        accelerator: 'CmdOrCtrl+H',
+        click: () => {
+          if (windowHasView(wm.mainWindow, wm.tabPageView)) {
+            wm.tabPageView.webContents.send('toggle-history-modal');
+          }
         },
-      ],
-    })
-  );
+      },
+      {
+        label: 'undo removed tabs',
+        accelerator: 'CmdOrCtrl+Shift+T',
+        click: () => {
+          if (windowHasView(wm.mainWindow, wm.tabPageView)) {
+            wm.undoRemovedTabs();
+          }
+        },
+      },
+    ],
+  });
+
+  const template = [main, edit];
+
+  const menu = Menu.buildFromTemplate(template);
+
+  // menu.append();
 
   Menu.setApplicationMenu(menu);
 };

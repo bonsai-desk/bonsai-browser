@@ -306,6 +306,14 @@ export default class WindowManager {
       const savePath = path.join(app.getPath('userData'), 'history.json');
       const saveString = fs.readFileSync(savePath, 'utf8');
       const saveMap = parseMap(saveString);
+      if (
+        saveMap === null ||
+        typeof saveMap === 'undefined' ||
+        saveMap.delete === null ||
+        typeof saveMap.delete === 'undefined'
+      ) {
+        return;
+      }
       this.historyMap = saveMap;
 
       const saveData = Array.from(saveMap.values());
@@ -419,6 +427,7 @@ export default class WindowManager {
     this.mainWindow.setBrowserView(this.titleBarView);
 
     this.mainWindow.addBrowserView(tabView.view);
+    tabView.view.webContents.focus();
     this.activeTabId = id;
     this.titleBarView.webContents.send('tab-was-set', id);
 

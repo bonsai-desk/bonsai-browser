@@ -10,10 +10,10 @@
  */
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
-import { app, BrowserWindow } from 'electron';
+import { app } from 'electron';
 import { createWindow } from './utils/create-window';
 
-const mainWindow: BrowserWindow | null = null;
+// const mainWindow: BrowserWindow | null = null;
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -36,9 +36,3 @@ app.on('window-all-closed', () => {
 });
 
 app.whenReady().then(createWindow).catch(console.log);
-
-app.on('activate', () => {
-  // On macOS it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (mainWindow === null) createWindow();
-});
