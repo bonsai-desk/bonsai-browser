@@ -59,6 +59,18 @@ function makeView(loadURL: string) {
   return newView;
 }
 
+interface TabInfo {
+  url: string;
+
+  title: string;
+
+  favicon: string;
+
+  imgString: string;
+
+  scrollHeight: number;
+}
+
 export default class WindowManager {
   browserPadding = 35.0;
 
@@ -104,7 +116,7 @@ export default class WindowManager {
 
   historyModalActive = false;
 
-  removedTabsStack: string[][] = [];
+  removedTabsStack: TabInfo[][] = [];
 
   constructor(mainWindow: BrowserWindow, display: Display) {
     this.mainWindow = mainWindow;
@@ -218,13 +230,37 @@ export default class WindowManager {
       return;
     }
 
-    const urls = ids.map((id) => {
-      return this.allTabViews[id].view.webContents.getURL();
+    const tabs = ids.map((id) => {
+      const tabView = this.allTabViews[id];
+      return {
+        url:
+          tabView.unloadedUrl === ''
+            ? tabView.view.webContents.getURL()
+            : tabView.unloadedUrl,
+        title: tabView.title,
+        favicon: tabView.favicon,
+        imgString: tabView.imgString,
+        scrollHeight: tabView.scrollHeight,
+      };
     });
-    this.removedTabsStack.push(urls);
+    this.removedTabsStack.push(tabs);
     for (let i = 0; i < ids.length; i += 1) {
       this.removeTab(ids[i]);
     }
+  }
+
+  loadTabFromTabInfo(tab: TabInfo) {
+    const { url, title, favicon, imgString, scrollHeight }: TabInfo = tab;
+    const newTabId = this.createNewTab();
+    const tabView = this.allTabViews[newTabId];
+    tabView.title = title;
+    this.tabPageView.webContents.send('title-updated', [newTabId, title]);
+    tabView.favicon = favicon;
+    this.tabPageView.webContents.send('favicon-updated', [newTabId, favicon]);
+    tabView.imgString = imgString;
+    this.tabPageView.webContents.send('tab-image', [newTabId, imgString]);
+    tabView.scrollHeight = scrollHeight;
+    this.loadUrlInTab(newTabId, url, true);
   }
 
   undoRemovedTabs() {
@@ -232,15 +268,14 @@ export default class WindowManager {
       return;
     }
 
-    const urls = this.removedTabsStack.pop();
-    if (typeof urls === 'undefined') {
+    const tabs = this.removedTabsStack.pop();
+    if (typeof tabs === 'undefined') {
       return;
     }
 
     this.tabPageView.webContents.send('close-history-modal');
-    for (let i = 0; i < urls.length; i += 1) {
-      const newTabId = this.createNewTab();
-      this.loadUrlInTab(newTabId, urls[i], true);
+    for (let i = 0; i < tabs.length; i += 1) {
+      this.loadTabFromTabInfo(tabs[i]);
     }
   }
 
@@ -273,6 +308,7 @@ export default class WindowManager {
   clearHistory() {
     this.historyMap.clear();
     this.historyFuse.setCollection([]);
+    this.removedTabsStack = [];
     this.tabPageView.webContents.send('history-cleared');
     this.saveHistory();
   }
@@ -293,15 +329,16 @@ export default class WindowManager {
     try {
       const savePath = path.join(app.getPath('userData'), 'openTabs.json');
       const saveData = Object.values(this.allTabViews).map((tabView) => {
-        return [
-          tabView.unloadedUrl === ''
-            ? tabView.view.webContents.getURL()
-            : tabView.unloadedUrl,
-          tabView.title,
-          tabView.favicon,
-          tabView.imgString,
-          tabView.scrollHeight,
-        ];
+        return {
+          url:
+            tabView.unloadedUrl === ''
+              ? tabView.view.webContents.getURL()
+              : tabView.unloadedUrl,
+          title: tabView.title,
+          favicon: tabView.favicon,
+          imgString: tabView.imgString,
+          scrollHeight: tabView.scrollHeight,
+        };
       });
       fs.writeFileSync(savePath, JSON.stringify(saveData));
     } catch {
@@ -350,37 +387,9 @@ export default class WindowManager {
       const saveString = fs.readFileSync(savePath, 'utf8');
       const saveData = JSON.parse(saveString);
 
-      if (saveData.length > 0 && !Array.isArray(saveData[0])) {
-        return;
-      }
-
-      if (saveData[0].length !== 5) {
-        return;
-      }
-
-      saveData.forEach(
-        ([url, title, favicon, imgString, scrollHeight]: [
-          string,
-          string,
-          string,
-          string,
-          number
-        ]) => {
-          const newTabId = this.createNewTab();
-          const tabView = this.allTabViews[newTabId];
-          tabView.title = title;
-          this.tabPageView.webContents.send('title-updated', [newTabId, title]);
-          tabView.favicon = favicon;
-          this.tabPageView.webContents.send('favicon-updated', [
-            newTabId,
-            favicon,
-          ]);
-          tabView.imgString = imgString;
-          this.tabPageView.webContents.send('tab-image', [newTabId, imgString]);
-          tabView.scrollHeight = scrollHeight;
-          this.loadUrlInTab(newTabId, url, true);
-        }
-      );
+      saveData.forEach((tab: TabInfo) => {
+        this.loadTabFromTabInfo(tab);
+      });
     } catch {
       //
     }
