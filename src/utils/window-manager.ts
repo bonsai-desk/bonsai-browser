@@ -294,7 +294,9 @@ export default class WindowManager {
       const savePath = path.join(app.getPath('userData'), 'openTabs.json');
       const saveData = Object.values(this.allTabViews).map((tabView) => {
         return [
-          tabView.view.webContents.getURL(),
+          tabView.unloadedUrl === ''
+            ? tabView.view.webContents.getURL()
+            : tabView.unloadedUrl,
           tabView.title,
           tabView.favicon,
           tabView.imgString,
