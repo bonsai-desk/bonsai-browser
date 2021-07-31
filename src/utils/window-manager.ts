@@ -240,7 +240,7 @@ export default class WindowManager {
     this.tabPageView.webContents.send('close-history-modal');
     for (let i = 0; i < urls.length; i += 1) {
       const newTabId = this.createNewTab();
-      this.loadUrlInTab(newTabId, urls[i]);
+      this.loadUrlInTab(newTabId, urls[i], true);
     }
   }
 
@@ -293,7 +293,13 @@ export default class WindowManager {
     try {
       const savePath = path.join(app.getPath('userData'), 'openTabs.json');
       const saveData = Object.values(this.allTabViews).map((tabView) => {
-        return tabView.view.webContents.getURL();
+        return [
+          tabView.view.webContents.getURL(),
+          tabView.title,
+          tabView.favicon,
+          tabView.imgString,
+          tabView.scrollHeight,
+        ];
       });
       fs.writeFileSync(savePath, JSON.stringify(saveData));
     } catch {
@@ -342,10 +348,37 @@ export default class WindowManager {
       const saveString = fs.readFileSync(savePath, 'utf8');
       const saveData = JSON.parse(saveString);
 
-      saveData.forEach((url: string) => {
-        const newTabId = this.createNewTab();
-        this.loadUrlInTab(newTabId, url);
-      });
+      if (saveData.length > 0 && !Array.isArray(saveData[0])) {
+        return;
+      }
+
+      if (saveData[0].length !== 5) {
+        return;
+      }
+
+      saveData.forEach(
+        ([url, title, favicon, imgString, scrollHeight]: [
+          string,
+          string,
+          string,
+          string,
+          number
+        ]) => {
+          const newTabId = this.createNewTab();
+          const tabView = this.allTabViews[newTabId];
+          tabView.title = title;
+          this.tabPageView.webContents.send('title-updated', [newTabId, title]);
+          tabView.favicon = favicon;
+          this.tabPageView.webContents.send('favicon-updated', [
+            newTabId,
+            favicon,
+          ]);
+          tabView.imgString = imgString;
+          this.tabPageView.webContents.send('tab-image', [newTabId, imgString]);
+          tabView.scrollHeight = scrollHeight;
+          this.loadUrlInTab(newTabId, url, true);
+        }
+      );
     } catch {
       //
     }
@@ -378,10 +411,12 @@ export default class WindowManager {
         this.resize();
       }
       ((cachedId: number) => {
+        oldTabView.view.webContents.send('get-scroll-height');
         oldTabView.view.webContents
           .capturePage()
           .then((image: NativeImage) => {
             const imgString = image.toDataURL();
+            oldTabView.imgString = imgString;
             this.tabPageView.webContents.send('tab-image', [
               cachedId,
               imgString,
@@ -431,6 +466,11 @@ export default class WindowManager {
     this.activeTabId = id;
     this.titleBarView.webContents.send('tab-was-set', id);
 
+    if (tabView.unloadedUrl !== '') {
+      this.loadUrlInTab(id, tabView.unloadedUrl, false, tabView.scrollHeight);
+      tabView.unloadedUrl = '';
+    }
+
     if (windowHasView(this.mainWindow, this.tabPageView)) {
       this.mainWindow.removeBrowserView(this.tabPageView);
     }
@@ -447,7 +487,12 @@ export default class WindowManager {
     tabView.resize();
   }
 
-  loadUrlInTab(id: number, url: string, dontActuallyLoadUrl = false) {
+  loadUrlInTab(
+    id: number,
+    url: string,
+    dontActuallyLoadUrl = false,
+    scrollHeight = 0
+  ) {
     if (id === -1 || url === '') {
       return;
     }
@@ -474,6 +519,9 @@ export default class WindowManager {
           // todo: handle this
           console.log(`error loading url: ${fullUrl}`);
         });
+        tabView.view.webContents.send('scroll-to', scrollHeight);
+      } else {
+        tabView.unloadedUrl = fullUrl;
       }
       const newUrl = dontActuallyLoadUrl
         ? fullUrl

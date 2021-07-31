@@ -49,6 +49,16 @@ class TabView {
 
   historyEntry: HistoryEntry | null = null;
 
+  unloadedUrl = '';
+
+  imgString = '';
+
+  title = '';
+
+  favicon = '';
+
+  scrollHeight = 0;
+
   constructor(
     window: BrowserWindow,
     titleBarView: BrowserView,
@@ -91,6 +101,7 @@ class TabView {
         this.historyEntry.title = title;
         updateHistory();
       }
+      this.title = title;
       titleBarView.webContents.send('title-updated', [id, title]);
       wm.tabPageView.webContents.send('title-updated', [id, title]);
     });
@@ -140,6 +151,8 @@ class TabView {
           this.historyEntry.favicon = favicons[0];
           updateHistory();
         }
+        // eslint-disable-next-line prefer-destructuring
+        this.favicon = favicons[0];
         titleBarView.webContents.send('favicon-updated', [id, favicons[0]]);
         wm.tabPageView.webContents.send('favicon-updated', [id, favicons[0]]);
       }
@@ -175,6 +188,12 @@ class TabView {
           this.historyEntry.openGraphData = data;
           updateHistory();
         }
+      }
+    });
+
+    ipcMain.on('scroll-height', (event, height) => {
+      if (event.sender.id === id) {
+        this.scrollHeight = height;
       }
     });
 

@@ -26,7 +26,15 @@ function getOpenGraphData() {
   return data;
 }
 
-window.addEventListener('DOMContentLoaded', (_) => {
+window.addEventListener('DOMContentLoaded', () => {
   ipcRenderer.send('meta-info', getMeta());
   // ipcRenderer.send('open-graph-data', getOpenGraphData());
+});
+
+ipcRenderer.on('get-scroll-height', () => {
+  ipcRenderer.send('scroll-height', window.pageYOffset);
+});
+
+ipcRenderer.on('scroll-to', (_, height) => {
+  window.scroll(0, height);
 });
