@@ -28,5 +28,5 @@ function getOpenGraphData() {
 
 window.addEventListener('DOMContentLoaded', (_) => {
   ipcRenderer.send('meta-info', getMeta());
-  ipcRenderer.send('open-graph-data', getOpenGraphData());
+  // ipcRenderer.send('open-graph-data', getOpenGraphData());
 });

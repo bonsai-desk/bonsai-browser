@@ -473,13 +473,14 @@ function createTabs(tabPageStore: TabPageStore) {
         </CloseColumnButton>
         {column.tabs.map((tab) => {
           const imgUrl =
-            tab.openGraphInfo?.image !== ''
-              ? tab.openGraphInfo?.image
+            tab.openGraphInfo !== null && tab.openGraphInfo.image !== ''
+              ? tab.openGraphInfo.image
               : tab.image;
           const title =
-            tab.openGraphInfo?.title !== '' &&
-            tab.openGraphInfo?.title !== 'null'
-              ? tab.openGraphInfo?.title
+            tab.openGraphInfo !== null &&
+            tab.openGraphInfo.title !== '' &&
+            tab.openGraphInfo.title !== 'null'
+              ? tab.openGraphInfo.title
               : tab.title;
           return (
             <Tab

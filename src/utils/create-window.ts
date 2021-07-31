@@ -57,7 +57,7 @@ export const createWindow = async () => {
   if (displays.length === 0) {
     throw new Error('No displays!');
   }
-  console.log(displays);
+  // console.log(displays);
   const display = displays[0];
 
   const wm = new WindowManager(mainWindow, display);
