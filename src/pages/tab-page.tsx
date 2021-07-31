@@ -524,8 +524,12 @@ const TabPage = observer(({ tabPageStore }: { tabPageStore: TabPageStore }) => {
         case 'Escape':
           break;
         default:
-          // when you start typing, move the cursor back up to "Google"
-          urlBoxRef.current?.focus();
+          // when you start typing, move the cursor to textbox
+          if (tabPageStore.historyModalActive) {
+            historyBoxRef.current?.focus();
+          } else {
+            urlBoxRef.current?.focus();
+          }
       }
     }
 
