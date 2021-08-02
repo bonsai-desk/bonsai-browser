@@ -40,16 +40,16 @@ const URLBoxParent = styled.div`
 `;
 
 const URLBox = styled.input`
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: bold;
   border-radius: 10px;
   outline: none;
   border: 2px solid white;
   //height: 22px;
-  padding: 1rem 1rem 1rem 1rem;
+  padding: 0.75rem;
   margin: 10px;
   //width: calc(100% - 2px - 10px - 4px - 20px);
-  width: 50rem;
+  width: 40rem;
 `;
 
 const ColumnHeader = styled.div`
@@ -67,12 +67,7 @@ const TabTitle = styled.div`
   width: 100%;
 `;
 
-const CloseTabButton = styled.button`
-  width: 50px;
-  height: 25px;
-`;
-
-const Tab = styled.div`
+const TabParent = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -98,26 +93,19 @@ const TabInfoRow = styled.div`
 `;
 
 const TabImageParent = styled.div`
-  background: black;
-  width: 175px;
   height: 175px;
-  overflow: hidden;
-  object-fit: cover;
-  border-radius: 5px;
+  width: 175px;
+  background: black;
+  position: relative;
+  border-radius: 10px;
   display: flex;
   justify-content: center;
-  user-select: none;
-  -webkit-user-drag: none;
+  overflow: hidden;
+  box-shadow: rgba(255, 255, 255, 0.25) 0px 8px 24px;
 `;
 
 const TabImage = styled.img`
   height: 100%;
-  box-shadow: rgba(255, 255, 255, 0.25) 0px 8px 24px;
-  transition-duration: 0.1s;
-
-  :hover {
-    opacity: 75%;
-  }
 `;
 
 const CloseColumnButton = styled.button`
@@ -239,6 +227,36 @@ const Favicon = styled.img`
   width: 16px;
   height: 16px;
 `;
+
+const RedXParent = styled.div`
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0);
+  transition-duration: 0.2s;
+  :hover {
+    background: rgba(0, 0, 0, 0.25);
+  }
+  :hover div {
+    backdrop-filter: blur(5px);
+    background: rgba(255, 255, 255, 0.35);
+  }
+  div {
+    transition-duration: 0.2s;
+    border-radius: 999px;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
+    background: rgba(0, 0, 0, 0);
+    :hover {
+      background: rgba(255, 0, 0, 0.5);
+    }
+  }
+`;
+
+const RedX = styled.div``;
 
 interface TabPageTab {
   id: number;
@@ -413,6 +431,37 @@ function getRootDomain(url: string): string {
   return '';
 }
 
+interface ITab {
+  title: string;
+  imgUrl: string;
+  tab: TabPageTab;
+}
+
+function Tab({ title, imgUrl, tab }: ITab) {
+  return (
+    <TabParent
+      onClick={() => {
+        ipcRenderer.send('set-tab', tab.id);
+      }}
+    >
+      <TabInfoRow>
+        <TabTitle>{title === '' ? 'New Tab' : title}</TabTitle>
+      </TabInfoRow>
+      <TabImageParent>
+        <TabImage src={imgUrl} alt="tab_image" />
+        <RedXParent>
+          <RedX
+            onClick={(e) => {
+              e.stopPropagation();
+              ipcRenderer.send('remove-tab', tab.id);
+            }}
+          />
+        </RedXParent>
+      </TabImageParent>
+    </TabParent>
+  );
+}
+
 interface TabPageColumn {
   domain: string;
 
@@ -473,30 +522,7 @@ function createTabs(tabPageStore: TabPageStore) {
             tab.openGraphInfo.title !== 'null'
               ? tab.openGraphInfo.title
               : tab.title;
-          return (
-            <Tab
-              key={tab.id}
-              onClick={() => {
-                ipcRenderer.send('set-tab', tab.id);
-              }}
-            >
-              <TabInfoRow>
-                <TabTitle>{title === '' ? 'New Tab' : title}</TabTitle>
-                <CloseTabButton
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    ipcRenderer.send('remove-tab', tab.id);
-                  }}
-                >
-                  X
-                </CloseTabButton>
-              </TabInfoRow>
-              <TabImageParent>
-                <TabImage src={imgUrl} alt="tab_image" />
-              </TabImageParent>
-            </Tab>
-          );
+          return <Tab key={tab.id} tab={tab} title={title} imgUrl={imgUrl} />;
         })}
       </Column>
     );
