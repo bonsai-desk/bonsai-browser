@@ -5,10 +5,6 @@ import { ipcRenderer } from 'electron';
 import { useStore } from '../utils/data';
 import backIcon from '../../assets/arrow-back.svg';
 import refreshIcon from '../../assets/refresh.svg';
-// import TabStore from '../store/tabs';
-// import Tab from '../components/Tab';
-// import TabObject from '../interfaces/tab';
-// import plusIcon from '../../assets/plus.svg';
 
 const TitleBarFull = styled.div`
   width: 100vw;
@@ -16,21 +12,6 @@ const TitleBarFull = styled.div`
   font-family: sans-serif;
   background-color: blue;
 `;
-
-// const TitleBarTop = styled.div`
-//   //-webkit-app-region: drag;
-//   -webkit-user-select: none;
-//   width: calc(100% - 16px);
-//   height: 32px;
-//   background-color: #dee1e6;
-//   display: flex;
-//   //flex-wrap: wrap;
-//   overflow: hidden;
-//   align-content: baseline;
-//   padding-top: 10px;
-//   padding-left: 6px;
-//   padding-right: 10px;
-// `;
 
 const TitleBarBottom = styled.div`
   width: calc(100% - 4px);
@@ -79,26 +60,6 @@ const RoundButtonIconFlipped = styled.img`
   transform: rotate(180deg);
 `;
 
-// const NewTabButtonParent = styled.div`
-//   -webkit-app-region: no-drag;
-//   flex-shrink: 0;
-//   display: flex;
-//   justify-content: center;
-//   align-items: center;
-//   width: 28px;
-//   height: 28px;
-//   border: none;
-//   background-color: #82dbff;
-//   border-radius: 50%;
-//   margin-left: 7px;
-//   margin-top: 1px;
-//   margin-right: 100px;
-// `;
-//
-// const NewTabButtonIcon = styled.img`
-//   -webkit-user-drag: none;
-// `;
-
 const URLBox = styled.input`
   flex-grow: 1;
   margin-left: 10px;
@@ -140,21 +101,6 @@ const TitleBar = observer(() => {
 
   return (
     <TitleBarFull>
-      {/* <TitleBarTop> */}
-      {/*  {tabStore.tabs.map((tab: TabObject) => ( */}
-      {/*    <Tab key={tab.id} tab={tab} /> */}
-      {/*  ))} */}
-      {/*  <NewTabButtonParent */}
-      {/*    onClick={() => { */}
-      {/*      TabStore.requestAddTab(); */}
-      {/*      if (urlBoxRef.current != null) { */}
-      {/*        urlBoxRef.current.focus(); */}
-      {/*      } */}
-      {/*    }} */}
-      {/*  > */}
-      {/*    <NewTabButtonIcon src={plusIcon} /> */}
-      {/*  </NewTabButtonParent> */}
-      {/* </TitleBarTop> */}
       <TitleBarBottom>
         <RoundButton
           color={canGoBack ? '#949494' : '#e3e3e3'}

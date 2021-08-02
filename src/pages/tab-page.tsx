@@ -1,33 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import styled, { createGlobalStyle, css } from 'styled-components';
+import styled, { css } from 'styled-components';
 import { makeAutoObservable, runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
 import { HistoryEntry, OpenGraphInfo } from '../utils/tab-view';
-
-const GlobalStyle = createGlobalStyle`
-  html,
-  body {
-    margin: 0;
-    padding: 0;
-    width: 100vw;
-    height: 100vh;
-    font-family: sans-serif;
-  }
-`;
+import '../tabPage.css';
 
 const Background = styled.div`
-  background-color: gray;
   width: 100vw;
   height: 100vh;
   border-radius: 25px;
+  //border: 0.5px solid white;
 `;
 
 const Tabs = styled.div`
   display: flex;
   align-items: flex-start;
-  //background-color: blue;
-  //border: 2px solid black;
   padding-left: 25px;
 `;
 
@@ -37,63 +25,42 @@ const Column = styled.div`
   flex-direction: column;
   align-items: center;
   user-select: none;
-  background-color: darkgrey;
+  //background-color: darkgrey;
   padding: 5px 10px 5px 10px;
-  border: 2px solid black;
+  //border: 2px solid white;
   margin-right: 25px;
   border-radius: 25px;
-  //overflow: scroll;
-  //height: 500px;
+  color: white;
 `;
 
-const Tab = styled.div`
+const URLBoxParent = styled.div`
   display: flex;
-  flex-direction: column;
-  //justify-content: center;
-  align-items: center;
-  flex-shrink: 0;
-  width: 250px;
-  height: 175px;
-  background-color: lightgrey;
-  border: 2px solid black;
-  border-radius: 25px;
-  padding: 5px 20px 0 20px;
-  word-wrap: break-word;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  margin-bottom: 5px;
-
-  :hover {
-    cursor: pointer;
-  }
-`;
-
-const URLBox = styled.input`
-  border-radius: 10000000px;
-  outline: none;
-  border: 2px solid black;
-  height: 22px;
-  padding: 2px 2px 2px 10px;
-  margin: 10px;
+  justify-content: center;
   width: calc(100% - 2px - 10px - 4px - 20px);
 `;
 
+const URLBox = styled.input`
+  font-size: 2rem;
+  font-weight: bold;
+  border-radius: 10px;
+  outline: none;
+  border: 2px solid white;
+  //height: 22px;
+  padding: 1rem 1rem 1rem 1rem;
+  margin: 10px;
+  //width: calc(100% - 2px - 10px - 4px - 20px);
+  width: 50rem;
+`;
+
 const ColumnHeader = styled.div`
-  //background-color: yellow;
   text-align: center;
   font-weight: bold;
-  font-size: 40px;
+  font-size: 1.5rem;
   margin-bottom: 10px;
 `;
 
-// const TabTitleParent = styled.div`
-//   display: flex;
-//   align-items: center;
-//   justify-content: center;
-// `;
-
 const TabTitle = styled.div`
-  text-align: center;
+  text-align: left;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -105,12 +72,52 @@ const CloseTabButton = styled.button`
   height: 25px;
 `;
 
-const TabImage = styled.img`
+const Tab = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 175px;
+  height: 175px;
+  //background-color: lightgrey;
+  //border: 2px solid white;
+  border-radius: 25px;
+  padding: 5px 20px 0 20px;
+  word-wrap: break-word;
+  text-overflow: ellipsis;
+  //overflow: hidden;
+  margin-bottom: 5px;
+`;
+
+const TabInfoRow = styled.div`
   width: 100%;
-  height: 120px;
-  object-fit: contain;
+  display: flex;
+  overflow: hidden;
+  justify-content: flex-start;
+  align-content: flex-start;
+`;
+
+const TabImageParent = styled.div`
+  background: black;
+  width: 175px;
+  height: 175px;
+  overflow: hidden;
+  object-fit: cover;
+  border-radius: 5px;
+  display: flex;
+  justify-content: center;
   user-select: none;
   -webkit-user-drag: none;
+`;
+
+const TabImage = styled.img`
+  height: 100%;
+  box-shadow: rgba(255, 255, 255, 0.25) 0px 8px 24px;
+  transition-duration: 0.1s;
+
+  :hover {
+    opacity: 75%;
+  }
 `;
 
 const CloseColumnButton = styled.button`
@@ -127,7 +134,7 @@ const HistoryButton = styled.button`
   width: 100px;
   height: 100px;
   border-radius: 25px;
-  border: 2px solid black;
+  border: 2px solid white;
   outline: none;
 `;
 
@@ -164,7 +171,7 @@ const HistoryModal = styled.div`
   height: 80vh;
   background-color: lightgrey;
   border-radius: 25px;
-  border: 2px solid black;
+  border: 2px solid white;
   box-shadow: 0 0 5px 0 rgba(0, 0, 0, 1);
   padding: 20px;
 `;
@@ -181,7 +188,7 @@ const HistorySearch = styled.input`
   outline: none;
   padding: 5px 10px 5px 10px;
   border-radius: 10000px;
-  border: 2px solid black;
+  border: 2px solid white;
   //width: calc(100% - 20px - 4px);
   flex-grow: 1;
 `;
@@ -190,15 +197,13 @@ const ClearHistory = styled.button`
   width: 100px;
   height: 28px;
   border-radius: 1000000px;
-  border: 2px solid black;
+  border: 2px solid white;
   outline: none;
   margin-left: 5px;
 `;
 
 const HistoryResult = styled.div`
   background-color: gray;
-  //width: 500px;
-  //height: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -224,7 +229,6 @@ const HistoryTitleDiv = styled.div`
 `;
 
 const HistoryUrlDiv = styled.div`
-  //background-color: red;
   line-height: 25px;
   margin: 10px;
   color: lightgrey;
@@ -433,19 +437,6 @@ function createTabs(tabPageStore: TabPageStore) {
     tabPageColumns.push(column);
   });
 
-  // tabPageColumns.forEach((column) => {
-  //   column.tabs.sort((a: TabPageTab, b: TabPageTab): number => {
-  //     return b.lastAccessTime - a.lastAccessTime;
-  //   });
-  // });
-  //
-  // tabPageColumns.sort((a: TabPageColumn, b: TabPageColumn): number => {
-  //   if (b.tabs.length === a.tabs.length && b.tabs.length > 0) {
-  //     return b.tabs[0].lastAccessTime - a.tabs[0].lastAccessTime;
-  //   }
-  //   return b.tabs.length - a.tabs.length;
-  // });
-
   return tabPageColumns.map((column) => {
     let columnFavicon = '';
     if (column.tabs.length > 0) {
@@ -489,17 +480,21 @@ function createTabs(tabPageStore: TabPageStore) {
                 ipcRenderer.send('set-tab', tab.id);
               }}
             >
-              <TabTitle>{title === '' ? 'New Tab' : title}</TabTitle>
-              <CloseTabButton
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  ipcRenderer.send('remove-tab', tab.id);
-                }}
-              >
-                X
-              </CloseTabButton>
-              <TabImage src={imgUrl} alt="tab_image" />
+              <TabInfoRow>
+                <TabTitle>{title === '' ? 'New Tab' : title}</TabTitle>
+                <CloseTabButton
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    ipcRenderer.send('remove-tab', tab.id);
+                  }}
+                >
+                  X
+                </CloseTabButton>
+              </TabInfoRow>
+              <TabImageParent>
+                <TabImage src={imgUrl} alt="tab_image" />
+              </TabImageParent>
             </Tab>
           );
         })}
@@ -565,36 +560,38 @@ const TabPage = observer(({ tabPageStore }: { tabPageStore: TabPageStore }) => {
 
   return (
     <>
-      <GlobalStyle />
       <Background>
-        <URLBox
-          type="text"
-          ref={urlBoxRef}
-          placeholder="Search Google or type a URL"
-          value={urlText}
-          onInput={(e) => {
-            setUrlText(e.currentTarget.value);
-          }}
-          onKeyDown={(e) => {
-            if (e.nativeEvent.code === 'Enter') {
-              setUrlText('');
-              ipcRenderer.send('search-url', urlText);
-            }
-          }}
-          onClick={() => {
-            if (urlBoxRef.current != null && !urlFocus) {
-              setUrlFocus(true);
-              urlBoxRef.current.select();
-            }
-          }}
-          onBlur={() => {
-            setUrlFocus(false);
-            if (urlBoxRef.current != null) {
-              urlBoxRef.current.blur();
-              window.getSelection()?.removeAllRanges();
-            }
-          }}
-        />
+        <URLBoxParent>
+          <URLBox
+            type="text"
+            spellCheck={false}
+            ref={urlBoxRef}
+            placeholder="Search Google or type a URL"
+            value={urlText}
+            onInput={(e) => {
+              setUrlText(e.currentTarget.value);
+            }}
+            onKeyDown={(e) => {
+              if (e.nativeEvent.code === 'Enter') {
+                setUrlText('');
+                ipcRenderer.send('search-url', urlText);
+              }
+            }}
+            onClick={() => {
+              if (urlBoxRef.current != null && !urlFocus) {
+                setUrlFocus(true);
+                urlBoxRef.current.select();
+              }
+            }}
+            onBlur={() => {
+              setUrlFocus(false);
+              if (urlBoxRef.current != null) {
+                urlBoxRef.current.blur();
+                window.getSelection()?.removeAllRanges();
+              }
+            }}
+          />
+        </URLBoxParent>
         <Tabs>{createTabs(tabPageStore)}</Tabs>
       </Background>
       <HistoryButton
