@@ -5,6 +5,7 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
 import { HistoryEntry, OpenGraphInfo } from '../utils/tab-view';
 import '../tabPage.css';
+import redX from '../static/x-letter.svg';
 
 const Background = styled.div`
   width: 100vw;
@@ -95,13 +96,11 @@ const TabInfoRow = styled.div`
 const TabImageParent = styled.div`
   height: 175px;
   width: 175px;
-  background: black;
   position: relative;
   border-radius: 10px;
   display: flex;
   justify-content: center;
   overflow: hidden;
-  box-shadow: rgba(255, 255, 255, 0.25) 0px 8px 24px;
 `;
 
 const TabImage = styled.img`
@@ -232,31 +231,38 @@ const RedXParent = styled.div`
   position: absolute;
   width: 100%;
   height: 100%;
-  background: rgba(255, 255, 255, 0);
-  transition-duration: 0.2s;
+  background: rgba(0, 0, 0, 0.4);
+  transition-duration: 0.25s;
+  opacity: 0;
   :hover {
-    background: rgba(0, 0, 0, 0.25);
+    opacity: 100;
   }
   :hover div {
-    backdrop-filter: blur(5px);
-    background: rgba(255, 255, 255, 0.35);
+    //backdrop-filter: blur(5px);
+    //background: rgba(200, 200, 200, 0.7);
+    transition-duration: 0s;
   }
   div {
-    transition-duration: 0.2s;
+    transition-duration: 0.25s;
     border-radius: 999px;
     position: absolute;
     top: 10px;
     right: 10px;
     width: 30px;
     height: 30px;
-    background: rgba(0, 0, 0, 0);
+    background: rgba(200, 200, 200, 0.7);
     :hover {
-      background: rgba(255, 0, 0, 0.5);
+      background: rgba(255, 0, 0, 1);
     }
   }
 `;
 
-const RedX = styled.div``;
+const RedX = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+`;
 
 interface TabPageTab {
   id: number;
@@ -455,7 +461,9 @@ function Tab({ title, imgUrl, tab }: ITab) {
               e.stopPropagation();
               ipcRenderer.send('remove-tab', tab.id);
             }}
-          />
+          >
+            <img src={redX} alt="x" width="20px" />
+          </RedX>
         </RedXParent>
       </TabImageParent>
     </TabParent>
