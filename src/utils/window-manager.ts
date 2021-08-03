@@ -860,7 +860,7 @@ export default class WindowManager {
     this.windowPosition[1] = display.workArea.y;
     this.windowSize.width = display.workArea.width;
     this.windowSize.height =
-      display.workArea.height + process.platform === 'darwin' ? 0 : 1; // todo: on windows if you make it the same size as monitor, everything breaks!?!??!?!?
+      display.workArea.height + (process.platform === 'darwin' ? 0 : 1); // todo: on windows if you make it the same size as monitor, everything breaks!?!??!?!?
     this.updateMainWindowBounds();
     this.resize();
 
