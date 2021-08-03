@@ -12,12 +12,13 @@ const Background = styled.div`
   height: 100vh;
   border-radius: 25px;
   //border: 0.5px solid white;
+  padding-left: 10px;
 `;
 
 const Tabs = styled.div`
   display: flex;
   align-items: flex-start;
-  padding-left: 25px;
+  //padding-left: 25px;
 `;
 
 const Column = styled.div`
@@ -41,31 +42,23 @@ const URLBoxParent = styled.div`
 `;
 
 const URLBox = styled.input`
+  color: white;
+  background: rgba(0, 0, 0, 0);
   font-size: 1.5rem;
   font-weight: bold;
   border-radius: 10px;
   outline: none;
-  border: 2px solid white;
-  //height: 22px;
+  border: none;
+  //border: 2px solid white;
   padding: 0.75rem;
   margin: 10px;
-  //width: calc(100% - 2px - 10px - 4px - 20px);
-  width: 40rem;
+  width: 30rem;
 `;
 
 const ColumnHeader = styled.div`
-  text-align: center;
   font-weight: bold;
   font-size: 1.5rem;
   margin-bottom: 10px;
-`;
-
-const TabTitle = styled.div`
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  width: 100%;
 `;
 
 const TabParent = styled.div`
@@ -74,44 +67,69 @@ const TabParent = styled.div`
   align-items: center;
   flex-shrink: 0;
   width: 175px;
-  height: 175px;
-  //background-color: lightgrey;
-  //border: 2px solid white;
-  border-radius: 25px;
-  padding: 5px 20px 0 20px;
   word-wrap: break-word;
   text-overflow: ellipsis;
-  //overflow: hidden;
-  margin-bottom: 5px;
-`;
-
-const TabInfoRow = styled.div`
-  width: 100%;
-  display: flex;
-  overflow: hidden;
-  justify-content: flex-start;
-  align-content: flex-start;
+  margin-bottom: 20px;
 `;
 
 const TabImageParent = styled.div`
-  height: 175px;
+  height: 98px;
   width: 175px;
   position: relative;
   border-radius: 10px;
   display: flex;
   justify-content: center;
   overflow: hidden;
+  object-fit: cover;
+  :hover {
+    .title {
+      opacity: 100;
+      background: red;
+    }
+  }
+`;
+
+const RedX = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+`;
+
+const RedXParent = styled.div`
+  font-size: 0.6rem;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  transition-duration: 0.25s;
+  opacity: 0;
+  :hover {
+    opacity: 100;
+  }
+  :hover div {
+    //backdrop-filter: blur(5px);
+    //background: rgba(200, 200, 200, 0.7);
+    transition-duration: 0s;
+  }
+  div {
+    transition-duration: 0.25s;
+    border-radius: 999px;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
+    background: rgba(200, 200, 200, 0.7);
+    :hover {
+      background: rgba(255, 0, 0, 1);
+    }
+  }
 `;
 
 const TabImage = styled.img`
   height: 100%;
-`;
-
-const CloseColumnButton = styled.button`
-  flex-grow: 0;
-  margin-bottom: 5px;
-  width: 100px;
-  height: 30px;
+  background: white;
 `;
 
 const HistoryButton = styled.button`
@@ -225,43 +243,6 @@ const HistoryUrlDiv = styled.div`
 const Favicon = styled.img`
   width: 16px;
   height: 16px;
-`;
-
-const RedXParent = styled.div`
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.4);
-  transition-duration: 0.25s;
-  opacity: 0;
-  :hover {
-    opacity: 100;
-  }
-  :hover div {
-    //backdrop-filter: blur(5px);
-    //background: rgba(200, 200, 200, 0.7);
-    transition-duration: 0s;
-  }
-  div {
-    transition-duration: 0.25s;
-    border-radius: 999px;
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 30px;
-    height: 30px;
-    background: rgba(200, 200, 200, 0.7);
-    :hover {
-      background: rgba(255, 0, 0, 1);
-    }
-  }
-`;
-
-const RedX = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-content: center;
-  justify-content: center;
 `;
 
 interface TabPageTab {
@@ -450,12 +431,10 @@ function Tab({ title, imgUrl, tab }: ITab) {
         ipcRenderer.send('set-tab', tab.id);
       }}
     >
-      <TabInfoRow>
-        <TabTitle>{title === '' ? 'New Tab' : title}</TabTitle>
-      </TabInfoRow>
       <TabImageParent>
         <TabImage src={imgUrl} alt="tab_image" />
         <RedXParent>
+          {title === '' ? 'New Tab' : title}
           <RedX
             onClick={(e) => {
               e.stopPropagation();
@@ -476,7 +455,21 @@ interface TabPageColumn {
   tabs: TabPageTab[];
 }
 
-function createTabs(tabPageStore: TabPageStore) {
+// <CloseColumnButton
+//   type="button"
+//   onClick={() => {
+//     const ids: number[] = [];
+//     Object.keys(tabPageStore.tabs).forEach((key: string) => {
+//       const tab = tabPageStore.tabs[key];
+//       if (getRootDomain(tab.url) === column.domain) {
+//         ids.push(tab.id);
+//       }
+//     });
+//     ipcRenderer.send('remove-tabs', ids);
+//   }}
+// ></CloseColumnButton>
+
+function tabColumns(tabPageStore: TabPageStore) {
   const columns: Record<string, TabPageTab[]> = {};
 
   Object.values(tabPageStore.tabs).forEach((tab) => {
@@ -495,30 +488,18 @@ function createTabs(tabPageStore: TabPageStore) {
   });
 
   return tabPageColumns.map((column) => {
-    let columnFavicon = '';
-    if (column.tabs.length > 0) {
-      columnFavicon = column.tabs[0].favicon;
-    }
+    // let columnFavicon = '';
+    // if (column.tabs.length > 0) {
+    //   columnFavicon = column.tabs[0].favicon;
+    // }
+
+    // {/*<Favicon src={columnFavicon} />*/}
 
     return (
       <Column key={column.domain}>
-        <Favicon src={columnFavicon} />
-        <ColumnHeader>{column.domain}</ColumnHeader>
-        <CloseColumnButton
-          type="button"
-          onClick={() => {
-            const ids: number[] = [];
-            Object.keys(tabPageStore.tabs).forEach((key: string) => {
-              const tab = tabPageStore.tabs[key];
-              if (getRootDomain(tab.url) === column.domain) {
-                ids.push(tab.id);
-              }
-            });
-            ipcRenderer.send('remove-tabs', ids);
-          }}
-        >
-          X
-        </CloseColumnButton>
+        <div style={{ width: '100%', display: 'flex' }}>
+          <ColumnHeader>{column.domain}</ColumnHeader>
+        </div>
         {column.tabs.map((tab) => {
           const imgUrl =
             tab.openGraphInfo !== null && tab.openGraphInfo.image !== ''
@@ -626,7 +607,7 @@ const TabPage = observer(({ tabPageStore }: { tabPageStore: TabPageStore }) => {
             }}
           />
         </URLBoxParent>
-        <Tabs>{createTabs(tabPageStore)}</Tabs>
+        <Tabs>{tabColumns(tabPageStore)}</Tabs>
       </Background>
       <HistoryButton
         type="button"

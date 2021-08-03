@@ -3,6 +3,8 @@ import { observer } from 'mobx-react-lite';
 import styled, { createGlobalStyle, css } from 'styled-components';
 import { ipcRenderer } from 'electron';
 
+const OPACITY = 0.55;
+
 interface GlobalProps {
   floating: boolean;
 }
@@ -14,11 +16,11 @@ const GlobalStyle = createGlobalStyle`
     padding: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0.25, 0.25, 0.25, 0.35);
+    background-color: rgba(0.25, 0.25, 0.25, OPACITY);
 
     ${({ floating }: GlobalProps) =>
       css`
-        background-color: rgba(0.25, 0.25, 0.25, ${floating ? '0' : '0.35'});
+        background-color: rgba(0.25, 0.25, 0.25, ${floating ? 0 : OPACITY});
       `}
   }
 `;

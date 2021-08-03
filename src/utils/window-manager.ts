@@ -194,7 +194,7 @@ export default class WindowManager {
   static browserPadding(): number {
     if (WindowManager.display !== null) {
       return Math.floor(
-        WindowManager.display.activeDisplay.workAreaSize.height / 15.0
+        WindowManager.display.activeDisplay.workAreaSize.height / 50.0
       );
     }
     return 35;
