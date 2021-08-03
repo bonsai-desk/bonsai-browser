@@ -57,18 +57,16 @@ export const createWindow = async () => {
   if (displays.length === 0) {
     throw new Error('No displays!');
   }
-  // console.log(displays);
-  const display = displays[0];
+  const display = { activeDisplay: screen.getPrimaryDisplay() };
 
   const wm = new WindowManager(mainWindow, display);
-  wm.browserPadding = Math.floor(display.workAreaSize.height / 15.0);
 
   app.on('activate', () => {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
     if (!mainWindow?.isVisible()) {
       wm.mainWindow.show();
-      wm.unFloat(display);
+      wm.unFloat(display.activeDisplay);
       setTimeout(() => {
         // todo: search box does not get highlited on macos unless we do this hack
         wm.setTab(-1);
@@ -81,8 +79,14 @@ export const createWindow = async () => {
   });
 
   mainWindow.webContents.on('did-finish-load', () => {
-    wm.mainWindow.webContents.send('set-padding', wm.browserPadding.toString());
+    const mousePoint = screen.getCursorScreenPoint();
+    display.activeDisplay = screen.getDisplayNearestPoint(mousePoint);
+    wm.mainWindow.webContents.send(
+      'set-padding',
+      WindowManager.browserPadding().toString()
+    );
     mainWindow?.show();
+    wm.unFloat(display.activeDisplay);
     setTimeout(() => {
       wm.setTab(-1);
     }, 10);
@@ -90,17 +94,17 @@ export const createWindow = async () => {
 
   mainWindow.on('blur', () => {
     if (!wm.windowFloating && wm.mainWindow.isVisible()) {
-      wm.unFloat(display);
+      // const mousePoint = screen.getCursorScreenPoint();
+      // const activeDisplay = screen.getDisplayNearestPoint(mousePoint);
+      // const mouseOnWindowDisplay =
+      //   activeDisplay.id === WindowManager.display.activeDisplay.id;
+      // if (mouseOnWindowDisplay) {
+      wm.unFloat(display.activeDisplay);
       wm.setTab(-1);
       mainWindow?.hide();
+      // }
     }
   });
-
-  wm.windowPosition[0] = 0;
-  wm.windowPosition[1] = 0;
-  wm.windowSize.width = display.workAreaSize.width;
-  wm.windowSize.height = display.workAreaSize.height - 1; // todo: without the -1, everything breaks!!??!?
-  wm.updateMainWindowBounds();
 
   mainWindow.hide();
 
@@ -115,14 +119,14 @@ export const createWindow = async () => {
 
   wm.resize();
 
-  const height80 = display.workAreaSize.height * 0.7;
-  const floatingWidth = Math.floor(height80 * 0.7);
-  const floatingHeight = Math.floor(height80);
-
   const fixedTimeStep = 0.01;
   let lastFixedUpdateTime = 0;
   const fixedUpdate = () => {
     const deltaTime = fixedTimeStep;
+
+    const height80 = display.activeDisplay.workAreaSize.height * 0.7;
+    const floatingWidth = Math.floor(height80 * 0.7);
+    const floatingHeight = Math.floor(height80);
     windowFixedUpdate(deltaTime, wm, floatingWidth, floatingHeight);
   };
 
@@ -154,6 +158,9 @@ export const createWindow = async () => {
   globalShortcut.register(shortCut, () => {
     const activeTabView = wm.allTabViews[wm.activeTabId];
     if (!mainWindow?.isVisible()) {
+      const mousePoint = screen.getCursorScreenPoint();
+      display.activeDisplay = screen.getDisplayNearestPoint(mousePoint);
+
       wm.mainWindow.setVisibleOnAllWorkspaces(true, {
         visibleOnFullScreen: true,
       });
@@ -161,7 +168,7 @@ export const createWindow = async () => {
       wm.mainWindow.setVisibleOnAllWorkspaces(false, {
         visibleOnFullScreen: true,
       });
-      wm.unFloat(display);
+      wm.unFloat(display.activeDisplay);
       setTimeout(() => {
         // todo: search box does not get highlighted on macos unless we do this hack
         wm.setTab(-1);
@@ -172,9 +179,12 @@ export const createWindow = async () => {
       typeof activeTabView !== 'undefined' &&
       activeTabView.view.webContents.getURL() !== ''
     ) {
-      wm.float(display, floatingWidth, floatingHeight);
+      const height80 = display.activeDisplay.workAreaSize.height * 0.7;
+      const floatingWidth = Math.floor(height80 * 0.7);
+      const floatingHeight = Math.floor(height80);
+      wm.float(display.activeDisplay, floatingWidth, floatingHeight);
     } else {
-      wm.unFloat(display);
+      wm.unFloat(display.activeDisplay);
       wm.setTab(-1);
       mainWindow?.hide();
     }
