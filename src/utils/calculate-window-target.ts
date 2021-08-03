@@ -32,18 +32,31 @@ export default function calculateWindowTarget(
   const targets = [
     glMatrix.vec2.fromValues(padding, padding),
     glMatrix.vec2.fromValues(
-      WindowManager.display.workAreaSize.width - windowSize.width - padding,
+      WindowManager.display.activeDisplay.workAreaSize.width -
+        windowSize.width -
+        padding,
       padding
     ),
     glMatrix.vec2.fromValues(
-      WindowManager.display.workAreaSize.width - windowSize.width - padding,
-      WindowManager.display.workAreaSize.height - windowSize.height - padding
+      WindowManager.display.activeDisplay.workAreaSize.width -
+        windowSize.width -
+        padding,
+      WindowManager.display.activeDisplay.workAreaSize.height -
+        windowSize.height -
+        padding
     ),
     glMatrix.vec2.fromValues(
       padding,
-      WindowManager.display.workAreaSize.height - windowSize.height - padding
+      WindowManager.display.activeDisplay.workAreaSize.height -
+        windowSize.height -
+        padding
     ),
   ];
+
+  targets.forEach((target) => {
+    target[0] += WindowManager.display.activeDisplay.workArea.x;
+    target[1] += WindowManager.display.activeDisplay.workArea.y;
+  });
 
   const toTargets = [
     glMatrix.vec2.create(),

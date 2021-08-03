@@ -43,8 +43,6 @@ class TabView {
 
   view: BrowserView;
 
-  browserPadding: number;
-
   windowFloating = false;
 
   historyEntry: HistoryEntry | null = null;
@@ -64,14 +62,12 @@ class TabView {
     titleBarView: BrowserView,
     urlPeekView: BrowserView,
     findView: BrowserView,
-    browserPadding: number,
     wm: WindowManager
   ) {
     if (!window) {
       throw new Error('"window" is not defined');
     }
     this.window = window;
-    this.browserPadding = browserPadding;
     this.view = new BrowserView({
       webPreferences: {
         nodeIntegration: false,
@@ -201,9 +197,9 @@ class TabView {
     // resize();
   }
 
-  resize() {
+  resize(browserPadding: number) {
     const windowSize = this.window.getSize();
-    const padding = this.windowFloating ? 10 : this.browserPadding;
+    const padding = this.windowFloating ? 10 : browserPadding;
     const hh = this.windowFloating ? 0 : headerHeight;
     this.view.setBounds({
       x: padding,

@@ -72,8 +72,6 @@ interface TabInfo {
 }
 
 export default class WindowManager {
-  browserPadding = 35.0;
-
   windowFloating = false;
 
   allTabViews: Record<number, TabView> = {};
@@ -100,7 +98,7 @@ export default class WindowManager {
 
   tabPageView: BrowserView;
 
-  static display: Display;
+  static display: { activeDisplay: Display };
 
   windowPosition = glMatrix.vec2.create();
 
@@ -118,7 +116,7 @@ export default class WindowManager {
 
   removedTabsStack: TabInfo[][] = [];
 
-  constructor(mainWindow: BrowserWindow, display: Display) {
+  constructor(mainWindow: BrowserWindow, display: { activeDisplay: Display }) {
     this.mainWindow = mainWindow;
     WindowManager.display = display;
 
@@ -145,6 +143,43 @@ export default class WindowManager {
       this.loadHistory();
     });
 
+    screen.on('display-metrics-changed', (_, changedDisplay) => {
+      if (changedDisplay.id === WindowManager.display.activeDisplay.id) {
+        WindowManager.display.activeDisplay = changedDisplay;
+
+        if (this.windowFloating) {
+          const height80 =
+            WindowManager.display.activeDisplay.workAreaSize.height * 0.7;
+          const floatingWidth = Math.floor(height80 * 0.7);
+          const floatingHeight = Math.floor(height80);
+          this.windowSize.width = floatingWidth;
+          this.windowSize.height = floatingHeight;
+          this.updateMainWindowBounds();
+        }
+        if (!this.windowFloating) {
+          this.unFloat(WindowManager.display.activeDisplay);
+        }
+        this.resize();
+
+        const target = calculateWindowTarget(
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          this.windowSize,
+          this.windowPosition
+        );
+        if (target[0]) {
+          // eslint-disable-next-line prefer-destructuring
+          this.targetWindowPosition[0] = target[2][0];
+          // eslint-disable-next-line prefer-destructuring
+          this.targetWindowPosition[1] = target[2][1];
+        }
+      }
+    });
+
     this.resize();
 
     setInterval(() => {
@@ -154,6 +189,15 @@ export default class WindowManager {
     setInterval(() => {
       this.saveHistory();
     }, 1000 * 60 * 5);
+  }
+
+  static browserPadding(): number {
+    if (WindowManager.display !== null) {
+      return Math.floor(
+        WindowManager.display.activeDisplay.workAreaSize.height / 15.0
+      );
+    }
+    return 35;
   }
 
   updateMainWindowBounds() {
@@ -197,7 +241,6 @@ export default class WindowManager {
       this.titleBarView,
       this.urlPeekView,
       this.findView,
-      this.browserPadding,
       this
     );
     const { id } = newTabView;
@@ -495,7 +538,7 @@ export default class WindowManager {
     this.tabPageView.webContents.send('access-tab', id);
 
     this.resize();
-    tabView.resize();
+    tabView.resize(WindowManager.browserPadding());
   }
 
   loadUrlInTab(
@@ -626,7 +669,22 @@ export default class WindowManager {
 
   windowMoving(mouseX: number, mouseY: number) {
     this.movingWindow = true;
-    const { x, y } = screen.getCursorScreenPoint();
+
+    const mousePoint = screen.getCursorScreenPoint();
+    WindowManager.display.activeDisplay = screen.getDisplayNearestPoint(
+      mousePoint
+    );
+
+    const height80 =
+      WindowManager.display.activeDisplay.workAreaSize.height * 0.7;
+    const floatingWidth = Math.floor(height80 * 0.7);
+    const floatingHeight = Math.floor(height80);
+    this.windowSize.width = floatingWidth;
+    this.windowSize.height = floatingHeight;
+    this.updateMainWindowBounds();
+    this.resize();
+
+    const { x, y } = mousePoint;
     const currentTime = new Date().getTime() / 1000.0;
 
     const speedAverageRange = 0.1;
@@ -732,7 +790,7 @@ export default class WindowManager {
     this.windowSpeeds = [];
     this.movingWindow = false;
     if (this.validFloatingClick) {
-      this.unFloat(WindowManager.display);
+      this.unFloat(WindowManager.display.activeDisplay);
     }
     this.validFloatingClick = false;
   }
@@ -773,9 +831,13 @@ export default class WindowManager {
     //   this.mainWindow?.removeBrowserView(this.tabPageView);
     // }
     this.windowPosition[0] =
-      display.workAreaSize.width / 2.0 - floatingWidth / 2.0;
+      display.workAreaSize.width / 2.0 -
+      floatingWidth / 2.0 +
+      display.workArea.x;
     this.windowPosition[1] =
-      display.workAreaSize.height / 2.0 - floatingHeight / 2.0;
+      display.workAreaSize.height / 2.0 -
+      floatingHeight / 2.0 +
+      display.workArea.y;
     this.windowSize.width = floatingWidth;
     this.windowSize.height = floatingHeight;
     this.windowVelocity[0] = 0;
@@ -784,25 +846,28 @@ export default class WindowManager {
 
     this.mainWindow.webContents.send('set-padding', '');
 
+    const padding = WindowManager.browserPadding();
     Object.values(this.allTabViews).forEach((tabView) => {
       tabView.windowFloating = this.windowFloating;
-      tabView.resize();
+      tabView.resize(padding);
     });
 
     this.resize();
   }
 
   unFloat(display: Display) {
+    this.windowPosition[0] = display.workArea.x;
+    this.windowPosition[1] = display.workArea.y;
+    this.windowSize.width = display.workArea.width;
+    this.windowSize.height = display.workArea.height - 1; // todo: without the -1, everything breaks!!??!?
+    this.updateMainWindowBounds();
+    this.resize();
+
     if (!this.windowFloating) {
       return;
     }
 
     this.windowFloating = false;
-    this.windowPosition[0] = 0;
-    this.windowPosition[1] = 0;
-    this.windowSize.width = display.workAreaSize.width;
-    this.windowSize.height = display.workAreaSize.height - 1; // todo: without the -1, everything breaks!!??!?
-    this.updateMainWindowBounds();
 
     if (windowHasView(this.mainWindow, this.overlayView)) {
       this.mainWindow?.removeBrowserView(this.overlayView);
@@ -813,16 +878,12 @@ export default class WindowManager {
       this.mainWindow?.setTopBrowserView(this.titleBarView);
     }
 
-    this.mainWindow.webContents.send(
-      'set-padding',
-      this.browserPadding.toString()
-    );
+    const padding = WindowManager.browserPadding();
+    this.mainWindow.webContents.send('set-padding', padding.toString());
 
     Object.values(this.allTabViews).forEach((tabView) => {
       tabView.windowFloating = this.windowFloating;
-      tabView.resize();
     });
-
     this.resize();
   }
 
@@ -830,7 +891,8 @@ export default class WindowManager {
     if (this.mainWindow === null || typeof this.mainWindow === 'undefined') {
       return;
     }
-    const padding = this.windowFloating ? 10 : this.browserPadding;
+
+    const padding = this.windowFloating ? 10 : WindowManager.browserPadding();
     const hh = this.windowFloating ? 0 : headerHeight;
     const windowSize = this.mainWindow.getSize();
 
@@ -873,7 +935,7 @@ export default class WindowManager {
     });
 
     Object.values(this.allTabViews).forEach((tabView) => {
-      tabView.resize();
+      tabView.resize(padding);
     });
   }
 }
