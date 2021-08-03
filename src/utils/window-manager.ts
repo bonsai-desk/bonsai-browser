@@ -859,7 +859,7 @@ export default class WindowManager {
     this.windowPosition[0] = display.workArea.x;
     this.windowPosition[1] = display.workArea.y;
     this.windowSize.width = display.workArea.width;
-    this.windowSize.height = display.workArea.height - 1; // todo: without the -1, everything breaks!!??!?
+    this.windowSize.height = display.workArea.height;
     this.updateMainWindowBounds();
     this.resize();
 
