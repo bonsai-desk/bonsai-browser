@@ -118,7 +118,8 @@ export const Footer = styled.div`
   justify-content: center;
   align-items: center;
 `;
-export const WorkspaceButton = styled.button`
+
+export const FooterButton = styled.button`
   border: none;
   outline: none;
   width: 75px;

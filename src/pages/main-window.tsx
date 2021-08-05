@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import styled, { createGlobalStyle, css } from 'styled-components';
 import { ipcRenderer } from 'electron';
+import pinUnselected from '../../assets/pin-unselected.svg';
+import pinSelected from '../../assets/pin-selected.svg';
 
 const OPACITY = 0.55;
 
@@ -45,10 +47,37 @@ const Background = styled.div`
     `}
 `;
 
+const PinButton = styled.button`
+  border: none;
+  outline: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: darkgray;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+`;
+
+const Icon = styled.img`
+  pointer-events: none;
+
+  ${({ isPinned }: { isPinned: boolean }) =>
+    css`
+      width: ${isPinned ? '60' : '28'}px;
+      height: ${isPinned ? '60' : '28'}px;
+    `}
+`;
+
 const MainWindow = observer(() => {
   const [hasRunOnce, setHasRunOnce] = useState(false);
   const [padding, setPadding] = useState('35');
   const [isActive, setIsActive] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
 
   useEffect(() => {
     if (hasRunOnce) {
@@ -61,6 +90,9 @@ const MainWindow = observer(() => {
     ipcRenderer.on('set-active', (_, newIsActive) => {
       setIsActive(newIsActive);
     });
+    ipcRenderer.on('set-pinned', (_, newIsPinned) => {
+      setIsPinned(newIsPinned);
+    });
   }, [hasRunOnce]);
 
   return (
@@ -70,6 +102,16 @@ const MainWindow = observer(() => {
         padding={padding === '' ? '10' : padding}
         isActive={isActive}
       />
+      <PinButton
+        onClick={() => {
+          ipcRenderer.send('toggle-pin');
+        }}
+      >
+        <Icon
+          src={isPinned ? pinSelected : pinUnselected}
+          isPinned={isPinned}
+        />
+      </PinButton>
     </>
   );
 });

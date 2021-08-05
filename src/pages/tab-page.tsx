@@ -21,8 +21,8 @@ import {
   Footer,
   TabColumns,
   TabColumnsParent,
-  WorkspaceButton,
   Tab,
+  FooterButton,
 } from '../components/TabPageContent';
 
 const HistoryModalLocal = observer(() => {
@@ -179,7 +179,7 @@ const TabPage = observer(() => {
           <FuzzyTabs />
         )}
         <Footer>
-          <WorkspaceButton>Workspace</WorkspaceButton>
+          <FooterButton>Workspace</FooterButton>
           <HistoryButton
             type="button"
             onClick={() => {

@@ -93,7 +93,7 @@ export const createWindow = async () => {
   });
 
   mainWindow.on('blur', () => {
-    if (!wm.windowFloating && wm.mainWindow.isVisible()) {
+    if (!wm.windowFloating && wm.mainWindow.isVisible() && !wm.isPinned) {
       // const mousePoint = screen.getCursorScreenPoint();
       // const activeDisplay = screen.getDisplayNearestPoint(mousePoint);
       // const mouseOnWindowDisplay =
@@ -168,9 +168,11 @@ export const createWindow = async () => {
       wm.mainWindow.setVisibleOnAllWorkspaces(false, {
         visibleOnFullScreen: true,
       });
+      wm.isPinned = false;
+      wm.mainWindow.webContents.send('set-pinned', wm.isPinned);
       wm.unFloat(display.activeDisplay);
+      // todo: search box does not get highlighted on macos unless we do this hack
       setTimeout(() => {
-        // todo: search box does not get highlighted on macos unless we do this hack
         wm.setTab(-1);
       }, 10);
     } else if (
