@@ -1,4 +1,9 @@
 import styled, { css } from 'styled-components';
+import { observer } from 'mobx-react-lite';
+import { ipcRenderer } from 'electron';
+import React from 'react';
+import { useStore } from '../../store/tab-page-store';
+import { Favicon } from '../TabPageContent';
 
 export const HistoryButton = styled.button`
   position: absolute;
@@ -111,3 +116,35 @@ export const HistoryUrlDiv = styled.div`
   color: lightgrey;
   font-size: 15px;
 `;
+export const History = observer(() => {
+  const { tabPageStore } = useStore();
+  let results;
+  if (tabPageStore.searchResult === null) {
+    results = Array.from(tabPageStore.historyMap.values()).map(
+      (_, index, array) => {
+        return array[array.length - 1 - index];
+      }
+    );
+  } else {
+    results = tabPageStore.searchResult;
+  }
+
+  return (
+    <>
+      {results.map((entry) => {
+        return (
+          <HistoryResult
+            key={entry.key}
+            onClick={() => {
+              ipcRenderer.send('search-url', entry.url);
+            }}
+          >
+            <Favicon src={entry.favicon} />
+            <HistoryTitleDiv>{entry.title}</HistoryTitleDiv>
+            <HistoryUrlDiv>{entry.url}</HistoryUrlDiv>
+          </HistoryResult>
+        );
+      })}
+    </>
+  );
+});

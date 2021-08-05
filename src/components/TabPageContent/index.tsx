@@ -1,4 +1,11 @@
 import styled from 'styled-components';
+import { observer } from 'mobx-react-lite';
+import React from 'react';
+import { ipcRenderer } from 'electron';
+import TabPageStore from '../../store/tab-page-store';
+import { ITab, TabPageColumn, TabPageTab } from '../../interfaces/tab';
+import { getRootDomain } from '../../utils/data';
+import redX from '../../static/x-letter.svg';
 
 export const Column = styled.div`
   display: flex;
@@ -122,3 +129,86 @@ export const WorkspaceButton = styled.button`
     background-color: lightgray;
   }
 `;
+
+function Tab({ title, imgUrl, tab }: ITab) {
+  return (
+    <TabParent
+      onClick={() => {
+        ipcRenderer.send('set-tab', tab.id);
+      }}
+    >
+      <TabImageParent>
+        <TabImage src={imgUrl} alt="tab_image" />
+        <RedXParent>
+          <TabTitle>{title === '' ? 'New Tab' : title}</TabTitle>
+          <RedX
+            id="RedX"
+            onClick={(e) => {
+              e.stopPropagation();
+              ipcRenderer.send('remove-tab', tab.id);
+            }}
+          >
+            <img src={redX} alt="x" width="20px" />
+          </RedX>
+        </RedXParent>
+      </TabImageParent>
+    </TabParent>
+  );
+}
+
+export const TabColumns = observer(
+  ({ tabPageStore }: { tabPageStore: TabPageStore }) => {
+    const columns: Record<string, TabPageTab[]> = {};
+
+    Object.values(tabPageStore.tabs).forEach((tab) => {
+      const domain = getRootDomain(tab.url);
+      if (!columns[domain]) {
+        columns[domain] = [];
+      }
+      columns[domain].unshift(tab);
+    });
+
+    const tabPageColumns: TabPageColumn[] = [];
+
+    Object.keys(columns).forEach((key) => {
+      const column: TabPageColumn = { domain: key, tabs: columns[key] };
+      tabPageColumns.push(column);
+    });
+
+    return (
+      <>
+        {tabPageColumns.map((column) => {
+          // let columnFavicon = '';
+          // if (column.tabs.length > 0) {
+          //   columnFavicon = column.tabs[0].favicon;
+          // }
+
+          // {/*<Favicon src={columnFavicon} />*/}
+
+          return (
+            <Column key={column.domain}>
+              <div style={{ width: '100%', display: 'flex' }}>
+                <ColumnHeader>{column.domain}</ColumnHeader>
+              </div>
+              {column.tabs.map((tab) => {
+                const imgUrl =
+                  tab.openGraphInfo !== null && tab.openGraphInfo.image !== ''
+                    ? tab.openGraphInfo.image
+                    : tab.image;
+                const title =
+                  tab.openGraphInfo !== null &&
+                  tab.openGraphInfo.title !== '' &&
+                  tab.openGraphInfo.title !== 'null'
+                    ? tab.openGraphInfo.title
+                    : tab.title;
+                return (
+                  <Tab key={tab.id} tab={tab} title={title} imgUrl={imgUrl} />
+                );
+              })}
+            </Column>
+          );
+        })}
+      </>
+    );
+  }
+);
