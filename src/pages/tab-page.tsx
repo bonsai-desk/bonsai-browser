@@ -82,13 +82,15 @@ const HistoryModalLocal = observer(() => {
   );
 });
 
+// flex grow 1
 const FuzzyTabs = observer(() => {
   const { tabPageStore } = useStore();
   return (
     <div style={{ color: 'white' }}>
       <h1>Today</h1>
-      {Object.values(tabPageStore.tabs).map((tab) => {
-        return <Tab key={tab.id} tab={tab} />;
+      {tabPageStore.filteredTabs.map((result) => {
+        const { item } = result;
+        return <Tab key={item.id} tab={item} />;
       })}
     </div>
   );

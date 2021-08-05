@@ -1,11 +1,14 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
 import { createContext, useContext } from 'react';
+import Fuse from 'fuse.js';
 import { TabPageTab } from '../interfaces/tab';
 import { HistoryEntry } from '../utils/tab-view';
 
 export default class TabPageStore {
   tabs: Record<string, TabPageTab> = {};
+
+  filteredTabs: Fuse.FuseResult<TabPageTab>[];
 
   historyMap = new Map<string, HistoryEntry>();
 
@@ -37,8 +40,16 @@ export default class TabPageStore {
     }
   }
 
+  searchTab(pattern: string) {
+    const tabFuse = new Fuse<TabPageTab>(Object.values(this.tabs), {
+      keys: ['url', 'title', 'openGraphData.title'],
+    });
+    this.filteredTabs = tabFuse.search(pattern);
+  }
+
   setUrlText(newValue: string) {
     this.urlText = newValue;
+    this.searchTab(newValue);
   }
 
   setHistoryText(newValue: string) {
@@ -52,6 +63,7 @@ export default class TabPageStore {
   constructor() {
     makeAutoObservable(this);
 
+    this.filteredTabs = [];
     this.urlInput = null;
     this.historyInput = null;
 
