@@ -116,6 +116,8 @@ export default class WindowManager {
 
   removedTabsStack: TabInfo[][] = [];
 
+  isPinned = false;
+
   constructor(mainWindow: BrowserWindow, display: { activeDisplay: Display }) {
     this.mainWindow = mainWindow;
     WindowManager.display = display;
@@ -935,7 +937,7 @@ export default class WindowManager {
     this.tabPageView.setBounds({
       x: padding,
       y: padding,
-      width: windowSize[0] - padding * 2,
+      width: windowSize[0] - padding * 2 - 50,
       height: windowSize[1] - padding * 2,
     });
 

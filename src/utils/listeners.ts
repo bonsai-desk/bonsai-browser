@@ -79,6 +79,10 @@ function addListeners(wm: WindowManager) {
   ipcMain.on('clear-history', () => {
     wm.clearHistory();
   });
+  ipcMain.on('toggle-pin', () => {
+    wm.isPinned = !wm.isPinned;
+    wm.mainWindow.webContents.send('set-pinned', wm.isPinned);
+  });
 }
 
 export default addListeners;
