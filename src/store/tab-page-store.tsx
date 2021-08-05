@@ -1,5 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
+import { createContext, useContext } from 'react';
 import { TabPageTab } from '../interfaces/tab';
 import { HistoryEntry } from '../utils/tab-view';
 
@@ -109,4 +110,18 @@ export default class TabPageStore {
       });
     });
   }
+}
+
+export const tabPageStore = new TabPageStore();
+interface IContext {
+  tabPageStore: TabPageStore;
+}
+const TabPageContext = createContext<null | IContext>(null);
+export const { Provider } = TabPageContext;
+export function useStore() {
+  const store = useContext(TabPageContext);
+  if (store === null) {
+    throw new Error('Please add provider.');
+  }
+  return store;
 }

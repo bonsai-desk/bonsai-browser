@@ -4,6 +4,7 @@ import { runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
 import '../tabPage.css';
 import redX from '../static/x-letter.svg';
+import TabPageStore, { useStore } from '../store/tab-page-store';
 import {
   ClearHistory,
   HistoryButton,
@@ -34,7 +35,7 @@ import {
   WorkspaceButton,
 } from '../components/TabPageContent';
 import { ITab, TabPageColumn, TabPageTab } from '../interfaces/tab';
-import TabPageStore from '../store/tab-page-store';
+
 import { getRootDomain } from '../utils/data';
 
 function Tab({ title, imgUrl, tab }: ITab) {
@@ -63,54 +64,62 @@ function Tab({ title, imgUrl, tab }: ITab) {
   );
 }
 
-function tabColumns(tabPageStore: TabPageStore) {
-  const columns: Record<string, TabPageTab[]> = {};
+const TabColumns = observer(
+  ({ tabPageStore }: { tabPageStore: TabPageStore }) => {
+    const columns: Record<string, TabPageTab[]> = {};
 
-  Object.values(tabPageStore.tabs).forEach((tab) => {
-    const domain = getRootDomain(tab.url);
-    if (!columns[domain]) {
-      columns[domain] = [];
-    }
-    columns[domain].unshift(tab);
-  });
+    Object.values(tabPageStore.tabs).forEach((tab) => {
+      const domain = getRootDomain(tab.url);
+      if (!columns[domain]) {
+        columns[domain] = [];
+      }
+      columns[domain].unshift(tab);
+    });
 
-  const tabPageColumns: TabPageColumn[] = [];
+    const tabPageColumns: TabPageColumn[] = [];
 
-  Object.keys(columns).forEach((key) => {
-    const column: TabPageColumn = { domain: key, tabs: columns[key] };
-    tabPageColumns.push(column);
-  });
-
-  return tabPageColumns.map((column) => {
-    // let columnFavicon = '';
-    // if (column.tabs.length > 0) {
-    //   columnFavicon = column.tabs[0].favicon;
-    // }
-
-    // {/*<Favicon src={columnFavicon} />*/}
+    Object.keys(columns).forEach((key) => {
+      const column: TabPageColumn = { domain: key, tabs: columns[key] };
+      tabPageColumns.push(column);
+    });
 
     return (
-      <Column key={column.domain}>
-        <div style={{ width: '100%', display: 'flex' }}>
-          <ColumnHeader>{column.domain}</ColumnHeader>
-        </div>
-        {column.tabs.map((tab) => {
-          const imgUrl =
-            tab.openGraphInfo !== null && tab.openGraphInfo.image !== ''
-              ? tab.openGraphInfo.image
-              : tab.image;
-          const title =
-            tab.openGraphInfo !== null &&
-            tab.openGraphInfo.title !== '' &&
-            tab.openGraphInfo.title !== 'null'
-              ? tab.openGraphInfo.title
-              : tab.title;
-          return <Tab key={tab.id} tab={tab} title={title} imgUrl={imgUrl} />;
+      <>
+        {tabPageColumns.map((column) => {
+          // let columnFavicon = '';
+          // if (column.tabs.length > 0) {
+          //   columnFavicon = column.tabs[0].favicon;
+          // }
+
+          // {/*<Favicon src={columnFavicon} />*/}
+
+          return (
+            <Column key={column.domain}>
+              <div style={{ width: '100%', display: 'flex' }}>
+                <ColumnHeader>{column.domain}</ColumnHeader>
+              </div>
+              {column.tabs.map((tab) => {
+                const imgUrl =
+                  tab.openGraphInfo !== null && tab.openGraphInfo.image !== ''
+                    ? tab.openGraphInfo.image
+                    : tab.image;
+                const title =
+                  tab.openGraphInfo !== null &&
+                  tab.openGraphInfo.title !== '' &&
+                  tab.openGraphInfo.title !== 'null'
+                    ? tab.openGraphInfo.title
+                    : tab.title;
+                return (
+                  <Tab key={tab.id} tab={tab} title={title} imgUrl={imgUrl} />
+                );
+              })}
+            </Column>
+          );
         })}
-      </Column>
+      </>
     );
-  });
-}
+  }
+);
 
 export function getHistory(tabPageStore: TabPageStore) {
   let results;
@@ -140,7 +149,8 @@ export function getHistory(tabPageStore: TabPageStore) {
   });
 }
 
-const TabPage = observer(({ tabPageStore }: { tabPageStore: TabPageStore }) => {
+const TabPage = observer(() => {
+  const { tabPageStore } = useStore();
   const urlBoxRef = useRef<HTMLInputElement>(null);
   const [urlFocus, setUrlFocus] = useState(false);
   const [urlText, setUrlText] = useState('');
@@ -229,7 +239,9 @@ const TabPage = observer(({ tabPageStore }: { tabPageStore: TabPageStore }) => {
             }}
           />
         </URLBoxParent>
-        <TabColumnsParent>{tabColumns(tabPageStore)}</TabColumnsParent>
+        <TabColumnsParent>
+          <TabColumns tabPageStore={tabPageStore} />
+        </TabColumnsParent>
         <Footer>
           <WorkspaceButton>Workspace</WorkspaceButton>
           <HistoryButton

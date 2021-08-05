@@ -9,7 +9,10 @@ import './index.css';
 import MainWindow from './pages/main-window';
 import Overlay from './pages/overlay';
 import TabPage from './pages/tab-page';
-import TabPageStore from './store/tab-page-store';
+import {
+  Provider as TabPageStoreProvider,
+  tabPageStore,
+} from './store/tab-page-store';
 
 if (document.getElementById('root')) {
   render(
@@ -41,9 +44,10 @@ if (document.getElementById('overlay')) {
 }
 
 if (document.getElementById('tab-page')) {
-  const tabPageStore = new TabPageStore();
   render(
-    <TabPage tabPageStore={tabPageStore} />,
+    <TabPageStoreProvider value={{ tabPageStore }}>
+      <TabPage />
+    </TabPageStoreProvider>,
     document.getElementById('tab-page')
   );
 }
