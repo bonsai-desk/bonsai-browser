@@ -83,7 +83,7 @@ export const createWindow = async () => {
     display.activeDisplay = screen.getDisplayNearestPoint(mousePoint);
     wm.mainWindow.webContents.send(
       'set-padding',
-      WindowManager.browserPadding().toString()
+      wm.browserPadding().toString()
     );
     mainWindow?.show();
     wm.unFloat(display.activeDisplay);

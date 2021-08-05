@@ -191,10 +191,11 @@ export default class WindowManager {
     }, 1000 * 60 * 5);
   }
 
-  static browserPadding(): number {
+  browserPadding(): number {
     if (WindowManager.display !== null) {
+      const ratio = this.activeTabId === -1 ? 50 : 15;
       return Math.floor(
-        WindowManager.display.activeDisplay.workAreaSize.height / 50.0
+        WindowManager.display.activeDisplay.workAreaSize.height / ratio
       );
     }
     return 35;
@@ -537,8 +538,11 @@ export default class WindowManager {
 
     this.tabPageView.webContents.send('access-tab', id);
 
+    const padding = this.browserPadding();
+    this.mainWindow.webContents.send('set-padding', padding.toString());
+
     this.resize();
-    tabView.resize(WindowManager.browserPadding());
+    tabView.resize(padding);
   }
 
   loadUrlInTab(
@@ -846,7 +850,7 @@ export default class WindowManager {
 
     this.mainWindow.webContents.send('set-padding', '');
 
-    const padding = WindowManager.browserPadding();
+    const padding = this.browserPadding();
     Object.values(this.allTabViews).forEach((tabView) => {
       tabView.windowFloating = this.windowFloating;
       tabView.resize(padding);
@@ -879,7 +883,7 @@ export default class WindowManager {
       this.mainWindow?.setTopBrowserView(this.titleBarView);
     }
 
-    const padding = WindowManager.browserPadding();
+    const padding = this.browserPadding();
     this.mainWindow.webContents.send('set-padding', padding.toString());
 
     Object.values(this.allTabViews).forEach((tabView) => {
@@ -893,7 +897,7 @@ export default class WindowManager {
       return;
     }
 
-    const padding = this.windowFloating ? 10 : WindowManager.browserPadding();
+    const padding = this.windowFloating ? 10 : this.browserPadding();
     const hh = this.windowFloating ? 0 : headerHeight;
     const windowSize = this.mainWindow.getSize();
 
