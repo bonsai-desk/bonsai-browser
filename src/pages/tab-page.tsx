@@ -44,6 +44,7 @@ const Tabs = styled.div`
   //padding-left: 25px;
   //background-color: blue;
   flex-grow: 1;
+  overflow: auto;
 `;
 
 const Column = styled.div`
