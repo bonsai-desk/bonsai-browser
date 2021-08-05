@@ -15,8 +15,14 @@ export default class TabPageStore {
 
   urlText = '';
 
+  historyText = '';
+
   setUrlText(newValue: string) {
     this.urlText = newValue;
+  }
+
+  setHistoryText(newValue: string) {
+    this.historyText = newValue;
   }
 
   constructor() {

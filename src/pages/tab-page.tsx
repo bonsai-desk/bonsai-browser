@@ -29,7 +29,7 @@ const HistoryModalLocal = observer(() => {
   const { tabPageStore } = useStore();
 
   const historyBoxRef = useRef<HTMLInputElement>(null);
-  const [historyText, setHistoryText] = useState('');
+  // const [historyText, setHistoryText] = useState('');
 
   useEffect(() => {
     ipcRenderer.send(
@@ -37,9 +37,9 @@ const HistoryModalLocal = observer(() => {
       tabPageStore.historyModalActive
     );
     if (tabPageStore.historyModalActive) {
-      ipcRenderer.send('history-search', historyText);
+      ipcRenderer.send('history-search', tabPageStore.historyText);
     }
-  }, [tabPageStore.historyModalActive, historyText]);
+  }, [tabPageStore.historyModalActive, tabPageStore.historyText]);
 
   return (
     <HistoryModalParent active={tabPageStore.historyModalActive}>
@@ -55,9 +55,9 @@ const HistoryModalLocal = observer(() => {
           <HistorySearch
             ref={historyBoxRef}
             placeholder="search history"
-            value={historyText}
+            value={tabPageStore.historyText}
             onInput={(e) => {
-              setHistoryText(e.currentTarget.value);
+              tabPageStore.setHistoryText(e.currentTarget.value);
             }}
           />
           <ClearHistory
