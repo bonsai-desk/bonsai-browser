@@ -2,7 +2,7 @@ import styled from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import React from 'react';
 import { ipcRenderer } from 'electron';
-import TabPageStore, { useStore } from '../../store/tab-page-store';
+import { useStore } from '../../store/tab-page-store';
 import { ITab, TabPageColumn, TabPageTab } from '../../interfaces/tab';
 import { getRootDomain } from '../../utils/data';
 import redX from '../../static/x-letter.svg';
@@ -130,7 +130,17 @@ export const WorkspaceButton = styled.button`
   }
 `;
 
-function Tab({ title, imgUrl, tab }: ITab) {
+export function Tab({ tab }: ITab) {
+  const title =
+    tab.openGraphInfo !== null &&
+    tab.openGraphInfo.title !== '' &&
+    tab.openGraphInfo.title !== 'null'
+      ? tab.openGraphInfo.title
+      : tab.title;
+  const imgUrl =
+    tab.openGraphInfo !== null && tab.openGraphInfo.image !== ''
+      ? tab.openGraphInfo.image
+      : tab.image;
   return (
     <TabParent
       onClick={() => {
@@ -191,19 +201,7 @@ export const TabColumns = observer(() => {
               <ColumnHeader>{column.domain}</ColumnHeader>
             </div>
             {column.tabs.map((tab) => {
-              const imgUrl =
-                tab.openGraphInfo !== null && tab.openGraphInfo.image !== ''
-                  ? tab.openGraphInfo.image
-                  : tab.image;
-              const title =
-                tab.openGraphInfo !== null &&
-                tab.openGraphInfo.title !== '' &&
-                tab.openGraphInfo.title !== 'null'
-                  ? tab.openGraphInfo.title
-                  : tab.title;
-              return (
-                <Tab key={tab.id} tab={tab} title={title} imgUrl={imgUrl} />
-              );
+              return <Tab key={tab.id} tab={tab} />;
             })}
           </Column>
         );

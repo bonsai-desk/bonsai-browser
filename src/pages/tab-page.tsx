@@ -22,6 +22,7 @@ import {
   TabColumns,
   TabColumnsParent,
   WorkspaceButton,
+  Tab,
 } from '../components/TabPageContent';
 
 const HistoryModalLocal = observer(() => {
@@ -82,7 +83,15 @@ const HistoryModalLocal = observer(() => {
 });
 
 const FuzzyTabs = observer(() => {
-  return <div style={{ width: '200px', height: '200px', background: 'red' }} />;
+  const { tabPageStore } = useStore();
+  return (
+    <div style={{ color: 'white' }}>
+      <h1>Today</h1>
+      {Object.values(tabPageStore.tabs).map((tab) => {
+        return <Tab key={tab.id} tab={tab} />;
+      })}
+    </div>
+  );
 });
 
 const TabPage = observer(() => {

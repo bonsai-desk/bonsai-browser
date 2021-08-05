@@ -17,8 +17,6 @@ export interface TabPageTab {
 }
 
 export interface ITab {
-  title: string;
-  imgUrl: string;
   tab: TabPageTab;
 }
 
