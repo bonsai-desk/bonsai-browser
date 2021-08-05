@@ -23,15 +23,65 @@ import {
   TabColumnsParent,
   WorkspaceButton,
 } from '../components/TabPageContent';
+// import tab from '../interfaces/tabObject';
+
+const HistoryModalLocal = observer(() => {
+  const { tabPageStore } = useStore();
+
+  const historyBoxRef = useRef<HTMLInputElement>(null);
+  const [historyText, setHistoryText] = useState('');
+
+  useEffect(() => {
+    ipcRenderer.send(
+      'history-modal-active-update',
+      tabPageStore.historyModalActive
+    );
+    if (tabPageStore.historyModalActive) {
+      ipcRenderer.send('history-search', historyText);
+    }
+  }, [tabPageStore.historyModalActive, historyText]);
+
+  return (
+    <HistoryModalParent active={tabPageStore.historyModalActive}>
+      <HistoryModalBackground
+        onClick={() => {
+          runInAction(() => {
+            tabPageStore.historyModalActive = false;
+          });
+        }}
+      />
+      <HistoryModal>
+        <HistoryHeader>
+          <HistorySearch
+            ref={historyBoxRef}
+            placeholder="search history"
+            value={historyText}
+            onInput={(e) => {
+              setHistoryText(e.currentTarget.value);
+            }}
+          />
+          <ClearHistory
+            type="button"
+            onClick={() => {
+              ipcRenderer.send('clear-history');
+            }}
+          >
+            Clear History
+          </ClearHistory>
+        </HistoryHeader>
+        <HistoryResults>
+          <History />
+        </HistoryResults>
+      </HistoryModal>
+    </HistoryModalParent>
+  );
+});
 
 const TabPage = observer(() => {
   const { tabPageStore } = useStore();
   const urlBoxRef = useRef<HTMLInputElement>(null);
   const [urlFocus, setUrlFocus] = useState(false);
-  const [urlText, setUrlText] = useState('');
-
-  const historyBoxRef = useRef<HTMLInputElement>(null);
-  const [historyText, setHistoryText] = useState('');
+  // const [urlText, setUrlText] = useState('');
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -43,7 +93,8 @@ const TabPage = observer(() => {
         default:
           // when you start typing, move the cursor to textbox
           if (tabPageStore.historyModalActive) {
-            historyBoxRef.current?.focus();
+            // todo move this into its component
+            // historyBoxRef.current?.focus();
           } else {
             urlBoxRef.current?.focus();
           }
@@ -55,16 +106,6 @@ const TabPage = observer(() => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
-
-  useEffect(() => {
-    ipcRenderer.send(
-      'history-modal-active-update',
-      tabPageStore.historyModalActive
-    );
-    if (tabPageStore.historyModalActive) {
-      ipcRenderer.send('history-search', historyText);
-    }
-  }, [tabPageStore.historyModalActive, historyText]);
 
   const [hasRunOnce, setHasRunOnce] = useState(false);
 
@@ -89,14 +130,14 @@ const TabPage = observer(() => {
             spellCheck={false}
             ref={urlBoxRef}
             placeholder="Search Google or type a URL"
-            value={urlText}
+            value={tabPageStore.urlText}
             onInput={(e) => {
-              setUrlText(e.currentTarget.value);
+              tabPageStore.setUrlText(e.currentTarget.value);
             }}
             onKeyDown={(e) => {
               if (e.nativeEvent.code === 'Enter') {
-                setUrlText('');
-                ipcRenderer.send('search-url', urlText);
+                ipcRenderer.send('search-url', tabPageStore.urlText);
+                tabPageStore.setUrlText('');
               }
             }}
             onClick={() => {
@@ -131,38 +172,7 @@ const TabPage = observer(() => {
           </HistoryButton>
         </Footer>
       </Background>
-      <HistoryModalParent active={tabPageStore.historyModalActive}>
-        <HistoryModalBackground
-          onClick={() => {
-            runInAction(() => {
-              tabPageStore.historyModalActive = false;
-            });
-          }}
-        />
-        <HistoryModal>
-          <HistoryHeader>
-            <HistorySearch
-              ref={historyBoxRef}
-              placeholder="search history"
-              value={historyText}
-              onInput={(e) => {
-                setHistoryText(e.currentTarget.value);
-              }}
-            />
-            <ClearHistory
-              type="button"
-              onClick={() => {
-                ipcRenderer.send('clear-history');
-              }}
-            >
-              Clear History
-            </ClearHistory>
-          </HistoryHeader>
-          <HistoryResults>
-            <History />
-          </HistoryResults>
-        </HistoryModal>
-      </HistoryModalParent>
+      <HistoryModalLocal />
     </>
   );
 });

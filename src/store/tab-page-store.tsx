@@ -13,6 +13,12 @@ export default class TabPageStore {
 
   historyModalActive = false;
 
+  urlText = '';
+
+  setUrlText(newValue: string) {
+    this.urlText = newValue;
+  }
+
   constructor() {
     makeAutoObservable(this);
 
