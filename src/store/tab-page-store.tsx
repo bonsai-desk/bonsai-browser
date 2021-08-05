@@ -151,7 +151,6 @@ export default class TabPageStore {
   }
 }
 
-export const tabPageStore = new TabPageStore();
 interface IContext {
   tabPageStore: TabPageStore;
 }

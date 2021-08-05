@@ -36,12 +36,6 @@ const HistoryModalLocal = observer(() => {
   }, [historyBoxRef.current]);
 
   useEffect(() => {
-    if (tabPageStore.historyModalActive) {
-      historyBoxRef.current?.focus();
-    }
-  }, [tabPageStore.historyModalActive]);
-
-  useEffect(() => {
     ipcRenderer.send(
       'history-modal-active-update',
       tabPageStore.historyModalActive

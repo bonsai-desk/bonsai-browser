@@ -25,7 +25,7 @@ const Todo = types
     },
   }));
 
-const RootModel = types
+export const RootModel = types
   .model({
     users: types.map(User),
     todos: types.map(Todo),
@@ -49,36 +49,6 @@ const RootModel = types
       self.todos.set(id, { name });
     },
   }));
-
-const initialState = RootModel.create({
-  users: {
-    '1': {
-      id: '1',
-      name: 'mweststreate',
-    },
-    '2': {
-      id: '2',
-      name: 'Bobbeh',
-    },
-    '3': {
-      id: '3',
-      name: 'Susan',
-    },
-  },
-  todos: {
-    '1': {
-      name: 'eat a cake',
-      done: true,
-    },
-    '2': {
-      name: 'oof',
-      done: false,
-    },
-  },
-});
-
-export const rootStore = initialState;
-export const tabStore = new TabStore();
 
 interface AppContextInterface {
   rootStore: RootInstance;
