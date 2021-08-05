@@ -29,6 +29,14 @@ export default class TabPageStore {
     }
   }
 
+  selectText() {
+    if (this.historyModalActive) {
+      this.historyInput?.select();
+    } else {
+      this.urlInput?.select();
+    }
+  }
+
   setUrlText(newValue: string) {
     this.urlText = newValue;
   }

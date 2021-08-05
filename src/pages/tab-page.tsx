@@ -120,6 +120,7 @@ const TabPage = observer(() => {
     setHasRunOnce(true);
     ipcRenderer.on('focus-search', () => {
       tabPageStore.setFocus();
+      tabPageStore.selectText();
     });
   }, [hasRunOnce]);
 
