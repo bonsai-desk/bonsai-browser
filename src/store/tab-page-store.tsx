@@ -17,6 +17,18 @@ export default class TabPageStore {
 
   historyText = '';
 
+  urlInput: HTMLInputElement | null;
+
+  historyInput: HTMLInputElement | null;
+
+  setFocus() {
+    if (this.historyModalActive) {
+      this.historyInput?.focus();
+    } else {
+      this.urlInput?.focus();
+    }
+  }
+
   setUrlText(newValue: string) {
     this.urlText = newValue;
   }
@@ -25,8 +37,15 @@ export default class TabPageStore {
     this.historyText = newValue;
   }
 
+  setHistoryActive(active: boolean) {
+    this.historyModalActive = active;
+  }
+
   constructor() {
     makeAutoObservable(this);
+
+    this.urlInput = null;
+    this.historyInput = null;
 
     ipcRenderer.on('tabView-created-with-id', (_, id) => {
       runInAction(() => {

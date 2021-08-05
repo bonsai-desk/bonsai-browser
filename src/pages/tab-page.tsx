@@ -23,13 +23,23 @@ import {
   TabColumnsParent,
   WorkspaceButton,
 } from '../components/TabPageContent';
-// import tab from '../interfaces/tabObject';
 
 const HistoryModalLocal = observer(() => {
   const { tabPageStore } = useStore();
 
   const historyBoxRef = useRef<HTMLInputElement>(null);
-  // const [historyText, setHistoryText] = useState('');
+
+  useEffect(() => {
+    if (historyBoxRef.current !== null) {
+      tabPageStore.historyInput = historyBoxRef.current;
+    }
+  }, [historyBoxRef.current]);
+
+  useEffect(() => {
+    if (tabPageStore.historyModalActive) {
+      historyBoxRef.current?.focus();
+    }
+  }, [tabPageStore.historyModalActive]);
 
   useEffect(() => {
     ipcRenderer.send(
@@ -81,7 +91,6 @@ const TabPage = observer(() => {
   const { tabPageStore } = useStore();
   const urlBoxRef = useRef<HTMLInputElement>(null);
   const [urlFocus, setUrlFocus] = useState(false);
-  // const [urlText, setUrlText] = useState('');
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -91,13 +100,8 @@ const TabPage = observer(() => {
         case 'Escape':
           break;
         default:
-          // when you start typing, move the cursor to textbox
-          if (tabPageStore.historyModalActive) {
-            // todo move this into its component
-            // historyBoxRef.current?.focus();
-          } else {
-            urlBoxRef.current?.focus();
-          }
+          tabPageStore.setFocus();
+          break;
       }
     }
 
@@ -115,11 +119,15 @@ const TabPage = observer(() => {
     }
     setHasRunOnce(true);
     ipcRenderer.on('focus-search', () => {
-      if (urlBoxRef.current != null) {
-        urlBoxRef.current.select();
-      }
+      tabPageStore.setFocus();
     });
   }, [hasRunOnce]);
+
+  useEffect(() => {
+    if (urlBoxRef.current !== null) {
+      tabPageStore.urlInput = urlBoxRef.current;
+    }
+  }, [urlBoxRef.current]);
 
   return (
     <>
@@ -164,7 +172,7 @@ const TabPage = observer(() => {
             type="button"
             onClick={() => {
               runInAction(() => {
-                tabPageStore.historyModalActive = !tabPageStore.historyModalActive;
+                tabPageStore.setHistoryActive(true);
               });
             }}
           >
