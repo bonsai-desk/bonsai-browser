@@ -12,13 +12,38 @@ const Background = styled.div`
   height: 100vh;
   border-radius: 25px;
   //border: 0.5px solid white;
-  padding-left: 10px;
+  //padding-left: 10px;
+  display: flex;
+  flex-direction: column;
+`;
+
+const Footer = styled.div`
+  //background-color: red;
+  width: 100%;
+  height: 85px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
+
+const WorkspaceButton = styled.button`
+  border: none;
+  outline: none;
+  width: 75px;
+  height: 75px;
+  border-radius: 50%;
+
+  :hover {
+    background-color: lightgray;
+  }
 `;
 
 const Tabs = styled.div`
   display: flex;
   align-items: flex-start;
   //padding-left: 25px;
+  //background-color: blue;
+  flex-grow: 1;
 `;
 
 const Column = styled.div`
@@ -42,9 +67,8 @@ const URLBoxParent = styled.div`
 `;
 
 const URLBox = styled.input`
-  color: white;
-  background: rgba(0, 0, 0, 0);
-  font-size: 1.5rem;
+  background-color: rgba(175, 175, 175, 0.25);
+  font-size: 1.25rem;
   font-weight: bold;
   border-radius: 10px;
   outline: none;
@@ -53,6 +77,11 @@ const URLBox = styled.input`
   padding: 0.75rem;
   margin: 10px;
   width: 30rem;
+  color: rgb(250, 250, 250);
+
+  ::placeholder {
+    color: rgb(150, 150, 150);
+  }
 `;
 
 const ColumnHeader = styled.div`
@@ -101,18 +130,18 @@ const RedXParent = styled.div`
   position: absolute;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.6);
   transition-duration: 0.25s;
   opacity: 0;
   :hover {
     opacity: 100;
   }
-  :hover div {
+  :hover #RedX {
     //backdrop-filter: blur(5px);
     //background: rgba(200, 200, 200, 0.7);
     transition-duration: 0s;
   }
-  div {
+  #RedX {
     transition-duration: 0.25s;
     border-radius: 999px;
     position: absolute;
@@ -127,6 +156,14 @@ const RedXParent = styled.div`
   }
 `;
 
+const TabTitle = styled.div`
+  width: calc(100% - 40px - 10px);
+  height: 100%;
+  padding: 5px;
+  font-size: 15px;
+  overflow: hidden;
+`;
+
 const TabImage = styled.img`
   height: 100%;
   background: white;
@@ -136,11 +173,19 @@ const HistoryButton = styled.button`
   position: absolute;
   bottom: 0;
   right: 0;
-  width: 100px;
-  height: 100px;
-  border-radius: 25px;
-  border: 2px solid white;
+  width: 125px;
+  height: 50px;
+  border-radius: 10px;
+  //border: 2px solid white;
+  border: none;
   outline: none;
+  //font-size: 25px;
+  //color: white;
+  //background-color: rgb(100, 100, 100);
+
+  :hover {
+    background-color: lightgray;
+  }
 `;
 
 const HistoryModalParent = styled.div`
@@ -179,6 +224,12 @@ const HistoryModal = styled.div`
   border: 2px solid white;
   box-shadow: 0 0 5px 0 rgba(0, 0, 0, 1);
   padding: 20px;
+`;
+
+const HistoryResults = styled.div`
+  //background-color: blue;
+  overflow-y: auto;
+  height: calc(100% - 40px);
 `;
 
 const HistoryHeader = styled.div`
@@ -434,8 +485,9 @@ function Tab({ title, imgUrl, tab }: ITab) {
       <TabImageParent>
         <TabImage src={imgUrl} alt="tab_image" />
         <RedXParent>
-          {title === '' ? 'New Tab' : title}
+          <TabTitle>{title === '' ? 'New Tab' : title}</TabTitle>
           <RedX
+            id="RedX"
             onClick={(e) => {
               e.stopPropagation();
               ipcRenderer.send('remove-tab', tab.id);
@@ -608,17 +660,20 @@ const TabPage = observer(({ tabPageStore }: { tabPageStore: TabPageStore }) => {
           />
         </URLBoxParent>
         <Tabs>{tabColumns(tabPageStore)}</Tabs>
+        <Footer>
+          <WorkspaceButton>Workspace</WorkspaceButton>
+          <HistoryButton
+            type="button"
+            onClick={() => {
+              runInAction(() => {
+                tabPageStore.historyModalActive = !tabPageStore.historyModalActive;
+              });
+            }}
+          >
+            History
+          </HistoryButton>
+        </Footer>
       </Background>
-      <HistoryButton
-        type="button"
-        onClick={() => {
-          runInAction(() => {
-            tabPageStore.historyModalActive = !tabPageStore.historyModalActive;
-          });
-        }}
-      >
-        History
-      </HistoryButton>
       <HistoryModalParent active={tabPageStore.historyModalActive}>
         <HistoryModalBackground
           onClick={() => {
@@ -646,7 +701,7 @@ const TabPage = observer(({ tabPageStore }: { tabPageStore: TabPageStore }) => {
               Clear History
             </ClearHistory>
           </HistoryHeader>
-          {getHistory(tabPageStore)}
+          <HistoryResults>{getHistory(tabPageStore)}</HistoryResults>
         </HistoryModal>
       </HistoryModalParent>
     </>
