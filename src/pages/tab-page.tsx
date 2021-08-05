@@ -81,6 +81,10 @@ const HistoryModalLocal = observer(() => {
   );
 });
 
+const FuzzyTabs = observer(() => {
+  return <div style={{ width: '200px', height: '200px', background: 'red' }} />;
+});
+
 const TabPage = observer(() => {
   const { tabPageStore } = useStore();
   const urlBoxRef = useRef<HTMLInputElement>(null);
@@ -158,9 +162,13 @@ const TabPage = observer(() => {
             }}
           />
         </URLBoxParent>
-        <TabColumnsParent>
-          <TabColumns tabPageStore={tabPageStore} />
-        </TabColumnsParent>
+        {tabPageStore.urlText.length === 0 ? (
+          <TabColumnsParent>
+            <TabColumns />
+          </TabColumnsParent>
+        ) : (
+          <FuzzyTabs />
+        )}
         <Footer>
           <WorkspaceButton>Workspace</WorkspaceButton>
           <HistoryButton

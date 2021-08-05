@@ -2,7 +2,7 @@ import styled from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import React from 'react';
 import { ipcRenderer } from 'electron';
-import TabPageStore from '../../store/tab-page-store';
+import TabPageStore, { useStore } from '../../store/tab-page-store';
 import { ITab, TabPageColumn, TabPageTab } from '../../interfaces/tab';
 import { getRootDomain } from '../../utils/data';
 import redX from '../../static/x-letter.svg';
@@ -156,59 +156,58 @@ function Tab({ title, imgUrl, tab }: ITab) {
   );
 }
 
-export const TabColumns = observer(
-  ({ tabPageStore }: { tabPageStore: TabPageStore }) => {
-    const columns: Record<string, TabPageTab[]> = {};
+export const TabColumns = observer(() => {
+  const columns: Record<string, TabPageTab[]> = {};
+  const { tabPageStore } = useStore();
 
-    Object.values(tabPageStore.tabs).forEach((tab) => {
-      const domain = getRootDomain(tab.url);
-      if (!columns[domain]) {
-        columns[domain] = [];
-      }
-      columns[domain].unshift(tab);
-    });
+  Object.values(tabPageStore.tabs).forEach((tab) => {
+    const domain = getRootDomain(tab.url);
+    if (!columns[domain]) {
+      columns[domain] = [];
+    }
+    columns[domain].unshift(tab);
+  });
 
-    const tabPageColumns: TabPageColumn[] = [];
+  const tabPageColumns: TabPageColumn[] = [];
 
-    Object.keys(columns).forEach((key) => {
-      const column: TabPageColumn = { domain: key, tabs: columns[key] };
-      tabPageColumns.push(column);
-    });
+  Object.keys(columns).forEach((key) => {
+    const column: TabPageColumn = { domain: key, tabs: columns[key] };
+    tabPageColumns.push(column);
+  });
 
-    return (
-      <>
-        {tabPageColumns.map((column) => {
-          // let columnFavicon = '';
-          // if (column.tabs.length > 0) {
-          //   columnFavicon = column.tabs[0].favicon;
-          // }
+  return (
+    <>
+      {tabPageColumns.map((column) => {
+        // let columnFavicon = '';
+        // if (column.tabs.length > 0) {
+        //   columnFavicon = column.tabs[0].favicon;
+        // }
 
-          // {/*<Favicon src={columnFavicon} />*/}
+        // {/*<Favicon src={columnFavicon} />*/}
 
-          return (
-            <Column key={column.domain}>
-              <div style={{ width: '100%', display: 'flex' }}>
-                <ColumnHeader>{column.domain}</ColumnHeader>
-              </div>
-              {column.tabs.map((tab) => {
-                const imgUrl =
-                  tab.openGraphInfo !== null && tab.openGraphInfo.image !== ''
-                    ? tab.openGraphInfo.image
-                    : tab.image;
-                const title =
-                  tab.openGraphInfo !== null &&
-                  tab.openGraphInfo.title !== '' &&
-                  tab.openGraphInfo.title !== 'null'
-                    ? tab.openGraphInfo.title
-                    : tab.title;
-                return (
-                  <Tab key={tab.id} tab={tab} title={title} imgUrl={imgUrl} />
-                );
-              })}
-            </Column>
-          );
-        })}
-      </>
-    );
-  }
-);
+        return (
+          <Column key={column.domain}>
+            <div style={{ width: '100%', display: 'flex' }}>
+              <ColumnHeader>{column.domain}</ColumnHeader>
+            </div>
+            {column.tabs.map((tab) => {
+              const imgUrl =
+                tab.openGraphInfo !== null && tab.openGraphInfo.image !== ''
+                  ? tab.openGraphInfo.image
+                  : tab.image;
+              const title =
+                tab.openGraphInfo !== null &&
+                tab.openGraphInfo.title !== '' &&
+                tab.openGraphInfo.title !== 'null'
+                  ? tab.openGraphInfo.title
+                  : tab.title;
+              return (
+                <Tab key={tab.id} tab={tab} title={title} imgUrl={imgUrl} />
+              );
+            })}
+          </Column>
+        );
+      })}
+    </>
+  );
+});
