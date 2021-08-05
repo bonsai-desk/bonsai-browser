@@ -8,7 +8,8 @@ import { Provider, rootStore, tabStore } from './utils/data';
 import './index.css';
 import MainWindow from './pages/main-window';
 import Overlay from './pages/overlay';
-import TabPage, { TabPageStore } from './pages/tab-page';
+import TabPage from './pages/tab-page';
+import TabPageStore from './store/tab-page-store';
 
 if (document.getElementById('root')) {
   render(

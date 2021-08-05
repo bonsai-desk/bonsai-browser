@@ -97,3 +97,24 @@ export function useStore() {
   }
   return store;
 }
+
+export function getRootDomain(url: string): string {
+  let testUrl;
+  try {
+    const { hostname } = new URL(url);
+    testUrl = `http://${hostname}`;
+  } catch {
+    testUrl = url;
+  }
+
+  const ex = /\w*\./g;
+  const result = testUrl.matchAll(ex);
+  if (result !== null) {
+    const results = [...result];
+    if (results.length > 0) {
+      const r = results[results.length - 1][0];
+      return r.substring(0, r.length - 1);
+    }
+  }
+  return '';
+}

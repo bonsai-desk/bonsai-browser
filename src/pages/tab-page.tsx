@@ -1,480 +1,41 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import styled, { css } from 'styled-components';
-import { makeAutoObservable, runInAction } from 'mobx';
+import { runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
-import { HistoryEntry, OpenGraphInfo } from '../utils/tab-view';
 import '../tabPage.css';
 import redX from '../static/x-letter.svg';
-
-const Background = styled.div`
-  width: 100vw;
-  height: 100vh;
-  border-radius: 25px;
-  //border: 0.5px solid white;
-  //padding-left: 10px;
-  display: flex;
-  flex-direction: column;
-`;
-
-const Footer = styled.div`
-  //background-color: red;
-  width: 100%;
-  height: 85px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;
-
-const WorkspaceButton = styled.button`
-  border: none;
-  outline: none;
-  width: 75px;
-  height: 75px;
-  border-radius: 50%;
-
-  :hover {
-    background-color: lightgray;
-  }
-`;
-
-const Tabs = styled.div`
-  display: flex;
-  align-items: flex-start;
-  //padding-left: 25px;
-  //background-color: blue;
-  flex-grow: 1;
-  overflow: auto;
-`;
-
-const Column = styled.div`
-  display: flex;
-  justify-content: center;
-  flex-direction: column;
-  align-items: center;
-  user-select: none;
-  //background-color: darkgrey;
-  padding: 5px 10px 5px 10px;
-  //border: 2px solid white;
-  margin-right: 25px;
-  border-radius: 25px;
-  color: white;
-`;
-
-const URLBoxParent = styled.div`
-  display: flex;
-  justify-content: center;
-  width: calc(100% - 2px - 10px - 4px - 20px);
-`;
-
-const URLBox = styled.input`
-  background-color: rgba(175, 175, 175, 0.25);
-  font-size: 1.25rem;
-  font-weight: bold;
-  border-radius: 10px;
-  outline: none;
-  border: none;
-  //border: 2px solid white;
-  padding: 0.75rem;
-  margin: 10px;
-  width: 30rem;
-  color: rgb(250, 250, 250);
-
-  ::placeholder {
-    color: rgb(150, 150, 150);
-  }
-`;
-
-const ColumnHeader = styled.div`
-  font-weight: bold;
-  font-size: 1.5rem;
-  margin-bottom: 10px;
-`;
-
-const TabParent = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex-shrink: 0;
-  width: 175px;
-  word-wrap: break-word;
-  text-overflow: ellipsis;
-  margin-bottom: 20px;
-`;
-
-const TabImageParent = styled.div`
-  height: 98px;
-  width: 175px;
-  position: relative;
-  border-radius: 10px;
-  display: flex;
-  justify-content: center;
-  overflow: hidden;
-  object-fit: cover;
-  :hover {
-    .title {
-      opacity: 100;
-      background: red;
-    }
-  }
-`;
-
-const RedX = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-content: center;
-  justify-content: center;
-`;
-
-const RedXParent = styled.div`
-  font-size: 0.6rem;
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  transition-duration: 0.25s;
-  opacity: 0;
-  :hover {
-    opacity: 100;
-  }
-  :hover #RedX {
-    //backdrop-filter: blur(5px);
-    //background: rgba(200, 200, 200, 0.7);
-    transition-duration: 0s;
-  }
-  #RedX {
-    transition-duration: 0.25s;
-    border-radius: 999px;
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 30px;
-    height: 30px;
-    background: rgba(200, 200, 200, 0.7);
-    :hover {
-      background: rgba(255, 0, 0, 1);
-    }
-  }
-`;
-
-const TabTitle = styled.div`
-  width: calc(100% - 40px - 10px);
-  height: 100%;
-  padding: 5px;
-  font-size: 15px;
-  overflow: hidden;
-`;
-
-const TabImage = styled.img`
-  height: 100%;
-  background: white;
-`;
-
-const HistoryButton = styled.button`
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 125px;
-  height: 50px;
-  border-radius: 10px;
-  //border: 2px solid white;
-  border: none;
-  outline: none;
-  //font-size: 25px;
-  //color: white;
-  //background-color: rgb(100, 100, 100);
-
-  :hover {
-    background-color: lightgray;
-  }
-`;
-
-const HistoryModalParent = styled.div`
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100vw;
-  height: 100vh;
-
-  ${({ active }: { active: boolean }) =>
-    css`
-      display: ${active ? 'block' : 'none'};
-    `}
-`;
-
-const HistoryModalBackground = styled.div`
-  background-color: rgba(0.25, 0.25, 0.25, 0.35);
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100vw;
-  height: 100vh;
-`;
-
-const HistoryModal = styled.div`
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  right: 0;
-  margin: auto;
-  width: 80vw;
-  height: 80vh;
-  background-color: lightgrey;
-  border-radius: 25px;
-  border: 2px solid white;
-  box-shadow: 0 0 5px 0 rgba(0, 0, 0, 1);
-  padding: 20px;
-`;
-
-const HistoryResults = styled.div`
-  //background-color: blue;
-  overflow-y: auto;
-  height: calc(100% - 40px);
-`;
-
-const HistoryHeader = styled.div`
-  width: 100%;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  margin-bottom: 5px;
-`;
-
-const HistorySearch = styled.input`
-  outline: none;
-  padding: 5px 10px 5px 10px;
-  border-radius: 10000px;
-  border: 2px solid white;
-  //width: calc(100% - 20px - 4px);
-  flex-grow: 1;
-`;
-
-const ClearHistory = styled.button`
-  width: 100px;
-  height: 28px;
-  border-radius: 1000000px;
-  border: 2px solid white;
-  outline: none;
-  margin-left: 5px;
-`;
-
-const HistoryResult = styled.div`
-  background-color: gray;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  line-height: 50px;
-  text-align: center;
-  border-radius: 25px;
-  margin-bottom: 5px;
-  padding-left: 20px;
-  user-select: none;
-  display: flex;
-  align-items: center;
-
-  :hover {
-    cursor: pointer;
-  }
-`;
-
-const HistoryTitleDiv = styled.div`
-  //background-color: red;
-  line-height: 25px;
-  margin: 10px;
-  color: white;
-`;
-
-const HistoryUrlDiv = styled.div`
-  line-height: 25px;
-  margin: 10px;
-  color: lightgrey;
-  font-size: 15px;
-`;
-
-const Favicon = styled.img`
-  width: 16px;
-  height: 16px;
-`;
-
-interface TabPageTab {
-  id: number;
-
-  lastAccessTime: number;
-
-  url: string;
-
-  title: string;
-
-  image: string;
-
-  favicon: string;
-
-  openGraphInfo: OpenGraphInfo | null;
-}
-
-export class TabPageStore {
-  tabs: Record<string, TabPageTab> = {};
-
-  historyMap = new Map<string, HistoryEntry>();
-
-  searchResult: HistoryEntry[] | null = null;
-
-  historyModalActive = false;
-
-  constructor() {
-    makeAutoObservable(this);
-
-    ipcRenderer.on('tabView-created-with-id', (_, id) => {
-      runInAction(() => {
-        this.tabs[id] = {
-          id,
-          lastAccessTime: new Date().getTime(),
-          url: '',
-          title: '',
-          image: '',
-          favicon: '',
-          openGraphInfo: null,
-        };
-      });
-    });
-    ipcRenderer.on('tab-removed', (_, id) => {
-      runInAction(() => {
-        delete this.tabs[id];
-      });
-    });
-    ipcRenderer.on('url-changed', (_, [id, url]) => {
-      runInAction(() => {
-        this.tabs[id].url = url;
-      });
-    });
-    ipcRenderer.on('title-updated', (_, [id, title]) => {
-      runInAction(() => {
-        this.tabs[id].title = title;
-      });
-    });
-    ipcRenderer.on('access-tab', (_, id) => {
-      runInAction(() => {
-        this.tabs[id].lastAccessTime = new Date().getTime();
-      });
-    });
-    ipcRenderer.on('tab-image', (_, [id, image]) => {
-      runInAction(() => {
-        if (typeof this.tabs[id] !== 'undefined') {
-          this.tabs[id].image = image;
-        }
-      });
-    });
-    ipcRenderer.on('add-history', (_, entry: HistoryEntry) => {
-      runInAction(() => {
-        if (entry.openGraphData.title !== 'null') {
-          Object.values(this.tabs).forEach((tab) => {
-            if (tab.url === entry.url) {
-              tab.openGraphInfo = entry.openGraphData;
-            }
-          });
-        }
-        this.historyMap.delete(entry.key);
-        this.historyMap.set(entry.key, entry);
-        const keys = this.historyMap.keys();
-        let result = keys.next();
-        while (!result.done) {
-          if (this.historyMap.size <= 50) {
-            break;
-          }
-          this.historyMap.delete(result.value);
-          result = keys.next();
-        }
-      });
-    });
-    ipcRenderer.on('history-search-result', (_, result) => {
-      runInAction(() => {
-        this.searchResult = result;
-      });
-    });
-    ipcRenderer.on('close-history-modal', () => {
-      runInAction(() => {
-        this.historyModalActive = false;
-      });
-    });
-    ipcRenderer.on('open-history-modal', () => {
-      runInAction(() => {
-        this.historyModalActive = true;
-      });
-    });
-    ipcRenderer.on('toggle-history-modal', () => {
-      runInAction(() => {
-        this.historyModalActive = !this.historyModalActive;
-      });
-    });
-    ipcRenderer.on('favicon-updated', (_, [id, favicon]) => {
-      runInAction(() => {
-        this.tabs[id].favicon = favicon;
-      });
-    });
-    ipcRenderer.on('history-cleared', () => {
-      runInAction(() => {
-        this.historyMap.clear();
-        this.searchResult = [];
-      });
-    });
-  }
-}
-
-function getHistory(tabPageStore: TabPageStore) {
-  let results;
-  if (tabPageStore.searchResult === null) {
-    results = Array.from(tabPageStore.historyMap.values()).map(
-      (_, index, array) => {
-        return array[array.length - 1 - index];
-      }
-    );
-  } else {
-    results = tabPageStore.searchResult;
-  }
-
-  return results.map((entry) => {
-    return (
-      <HistoryResult
-        key={entry.key}
-        onClick={() => {
-          ipcRenderer.send('search-url', entry.url);
-        }}
-      >
-        <Favicon src={entry.favicon} />
-        <HistoryTitleDiv>{entry.title}</HistoryTitleDiv>
-        <HistoryUrlDiv>{entry.url}</HistoryUrlDiv>
-      </HistoryResult>
-    );
-  });
-}
-
-function getRootDomain(url: string): string {
-  let testUrl;
-  try {
-    const { hostname } = new URL(url);
-    testUrl = `http://${hostname}`;
-  } catch {
-    testUrl = url;
-  }
-
-  const ex = /\w*\./g;
-  const result = testUrl.matchAll(ex);
-  if (result !== null) {
-    const results = [...result];
-    if (results.length > 0) {
-      const r = results[results.length - 1][0];
-      return r.substring(0, r.length - 1);
-    }
-  }
-  return '';
-}
-
-interface ITab {
-  title: string;
-  imgUrl: string;
-  tab: TabPageTab;
-}
+import {
+  ClearHistory,
+  HistoryButton,
+  HistoryHeader,
+  HistoryModal,
+  HistoryModalBackground,
+  HistoryModalParent,
+  HistoryResult,
+  HistoryResults,
+  HistorySearch,
+  HistoryTitleDiv,
+  HistoryUrlDiv,
+} from '../components/History';
+import { URLBox, URLBoxParent } from '../components/TabPageHeader';
+import {
+  Background,
+  Column,
+  ColumnHeader,
+  Favicon,
+  Footer,
+  RedX,
+  RedXParent,
+  TabColumnsParent,
+  TabImage,
+  TabImageParent,
+  TabParent,
+  TabTitle,
+  WorkspaceButton,
+} from '../components/TabPageContent';
+import { ITab, TabPageColumn, TabPageTab } from '../interfaces/tab';
+import TabPageStore from '../store/tab-page-store';
+import { getRootDomain } from '../utils/data';
 
 function Tab({ title, imgUrl, tab }: ITab) {
   return (
@@ -501,26 +62,6 @@ function Tab({ title, imgUrl, tab }: ITab) {
     </TabParent>
   );
 }
-
-interface TabPageColumn {
-  domain: string;
-
-  tabs: TabPageTab[];
-}
-
-// <CloseColumnButton
-//   type="button"
-//   onClick={() => {
-//     const ids: number[] = [];
-//     Object.keys(tabPageStore.tabs).forEach((key: string) => {
-//       const tab = tabPageStore.tabs[key];
-//       if (getRootDomain(tab.url) === column.domain) {
-//         ids.push(tab.id);
-//       }
-//     });
-//     ipcRenderer.send('remove-tabs', ids);
-//   }}
-// ></CloseColumnButton>
 
 function tabColumns(tabPageStore: TabPageStore) {
   const columns: Record<string, TabPageTab[]> = {};
@@ -567,6 +108,34 @@ function tabColumns(tabPageStore: TabPageStore) {
           return <Tab key={tab.id} tab={tab} title={title} imgUrl={imgUrl} />;
         })}
       </Column>
+    );
+  });
+}
+
+export function getHistory(tabPageStore: TabPageStore) {
+  let results;
+  if (tabPageStore.searchResult === null) {
+    results = Array.from(tabPageStore.historyMap.values()).map(
+      (_, index, array) => {
+        return array[array.length - 1 - index];
+      }
+    );
+  } else {
+    results = tabPageStore.searchResult;
+  }
+
+  return results.map((entry) => {
+    return (
+      <HistoryResult
+        key={entry.key}
+        onClick={() => {
+          ipcRenderer.send('search-url', entry.url);
+        }}
+      >
+        <Favicon src={entry.favicon} />
+        <HistoryTitleDiv>{entry.title}</HistoryTitleDiv>
+        <HistoryUrlDiv>{entry.url}</HistoryUrlDiv>
+      </HistoryResult>
     );
   });
 }
@@ -660,7 +229,7 @@ const TabPage = observer(({ tabPageStore }: { tabPageStore: TabPageStore }) => {
             }}
           />
         </URLBoxParent>
-        <Tabs>{tabColumns(tabPageStore)}</Tabs>
+        <TabColumnsParent>{tabColumns(tabPageStore)}</TabColumnsParent>
         <Footer>
           <WorkspaceButton>Workspace</WorkspaceButton>
           <HistoryButton

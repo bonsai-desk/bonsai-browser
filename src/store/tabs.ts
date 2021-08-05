@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
-import TabObject from '../interfaces/tab';
+import TabObject from '../interfaces/tabObject';
 
 export default class TabStore {
   tabs: TabObject[] = [];
