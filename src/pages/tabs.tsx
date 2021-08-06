@@ -24,6 +24,7 @@ import {
   Tab,
   FooterButton,
 } from '../components/TabPageContent';
+import Workspace from '../components/Workspace';
 
 const HistoryModalLocal = observer(() => {
   const { tabPageStore } = useStore();
@@ -85,7 +86,7 @@ const HistoryModalLocal = observer(() => {
 const FuzzyTabs = observer(() => {
   const { tabPageStore } = useStore();
   return (
-    <div style={{ color: 'white' }}>
+    <div style={{ color: 'white', flexGrow: 1 }}>
       <h1>Today</h1>
       {tabPageStore.filteredTabs.map((result) => {
         const { item } = result;
@@ -93,6 +94,22 @@ const FuzzyTabs = observer(() => {
       })}
     </div>
   );
+});
+
+const MainContent = observer(() => {
+  const { tabPageStore } = useStore();
+  const tabs =
+    tabPageStore.urlText.length === 0 ? (
+      <TabColumnsParent>
+        <TabColumns />
+      </TabColumnsParent>
+    ) : (
+      <FuzzyTabs />
+    );
+
+  const workspace = <Workspace />;
+
+  return tabPageStore.workspaceActive ? workspace : tabs;
 });
 
 const Tabs = observer(() => {
@@ -172,15 +189,15 @@ const Tabs = observer(() => {
             }}
           />
         </URLBoxParent>
-        {tabPageStore.urlText.length === 0 ? (
-          <TabColumnsParent>
-            <TabColumns />
-          </TabColumnsParent>
-        ) : (
-          <FuzzyTabs />
-        )}
+        <MainContent />
         <Footer>
-          <FooterButton>Workspace</FooterButton>
+          <FooterButton
+            onClick={() => {
+              tabPageStore.workspaceActive = !tabPageStore.workspaceActive;
+            }}
+          >
+            Workspace
+          </FooterButton>
           <HistoryButton
             type="button"
             onClick={() => {

@@ -8,7 +8,7 @@ const Button = styled.button`
   appearance: none;
   font-size: 1.3rem;
   -webkit-app-region: drag;
-  box-shadow: 0px 8px 28px -6px rgba(24, 39, 75, 0.12),
+  box-shadow: 0 8px 28px -6px rgba(24, 39, 75, 0.12),
     0px 18px 88px -4px rgba(24, 39, 75, 0.14);
   transition: transform ease-in 0.1s;
   cursor: pointer;
