@@ -64,8 +64,8 @@ export const createWindow = async () => {
   app.on('activate', () => {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
-    if (!mainWindow?.isVisible()) {
-      wm.mainWindow.show();
+    if (mainWindow?.isMinimized()) {
+      wm.mainWindow.restore();
       wm.unFloat(display.activeDisplay);
       setTimeout(() => {
         // todo: search box does not get highlited on macos unless we do this hack
@@ -86,6 +86,7 @@ export const createWindow = async () => {
       wm.browserPadding().toString()
     );
     mainWindow?.show();
+    mainWindow?.restore();
     wm.unFloat(display.activeDisplay);
     setTimeout(() => {
       wm.setTab(-1);
@@ -93,7 +94,7 @@ export const createWindow = async () => {
   });
 
   mainWindow.on('blur', () => {
-    if (!wm.windowFloating && wm.mainWindow.isVisible() && !wm.isPinned) {
+    if (!wm.windowFloating && !wm.mainWindow.isMinimized() && !wm.isPinned) {
       // const mousePoint = screen.getCursorScreenPoint();
       // const activeDisplay = screen.getDisplayNearestPoint(mousePoint);
       // const mouseOnWindowDisplay =
@@ -101,7 +102,7 @@ export const createWindow = async () => {
       // if (mouseOnWindowDisplay) {
       wm.unFloat(display.activeDisplay);
       wm.setTab(-1);
-      mainWindow?.hide();
+      mainWindow?.minimize();
       // }
     }
   });
@@ -110,12 +111,12 @@ export const createWindow = async () => {
 
   addListeners(wm);
 
-  mainWindow.on('minimize', (e: Event) => {
-    if (mainWindow !== null) {
-      e.preventDefault();
-      mainWindow.hide();
-    }
-  });
+  // mainWindow.on('minimize', (e: Event) => {
+  //   if (mainWindow !== null) {
+  //     e.preventDefault();
+  //     mainWindow.hide();
+  //   }
+  // });
 
   wm.resize();
 
@@ -154,42 +155,55 @@ export const createWindow = async () => {
 
   mainWindow?.setResizable(false);
 
-  const shortCut = app.isPackaged ? 'Alt+Space' : 'CmdOrCtrl+\\';
-  globalShortcut.register(shortCut, () => {
-    const activeTabView = wm.allTabViews[wm.activeTabId];
-    if (!mainWindow?.isVisible()) {
-      const mousePoint = screen.getCursorScreenPoint();
-      display.activeDisplay = screen.getDisplayNearestPoint(mousePoint);
+  function openAndFocus() {
+    const mousePoint = screen.getCursorScreenPoint();
+    display.activeDisplay = screen.getDisplayNearestPoint(mousePoint);
 
-      wm.mainWindow.setVisibleOnAllWorkspaces(true, {
-        visibleOnFullScreen: true,
-      });
-      wm.mainWindow.show();
-      wm.mainWindow.setVisibleOnAllWorkspaces(false, {
-        visibleOnFullScreen: true,
-      });
-      wm.isPinned = false;
-      wm.mainWindow.webContents.send('set-pinned', wm.isPinned);
-      wm.unFloat(display.activeDisplay);
+    wm.mainWindow.setVisibleOnAllWorkspaces(true, {
+      visibleOnFullScreen: true,
+    });
+    wm.mainWindow.restore();
+    wm.mainWindow.setVisibleOnAllWorkspaces(false, {
+      visibleOnFullScreen: true,
+    });
+    wm.isPinned = false;
+    wm.mainWindow.webContents.send('set-pinned', wm.isPinned);
+    wm.unFloat(display.activeDisplay);
+    if (wm.activeTabId === -1) {
       // todo: search box does not get highlighted on macos unless we do this hack
       setTimeout(() => {
         wm.setTab(-1);
       }, 10);
-    } else if (
-      !wm.windowFloating &&
-      activeTabView !== null &&
-      typeof activeTabView !== 'undefined' &&
-      activeTabView.view.webContents.getURL() !== ''
-    ) {
-      const height80 = display.activeDisplay.workAreaSize.height * 0.7;
-      const floatingWidth = Math.floor(height80 * 0.7);
-      const floatingHeight = Math.floor(height80);
-      wm.float(display.activeDisplay, floatingWidth, floatingHeight);
-    } else {
-      wm.unFloat(display.activeDisplay);
-      wm.setTab(-1);
-      mainWindow?.hide();
     }
+  }
+
+  mainWindow.on('restore', () => {
+    openAndFocus();
+  });
+
+  // const shortCut = app.isPackaged ? 'Alt+Space' : 'CmdOrCtrl+\\';
+  const shortCut = 'Alt+Space';
+  globalShortcut.register(shortCut, () => {
+    // const activeTabView = wm.allTabViews[wm.activeTabId];
+    if (mainWindow?.isMinimized()) {
+      openAndFocus();
+    } else {
+      // wm.unFloat(display.activeDisplay);
+      // wm.setTab(-1);
+      mainWindow?.minimize();
+    }
+    // } else if (
+    //   !wm.windowFloating &&
+    //   activeTabView !== null &&
+    //   typeof activeTabView !== 'undefined' &&
+    //   activeTabView.view.webContents.getURL() !== ''
+    // ) {
+    //   wm.float();
+    // } else {
+    //   wm.unFloat(display.activeDisplay);
+    //   wm.setTab(-1);
+    //   mainWindow?.minimize();
+    // }
   });
 
   app.on('before-quit', () => {
@@ -263,12 +277,12 @@ export const createWindow = async () => {
         accelerator: 'Escape',
         click: () => {
           if (wm.windowFloating) {
-            mainWindow?.hide();
+            mainWindow?.minimize();
           } else if (windowHasView(wm.mainWindow, wm.tabPageView)) {
             if (wm.historyModalActive) {
               wm.tabPageView.webContents.send('close-history-modal');
             } else {
-              mainWindow?.hide();
+              mainWindow?.minimize();
             }
           } else if (windowHasView(wm.mainWindow, wm.titleBarView)) {
             if (windowHasView(wm.mainWindow, wm.findView)) {

@@ -24,6 +24,8 @@ export default class TabPageStore {
 
   historyInput: HTMLInputElement | null;
 
+  workspaceActive = false;
+
   setFocus() {
     if (this.historyModalActive) {
       this.historyInput?.focus();

@@ -83,6 +83,9 @@ function addListeners(wm: WindowManager) {
     wm.isPinned = !wm.isPinned;
     wm.mainWindow.webContents.send('set-pinned', wm.isPinned);
   });
+  ipcMain.on('float', () => {
+    wm.float();
+  });
 }
 
 export default addListeners;
