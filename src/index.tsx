@@ -8,11 +8,8 @@ import { Provider, RootModel } from './utils/data';
 import './index.css';
 import MainWindow from './pages/main-window';
 import Overlay from './pages/overlay';
-import Tabs from './pages/tabs';
-import TabPageStore, {
-  Provider as TabPageStoreProvider,
-} from './store/tab-page-store';
 import TabStore from './store/tabs';
+import TabsPage from './pages/tabs-page';
 
 if (document.getElementById('root')) {
   const rootStore = RootModel.create({
@@ -72,11 +69,5 @@ if (document.getElementById('overlay')) {
 }
 
 if (document.getElementById('tab-page')) {
-  const tabPageStore = new TabPageStore();
-  render(
-    <TabPageStoreProvider value={{ tabPageStore }}>
-      <Tabs />
-    </TabPageStoreProvider>,
-    document.getElementById('tab-page')
-  );
+  render(<TabsPage />, document.getElementById('tab-page'));
 }

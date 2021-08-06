@@ -66,6 +66,7 @@ export default class TabPageStore {
     this.filteredTabs = [];
     this.urlInput = null;
     this.historyInput = null;
+    //
 
     ipcRenderer.on('tabView-created-with-id', (_, id) => {
       runInAction(() => {
@@ -175,3 +176,5 @@ export function useStore() {
   }
   return store;
 }
+
+export const tabPageStore = new TabPageStore();
