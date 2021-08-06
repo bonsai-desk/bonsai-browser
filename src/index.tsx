@@ -8,14 +8,14 @@ import { Provider, RootModel } from './utils/data';
 import './index.css';
 import MainWindow from './pages/main-window';
 import Overlay from './pages/overlay';
-import TabPage from './pages/tab-page';
+import Tabs from './pages/tabs';
 import TabPageStore, {
   Provider as TabPageStoreProvider,
 } from './store/tab-page-store';
 import TabStore from './store/tabs';
 
 if (document.getElementById('root')) {
-  const initialState = RootModel.create({
+  const rootStore = RootModel.create({
     users: {
       '1': {
         id: '1',
@@ -41,8 +41,6 @@ if (document.getElementById('root')) {
       },
     },
   });
-
-  const rootStore = initialState;
   const tabStore = new TabStore();
 
   render(
@@ -77,7 +75,7 @@ if (document.getElementById('tab-page')) {
   const tabPageStore = new TabPageStore();
   render(
     <TabPageStoreProvider value={{ tabPageStore }}>
-      <TabPage />
+      <Tabs />
     </TabPageStoreProvider>,
     document.getElementById('tab-page')
   );

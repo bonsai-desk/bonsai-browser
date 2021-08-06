@@ -82,7 +82,6 @@ const HistoryModalLocal = observer(() => {
   );
 });
 
-// flex grow 1
 const FuzzyTabs = observer(() => {
   const { tabPageStore } = useStore();
   return (
@@ -96,7 +95,7 @@ const FuzzyTabs = observer(() => {
   );
 });
 
-const TabPage = observer(() => {
+const Tabs = observer(() => {
   const { tabPageStore } = useStore();
   const urlBoxRef = useRef<HTMLInputElement>(null);
   const [urlFocus, setUrlFocus] = useState(false);
@@ -199,4 +198,4 @@ const TabPage = observer(() => {
   );
 });
 
-export default TabPage;
+export default Tabs;

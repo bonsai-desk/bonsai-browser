@@ -42,7 +42,7 @@ export default class TabPageStore {
 
   searchTab(pattern: string) {
     const tabFuse = new Fuse<TabPageTab>(Object.values(this.tabs), {
-      keys: ['url', 'title', 'openGraphData.title'],
+      keys: ['title', 'openGraphData.title'],
     });
     this.filteredTabs = tabFuse.search(pattern);
   }
