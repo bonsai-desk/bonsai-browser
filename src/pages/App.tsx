@@ -5,6 +5,7 @@ import { ipcRenderer } from 'electron';
 import { useStore } from '../utils/data';
 import backIcon from '../../assets/arrow-back.svg';
 import refreshIcon from '../../assets/refresh.svg';
+import copyIcon from '../../assets/copy.svg';
 
 const TitleBarFull = styled.div`
   width: 100vw;
@@ -14,7 +15,7 @@ const TitleBarFull = styled.div`
 `;
 
 const TitleBarBottom = styled.div`
-  width: calc(100% - 4px);
+  width: calc(100% - 4px - 5px);
   height: 36px;
   background-color: white;
   border-bottom: 1px solid #dee1e6;
@@ -22,6 +23,7 @@ const TitleBarBottom = styled.div`
   align-items: center;
   align-content: center;
   padding-left: 4px;
+  padding-right: 5px;
   overflow: hidden;
 `;
 
@@ -67,7 +69,7 @@ const URLBox = styled.input`
   outline: none;
   border: 2px solid black;
   padding-left: 10px;
-  margin-right: 10px;
+  margin-right: 5px;
   height: 22px;
 `;
 
@@ -162,6 +164,14 @@ const TitleBar = observer(() => {
             }
           }}
         />
+        <RoundButton
+          color="#949494"
+          onClick={() => {
+            ipcRenderer.send('float');
+          }}
+        >
+          <RoundButtonIcon src={copyIcon} />
+        </RoundButton>
       </TitleBarBottom>
     </TitleBarFull>
   );

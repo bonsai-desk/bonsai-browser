@@ -819,12 +819,18 @@ export default class WindowManager {
     }
   }
 
-  float(display: Display, floatingWidth: number, floatingHeight: number) {
+  float() {
     if (this.windowFloating) {
       return;
     }
 
     this.windowFloating = true;
+
+    const display = WindowManager.display.activeDisplay;
+    const height80 = display.workAreaSize.height * 0.7;
+    const floatingWidth = Math.floor(height80 * 0.7);
+    const floatingHeight = Math.floor(height80);
+
     // snap to corner mode
     if (!windowHasView(this.mainWindow, this.overlayView)) {
       this.mainWindow?.addBrowserView(this.overlayView);

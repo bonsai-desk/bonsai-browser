@@ -154,9 +154,10 @@ export const createWindow = async () => {
 
   mainWindow?.setResizable(false);
 
-  const shortCut = app.isPackaged ? 'Alt+Space' : 'CmdOrCtrl+\\';
+  // const shortCut = app.isPackaged ? 'Alt+Space' : 'CmdOrCtrl+\\';
+  const shortCut = 'Alt+Space';
   globalShortcut.register(shortCut, () => {
-    const activeTabView = wm.allTabViews[wm.activeTabId];
+    // const activeTabView = wm.allTabViews[wm.activeTabId];
     if (!mainWindow?.isVisible()) {
       const mousePoint = screen.getCursorScreenPoint();
       display.activeDisplay = screen.getDisplayNearestPoint(mousePoint);
@@ -171,25 +172,37 @@ export const createWindow = async () => {
       wm.isPinned = false;
       wm.mainWindow.webContents.send('set-pinned', wm.isPinned);
       wm.unFloat(display.activeDisplay);
-      // todo: search box does not get highlighted on macos unless we do this hack
-      setTimeout(() => {
-        wm.setTab(-1);
-      }, 10);
-    } else if (
-      !wm.windowFloating &&
-      activeTabView !== null &&
-      typeof activeTabView !== 'undefined' &&
-      activeTabView.view.webContents.getURL() !== ''
-    ) {
-      const height80 = display.activeDisplay.workAreaSize.height * 0.7;
-      const floatingWidth = Math.floor(height80 * 0.7);
-      const floatingHeight = Math.floor(height80);
-      wm.float(display.activeDisplay, floatingWidth, floatingHeight);
+      // wm.windowPosition[0] = display.activeDisplay.workArea.x;
+      // wm.windowPosition[1] = display.activeDisplay.workArea.y;
+      // wm.windowSize.width = display.activeDisplay.workArea.width;
+      // wm.windowSize.height =
+      //   display.activeDisplay.workArea.height +
+      //   (process.platform === 'darwin' ? 0 : 1); // todo: on windows if you make it the same size as monitor, everything breaks!?!??!?!?
+      // wm.updateMainWindowBounds();
+      // wm.resize();
+      if (wm.activeTabId === -1) {
+        // todo: search box does not get highlighted on macos unless we do this hack
+        setTimeout(() => {
+          wm.setTab(-1);
+        }, 10);
+      }
     } else {
-      wm.unFloat(display.activeDisplay);
-      wm.setTab(-1);
+      // wm.unFloat(display.activeDisplay);
+      // wm.setTab(-1);
       mainWindow?.hide();
     }
+    // } else if (
+    //   !wm.windowFloating &&
+    //   activeTabView !== null &&
+    //   typeof activeTabView !== 'undefined' &&
+    //   activeTabView.view.webContents.getURL() !== ''
+    // ) {
+    //   wm.float();
+    // } else {
+    //   wm.unFloat(display.activeDisplay);
+    //   wm.setTab(-1);
+    //   mainWindow?.hide();
+    // }
   });
 
   app.on('before-quit', () => {
