@@ -30,8 +30,8 @@
     ]
   },
   "build": {
-    "productName": "ElectronReact",
-    "appId": "org.erb.ElectronReact",
+    "productName": "Bonsai",
+    "appId": "org.bonsai.BonsaiBrowser",
     "files": [
       "dist/",
       "node_modules/",
