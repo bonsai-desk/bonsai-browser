@@ -188,7 +188,7 @@ export const FooterButton = styled.button`
   }
 `;
 
-export function Tab({ tab }: ITab) {
+export const Tab = observer(({ tab }: ITab) => {
   const title =
     tab.openGraphInfo !== null &&
     tab.openGraphInfo.title !== '' &&
@@ -222,7 +222,7 @@ export function Tab({ tab }: ITab) {
       </TabImageParent>
     </TabParent>
   );
-}
+});
 
 export const TabColumns = observer(() => {
   const columns: Record<string, TabPageTab[]> = {};
