@@ -64,8 +64,8 @@ export const createWindow = async () => {
   app.on('activate', () => {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
-    if (mainWindow?.isMinimized()) {
-      wm.mainWindow.restore();
+    if (!mainWindow?.isVisible()) {
+      wm.mainWindow.show();
       wm.unFloat(display.activeDisplay);
       setTimeout(() => {
         // todo: search box does not get highlited on macos unless we do this hack
@@ -86,7 +86,6 @@ export const createWindow = async () => {
       wm.browserPadding().toString()
     );
     mainWindow?.show();
-    mainWindow?.restore();
     wm.unFloat(display.activeDisplay);
     setTimeout(() => {
       wm.setTab(-1);
@@ -94,7 +93,7 @@ export const createWindow = async () => {
   });
 
   mainWindow.on('blur', () => {
-    if (!wm.windowFloating && !wm.mainWindow.isMinimized() && !wm.isPinned) {
+    if (!wm.windowFloating && wm.mainWindow.isVisible() && !wm.isPinned) {
       // const mousePoint = screen.getCursorScreenPoint();
       // const activeDisplay = screen.getDisplayNearestPoint(mousePoint);
       // const mouseOnWindowDisplay =
@@ -102,7 +101,7 @@ export const createWindow = async () => {
       // if (mouseOnWindowDisplay) {
       wm.unFloat(display.activeDisplay);
       wm.setTab(-1);
-      mainWindow?.minimize();
+      mainWindow?.hide();
       // }
     }
   });
@@ -111,12 +110,12 @@ export const createWindow = async () => {
 
   addListeners(wm);
 
-  // mainWindow.on('minimize', (e: Event) => {
-  //   if (mainWindow !== null) {
-  //     e.preventDefault();
-  //     mainWindow.hide();
-  //   }
-  // });
+  mainWindow.on('minimize', (e: Event) => {
+    if (mainWindow !== null) {
+      e.preventDefault();
+      mainWindow.hide();
+    }
+  });
 
   wm.resize();
 
@@ -155,42 +154,42 @@ export const createWindow = async () => {
 
   mainWindow?.setResizable(false);
 
-  function openAndFocus() {
-    const mousePoint = screen.getCursorScreenPoint();
-    display.activeDisplay = screen.getDisplayNearestPoint(mousePoint);
-
-    wm.mainWindow.setVisibleOnAllWorkspaces(true, {
-      visibleOnFullScreen: true,
-    });
-    wm.mainWindow.restore();
-    wm.mainWindow.setVisibleOnAllWorkspaces(false, {
-      visibleOnFullScreen: true,
-    });
-    wm.isPinned = false;
-    wm.mainWindow.webContents.send('set-pinned', wm.isPinned);
-    wm.unFloat(display.activeDisplay);
-    if (wm.activeTabId === -1) {
-      // todo: search box does not get highlighted on macos unless we do this hack
-      setTimeout(() => {
-        wm.setTab(-1);
-      }, 10);
-    }
-  }
-
-  mainWindow.on('restore', () => {
-    openAndFocus();
-  });
-
   // const shortCut = app.isPackaged ? 'Alt+Space' : 'CmdOrCtrl+\\';
   const shortCut = 'Alt+Space';
   globalShortcut.register(shortCut, () => {
     // const activeTabView = wm.allTabViews[wm.activeTabId];
-    if (mainWindow?.isMinimized()) {
-      openAndFocus();
+    if (!mainWindow?.isVisible()) {
+      const mousePoint = screen.getCursorScreenPoint();
+      display.activeDisplay = screen.getDisplayNearestPoint(mousePoint);
+
+      wm.mainWindow.setVisibleOnAllWorkspaces(true, {
+        visibleOnFullScreen: true,
+      });
+      wm.mainWindow.show();
+      wm.mainWindow.setVisibleOnAllWorkspaces(false, {
+        visibleOnFullScreen: true,
+      });
+      wm.isPinned = false;
+      wm.mainWindow.webContents.send('set-pinned', wm.isPinned);
+      wm.unFloat(display.activeDisplay);
+      // wm.windowPosition[0] = display.activeDisplay.workArea.x;
+      // wm.windowPosition[1] = display.activeDisplay.workArea.y;
+      // wm.windowSize.width = display.activeDisplay.workArea.width;
+      // wm.windowSize.height =
+      //   display.activeDisplay.workArea.height +
+      //   (process.platform === 'darwin' ? 0 : 1); // todo: on windows if you make it the same size as monitor, everything breaks!?!??!?!?
+      // wm.updateMainWindowBounds();
+      // wm.resize();
+      if (wm.activeTabId === -1) {
+        // todo: search box does not get highlighted on macos unless we do this hack
+        setTimeout(() => {
+          wm.setTab(-1);
+        }, 10);
+      }
     } else {
       // wm.unFloat(display.activeDisplay);
       // wm.setTab(-1);
-      mainWindow?.minimize();
+      mainWindow?.hide();
     }
     // } else if (
     //   !wm.windowFloating &&
@@ -202,7 +201,7 @@ export const createWindow = async () => {
     // } else {
     //   wm.unFloat(display.activeDisplay);
     //   wm.setTab(-1);
-    //   mainWindow?.minimize();
+    //   mainWindow?.hide();
     // }
   });
 
@@ -277,12 +276,12 @@ export const createWindow = async () => {
         accelerator: 'Escape',
         click: () => {
           if (wm.windowFloating) {
-            mainWindow?.minimize();
+            mainWindow?.hide();
           } else if (windowHasView(wm.mainWindow, wm.tabPageView)) {
             if (wm.historyModalActive) {
               wm.tabPageView.webContents.send('close-history-modal');
             } else {
-              mainWindow?.minimize();
+              mainWindow?.hide();
             }
           } else if (windowHasView(wm.mainWindow, wm.titleBarView)) {
             if (windowHasView(wm.mainWindow, wm.findView)) {
