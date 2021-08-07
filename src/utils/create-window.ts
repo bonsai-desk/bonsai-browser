@@ -13,7 +13,7 @@ import { autoUpdater } from 'electron-updater';
 import { createTray, installExtensions } from './windows';
 import addListeners from './listeners';
 import WindowManager from './window-manager';
-import { ICON_PNG, MAIN_HTML } from '../constants';
+import { ICON_PNG, ICON_SMALL_PNG, MAIN_HTML } from '../constants';
 import windowFixedUpdate from './calculate-window-physics';
 import { windowHasView } from './utils';
 
@@ -41,13 +41,16 @@ export const createWindow = async () => {
     height: 300,
     minWidth: 50,
     minHeight: 50,
-    icon: ICON_PNG,
+    icon: ICON_SMALL_PNG,
     webPreferences: {
       nodeIntegration: true,
       devTools: false,
       contextIsolation: false, // todo: do we need this? security concern?
     },
   });
+  if (process.platform === 'darwin') {
+    app.dock.setIcon(ICON_PNG);
+  }
 
   mainWindow.setAlwaysOnTop(true);
 
@@ -150,7 +153,7 @@ export const createWindow = async () => {
 
   setInterval(update, 1);
 
-  const tray = createTray(ICON_PNG, mainWindow);
+  const tray = createTray(ICON_SMALL_PNG, mainWindow);
 
   mainWindow?.setResizable(false);
 
