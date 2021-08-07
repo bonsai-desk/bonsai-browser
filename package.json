@@ -251,6 +251,7 @@
     "yarn-deduplicate": "^3.1.0"
   },
   "dependencies": {
+    "@types/uuid": "^8.3.1",
     "electron-debug": "^3.1.0",
     "electron-log": "^4.2.4",
     "electron-updater": "^4.3.4",
@@ -263,10 +264,12 @@
     "mousetrap": "^1.6.5",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
+    "react-draggable": "^4.4.3",
     "react-router-dom": "^5.2.0",
     "regenerator-runtime": "^0.13.5",
     "source-map-support": "^0.5.19",
-    "styled-components": "^5.3.0"
+    "styled-components": "^5.3.0",
+    "uuid": "^8.3.2"
   },
   "resolutions": {
     "styled-components": "^5"

@@ -10,6 +10,12 @@ export default class TabStore {
   constructor() {
     makeAutoObservable(this);
 
+    ipcRenderer.on('url-changed', (_, [id, newUrl]) => {
+      runInAction(() => {
+        this.tabs[this.getTabIndex(id)].searchBar = newUrl;
+      });
+    });
+
     ipcRenderer.on('tab-removed', (_, id) => {
       // if (id === this.activeTabId) {
       //   let setNewTab = false;

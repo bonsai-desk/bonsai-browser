@@ -1,9 +1,8 @@
 import React from 'react';
 import { ipcRenderer } from 'electron';
-import { runInAction } from 'mobx';
 import styled, { css } from 'styled-components';
 import { observer } from 'mobx-react-lite';
-import { tabStore as tabStoreStatic, useStore } from '../../utils/data';
+import { useStore } from '../../utils/data';
 import TabObject from '../../interfaces/tabObject';
 import xIcon from '../../../assets/x-letter.svg';
 import TabStore from '../../store/tabs';
@@ -68,12 +67,6 @@ const Favicon = styled.img`
 interface ITab {
   tab: TabObject;
 }
-
-ipcRenderer.on('url-changed', (_, [id, newUrl]) => {
-  runInAction(() => {
-    tabStoreStatic.tabs[tabStoreStatic.getTabIndex(id)].searchBar = newUrl;
-  });
-});
 
 const Tab = observer(({ tab }: ITab) => {
   const { tabStore } = useStore();
