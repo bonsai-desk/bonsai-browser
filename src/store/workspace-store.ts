@@ -67,12 +67,6 @@ export const WorkspaceStore = types
       if (index !== -1 && index !== maxIndex) {
         self.groups[index].zIndex = self.groups[maxIndex].zIndex + 1;
       }
-
-      console.log(
-        self.groups.map((group) => {
-          return group.zIndex;
-        })
-      );
     },
   }));
 
