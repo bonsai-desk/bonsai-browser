@@ -53,7 +53,7 @@ const ColumnHeaderParent = styled.div`
     border-radius: 999px;
     position: absolute;
     top: 5px;
-    left: 85px;
+    right: 15px;
     width: 30px;
     height: 30px;
     background: rgba(200, 200, 200, 0.7);
