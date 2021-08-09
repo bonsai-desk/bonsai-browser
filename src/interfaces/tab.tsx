@@ -18,6 +18,7 @@ export interface TabPageTab {
 
 export interface ITab {
   tab: TabPageTab;
+  hover: boolean;
 }
 
 export interface TabPageColumn {
