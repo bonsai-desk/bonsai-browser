@@ -25,6 +25,13 @@ class AppUpdater {
   }
 }
 
+app.on('ready', () => {
+  // prevent app from moving out of fullscreen when it launches in development
+  if (process.platform === 'darwin' && process.env.NODE_ENV === 'development') {
+    app.dock.hide();
+  }
+});
+
 // eslint-disable-next-line import/prefer-default-export
 export const createWindow = async () => {
   if (
