@@ -90,7 +90,7 @@ const FuzzyTabs = observer(() => {
       <h1>Today</h1>
       {tabPageStore.filteredTabs.map((result) => {
         const { item } = result;
-        return <Tab key={item.id} tab={item} />;
+        return <Tab key={item.id} tab={item} hover />;
       })}
     </div>
   );
@@ -123,6 +123,7 @@ const Tabs = observer(() => {
         case 'Enter':
           break;
         case 'Escape':
+          console.log('pew');
           break;
         default:
           tabPageStore.setFocus();

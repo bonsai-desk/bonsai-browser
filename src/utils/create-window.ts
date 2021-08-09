@@ -165,21 +165,7 @@ export const createWindow = async () => {
   mainWindow?.setResizable(false);
 
   function toggle() {
-    if (wm.windowFloating) {
-      mainWindow?.hide();
-    } else if (windowHasView(wm.mainWindow, wm.tabPageView)) {
-      if (wm.historyModalActive) {
-        wm.tabPageView.webContents.send('close-history-modal');
-      } else {
-        mainWindow?.hide();
-      }
-    } else if (windowHasView(wm.mainWindow, wm.titleBarView)) {
-      if (windowHasView(wm.mainWindow, wm.findView)) {
-        wm.closeFind();
-      } else {
-        wm.setTab(-1);
-      }
-    }
+    wm.toggle();
   }
 
   const shortCut = 'Alt+Space';

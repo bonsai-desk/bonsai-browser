@@ -138,7 +138,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -950,5 +950,23 @@ export default class WindowManager {
     Object.values(this.allTabViews).forEach((tabView) => {
       tabView.resize(padding);
     });
+  }
+
+  toggle() {
+    if (this.windowFloating) {
+      this.mainWindow?.hide();
+    } else if (windowHasView(this.mainWindow, this.tabPageView)) {
+      if (this.historyModalActive) {
+        this.tabPageView.webContents.send('close-history-modal');
+      } else {
+        this.mainWindow?.hide();
+      }
+    } else if (windowHasView(this.mainWindow, this.titleBarView)) {
+      if (windowHasView(this.mainWindow, this.findView)) {
+        this.closeFind();
+      } else {
+        this.setTab(-1);
+      }
+    }
   }
 }
