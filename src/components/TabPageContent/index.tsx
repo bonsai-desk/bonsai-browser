@@ -172,6 +172,7 @@ export const FooterButton = styled.button`
 `;
 
 export const Tab = observer(({ tab, hover }: ITab) => {
+  const { tabPageStore } = useStore();
   const title =
     tab.openGraphInfo !== null &&
     tab.openGraphInfo.title !== '' &&
@@ -186,6 +187,7 @@ export const Tab = observer(({ tab, hover }: ITab) => {
     <TabParent
       onClick={() => {
         ipcRenderer.send('set-tab', tab.id);
+        tabPageStore.setUrlText('');
       }}
     >
       <TabImageParent>
