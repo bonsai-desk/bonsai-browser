@@ -225,27 +225,10 @@ export const Tab = observer(({ tab }: ITab) => {
 });
 
 export const TabColumns = observer(() => {
-  const columns: Record<string, TabPageTab[]> = {};
   const { tabPageStore } = useStore();
-
-  Object.values(tabPageStore.tabs).forEach((tab) => {
-    const domain = getRootDomain(tab.url);
-    if (!columns[domain]) {
-      columns[domain] = [];
-    }
-    columns[domain].unshift(tab);
-  });
-
-  const tabPageColumns: TabPageColumn[] = [];
-
-  Object.keys(columns).forEach((key) => {
-    const column: TabPageColumn = { domain: key, tabs: columns[key] };
-    tabPageColumns.push(column);
-  });
-
   return (
     <>
-      {tabPageColumns.map((column) => {
+      {tabPageStore.tabPageColumns().map((column) => {
         let columnFavicon = '';
         if (column.tabs.length > 0) {
           columnFavicon = column.tabs[0].favicon;

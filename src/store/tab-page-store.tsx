@@ -2,8 +2,9 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
 import { createContext, useContext } from 'react';
 import Fuse from 'fuse.js';
-import { TabPageTab } from '../interfaces/tab';
+import { TabPageColumn, TabPageTab } from '../interfaces/tab';
 import { HistoryEntry } from '../utils/tab-view';
+import { getRootDomain } from '../utils/data';
 
 export default class TabPageStore {
   tabs: Record<string, TabPageTab> = {};
@@ -25,6 +26,21 @@ export default class TabPageStore {
   historyInput: HTMLInputElement | null;
 
   workspaceActive = false;
+
+  tabPageColumns() {
+    const columns: Record<string, TabPageTab[]> = {};
+    Object.values(this.tabs).forEach((tab) => {
+      const domain = getRootDomain(tab.url);
+      if (!columns[domain]) {
+        columns[domain] = [];
+      }
+      columns[domain].unshift(tab);
+    });
+    return Object.keys(columns).map((key) => {
+      const column: TabPageColumn = { domain: key, tabs: columns[key] };
+      return column;
+    });
+  }
 
   setFocus() {
     if (this.historyModalActive) {
