@@ -164,7 +164,24 @@ export const createWindow = async () => {
 
   mainWindow?.setResizable(false);
 
-  // const shortCut = app.isPackaged ? 'Alt+Space' : 'CmdOrCtrl+\\';
+  function toggle() {
+    if (wm.windowFloating) {
+      mainWindow?.hide();
+    } else if (windowHasView(wm.mainWindow, wm.tabPageView)) {
+      if (wm.historyModalActive) {
+        wm.tabPageView.webContents.send('close-history-modal');
+      } else {
+        mainWindow?.hide();
+      }
+    } else if (windowHasView(wm.mainWindow, wm.titleBarView)) {
+      if (windowHasView(wm.mainWindow, wm.findView)) {
+        wm.closeFind();
+      } else {
+        wm.setTab(-1);
+      }
+    }
+  }
+
   const shortCut = 'Alt+Space';
   globalShortcut.register(shortCut, () => {
     // const activeTabView = wm.allTabViews[wm.activeTabId];
@@ -199,7 +216,8 @@ export const createWindow = async () => {
     } else {
       // wm.unFloat(display.activeDisplay);
       // wm.setTab(-1);
-      mainWindow?.hide();
+      toggle();
+      // mainWindow?.hide();
     }
     // } else if (
     //   !wm.windowFloating &&
@@ -282,27 +300,6 @@ export const createWindow = async () => {
         },
       },
       {
-        label: 'escape',
-        accelerator: 'Escape',
-        click: () => {
-          if (wm.windowFloating) {
-            mainWindow?.hide();
-          } else if (windowHasView(wm.mainWindow, wm.tabPageView)) {
-            if (wm.historyModalActive) {
-              wm.tabPageView.webContents.send('close-history-modal');
-            } else {
-              mainWindow?.hide();
-            }
-          } else if (windowHasView(wm.mainWindow, wm.titleBarView)) {
-            if (windowHasView(wm.mainWindow, wm.findView)) {
-              wm.closeFind();
-            } else {
-              wm.setTab(-1);
-            }
-          }
-        },
-      },
-      {
         label: 'history',
         accelerator: 'CmdOrCtrl+H',
         click: () => {
@@ -326,8 +323,6 @@ export const createWindow = async () => {
   const template = [main, edit];
 
   const menu = Menu.buildFromTemplate(template);
-
-  // menu.append();
 
   Menu.setApplicationMenu(menu);
 };
