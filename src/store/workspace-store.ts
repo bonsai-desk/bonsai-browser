@@ -1,3 +1,5 @@
+/* eslint no-console: off */
+
 import { Instance, types } from 'mobx-state-tree';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -67,10 +69,22 @@ export const WorkspaceStore = types
   })
   .actions((self) => ({
     createGroup(title: string) {
+      let maxGroupZ = -1;
+      if (self.groups.size !== 0) {
+        const groupsArray = Array.from(self.groups.values());
+        maxGroupZ = groupsArray[0].zIndex;
+        for (let i = 1; i < groupsArray.length; i += 1) {
+          if (groupsArray[i].zIndex > maxGroupZ) {
+            maxGroupZ = groupsArray[i].zIndex;
+          }
+        }
+      }
+      // console.log(maxGroupZ);
       const group = ItemGroup.create({
         id: uuidv4(),
         title,
         itemArrangement: [],
+        zIndex: maxGroupZ + 1,
       });
       self.groups.put(group);
       return group;
@@ -106,13 +120,21 @@ export const WorkspaceStore = types
       if (self.groups.size === 0) {
         return;
       }
-      const maxGroup = Array.from(self.groups.values()).reduce(
-        (a: Instance<typeof ItemGroup>, c: Instance<typeof ItemGroup>) => {
-          return c.zIndex > a.zIndex ? c : a;
+      const groupsArray = Array.from(self.groups.values());
+      let maxGroup = groupsArray[0];
+      let multipleSameLevel = false;
+      for (let i = 1; i < groupsArray.length; i += 1) {
+        if (groupsArray[i].zIndex >= maxGroup.zIndex) {
+          multipleSameLevel = groupsArray[i].zIndex === maxGroup.zIndex;
+          maxGroup = groupsArray[i];
         }
-      );
+      }
+
       const group = self.groups.get(groupId);
-      if (typeof group !== 'undefined' && maxGroup.id !== groupId) {
+      if (
+        typeof group !== 'undefined' &&
+        (maxGroup.id !== groupId || multipleSameLevel)
+      ) {
         group.zIndex = maxGroup.zIndex + 1;
       }
     },
@@ -132,6 +154,19 @@ export const WorkspaceStore = types
         }
       });
       return returnGroup;
+    },
+    print() {
+      console.log('---------------------------');
+      self.groups.forEach((group) => {
+        console.log(`---${group.title} ${group.zIndex}---`);
+        group.itemArrangement.forEach((itemId) => {
+          const item = self.items.get(itemId);
+          if (typeof item === 'undefined') {
+            throw new Error('item is undefined');
+          }
+          console.log(item.url);
+        });
+      });
     },
   }));
 

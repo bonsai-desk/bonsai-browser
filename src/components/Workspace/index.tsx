@@ -154,6 +154,9 @@ const Workspace = observer(() => {
           onDrag={(_, data: DraggableData) => {
             group.move(data.deltaX, data.deltaY);
           }}
+          onStop={() => {
+            workspaceStore.print();
+          }}
         >
           <Group
             style={{
