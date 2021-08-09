@@ -1,21 +1,31 @@
-import { types } from 'mobx-state-tree';
+import { Instance, types, detach } from 'mobx-state-tree';
 import { v4 as uuidv4 } from 'uuid';
+
+export const itemSize = 110;
+const groupTitleHeight = 25;
+const groupPadding = 10;
+const itemSpacing = 10;
 
 export const Item = types
   .model({
     id: types.identifier,
     url: '',
-    x: 0,
-    y: 0,
+    indexInGroup: -1,
   })
-  .actions((self) => ({
-    reset() {
-      self.x = 0;
-      self.y = 0;
+  .views((self) => ({
+    placeHolderRelativePos(): [number, number] {
+      return [
+        groupPadding,
+        self.indexInGroup * (itemSize + itemSpacing) +
+          groupTitleHeight +
+          groupPadding,
+      ];
     },
-    move(x: number, y: number) {
-      self.x += x;
-      self.y += y;
+    placeHolderCenterPos(groupX: number, groupY: number): [number, number] {
+      const relPos = this.placeHolderRelativePos();
+      relPos[0] += groupX + itemSize / 2;
+      relPos[1] += groupY + itemSize / 2;
+      return relPos;
     },
   }));
 
@@ -23,61 +33,127 @@ export const ItemGroup = types
   .model({
     id: types.identifier,
     title: '',
-    items: types.array(Item),
+    items: types.map(Item),
+    itemArrangement: types.array(types.string),
     x: 0,
     y: 0,
     zIndex: 0,
   })
   .actions((self) => ({
-    addItem(url: string) {
+    createItem(url: string) {
       const item = Item.create({ id: uuidv4(), url });
-      self.items.push(item);
+      this.addItem(item);
+    },
+    addItem(item: Instance<typeof Item>) {
+      self.items.put(item);
+      item.indexInGroup = self.itemArrangement.length;
+      self.itemArrangement.push(item.id);
+    },
+    removeItem(id: string): Instance<typeof Item> | null {
+      const item = self.items.get(id);
+      if (typeof item === 'undefined') {
+        return null;
+      }
+
+      self.itemArrangement.splice(item.indexInGroup, 1);
+      for (let i = 0; i < self.itemArrangement.length; i += 1) {
+        const nextItem = self.items.get(self.itemArrangement[i]);
+        if (typeof nextItem !== 'undefined') {
+          nextItem.indexInGroup = i;
+        }
+      }
+
+      item.indexInGroup = -1;
+      detach(item);
       return item;
     },
     move(x: number, y: number) {
       self.x += x;
       self.y += y;
     },
+  }))
+  .views((self) => ({
+    size(): [number, number] {
+      return [
+        itemSize + groupPadding * 2,
+        Math.max(
+          self.itemArrangement.length * itemSize +
+            groupTitleHeight +
+            groupPadding * 2 +
+            (self.items.size - 1) * itemSpacing,
+          100
+        ),
+      ];
+    },
   }));
 
 export const WorkspaceStore = types
   .model({
-    groups: types.array(ItemGroup),
+    groups: types.map(ItemGroup),
   })
   .actions((self) => ({
     addGroup(title: string) {
-      const group = ItemGroup.create({ id: uuidv4(), title, items: [] });
-      self.groups.push(group);
+      const group = ItemGroup.create({
+        id: uuidv4(),
+        title,
+        items: {},
+        itemArrangement: [],
+      });
+      self.groups.put(group);
       return group;
     },
     moveToFront(groupId: string) {
-      if (self.groups.length === 0) {
+      if (self.groups.size === 0) {
         return;
       }
-      let index = -1;
-      let maxIndex = 0;
-      for (let i = 0; i < self.groups.length; i += 1) {
-        if (self.groups[i].zIndex > self.groups[maxIndex].zIndex) {
-          maxIndex = i;
+      const maxGroup = Array.from(self.groups.values()).reduce(
+        (a: Instance<typeof ItemGroup>, c: Instance<typeof ItemGroup>) => {
+          return c.zIndex > a.zIndex ? c : a;
         }
-        if (self.groups[i].id === groupId) {
-          index = i;
+      );
+      const group = self.groups.get(groupId);
+      if (typeof group !== 'undefined' && maxGroup.id !== groupId) {
+        group.zIndex = maxGroup.zIndex + 1;
+      }
+    },
+    getGroupAtPoint(pos: [number, number]): Instance<typeof ItemGroup> | null {
+      let returnGroup: Instance<typeof ItemGroup> | null = null;
+      self.groups.forEach((group) => {
+        const groupSize = group.size();
+        if (
+          pos[0] >= group.x &&
+          pos[0] <= group.x + groupSize[0] &&
+          pos[1] >= group.y &&
+          pos[1] <= group.y + groupSize[1]
+        ) {
+          if (returnGroup === null || group.zIndex > returnGroup.zIndex) {
+            returnGroup = group;
+          }
         }
-      }
-      if (index !== -1 && index !== maxIndex) {
-        self.groups[index].zIndex = self.groups[maxIndex].zIndex + 1;
-      }
+      });
+      return returnGroup;
+    },
+    print() {
+      console.log('---------------------------');
+      self.groups.forEach((group) => {
+        console.log(`---${group.title}---`);
+        group.items.forEach((item) => {
+          console.log(item.url);
+        });
+      });
     },
   }));
 
 const workspaceStore = WorkspaceStore.create({
-  groups: [],
+  groups: {},
 });
 
-workspaceStore.addGroup('my group').addItem('google');
+workspaceStore.addGroup('my group').createItem('google');
 
 const g = workspaceStore.addGroup('my group 2');
-g.addItem('twitch');
-g.addItem('youtube');
+g.createItem('twitch');
+g.createItem('youtube');
+
+workspaceStore.addGroup('my group 3');
 
 export default workspaceStore;
