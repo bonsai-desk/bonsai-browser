@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import styled from 'styled-components';
 import { DraggableCore, DraggableData } from 'react-draggable';
 import { observer } from 'mobx-react-lite';
 import { Instance } from 'mobx-state-tree';
-import workspaceStore, { ItemGroup } from '../../store/workspace-store';
+import workspaceStore, {
+  ItemGroup,
+  Item as MobxItem,
+  itemSize,
+} from '../../store/workspace-store';
 
 const Background = styled.div`
   user-select: none;
@@ -17,35 +21,109 @@ const Background = styled.div`
 const Group = styled.div`
   background-color: rgb(255, 170, 166);
   border-radius: 20px;
-  margin: 5px;
-  padding: 5px;
   color: rgb(250, 250, 250);
   position: absolute;
   border: 2px solid black;
 `;
 
 const ItemPlaceholder = styled.div`
-  width: 110px;
-  height: 110px;
   border-radius: 20px;
-  background-color: gray;
-  margin: 5px;
-  position: relative;
+  background-color: rgba(100, 100, 100, 0.5);
+  position: absolute;
+  left: 0;
+  top: 0;
 `;
 
-const Item = styled.div`
-  width: 100px;
-  height: 100px;
+const ItemContainer = styled.div`
   background-color: rgb(255, 210, 181);
   border-radius: 20px;
-  padding: 5px;
   color: rgb(50, 50, 50);
   position: absolute;
 `;
 
+const ItemContent = styled.div`
+  width: calc(100% - 10px);
+  height: calc(100% - 10px);
+  margin: 5px;
+`;
+
+const MainItem = observer(
+  ({
+    group,
+    item,
+  }: {
+    group: Instance<typeof ItemGroup>;
+    item: Instance<typeof MobxItem>;
+  }) => {
+    const [offset, setOffset] = useState([0, 0]);
+    const itemRef = useRef<HTMLDivElement>(null);
+
+    const placePos = item.placeHolderRelativePos();
+
+    return (
+      <ItemPlaceholder
+        style={{
+          width: itemSize,
+          height: itemSize,
+          left: placePos[0],
+          top: placePos[1],
+        }}
+      >
+        <DraggableCore
+          onMouseDown={(e) => {
+            e.stopPropagation();
+          }}
+          onStart={() => {
+            workspaceStore.moveToFront(group.id);
+          }}
+          onDrag={(_, data: DraggableData) => {
+            setOffset([offset[0] + data.deltaX, offset[1] + data.deltaY]);
+          }}
+          onStop={() => {
+            if (itemRef.current !== null) {
+              const centerPos = item.placeHolderCenterPos(group.x, group.y);
+              centerPos[0] += offset[0];
+              centerPos[1] += offset[1];
+
+              const overGroup = workspaceStore.getGroupAtPoint(centerPos);
+              if (overGroup !== null && overGroup.id !== group.id) {
+                const removedItem = group.removeItem(item.id);
+                if (removedItem !== null) {
+                  overGroup.addItem(removedItem);
+                  workspaceStore.moveToFront(overGroup.id);
+                }
+              }
+            }
+            setOffset([0, 0]);
+          }}
+        >
+          <ItemContainer
+            ref={itemRef}
+            style={{
+              width: itemSize,
+              height: itemSize,
+              left: offset[0],
+              top: offset[1],
+              zIndex:
+                offset[0] === 0 && offset[1] === 0
+                  ? 'auto'
+                  : Number.MAX_SAFE_INTEGER,
+            }}
+          >
+            <ItemContent>{item.url}</ItemContent>
+          </ItemContainer>
+        </DraggableCore>
+      </ItemPlaceholder>
+    );
+  }
+);
+
 const Workspace = observer(() => {
-  const content = workspaceStore.groups.map(
+  const backgroundRef = useRef<HTMLDivElement>(null);
+
+  const content = Array.from(workspaceStore.groups.values()).map(
     (group: Instance<typeof ItemGroup>) => {
+      const groupSize = group.size();
       return (
         <DraggableCore
           key={group.id}
@@ -58,45 +136,23 @@ const Workspace = observer(() => {
         >
           <Group
             style={{
+              width: groupSize[0],
+              height: groupSize[1],
               left: group.x,
               top: group.y,
               zIndex: group.zIndex,
             }}
           >
-            <div>{group.title}</div>
+            <div
+              style={{
+                paddingLeft: 10,
+              }}
+            >
+              {group.title}
+            </div>
             <div>
-              {group.items.map((item) => {
-                return (
-                  <ItemPlaceholder key={item.id}>
-                    <DraggableCore
-                      onMouseDown={(e) => {
-                        e.stopPropagation();
-                      }}
-                      onStart={() => {
-                        workspaceStore.moveToFront(group.id);
-                      }}
-                      onDrag={(_, data: DraggableData) => {
-                        item.move(data.deltaX, data.deltaY);
-                      }}
-                      onStop={() => {
-                        item.reset();
-                      }}
-                    >
-                      <Item
-                        style={{
-                          left: item.x,
-                          top: item.y,
-                          zIndex:
-                            item.x === 0 && item.y === 0
-                              ? 'auto'
-                              : Number.MAX_SAFE_INTEGER,
-                        }}
-                      >
-                        {item.url}
-                      </Item>
-                    </DraggableCore>
-                  </ItemPlaceholder>
-                );
+              {Array.from(group.items.values()).map((item) => {
+                return <MainItem key={item.id} item={item} group={group} />;
               })}
             </div>
           </Group>
@@ -104,7 +160,7 @@ const Workspace = observer(() => {
       );
     }
   );
-  return <Background>{content}</Background>;
+  return <Background ref={backgroundRef}>{content}</Background>;
 });
 
 export default Workspace;
