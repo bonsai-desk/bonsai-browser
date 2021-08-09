@@ -1,4 +1,4 @@
-import { Instance, types, detach } from 'mobx-state-tree';
+import { Instance, types } from 'mobx-state-tree';
 import { v4 as uuidv4 } from 'uuid';
 
 export const itemSize = 110;
@@ -11,9 +11,10 @@ export const Item = types
     id: types.identifier,
     url: '',
     indexInGroup: -1,
+    groupId: '',
   })
   .views((self) => ({
-    placeHolderRelativePos(): [number, number] {
+    placeholderRelativePos(): [number, number] {
       return [
         groupPadding,
         self.indexInGroup * (itemSize + itemSpacing) +
@@ -21,8 +22,8 @@ export const Item = types
           groupPadding,
       ];
     },
-    placeHolderCenterPos(groupX: number, groupY: number): [number, number] {
-      const relPos = this.placeHolderRelativePos();
+    placeholderCenterPos(groupX: number, groupY: number): [number, number] {
+      const relPos = this.placeholderRelativePos();
       relPos[0] += groupX + itemSize / 2;
       relPos[1] += groupY + itemSize / 2;
       return relPos;
@@ -33,40 +34,12 @@ export const ItemGroup = types
   .model({
     id: types.identifier,
     title: '',
-    items: types.map(Item),
     itemArrangement: types.array(types.string),
     x: 0,
     y: 0,
     zIndex: 0,
   })
   .actions((self) => ({
-    createItem(url: string) {
-      const item = Item.create({ id: uuidv4(), url });
-      this.addItem(item);
-    },
-    addItem(item: Instance<typeof Item>) {
-      self.items.put(item);
-      item.indexInGroup = self.itemArrangement.length;
-      self.itemArrangement.push(item.id);
-    },
-    removeItem(id: string): Instance<typeof Item> | null {
-      const item = self.items.get(id);
-      if (typeof item === 'undefined') {
-        return null;
-      }
-
-      self.itemArrangement.splice(item.indexInGroup, 1);
-      for (let i = 0; i < self.itemArrangement.length; i += 1) {
-        const nextItem = self.items.get(self.itemArrangement[i]);
-        if (typeof nextItem !== 'undefined') {
-          nextItem.indexInGroup = i;
-        }
-      }
-
-      item.indexInGroup = -1;
-      detach(item);
-      return item;
-    },
     move(x: number, y: number) {
       self.x += x;
       self.y += y;
@@ -80,7 +53,7 @@ export const ItemGroup = types
           self.itemArrangement.length * itemSize +
             groupTitleHeight +
             groupPadding * 2 +
-            (self.items.size - 1) * itemSpacing,
+            (self.itemArrangement.length - 1) * itemSpacing,
           100
         ),
       ];
@@ -90,17 +63,44 @@ export const ItemGroup = types
 export const WorkspaceStore = types
   .model({
     groups: types.map(ItemGroup),
+    items: types.map(Item),
   })
   .actions((self) => ({
-    addGroup(title: string) {
+    createGroup(title: string) {
       const group = ItemGroup.create({
         id: uuidv4(),
         title,
-        items: {},
         itemArrangement: [],
       });
       self.groups.put(group);
       return group;
+    },
+    createItem(url: string, group: Instance<typeof ItemGroup>) {
+      const item = Item.create({ id: uuidv4(), url });
+      this.addItem(item, group);
+    },
+    addItem(item: Instance<typeof Item>, group: Instance<typeof ItemGroup>) {
+      self.items.put(item);
+      item.indexInGroup = group.itemArrangement.length;
+      item.groupId = group.id;
+      group.itemArrangement.push(item.id);
+    },
+    changeGroup(
+      item: Instance<typeof Item>,
+      oldGroup: Instance<typeof ItemGroup>,
+      newGroup: Instance<typeof ItemGroup>
+    ) {
+      oldGroup.itemArrangement.splice(item.indexInGroup, 1);
+      for (let i = 0; i < oldGroup.itemArrangement.length; i += 1) {
+        const nextItem = self.items.get(oldGroup.itemArrangement[i]);
+        if (typeof nextItem !== 'undefined') {
+          nextItem.indexInGroup = i;
+        }
+      }
+
+      item.indexInGroup = newGroup.itemArrangement.length;
+      item.groupId = newGroup.id;
+      newGroup.itemArrangement.push(item.id);
     },
     moveToFront(groupId: string) {
       if (self.groups.size === 0) {
@@ -133,27 +133,20 @@ export const WorkspaceStore = types
       });
       return returnGroup;
     },
-    print() {
-      console.log('---------------------------');
-      self.groups.forEach((group) => {
-        console.log(`---${group.title}---`);
-        group.items.forEach((item) => {
-          console.log(item.url);
-        });
-      });
-    },
   }));
 
 const workspaceStore = WorkspaceStore.create({
   groups: {},
+  items: {},
 });
 
-workspaceStore.addGroup('my group').createItem('google');
+const g1 = workspaceStore.createGroup('my group 1');
+workspaceStore.createItem('google', g1);
 
-const g = workspaceStore.addGroup('my group 2');
-g.createItem('twitch');
-g.createItem('youtube');
+const g2 = workspaceStore.createGroup('my group 2');
+workspaceStore.createItem('youtube', g2);
+workspaceStore.createItem('twitch', g2);
 
-workspaceStore.addGroup('my group 3');
+workspaceStore.createGroup('my group 3');
 
 export default workspaceStore;

@@ -26,6 +26,8 @@ const Group = styled.div`
   border: 2px solid black;
 `;
 
+const ItemPlaceholderAndContainer = styled.div``;
+
 const ItemPlaceholder = styled.div`
   border-radius: 20px;
   background-color: rgba(100, 100, 100, 0.5);
@@ -47,6 +49,27 @@ const ItemContent = styled.div`
   margin: 5px;
 `;
 
+const Groups = styled.div``;
+const Items = styled.div``;
+
+function calculateItemOver(
+  item: Instance<typeof MobxItem>,
+  group: Instance<typeof ItemGroup>,
+  offset: number[]
+): Instance<typeof ItemGroup> | null {
+  const centerPos = item.placeholderCenterPos(group.x, group.y);
+  centerPos[0] += offset[0];
+  centerPos[1] += offset[1];
+
+  const overGroup = workspaceStore.getGroupAtPoint(centerPos);
+  if (overGroup !== null && overGroup.id !== group.id) {
+    workspaceStore.changeGroup(item, group, overGroup);
+    workspaceStore.moveToFront(overGroup.id);
+    return overGroup;
+  }
+  return null;
+}
+
 const MainItem = observer(
   ({
     group,
@@ -56,19 +79,22 @@ const MainItem = observer(
     item: Instance<typeof MobxItem>;
   }) => {
     const [offset, setOffset] = useState([0, 0]);
-    const itemRef = useRef<HTMLDivElement>(null);
 
-    const placePos = item.placeHolderRelativePos();
+    const placePos = item.placeholderRelativePos();
+    placePos[0] += group.x;
+    placePos[1] += group.y;
 
     return (
-      <ItemPlaceholder
-        style={{
-          width: itemSize,
-          height: itemSize,
-          left: placePos[0],
-          top: placePos[1],
-        }}
-      >
+      <ItemPlaceholderAndContainer>
+        <ItemPlaceholder
+          style={{
+            width: itemSize,
+            height: itemSize,
+            left: placePos[0],
+            top: placePos[1],
+            zIndex: group.zIndex,
+          }}
+        />
         <DraggableCore
           onMouseDown={(e) => {
             e.stopPropagation();
@@ -78,42 +104,37 @@ const MainItem = observer(
           }}
           onDrag={(_, data: DraggableData) => {
             setOffset([offset[0] + data.deltaX, offset[1] + data.deltaY]);
+            const newGroup = calculateItemOver(item, group, offset);
+            if (newGroup !== null) {
+              const newPlacePos = item.placeholderRelativePos();
+              newPlacePos[0] += newGroup.x;
+              newPlacePos[1] += newGroup.y;
+              setOffset([
+                offset[0] - (newPlacePos[0] - placePos[0]),
+                offset[1] - (newPlacePos[1] - placePos[1]),
+              ]);
+            }
           }}
           onStop={() => {
-            if (itemRef.current !== null) {
-              const centerPos = item.placeHolderCenterPos(group.x, group.y);
-              centerPos[0] += offset[0];
-              centerPos[1] += offset[1];
-
-              const overGroup = workspaceStore.getGroupAtPoint(centerPos);
-              if (overGroup !== null && overGroup.id !== group.id) {
-                const removedItem = group.removeItem(item.id);
-                if (removedItem !== null) {
-                  overGroup.addItem(removedItem);
-                  workspaceStore.moveToFront(overGroup.id);
-                }
-              }
-            }
             setOffset([0, 0]);
           }}
         >
           <ItemContainer
-            ref={itemRef}
             style={{
               width: itemSize,
               height: itemSize,
-              left: offset[0],
-              top: offset[1],
+              left: placePos[0] + offset[0],
+              top: placePos[1] + offset[1],
               zIndex:
                 offset[0] === 0 && offset[1] === 0
-                  ? 'auto'
+                  ? group.zIndex
                   : Number.MAX_SAFE_INTEGER,
             }}
           >
             <ItemContent>{item.url}</ItemContent>
           </ItemContainer>
         </DraggableCore>
-      </ItemPlaceholder>
+      </ItemPlaceholderAndContainer>
     );
   }
 );
@@ -121,7 +142,7 @@ const MainItem = observer(
 const Workspace = observer(() => {
   const backgroundRef = useRef<HTMLDivElement>(null);
 
-  const content = Array.from(workspaceStore.groups.values()).map(
+  const groups = Array.from(workspaceStore.groups.values()).map(
     (group: Instance<typeof ItemGroup>) => {
       const groupSize = group.size();
       return (
@@ -150,17 +171,26 @@ const Workspace = observer(() => {
             >
               {group.title}
             </div>
-            <div>
-              {Array.from(group.items.values()).map((item) => {
-                return <MainItem key={item.id} item={item} group={group} />;
-              })}
-            </div>
           </Group>
         </DraggableCore>
       );
     }
   );
-  return <Background ref={backgroundRef}>{content}</Background>;
+
+  const items = Array.from(workspaceStore.items.values()).map((item) => {
+    const group = workspaceStore.groups.get(item.groupId);
+    if (typeof group === 'undefined') {
+      throw new Error('group is undefined');
+    }
+    return <MainItem key={item.id} item={item} group={group} />;
+  });
+
+  return (
+    <Background ref={backgroundRef}>
+      <Groups>{groups}</Groups>
+      <Items>{items}</Items>
+    </Background>
+  );
 });
 
 export default Workspace;
