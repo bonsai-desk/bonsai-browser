@@ -86,6 +86,9 @@ function addListeners(wm: WindowManager) {
   ipcMain.on('float', () => {
     wm.float();
   });
+  ipcMain.on('toggle', () => {
+    wm.toggle();
+  });
 }
 
 export default addListeners;

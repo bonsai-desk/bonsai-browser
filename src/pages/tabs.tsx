@@ -123,7 +123,11 @@ const Tabs = observer(() => {
         case 'Enter':
           break;
         case 'Escape':
-          console.log('pew');
+          if (tabPageStore.urlText.length > 0) {
+            tabPageStore.setUrlText('');
+          } else {
+            ipcRenderer.send('toggle');
+          }
           break;
         default:
           tabPageStore.setFocus();
