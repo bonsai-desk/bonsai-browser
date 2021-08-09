@@ -954,12 +954,12 @@ export default class WindowManager {
 
   toggle() {
     if (this.windowFloating) {
-      this.mainWindow?.hide();
+      this.hideMainWindow();
     } else if (windowHasView(this.mainWindow, this.tabPageView)) {
       if (this.historyModalActive) {
         this.tabPageView.webContents.send('close-history-modal');
       } else {
-        this.mainWindow?.hide();
+        this.hideMainWindow();
       }
     } else if (windowHasView(this.mainWindow, this.titleBarView)) {
       if (windowHasView(this.mainWindow, this.findView)) {
@@ -970,7 +970,8 @@ export default class WindowManager {
     }
   }
 
-  blur() {
+  hideMainWindow() {
     this.tabPageView.webContents.send('blur');
+    this.mainWindow?.hide();
   }
 }

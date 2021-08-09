@@ -102,10 +102,6 @@ export const createWindow = async () => {
     }, 10);
   });
 
-  app.on('browser-window-blur', () => {
-    wm.blur();
-  });
-
   mainWindow.on('blur', () => {
     if (!wm.windowFloating && wm.mainWindow.isVisible() && !wm.isPinned) {
       // const mousePoint = screen.getCursorScreenPoint();
@@ -115,19 +111,19 @@ export const createWindow = async () => {
       // if (mouseOnWindowDisplay) {
       wm.unFloat(display.activeDisplay);
       wm.setTab(-1);
-      mainWindow?.hide();
+      wm.hideMainWindow();
       // }
     }
   });
 
-  mainWindow.hide();
+  wm.hideMainWindow();
 
   addListeners(wm);
 
   mainWindow.on('minimize', (e: Event) => {
     if (mainWindow !== null) {
       e.preventDefault();
-      mainWindow.hide();
+      wm.hideMainWindow();
     }
   });
 
