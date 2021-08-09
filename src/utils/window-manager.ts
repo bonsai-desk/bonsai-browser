@@ -138,7 +138,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -968,5 +968,9 @@ export default class WindowManager {
         this.setTab(-1);
       }
     }
+  }
+
+  blur() {
+    this.tabPageView.webContents.send('blur');
   }
 }

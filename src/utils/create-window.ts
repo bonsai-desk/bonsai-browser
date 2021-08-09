@@ -102,6 +102,10 @@ export const createWindow = async () => {
     }, 10);
   });
 
+  app.on('browser-window-blur', () => {
+    wm.blur();
+  });
+
   mainWindow.on('blur', () => {
     if (!wm.windowFloating && wm.mainWindow.isVisible() && !wm.isPinned) {
       // const mousePoint = screen.getCursorScreenPoint();

@@ -188,6 +188,11 @@ export default class TabPageStore {
         this.searchResult = [];
       });
     });
+    ipcRenderer.on('blur', () => {
+      runInAction(() => {
+        this.setUrlText('');
+      });
+    });
   }
 }
 
