@@ -64,18 +64,18 @@ export const createWindow = async () => {
 
   const wm = new WindowManager(mainWindow, display);
 
-  app.on('activate', () => {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
-    if (!mainWindow?.isVisible()) {
-      wm.mainWindow.show();
-      wm.unFloat(display.activeDisplay);
-      setTimeout(() => {
-        // todo: search box does not get highlited on macos unless we do this hack
-        wm.setTab(-1);
-      }, 10);
-    }
-  });
+  // app.on('activate', () => {
+  //   // On macOS it's common to re-create a window in the app when the
+  //   // dock icon is clicked and there are no other windows open.
+  //   if (!mainWindow?.isVisible()) {
+  //     wm.mainWindow.show();
+  //     wm.unFloat(display.activeDisplay);
+  //     setTimeout(() => {
+  //       // todo: search box does not get highlited on macos unless we do this hack
+  //       wm.setTab(-1);
+  //     }, 10);
+  //   }
+  // });
 
   wm.mainWindow.on('close', () => {
     wm.saveHistory();
