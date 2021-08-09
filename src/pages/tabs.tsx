@@ -123,7 +123,9 @@ const Tabs = observer(() => {
         case 'Enter':
           break;
         case 'Escape':
-          if (tabPageStore.urlText.length > 0) {
+          if (tabPageStore.historyModalActive) {
+            tabPageStore.setHistoryActive(false);
+          } else if (tabPageStore.urlText.length > 0) {
             tabPageStore.setUrlText('');
           } else {
             ipcRenderer.send('toggle');
