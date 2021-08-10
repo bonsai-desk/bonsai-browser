@@ -7,6 +7,8 @@ import workspaceStore, {
   ItemGroup,
   Item as MobxItem,
   itemSize,
+  groupPadding,
+  groupTitleHeight,
 } from '../../store/workspace-store';
 
 const Background = styled.div`
@@ -52,22 +54,25 @@ const ItemContent = styled.div`
 const Groups = styled.div``;
 const Items = styled.div``;
 
-function calculateItemOver(
+function getGroupBelowItem(
   item: Instance<typeof MobxItem>,
-  group: Instance<typeof ItemGroup>,
-  offset: number[]
+  currentGroup: Instance<typeof ItemGroup>,
+  containerPos: number[]
 ): Instance<typeof ItemGroup> | null {
-  const centerPos = item.placeholderCenterPos(group.x, group.y);
-  centerPos[0] += offset[0];
-  centerPos[1] += offset[1];
-
+  const centerPos = [
+    containerPos[0] + itemSize / 2,
+    containerPos[1] + itemSize / 2,
+  ];
   const overGroup = workspaceStore.getGroupAtPoint(centerPos);
-  if (overGroup !== null && overGroup.id !== group.id) {
-    workspaceStore.changeGroup(item, group, overGroup);
-    workspaceStore.moveToFront(overGroup.id);
-    return overGroup;
+  if (overGroup !== null) {
+    if (overGroup.id !== currentGroup.id) {
+      workspaceStore.changeGroup(item, currentGroup, overGroup);
+      workspaceStore.moveToFront(overGroup);
+    }
+    workspaceStore.arrangeInGroup(item, centerPos, overGroup);
   }
-  return null;
+
+  return overGroup;
 }
 
 const MainItem = observer(
@@ -78,11 +83,22 @@ const MainItem = observer(
     group: Instance<typeof ItemGroup>;
     item: Instance<typeof MobxItem>;
   }) => {
-    const [offset, setOffset] = useState([0, 0]);
+    const [containerDragPos, setContainerDragPos] = useState([0, 0]);
+    const [beingDragged, setBeingDragged] = useState(false);
+    const [dragStartGroup, setDragStartGroup] = useState('');
 
     const placePos = item.placeholderRelativePos();
     placePos[0] += group.x;
     placePos[1] += group.y;
+
+    // const [animationStartPos, setAnimationStartPos] = useState([0, 0]);
+    // const [animationStartPos, setAnimationStartPos] = useState([0, 0]);
+
+    // const containerPos = [0, 0];
+    // // eslint-disable-next-line prefer-destructuring
+    // containerPos[0] = placePos[0];
+    // // eslint-disable-next-line prefer-destructuring
+    // containerPos[1] = placePos[1];
 
     return (
       <ItemPlaceholderAndContainer>
@@ -100,35 +116,50 @@ const MainItem = observer(
             e.stopPropagation();
           }}
           onStart={() => {
-            workspaceStore.moveToFront(group.id);
+            setBeingDragged(true);
+            setDragStartGroup(group.id);
+            setContainerDragPos(placePos);
+            workspaceStore.moveToFront(group);
           }}
           onDrag={(_, data: DraggableData) => {
-            setOffset([offset[0] + data.deltaX, offset[1] + data.deltaY]);
-            const newGroup = calculateItemOver(item, group, offset);
-            if (newGroup !== null) {
-              const newPlacePos = item.placeholderRelativePos();
-              newPlacePos[0] += newGroup.x;
-              newPlacePos[1] += newGroup.y;
-              setOffset([
-                offset[0] - (newPlacePos[0] - placePos[0]),
-                offset[1] - (newPlacePos[1] - placePos[1]),
-              ]);
-            }
+            setContainerDragPos([
+              containerDragPos[0] + data.deltaX,
+              containerDragPos[1] + data.deltaY,
+            ]);
+            getGroupBelowItem(item, group, containerDragPos);
           }}
           onStop={() => {
-            setOffset([0, 0]);
+            setBeingDragged(false);
+            const groupBelow = getGroupBelowItem(item, group, containerDragPos);
+            if (groupBelow === null) {
+              const createdGroup = workspaceStore.createGroup('new group');
+              createdGroup.move(
+                containerDragPos[0] - groupPadding,
+                containerDragPos[1] - (groupPadding + groupTitleHeight)
+              );
+              workspaceStore.changeGroup(item, group, createdGroup);
+            }
+            setContainerDragPos(placePos);
+
+            if (dragStartGroup !== '') {
+              const startGroup = workspaceStore.groups.get(dragStartGroup);
+              if (
+                typeof startGroup !== 'undefined' &&
+                startGroup.itemArrangement.length === 0
+              ) {
+                workspaceStore.deleteGroup(startGroup.id);
+              }
+            }
+            setDragStartGroup('');
           }}
         >
           <ItemContainer
             style={{
               width: itemSize,
               height: itemSize,
-              left: placePos[0] + offset[0],
-              top: placePos[1] + offset[1],
-              zIndex:
-                offset[0] === 0 && offset[1] === 0
-                  ? group.zIndex
-                  : Number.MAX_SAFE_INTEGER,
+              left: beingDragged ? containerDragPos[0] : placePos[0],
+              top: beingDragged ? containerDragPos[1] : placePos[1],
+              zIndex: beingDragged ? Number.MAX_SAFE_INTEGER : group.zIndex,
             }}
           >
             <ItemContent>{item.url}</ItemContent>
@@ -149,11 +180,14 @@ const Workspace = observer(() => {
         <DraggableCore
           key={group.id}
           onStart={() => {
-            workspaceStore.moveToFront(group.id);
+            workspaceStore.moveToFront(group);
           }}
           onDrag={(_, data: DraggableData) => {
             group.move(data.deltaX, data.deltaY);
           }}
+          // onStop={() => {
+          //   workspaceStore.print();
+          // }}
         >
           <Group
             style={{
@@ -180,7 +214,7 @@ const Workspace = observer(() => {
   const items = Array.from(workspaceStore.items.values()).map((item) => {
     const group = workspaceStore.groups.get(item.groupId);
     if (typeof group === 'undefined') {
-      throw new Error('group is undefined');
+      throw new Error(`could not find group with id ${item.groupId}`);
     }
     return <MainItem key={item.id} item={item} group={group} />;
   });
