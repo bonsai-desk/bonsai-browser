@@ -80,7 +80,6 @@ export const WorkspaceStore = types
           }
         }
       }
-      // console.log(maxGroupZ);
       const group = ItemGroup.create({
         id: uuidv4(),
         title,
