@@ -56,20 +56,25 @@ const Items = styled.div``;
 
 function getGroupBelowItem(
   item: Instance<typeof MobxItem>,
-  group: Instance<typeof ItemGroup>,
+  currentGroup: Instance<typeof ItemGroup>,
   containerPos: number[]
 ): Instance<typeof ItemGroup> | null {
-  const overGroup = workspaceStore.getGroupAtPoint([
+  const centerPos = [
     containerPos[0] + itemSize / 2,
     containerPos[1] + itemSize / 2,
-  ]);
+  ];
+  const overGroup = workspaceStore.getGroupAtPoint(centerPos);
   // if (overGroup === null) {
   //   workspaceStore.changeGroup(item, group, workspaceStore.hiddenGroup);
   // }
-  if (overGroup !== null && overGroup.id !== group.id) {
-    workspaceStore.changeGroup(item, group, overGroup);
-    workspaceStore.moveToFront(overGroup);
+  if (overGroup !== null) {
+    if (overGroup.id !== currentGroup.id) {
+      workspaceStore.changeGroup(item, currentGroup, overGroup);
+      workspaceStore.moveToFront(overGroup);
+    }
+    workspaceStore.arrangeInGroup(item, centerPos, overGroup);
   }
+
   return overGroup;
 }
 

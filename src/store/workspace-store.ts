@@ -2,6 +2,7 @@
 
 import { Instance, types } from 'mobx-state-tree';
 import { v4 as uuidv4 } from 'uuid';
+import { clamp } from '../utils/utils';
 
 export const itemSize = 110;
 export const groupTitleHeight = 25;
@@ -97,18 +98,21 @@ export const WorkspaceStore = types
       item.groupId = group.id;
       group.itemArrangement.push(item.id);
     },
+    updateItemIndexes(group: Instance<typeof ItemGroup>) {
+      for (let i = 0; i < group.itemArrangement.length; i += 1) {
+        const nextItem = self.items.get(group.itemArrangement[i]);
+        if (typeof nextItem !== 'undefined') {
+          nextItem.indexInGroup = i;
+        }
+      }
+    },
     changeGroup(
       item: Instance<typeof Item>,
       oldGroup: Instance<typeof ItemGroup>,
       newGroup: Instance<typeof ItemGroup>
     ) {
       oldGroup.itemArrangement.splice(item.indexInGroup, 1);
-      for (let i = 0; i < oldGroup.itemArrangement.length; i += 1) {
-        const nextItem = self.items.get(oldGroup.itemArrangement[i]);
-        if (typeof nextItem !== 'undefined') {
-          nextItem.indexInGroup = i;
-        }
-      }
+      this.updateItemIndexes(oldGroup);
 
       if (oldGroup.itemArrangement.length === 0) {
         self.groups.delete(oldGroup.id);
@@ -139,22 +143,51 @@ export const WorkspaceStore = types
         group.zIndex = maxGroup.zIndex + 1;
       }
     },
-    getGroupAtPoint(pos: [number, number]): Instance<typeof ItemGroup> | null {
+    inGroup(pos: number[], group: Instance<typeof ItemGroup>): boolean {
+      const groupSize = group.size();
+      return (
+        pos[0] >= group.x &&
+        pos[0] <= group.x + groupSize[0] &&
+        pos[1] >= group.y &&
+        pos[1] <= group.y + groupSize[1]
+      );
+    },
+    getGroupAtPoint(pos: number[]): Instance<typeof ItemGroup> | null {
       let returnGroup: Instance<typeof ItemGroup> | null = null;
       self.groups.forEach((group) => {
-        const groupSize = group.size();
-        if (
-          pos[0] >= group.x &&
-          pos[0] <= group.x + groupSize[0] &&
-          pos[1] >= group.y &&
-          pos[1] <= group.y + groupSize[1]
-        ) {
+        if (this.inGroup(pos, group)) {
           if (returnGroup === null || group.zIndex > returnGroup.zIndex) {
             returnGroup = group;
           }
         }
       });
       return returnGroup;
+    },
+    arrangeInGroup(
+      item: Instance<typeof Item>,
+      pos: number[],
+      group: Instance<typeof ItemGroup>
+    ) {
+      if (!this.inGroup(pos, group)) {
+        return;
+      }
+
+      const relativePos = [pos[0] - group.x, pos[1] - group.y];
+      const newIndex = clamp(
+        Math.floor(
+          (relativePos[1] - (groupPadding + groupTitleHeight)) / itemSize
+        ),
+        0,
+        group.itemArrangement.length - 1
+      );
+
+      if (newIndex === item.indexInGroup) {
+        return;
+      }
+
+      group.itemArrangement.splice(item.indexInGroup, 1);
+      group.itemArrangement.splice(newIndex, 0, item.id);
+      this.updateItemIndexes(group);
     },
     print() {
       console.log('---------------------------');
