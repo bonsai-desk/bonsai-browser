@@ -70,6 +70,13 @@ export default class TabPageStore {
     this.searchTab(newValue);
   }
 
+  refreshFuse() {
+    const tabFuse = new Fuse<TabPageTab>(Object.values(this.tabs), {
+      keys: ['title', 'openGraphData.title'],
+    });
+    this.filteredTabs = tabFuse.search(this.urlText);
+  }
+
   setHistoryText(newValue: string) {
     this.historyText = newValue;
   }
@@ -102,6 +109,8 @@ export default class TabPageStore {
     ipcRenderer.on('tab-removed', (_, id) => {
       runInAction(() => {
         delete this.tabs[id];
+        // todo: could filter the fuse instead if it was a property
+        this.refreshFuse();
       });
     });
     ipcRenderer.on('url-changed', (_, [id, url]) => {
@@ -177,6 +186,11 @@ export default class TabPageStore {
       runInAction(() => {
         this.historyMap.clear();
         this.searchResult = [];
+      });
+    });
+    ipcRenderer.on('blur', () => {
+      runInAction(() => {
+        this.setUrlText('');
       });
     });
   }

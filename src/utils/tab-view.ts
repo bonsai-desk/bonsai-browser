@@ -197,16 +197,17 @@ class TabView {
     // resize();
   }
 
-  resize(browserPadding: number) {
-    const windowSize = this.window.getSize();
-    const padding = this.windowFloating ? 10 : browserPadding;
-    const hh = this.windowFloating ? 0 : headerHeight;
-    this.view.setBounds({
-      x: padding,
-      y: hh + padding,
-      width: windowSize[0] - padding * 2,
-      height: Math.max(windowSize[1] - hh, 0) - padding * 2,
-    });
+  resize(bounds: Electron.Rectangle) {
+    // const windowSize = this.window.getSize();
+    // const padding = this.windowFloating ? 10 : browserPadding;
+    // const hh = this.windowFloating ? 0 : headerHeight;
+    this.view.setBounds(bounds);
+    // this.view.setBounds({
+    //   x: padding,
+    //   y: hh + padding,
+    //   width: windowSize[0] - padding * 2,
+    //   height: Math.max(windowSize[1] - hh, 0) - padding * 2,
+    // });
   }
 }
 
