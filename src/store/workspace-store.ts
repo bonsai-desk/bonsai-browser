@@ -4,9 +4,9 @@ import { Instance, types } from 'mobx-state-tree';
 import { v4 as uuidv4 } from 'uuid';
 
 export const itemSize = 110;
-const groupTitleHeight = 25;
-const groupPadding = 10;
-const itemSpacing = 10;
+export const groupTitleHeight = 25;
+export const groupPadding = 10;
+export const itemSpacing = 10;
 
 export const Item = types
   .model({
@@ -64,6 +64,7 @@ export const ItemGroup = types
 
 export const WorkspaceStore = types
   .model({
+    hiddenGroup: ItemGroup,
     groups: types.map(ItemGroup),
     items: types.map(Item),
   })
@@ -91,9 +92,6 @@ export const WorkspaceStore = types
     },
     createItem(url: string, group: Instance<typeof ItemGroup>) {
       const item = Item.create({ id: uuidv4(), url });
-      this.addItem(item, group);
-    },
-    addItem(item: Instance<typeof Item>, group: Instance<typeof ItemGroup>) {
       self.items.put(item);
       item.indexInGroup = group.itemArrangement.length;
       item.groupId = group.id;
@@ -112,15 +110,15 @@ export const WorkspaceStore = types
         }
       }
 
-      // if (oldGroup.itemArrangement.length === 0) {
-      //   self.groups.delete(oldGroup.id);
-      // }
+      if (oldGroup.itemArrangement.length === 0) {
+        self.groups.delete(oldGroup.id);
+      }
 
       item.indexInGroup = newGroup.itemArrangement.length;
       item.groupId = newGroup.id;
       newGroup.itemArrangement.push(item.id);
     },
-    moveToFront(groupId: string) {
+    moveToFront(group: Instance<typeof ItemGroup>) {
       if (self.groups.size === 0) {
         return;
       }
@@ -134,10 +132,9 @@ export const WorkspaceStore = types
         }
       }
 
-      const group = self.groups.get(groupId);
       if (
         typeof group !== 'undefined' &&
-        (maxGroup.id !== groupId || multipleSameLevel)
+        (maxGroup.id !== group.id || multipleSameLevel)
       ) {
         group.zIndex = maxGroup.zIndex + 1;
       }
@@ -175,17 +172,21 @@ export const WorkspaceStore = types
   }));
 
 const workspaceStore = WorkspaceStore.create({
+  hiddenGroup: ItemGroup.create({
+    id: 'hidden',
+    title: 'hidden',
+    itemArrangement: [],
+    zIndex: 0,
+  }),
   groups: {},
   items: {},
 });
 
-const g1 = workspaceStore.createGroup('my group 1');
-workspaceStore.createItem('google', g1);
+const group = workspaceStore.createGroup('media');
+const sites = ['youtube', 'twitch', 'netflix', 'disney+'];
 
-const g2 = workspaceStore.createGroup('my group 2');
-workspaceStore.createItem('youtube', g2);
-workspaceStore.createItem('twitch', g2);
-
-workspaceStore.createGroup('my group 3');
+sites.forEach((site) => {
+  workspaceStore.createItem(site, group);
+});
 
 export default workspaceStore;

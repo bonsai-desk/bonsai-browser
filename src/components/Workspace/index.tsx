@@ -7,6 +7,8 @@ import workspaceStore, {
   ItemGroup,
   Item as MobxItem,
   itemSize,
+  groupPadding,
+  groupTitleHeight,
 } from '../../store/workspace-store';
 
 const Background = styled.div`
@@ -52,25 +54,23 @@ const ItemContent = styled.div`
 const Groups = styled.div``;
 const Items = styled.div``;
 
-function calculateItemOver(
+function getGroupBelowItem(
   item: Instance<typeof MobxItem>,
   group: Instance<typeof ItemGroup>,
   containerPos: number[]
 ): Instance<typeof ItemGroup> | null {
-  // const centerPos = item.placeholderCenterPos(group.x, group.y);
-  // centerPos[0] += offset[0];
-  // centerPos[1] += offset[1];
-
   const overGroup = workspaceStore.getGroupAtPoint([
     containerPos[0] + itemSize / 2,
     containerPos[1] + itemSize / 2,
   ]);
+  if (overGroup === null) {
+    workspaceStore.changeGroup(item, group, workspaceStore.hiddenGroup);
+  }
   if (overGroup !== null && overGroup.id !== group.id) {
     workspaceStore.changeGroup(item, group, overGroup);
-    workspaceStore.moveToFront(overGroup.id);
-    return overGroup;
+    workspaceStore.moveToFront(overGroup);
   }
-  return null;
+  return overGroup;
 }
 
 const MainItem = observer(
@@ -97,6 +97,7 @@ const MainItem = observer(
             left: placePos[0],
             top: placePos[1],
             zIndex: group.zIndex,
+            display: group.id === 'hidden' ? 'none' : 'block',
           }}
         />
         <DraggableCore
@@ -106,23 +107,26 @@ const MainItem = observer(
           onStart={() => {
             setBeingDragged(true);
             setContainerPos(placePos);
-            workspaceStore.moveToFront(group.id);
+            workspaceStore.moveToFront(group);
           }}
           onDrag={(_, data: DraggableData) => {
             setContainerPos([
               containerPos[0] + data.deltaX,
               containerPos[1] + data.deltaY,
             ]);
-            calculateItemOver(item, group, containerPos);
+            getGroupBelowItem(item, group, containerPos);
           }}
           onStop={() => {
             setBeingDragged(false);
-            // const newGroup = calculateItemOver(item, group, containerPos);
-            // if (newGroup === null) {
-            //   const createdGroup = workspaceStore.createGroup('new group');
-            //   createdGroup.move(100, 100);
-            //   workspaceStore.changeGroup(item, group, createdGroup);
-            // }
+            const groupBelow = getGroupBelowItem(item, group, containerPos);
+            if (groupBelow === null) {
+              const createdGroup = workspaceStore.createGroup('new group');
+              createdGroup.move(
+                containerPos[0] - groupPadding,
+                containerPos[1] - (groupPadding + groupTitleHeight)
+              );
+              workspaceStore.changeGroup(item, group, createdGroup);
+            }
             setContainerPos(placePos);
           }}
         >
@@ -153,7 +157,7 @@ const Workspace = observer(() => {
         <DraggableCore
           key={group.id}
           onStart={() => {
-            workspaceStore.moveToFront(group.id);
+            workspaceStore.moveToFront(group);
           }}
           onDrag={(_, data: DraggableData) => {
             group.move(data.deltaX, data.deltaY);
@@ -185,7 +189,10 @@ const Workspace = observer(() => {
   );
 
   const items = Array.from(workspaceStore.items.values()).map((item) => {
-    const group = workspaceStore.groups.get(item.groupId);
+    const group =
+      item.groupId === 'hidden'
+        ? workspaceStore.hiddenGroup
+        : workspaceStore.groups.get(item.groupId);
     if (typeof group === 'undefined') {
       throw new Error('group is undefined');
     }
