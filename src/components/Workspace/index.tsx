@@ -64,9 +64,6 @@ function getGroupBelowItem(
     containerPos[1] + itemSize / 2,
   ];
   const overGroup = workspaceStore.getGroupAtPoint(centerPos);
-  // if (overGroup === null) {
-  //   workspaceStore.changeGroup(item, group, workspaceStore.hiddenGroup);
-  // }
   if (overGroup !== null) {
     if (overGroup.id !== currentGroup.id) {
       workspaceStore.changeGroup(item, currentGroup, overGroup);
@@ -88,6 +85,7 @@ const MainItem = observer(
   }) => {
     const [containerPos, setContainerPos] = useState([0, 0]);
     const [beingDragged, setBeingDragged] = useState(false);
+    const [dragStartGroup, setDragStartGroup] = useState('');
 
     const placePos = item.placeholderRelativePos();
     placePos[0] += group.x;
@@ -102,7 +100,6 @@ const MainItem = observer(
             left: placePos[0],
             top: placePos[1],
             zIndex: group.zIndex,
-            display: group.id === 'hidden' ? 'none' : 'block',
           }}
         />
         <DraggableCore
@@ -111,6 +108,7 @@ const MainItem = observer(
           }}
           onStart={() => {
             setBeingDragged(true);
+            setDragStartGroup(group.id);
             setContainerPos(placePos);
             workspaceStore.moveToFront(group);
           }}
@@ -133,6 +131,17 @@ const MainItem = observer(
               workspaceStore.changeGroup(item, group, createdGroup);
             }
             setContainerPos(placePos);
+
+            if (dragStartGroup !== '') {
+              const startGroup = workspaceStore.groups.get(dragStartGroup);
+              if (
+                typeof startGroup !== 'undefined' &&
+                startGroup.itemArrangement.length === 0
+              ) {
+                workspaceStore.deleteGroup(startGroup.id);
+              }
+            }
+            setDragStartGroup('');
           }}
         >
           <ItemContainer
@@ -194,10 +203,7 @@ const Workspace = observer(() => {
   );
 
   const items = Array.from(workspaceStore.items.values()).map((item) => {
-    const group =
-      item.groupId === 'hidden'
-        ? workspaceStore.hiddenGroup
-        : workspaceStore.groups.get(item.groupId);
+    const group = workspaceStore.groups.get(item.groupId);
     if (typeof group === 'undefined') {
       throw new Error(`could not find group with id ${item.groupId}`);
     }

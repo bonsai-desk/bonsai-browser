@@ -65,7 +65,6 @@ export const ItemGroup = types
 
 export const WorkspaceStore = types
   .model({
-    hiddenGroup: ItemGroup,
     groups: types.map(ItemGroup),
     items: types.map(Item),
   })
@@ -114,9 +113,9 @@ export const WorkspaceStore = types
       oldGroup.itemArrangement.splice(item.indexInGroup, 1);
       this.updateItemIndexes(oldGroup);
 
-      if (oldGroup.itemArrangement.length === 0) {
-        self.groups.delete(oldGroup.id);
-      }
+      // if (oldGroup.itemArrangement.length === 0) {
+      //   self.groups.delete(oldGroup.id);
+      // }
 
       item.indexInGroup = newGroup.itemArrangement.length;
       item.groupId = newGroup.id;
@@ -189,6 +188,9 @@ export const WorkspaceStore = types
       group.itemArrangement.splice(newIndex, 0, item.id);
       this.updateItemIndexes(group);
     },
+    deleteGroup(groupId: string) {
+      self.groups.delete(groupId);
+    },
     print() {
       console.log('---------------------------');
       self.groups.forEach((group) => {
@@ -205,12 +207,6 @@ export const WorkspaceStore = types
   }));
 
 const workspaceStore = WorkspaceStore.create({
-  hiddenGroup: ItemGroup.create({
-    id: 'hidden',
-    title: 'hidden',
-    itemArrangement: [],
-    zIndex: 0,
-  }),
   groups: {},
   items: {},
 });
