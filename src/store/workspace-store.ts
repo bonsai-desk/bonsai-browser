@@ -216,7 +216,7 @@ const workspaceStore = WorkspaceStore.create({
 });
 
 const group = workspaceStore.createGroup('media');
-const sites = ['youtube', 'twitch', 'netflix', 'disney+'];
+const sites = ['youtube', 'twitch', 'netflix', 'disney+', 'hulu'];
 
 sites.forEach((site) => {
   workspaceStore.createItem(site, group);
