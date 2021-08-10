@@ -55,13 +55,16 @@ const Items = styled.div``;
 function calculateItemOver(
   item: Instance<typeof MobxItem>,
   group: Instance<typeof ItemGroup>,
-  offset: number[]
+  containerPos: number[]
 ): Instance<typeof ItemGroup> | null {
-  const centerPos = item.placeholderCenterPos(group.x, group.y);
-  centerPos[0] += offset[0];
-  centerPos[1] += offset[1];
+  // const centerPos = item.placeholderCenterPos(group.x, group.y);
+  // centerPos[0] += offset[0];
+  // centerPos[1] += offset[1];
 
-  const overGroup = workspaceStore.getGroupAtPoint(centerPos);
+  const overGroup = workspaceStore.getGroupAtPoint([
+    containerPos[0] + itemSize / 2,
+    containerPos[1] + itemSize / 2,
+  ]);
   if (overGroup !== null && overGroup.id !== group.id) {
     workspaceStore.changeGroup(item, group, overGroup);
     workspaceStore.moveToFront(overGroup.id);
@@ -78,7 +81,8 @@ const MainItem = observer(
     group: Instance<typeof ItemGroup>;
     item: Instance<typeof MobxItem>;
   }) => {
-    const [offset, setOffset] = useState([0, 0]);
+    const [containerPos, setContainerPos] = useState([0, 0]);
+    const [beingDragged, setBeingDragged] = useState(false);
 
     const placePos = item.placeholderRelativePos();
     placePos[0] += group.x;
@@ -100,35 +104,35 @@ const MainItem = observer(
             e.stopPropagation();
           }}
           onStart={() => {
+            setBeingDragged(true);
+            setContainerPos(placePos);
             workspaceStore.moveToFront(group.id);
           }}
           onDrag={(_, data: DraggableData) => {
-            setOffset([offset[0] + data.deltaX, offset[1] + data.deltaY]);
-            const newGroup = calculateItemOver(item, group, offset);
-            if (newGroup !== null) {
-              const newPlacePos = item.placeholderRelativePos();
-              newPlacePos[0] += newGroup.x;
-              newPlacePos[1] += newGroup.y;
-              setOffset([
-                offset[0] - (newPlacePos[0] - placePos[0]),
-                offset[1] - (newPlacePos[1] - placePos[1]),
-              ]);
-            }
+            setContainerPos([
+              containerPos[0] + data.deltaX,
+              containerPos[1] + data.deltaY,
+            ]);
+            calculateItemOver(item, group, containerPos);
           }}
           onStop={() => {
-            setOffset([0, 0]);
+            setBeingDragged(false);
+            // const newGroup = calculateItemOver(item, group, containerPos);
+            // if (newGroup === null) {
+            //   const createdGroup = workspaceStore.createGroup('new group');
+            //   createdGroup.move(100, 100);
+            //   workspaceStore.changeGroup(item, group, createdGroup);
+            // }
+            setContainerPos(placePos);
           }}
         >
           <ItemContainer
             style={{
               width: itemSize,
               height: itemSize,
-              left: placePos[0] + offset[0],
-              top: placePos[1] + offset[1],
-              zIndex:
-                offset[0] === 0 && offset[1] === 0
-                  ? group.zIndex
-                  : Number.MAX_SAFE_INTEGER,
+              left: beingDragged ? containerPos[0] : placePos[0],
+              top: beingDragged ? containerPos[1] : placePos[1],
+              zIndex: beingDragged ? Number.MAX_SAFE_INTEGER : group.zIndex,
             }}
           >
             <ItemContent>{item.url}</ItemContent>
@@ -154,9 +158,9 @@ const Workspace = observer(() => {
           onDrag={(_, data: DraggableData) => {
             group.move(data.deltaX, data.deltaY);
           }}
-          onStop={() => {
-            workspaceStore.print();
-          }}
+          // onStop={() => {
+          //   workspaceStore.print();
+          // }}
         >
           <Group
             style={{

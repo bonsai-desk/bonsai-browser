@@ -112,6 +112,10 @@ export const WorkspaceStore = types
         }
       }
 
+      // if (oldGroup.itemArrangement.length === 0) {
+      //   self.groups.delete(oldGroup.id);
+      // }
+
       item.indexInGroup = newGroup.itemArrangement.length;
       item.groupId = newGroup.id;
       newGroup.itemArrangement.push(item.id);
