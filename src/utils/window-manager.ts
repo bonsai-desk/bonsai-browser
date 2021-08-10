@@ -4,6 +4,7 @@ import {
   BrowserView,
   BrowserWindow,
   Display,
+  globalShortcut,
   NativeImage,
   screen,
 } from 'electron';
@@ -191,6 +192,53 @@ export default class WindowManager {
     setInterval(() => {
       this.saveHistory();
     }, 1000 * 60 * 5);
+
+    let escapeActive = false;
+    setInterval(() => {
+      const mainWindowVisible = mainWindow.isVisible();
+      const webBrowserViewIsActive = this.webBrowserViewActive();
+      const mouseIsInBorder = !this.mouseInInner(screen.getCursorScreenPoint());
+      if (
+        !escapeActive &&
+        mainWindowVisible &&
+        webBrowserViewIsActive &&
+        mouseIsInBorder
+      ) {
+        escapeActive = true;
+        globalShortcut.register('Escape', () => {
+          this.toggle();
+        });
+      } else if (
+        escapeActive &&
+        (!mainWindowVisible ||
+          (mainWindowVisible && webBrowserViewIsActive && !mouseIsInBorder))
+      ) {
+        escapeActive = false;
+        globalShortcut.unregister('Escape');
+      }
+    }, 100);
+  }
+
+  mouseInInner(mousePoint: Electron.Point) {
+    const bounds = this.innerBounds();
+    const padding = this.browserPadding();
+    const hh = this.headerHeight();
+    const [x0, y0] = this.mainWindow.getPosition();
+
+    const innerX0 = x0 + padding;
+    const innerX1 = innerX0 + bounds.width;
+
+    const innerY0 = y0 + padding;
+    const innerY1 = innerY0 + hh + bounds.height;
+
+    const inX = innerX0 < mousePoint.x && mousePoint.x < innerX1;
+    const inY = innerY0 < mousePoint.y && mousePoint.y < innerY1;
+
+    return inX && inY;
+  }
+
+  webBrowserViewActive() {
+    return this.activeTabId !== -1;
   }
 
   browserPadding(): number {
@@ -544,7 +592,8 @@ export default class WindowManager {
     this.mainWindow.webContents.send('set-padding', padding.toString());
 
     this.resize();
-    tabView.resize(padding);
+    // tabView.resize(padding);
+    this.resizeTabView(tabView);
   }
 
   loadUrlInTab(
@@ -858,10 +907,11 @@ export default class WindowManager {
 
     this.mainWindow.webContents.send('set-padding', '');
 
-    const padding = this.browserPadding();
+    // const padding = this.browserPadding();
     Object.values(this.allTabViews).forEach((tabView) => {
       tabView.windowFloating = this.windowFloating;
-      tabView.resize(padding);
+      // tabView.resize(padding);
+      this.resizeTabView(tabView);
     });
 
     this.resize();
@@ -947,8 +997,12 @@ export default class WindowManager {
       height: windowSize[1] - padding * 2,
     });
 
+    // const windowSize = this.window.getSize();
+    // const padding = this.windowFloating ? 10 : browserPadding;
+    // const hh = this.windowFloating ? 0 : headerHeight;
+
     Object.values(this.allTabViews).forEach((tabView) => {
-      tabView.resize(padding);
+      this.resizeTabView(tabView);
     });
   }
 
@@ -968,6 +1022,26 @@ export default class WindowManager {
         this.setTab(-1);
       }
     }
+  }
+
+  headerHeight() {
+    return this.windowFloating ? 0 : headerHeight;
+  }
+
+  innerBounds(): Electron.Rectangle {
+    const padding = this.windowFloating ? 10 : this.browserPadding();
+    const windowSize = this.mainWindow.getSize();
+    const hh = this.headerHeight();
+    return {
+      x: padding,
+      y: hh + padding,
+      width: windowSize[0] - padding * 2,
+      height: Math.max(windowSize[1] - hh, 0) - padding * 2,
+    };
+  }
+
+  resizeTabView(tabView: TabView) {
+    tabView.resize(this.innerBounds());
   }
 
   hideMainWindow() {

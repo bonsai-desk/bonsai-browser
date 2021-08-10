@@ -200,10 +200,10 @@ export const createWindow = async () => {
         }, 10);
       }
     } else {
-      // wm.unFloat(display.activeDisplay);
+      wm.unFloat(display.activeDisplay);
       // wm.setTab(-1);
-      toggle();
-      // mainWindow?.hide();
+      // toggle();
+      mainWindow?.hide();
     }
     // } else if (
     //   !wm.windowFloating &&
