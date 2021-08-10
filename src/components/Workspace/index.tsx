@@ -63,9 +63,9 @@ function getGroupBelowItem(
     containerPos[0] + itemSize / 2,
     containerPos[1] + itemSize / 2,
   ]);
-  if (overGroup === null) {
-    workspaceStore.changeGroup(item, group, workspaceStore.hiddenGroup);
-  }
+  // if (overGroup === null) {
+  //   workspaceStore.changeGroup(item, group, workspaceStore.hiddenGroup);
+  // }
   if (overGroup !== null && overGroup.id !== group.id) {
     workspaceStore.changeGroup(item, group, overGroup);
     workspaceStore.moveToFront(overGroup);
@@ -194,7 +194,7 @@ const Workspace = observer(() => {
         ? workspaceStore.hiddenGroup
         : workspaceStore.groups.get(item.groupId);
     if (typeof group === 'undefined') {
-      throw new Error('group is undefined');
+      throw new Error(`could not find group with id ${item.groupId}`);
     }
     return <MainItem key={item.id} item={item} group={group} />;
   });
