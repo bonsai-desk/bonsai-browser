@@ -1,15 +1,20 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import styled from 'styled-components';
 import { DraggableCore, DraggableData } from 'react-draggable';
 import { observer } from 'mobx-react-lite';
 import { Instance } from 'mobx-state-tree';
+import BezierEasing from 'bezier-easing';
 import workspaceStore, {
   ItemGroup,
   Item as MobxItem,
-  itemSize,
+  itemWidth,
+  itemHeight,
   groupPadding,
   groupTitleHeight,
 } from '../../store/workspace-store';
+import { lerp } from '../../utils/utils';
+
+const easeOut = BezierEasing(0, 0, 0.5, 1);
 
 const Background = styled.div`
   user-select: none;
@@ -60,8 +65,8 @@ function getGroupBelowItem(
   containerPos: number[]
 ): Instance<typeof ItemGroup> | null {
   const centerPos = [
-    containerPos[0] + itemSize / 2,
-    containerPos[1] + itemSize / 2,
+    containerPos[0] + itemWidth / 2,
+    containerPos[1] + itemHeight / 2,
   ];
   const overGroup = workspaceStore.getGroupAtPoint(centerPos);
   if (overGroup !== null) {
@@ -83,32 +88,21 @@ const MainItem = observer(
     group: Instance<typeof ItemGroup>;
     item: Instance<typeof MobxItem>;
   }) => {
-    const [containerDragPos, setContainerDragPos] = useState([0, 0]);
-    const [beingDragged, setBeingDragged] = useState(false);
-    const [dragStartGroup, setDragStartGroup] = useState('');
-
-    const placePos = item.placeholderRelativePos();
-    placePos[0] += group.x;
-    placePos[1] += group.y;
-
-    // const [animationStartPos, setAnimationStartPos] = useState([0, 0]);
-    // const [animationStartPos, setAnimationStartPos] = useState([0, 0]);
-
-    // const containerPos = [0, 0];
-    // // eslint-disable-next-line prefer-destructuring
-    // containerPos[0] = placePos[0];
-    // // eslint-disable-next-line prefer-destructuring
-    // containerPos[1] = placePos[1];
+    const targetPos = item.placeholderRelativePos();
+    targetPos[0] += group.x;
+    targetPos[1] += group.y;
 
     return (
       <ItemPlaceholderAndContainer>
         <ItemPlaceholder
           style={{
-            width: itemSize,
-            height: itemSize,
-            left: placePos[0],
-            top: placePos[1],
+            width: itemWidth,
+            height: itemHeight,
+            left: targetPos[0],
+            top: targetPos[1],
             zIndex: group.zIndex,
+            // display: item.beingDragged ? 'block' : 'none',
+            display: 'none',
           }}
         />
         <DraggableCore
@@ -116,33 +110,38 @@ const MainItem = observer(
             e.stopPropagation();
           }}
           onStart={() => {
-            setBeingDragged(true);
-            setDragStartGroup(group.id);
-            setContainerDragPos(placePos);
+            item.setBeingDragged(true);
+            item.setDragStartGroup(group.id);
+            item.setContainerDragPos(targetPos);
             workspaceStore.moveToFront(group);
           }}
           onDrag={(_, data: DraggableData) => {
-            setContainerDragPos([
-              containerDragPos[0] + data.deltaX,
-              containerDragPos[1] + data.deltaY,
+            item.setContainerDragPos([
+              item.containerDragPosX + data.deltaX,
+              item.containerDragPosY + data.deltaY,
             ]);
-            getGroupBelowItem(item, group, containerDragPos);
+            getGroupBelowItem(item, group, [
+              item.containerDragPosX,
+              item.containerDragPosY,
+            ]);
           }}
           onStop={() => {
-            setBeingDragged(false);
-            const groupBelow = getGroupBelowItem(item, group, containerDragPos);
+            const groupBelow = getGroupBelowItem(item, group, [
+              item.containerDragPosX,
+              item.containerDragPosY,
+            ]);
             if (groupBelow === null) {
               const createdGroup = workspaceStore.createGroup('new group');
               createdGroup.move(
-                containerDragPos[0] - groupPadding,
-                containerDragPos[1] - (groupPadding + groupTitleHeight)
+                item.containerDragPosX - groupPadding,
+                item.containerDragPosY - (groupPadding + groupTitleHeight)
               );
               workspaceStore.changeGroup(item, group, createdGroup);
             }
-            setContainerDragPos(placePos);
+            item.setContainerDragPos(targetPos);
 
-            if (dragStartGroup !== '') {
-              const startGroup = workspaceStore.groups.get(dragStartGroup);
+            if (item.dragStartGroup !== '') {
+              const startGroup = workspaceStore.groups.get(item.dragStartGroup);
               if (
                 typeof startGroup !== 'undefined' &&
                 startGroup.itemArrangement.length === 0
@@ -150,19 +149,28 @@ const MainItem = observer(
                 workspaceStore.deleteGroup(startGroup.id);
               }
             }
-            setDragStartGroup('');
+            item.setDragStartGroup('');
+            item.setBeingDragged(false);
           }}
         >
           <ItemContainer
             style={{
-              width: itemSize,
-              height: itemSize,
-              left: beingDragged ? containerDragPos[0] : placePos[0],
-              top: beingDragged ? containerDragPos[1] : placePos[1],
-              zIndex: beingDragged ? Number.MAX_SAFE_INTEGER : group.zIndex,
+              width: itemWidth,
+              height: itemHeight,
+              left: item.beingDragged ? item.containerDragPosX : targetPos[0],
+              top: item.beingDragged
+                ? item.containerDragPosY
+                : lerp(
+                    item.animationStartY,
+                    targetPos[1],
+                    easeOut(item.animationLerp)
+                  ),
+              zIndex: item.beingDragged
+                ? Number.MAX_SAFE_INTEGER
+                : group.zIndex,
             }}
           >
-            <ItemContent>{item.url}</ItemContent>
+            <ItemContent>{`${item.url}`}</ItemContent>
           </ItemContainer>
         </DraggableCore>
       </ItemPlaceholderAndContainer>

@@ -99,6 +99,10 @@ export const moveTowards = (
  * @returns A number in the range [min, max]
  * @type Number
  */
-export function clamp(value: number, min: number, max: number) {
+export function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
+}
+
+export function lerp(v0: number, v1: number, t: number): number {
+  return v0 * (1 - t) + v1 * t;
 }
