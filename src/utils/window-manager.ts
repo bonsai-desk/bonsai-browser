@@ -139,7 +139,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -1056,5 +1056,14 @@ export default class WindowManager {
   hideMainWindow() {
     this.tabPageView.webContents.send('blur');
     this.mainWindow?.hide();
+  }
+
+  focusSearch() {
+    if (this.webBrowserViewActive()) {
+      this.titleBarView.webContents.focus();
+      this.titleBarView.webContents.send('focus');
+      // const tab = this.allTabViews[this.activeTabId];
+      // tab.view.webContents.send('pew');
+    }
   }
 }

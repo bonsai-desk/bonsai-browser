@@ -282,6 +282,13 @@ export const createWindow = async () => {
         },
       },
       {
+        label: 'Select Search',
+        accelerator: 'CmdOrCtrl+L',
+        click: () => {
+          wm.focusSearch();
+        },
+      },
+      {
         label: 'history',
         accelerator: 'CmdOrCtrl+H',
         click: () => {
