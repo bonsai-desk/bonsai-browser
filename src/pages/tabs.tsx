@@ -125,6 +125,8 @@ const Tabs = observer(() => {
         case 'Escape':
           if (tabPageStore.historyModalActive) {
             tabPageStore.setHistoryActive(false);
+          } else if (tabPageStore.workspaceActive) {
+            tabPageStore.workspaceActive = false;
           } else if (tabPageStore.urlText.length > 0) {
             tabPageStore.setUrlText('');
           } else {
