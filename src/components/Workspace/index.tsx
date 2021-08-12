@@ -69,6 +69,9 @@ function getGroupBelowItem(
     containerPos[1] + itemHeight / 2,
   ];
   const overGroup = workspaceStore.getGroupAtPoint(centerPos);
+  if (overGroup === null) {
+    workspaceStore.changeGroup(item, currentGroup, workspaceStore.hiddenGroup);
+  }
   if (overGroup !== null) {
     if (overGroup.id !== currentGroup.id) {
       workspaceStore.changeGroup(item, currentGroup, overGroup);
@@ -204,6 +207,7 @@ const Workspace = observer(() => {
               left: group.x,
               top: group.y,
               zIndex: group.zIndex,
+              display: group.id === 'hidden' ? 'none' : 'block',
             }}
           >
             <div
@@ -220,7 +224,10 @@ const Workspace = observer(() => {
   );
 
   const items = Array.from(workspaceStore.items.values()).map((item) => {
-    const group = workspaceStore.groups.get(item.groupId);
+    const group =
+      item.groupId === 'hidden'
+        ? workspaceStore.hiddenGroup
+        : workspaceStore.groups.get(item.groupId);
     if (typeof group === 'undefined') {
       throw new Error(`could not find group with id ${item.groupId}`);
     }
