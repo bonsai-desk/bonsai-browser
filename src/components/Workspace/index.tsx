@@ -123,9 +123,7 @@ const MainItem = observer(
     group: Instance<typeof ItemGroup>;
     item: Instance<typeof MobxItem>;
   }) => {
-    const targetPos = item.placeholderRelativePos();
-    targetPos[0] += group.x;
-    targetPos[1] += group.y;
+    const targetPos = item.placeholderPos(group);
 
     const lerpValue = easeOut(item.animationLerp);
 
@@ -261,7 +259,7 @@ const Workspace = observer(() => {
                   onMouseDown={(e) => {
                     e.stopPropagation();
                     if (group.width > 1) {
-                      group.setWidth(group.width - 1);
+                      workspaceStore.setGroupWidth(group.width - 1, group);
                     }
                   }}
                 >
@@ -272,7 +270,7 @@ const Workspace = observer(() => {
                   onMouseDown={(e) => {
                     e.stopPropagation();
                     if (group.width < 5) {
-                      group.setWidth(group.width + 1);
+                      workspaceStore.setGroupWidth(group.width + 1, group);
                     }
                   }}
                 >
