@@ -90,7 +90,9 @@ function addListeners(wm: WindowManager) {
     wm.toggle(true);
   });
   ipcMain.on('click-main', () => {
-    wm.toggle(true);
+    if (wm.webBrowserViewActive()) {
+      wm.toggle(true);
+    }
   });
 }
 
