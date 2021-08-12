@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import styled from 'styled-components';
 import { DraggableCore, DraggableData } from 'react-draggable';
 import { observer } from 'mobx-react-lite';
@@ -83,22 +83,9 @@ const MainItem = observer(
     group: Instance<typeof ItemGroup>;
     item: Instance<typeof MobxItem>;
   }) => {
-    const [containerDragPos, setContainerDragPos] = useState([0, 0]);
-    const [beingDragged, setBeingDragged] = useState(false);
-    const [dragStartGroup, setDragStartGroup] = useState('');
-
     const placePos = item.placeholderRelativePos();
     placePos[0] += group.x;
     placePos[1] += group.y;
-
-    // const [animationStartPos, setAnimationStartPos] = useState([0, 0]);
-    // const [animationStartPos, setAnimationStartPos] = useState([0, 0]);
-
-    // const containerPos = [0, 0];
-    // // eslint-disable-next-line prefer-destructuring
-    // containerPos[0] = placePos[0];
-    // // eslint-disable-next-line prefer-destructuring
-    // containerPos[1] = placePos[1];
 
     return (
       <ItemPlaceholderAndContainer>
@@ -116,33 +103,39 @@ const MainItem = observer(
             e.stopPropagation();
           }}
           onStart={() => {
-            setBeingDragged(true);
-            setDragStartGroup(group.id);
-            setContainerDragPos(placePos);
+            item.setBeingDragged(true);
+            item.setDragStartGroup(group.id);
+            item.setContainerDragPos(placePos);
             workspaceStore.moveToFront(group);
           }}
           onDrag={(_, data: DraggableData) => {
-            setContainerDragPos([
-              containerDragPos[0] + data.deltaX,
-              containerDragPos[1] + data.deltaY,
+            item.setContainerDragPos([
+              item.containerDragPosX + data.deltaX,
+              item.containerDragPosY + data.deltaY,
             ]);
-            getGroupBelowItem(item, group, containerDragPos);
+            getGroupBelowItem(item, group, [
+              item.containerDragPosX,
+              item.containerDragPosY,
+            ]);
           }}
           onStop={() => {
-            setBeingDragged(false);
-            const groupBelow = getGroupBelowItem(item, group, containerDragPos);
+            item.setBeingDragged(false);
+            const groupBelow = getGroupBelowItem(item, group, [
+              item.containerDragPosX,
+              item.containerDragPosY,
+            ]);
             if (groupBelow === null) {
               const createdGroup = workspaceStore.createGroup('new group');
               createdGroup.move(
-                containerDragPos[0] - groupPadding,
-                containerDragPos[1] - (groupPadding + groupTitleHeight)
+                item.containerDragPosX - groupPadding,
+                item.containerDragPosY - (groupPadding + groupTitleHeight)
               );
               workspaceStore.changeGroup(item, group, createdGroup);
             }
-            setContainerDragPos(placePos);
+            item.setContainerDragPos(placePos);
 
-            if (dragStartGroup !== '') {
-              const startGroup = workspaceStore.groups.get(dragStartGroup);
+            if (item.dragStartGroup !== '') {
+              const startGroup = workspaceStore.groups.get(item.dragStartGroup);
               if (
                 typeof startGroup !== 'undefined' &&
                 startGroup.itemArrangement.length === 0
@@ -150,16 +143,18 @@ const MainItem = observer(
                 workspaceStore.deleteGroup(startGroup.id);
               }
             }
-            setDragStartGroup('');
+            item.setDragStartGroup('');
           }}
         >
           <ItemContainer
             style={{
               width: itemSize,
               height: itemSize,
-              left: beingDragged ? containerDragPos[0] : placePos[0],
-              top: beingDragged ? containerDragPos[1] : placePos[1],
-              zIndex: beingDragged ? Number.MAX_SAFE_INTEGER : group.zIndex,
+              left: item.beingDragged ? item.containerDragPosX : placePos[0],
+              top: item.beingDragged ? item.containerDragPosY : placePos[1],
+              zIndex: item.beingDragged
+                ? Number.MAX_SAFE_INTEGER
+                : group.zIndex,
             }}
           >
             <ItemContent>{item.url}</ItemContent>

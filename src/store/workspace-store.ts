@@ -1,4 +1,5 @@
 /* eslint no-console: off */
+/* eslint prefer-destructuring: off */
 
 import { Instance, types } from 'mobx-state-tree';
 import { v4 as uuidv4 } from 'uuid';
@@ -16,6 +17,24 @@ export const Item = types
     indexInGroup: -1,
     groupId: '',
   })
+  .volatile(() => ({
+    containerDragPosX: 0,
+    containerDragPosY: 0,
+    beingDragged: false,
+    dragStartGroup: '',
+  }))
+  .actions((self) => ({
+    setContainerDragPos(dragPos: number[]) {
+      self.containerDragPosX = dragPos[0];
+      self.containerDragPosY = dragPos[1];
+    },
+    setBeingDragged(beingDragged: boolean) {
+      self.beingDragged = beingDragged;
+    },
+    setDragStartGroup(dragStartGroup: string) {
+      self.dragStartGroup = dragStartGroup;
+    },
+  }))
   .views((self) => ({
     placeholderRelativePos(): [number, number] {
       return [
