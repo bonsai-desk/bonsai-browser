@@ -273,7 +273,7 @@ export const createWindow = async () => {
     label: 'Main',
     submenu: [
       {
-        label: 'find',
+        label: 'Find',
         accelerator: 'CmdOrCtrl+F',
         click: () => {
           if (windowHasView(wm.mainWindow, wm.titleBarView)) {
@@ -289,7 +289,7 @@ export const createWindow = async () => {
         },
       },
       {
-        label: 'history',
+        label: 'History',
         accelerator: 'CmdOrCtrl+H',
         click: () => {
           if (windowHasView(wm.mainWindow, wm.tabPageView)) {
@@ -298,7 +298,7 @@ export const createWindow = async () => {
         },
       },
       {
-        label: 'undo removed tabs',
+        label: 'Undo Removed Tabs',
         accelerator: 'CmdOrCtrl+Shift+T',
         click: () => {
           if (windowHasView(wm.mainWindow, wm.tabPageView)) {

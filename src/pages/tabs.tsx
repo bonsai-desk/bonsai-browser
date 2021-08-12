@@ -131,6 +131,9 @@ const Tabs = observer(() => {
             ipcRenderer.send('toggle');
           }
           break;
+        case 'Tab':
+          tabPageStore.workspaceActive = !tabPageStore.workspaceActive;
+          break;
         default:
           tabPageStore.setFocus();
           break;
