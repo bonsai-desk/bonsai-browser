@@ -87,7 +87,10 @@ function addListeners(wm: WindowManager) {
     wm.float();
   });
   ipcMain.on('toggle', () => {
-    wm.toggle();
+    wm.toggle(true);
+  });
+  ipcMain.on('click-main', () => {
+    wm.toggle(true);
   });
 }
 
