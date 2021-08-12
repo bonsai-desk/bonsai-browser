@@ -95,6 +95,8 @@ const MainItem = observer(
     targetPos[0] += group.x;
     targetPos[1] += group.y;
 
+    const lerpValue = easeOut(item.animationLerp);
+
     return (
       <ItemPlaceholderAndContainer>
         <ItemPlaceholder
@@ -160,14 +162,12 @@ const MainItem = observer(
             style={{
               width: itemWidth,
               height: itemHeight,
-              left: item.beingDragged ? item.containerDragPosX : targetPos[0],
+              left: item.beingDragged
+                ? item.containerDragPosX
+                : lerp(item.animationStartX, targetPos[0], lerpValue),
               top: item.beingDragged
                 ? item.containerDragPosY
-                : lerp(
-                    item.animationStartY,
-                    targetPos[1],
-                    easeOut(item.animationLerp)
-                  ),
+                : lerp(item.animationStartY, targetPos[1], lerpValue),
               zIndex: item.beingDragged
                 ? Number.MAX_SAFE_INTEGER
                 : group.zIndex,
@@ -186,7 +186,9 @@ const Workspace = observer(() => {
 
   const groups = Array.from(workspaceStore.groups.values()).map(
     (group: Instance<typeof ItemGroup>) => {
-      const groupSize = group.size();
+      const targetGroupSize = group.size();
+      const lerpValue = easeOut(group.animationLerp);
+
       return (
         <DraggableCore
           key={group.id}
@@ -196,14 +198,19 @@ const Workspace = observer(() => {
           onDrag={(_, data: DraggableData) => {
             group.move(data.deltaX, data.deltaY);
           }}
-          // onStop={() => {
-          //   workspaceStore.print();
-          // }}
         >
           <Group
             style={{
-              width: groupSize[0],
-              height: groupSize[1],
+              width: lerp(
+                group.animationStartWidth,
+                targetGroupSize[0],
+                lerpValue
+              ),
+              height: lerp(
+                group.animationStartHeight,
+                targetGroupSize[1],
+                lerpValue
+              ),
               left: group.x,
               top: group.y,
               zIndex: group.zIndex,

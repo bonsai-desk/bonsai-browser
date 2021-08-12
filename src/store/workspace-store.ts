@@ -90,10 +90,18 @@ export const ItemGroup = types
     y: 0,
     zIndex: 0,
   })
+  .volatile(() => ({
+    animationLerp: 1,
+    animationStartWidth: 0,
+    animationStartHeight: 0,
+  }))
   .actions((self) => ({
     move(x: number, y: number) {
       self.x += x;
       self.y += y;
+    },
+    setAnimationLerp(animationLerp: number) {
+      self.animationLerp = animationLerp;
     },
   }))
   .views((self) => ({
@@ -158,6 +166,16 @@ export const WorkspaceStore = types
       oldGroup: Instance<typeof ItemGroup>,
       newGroup: Instance<typeof ItemGroup>
     ) {
+      oldGroup.setAnimationLerp(0);
+      const oldGroupSize = oldGroup.size();
+      oldGroup.animationStartWidth = oldGroupSize[0];
+      oldGroup.animationStartHeight = oldGroupSize[1];
+
+      newGroup.setAnimationLerp(0);
+      const newGroupSize = newGroup.size();
+      newGroup.animationStartWidth = newGroupSize[0];
+      newGroup.animationStartHeight = newGroupSize[1];
+
       oldGroup.itemArrangement.splice(item.indexInGroup, 1);
       this.updateItemIndexes(oldGroup);
 
@@ -279,6 +297,14 @@ function loop(milliseconds: number) {
       if (item.animationLerp > 1) {
         item.setAnimationLerp(1);
       }
+    }
+  });
+  workspaceStore.groups.forEach((group) => {
+    group.setAnimationLerp(
+      group.animationLerp + deltaTime * (1 / animationTime)
+    );
+    if (group.animationLerp > 1) {
+      group.setAnimationLerp(1);
     }
   });
   requestAnimationFrame(loop);
