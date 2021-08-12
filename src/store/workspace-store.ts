@@ -89,11 +89,28 @@ export const ItemGroup = types
     x: 0,
     y: 0,
     zIndex: 0,
+    width: 1,
   })
   .volatile(() => ({
     animationLerp: 1,
     animationStartWidth: 0,
     animationStartHeight: 0,
+  }))
+  .views((self) => ({
+    size(): [number, number] {
+      return [
+        itemWidth * self.width +
+          (self.width - 1) * itemSpacing +
+          groupPadding * 2,
+        Math.max(
+          self.itemArrangement.length * itemHeight +
+            groupTitleHeight +
+            groupPadding * 2 +
+            (self.itemArrangement.length - 1) * itemSpacing,
+          groupTitleHeight + 60
+        ),
+      ];
+    },
   }))
   .actions((self) => ({
     move(x: number, y: number) {
@@ -103,19 +120,17 @@ export const ItemGroup = types
     setAnimationLerp(animationLerp: number) {
       self.animationLerp = animationLerp;
     },
-  }))
-  .views((self) => ({
-    size(): [number, number] {
-      return [
-        itemWidth + groupPadding * 2,
-        Math.max(
-          self.itemArrangement.length * itemHeight +
-            groupTitleHeight +
-            groupPadding * 2 +
-            (self.itemArrangement.length - 1) * itemSpacing,
-          100
-        ),
-      ];
+    setWidth(width: number) {
+      if (self.width === width) {
+        return;
+      }
+
+      this.setAnimationLerp(0);
+      const size = self.size();
+      self.animationStartWidth = size[0];
+      self.animationStartHeight = size[1];
+
+      self.width = width;
     },
   }));
 
