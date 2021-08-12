@@ -69,6 +69,9 @@ function getGroupBelowItem(
     containerPos[1] + itemHeight / 2,
   ];
   const overGroup = workspaceStore.getGroupAtPoint(centerPos);
+  if (overGroup === null) {
+    workspaceStore.changeGroup(item, currentGroup, workspaceStore.hiddenGroup);
+  }
   if (overGroup !== null) {
     if (overGroup.id !== currentGroup.id) {
       workspaceStore.changeGroup(item, currentGroup, overGroup);
@@ -91,6 +94,8 @@ const MainItem = observer(
     const targetPos = item.placeholderRelativePos();
     targetPos[0] += group.x;
     targetPos[1] += group.y;
+
+    const lerpValue = easeOut(item.animationLerp);
 
     return (
       <ItemPlaceholderAndContainer>
@@ -157,14 +162,12 @@ const MainItem = observer(
             style={{
               width: itemWidth,
               height: itemHeight,
-              left: item.beingDragged ? item.containerDragPosX : targetPos[0],
+              left: item.beingDragged
+                ? item.containerDragPosX
+                : lerp(item.animationStartX, targetPos[0], lerpValue),
               top: item.beingDragged
                 ? item.containerDragPosY
-                : lerp(
-                    item.animationStartY,
-                    targetPos[1],
-                    easeOut(item.animationLerp)
-                  ),
+                : lerp(item.animationStartY, targetPos[1], lerpValue),
               zIndex: item.beingDragged
                 ? Number.MAX_SAFE_INTEGER
                 : group.zIndex,
@@ -183,7 +186,9 @@ const Workspace = observer(() => {
 
   const groups = Array.from(workspaceStore.groups.values()).map(
     (group: Instance<typeof ItemGroup>) => {
-      const groupSize = group.size();
+      const targetGroupSize = group.size();
+      const lerpValue = easeOut(group.animationLerp);
+
       return (
         <DraggableCore
           key={group.id}
@@ -193,17 +198,23 @@ const Workspace = observer(() => {
           onDrag={(_, data: DraggableData) => {
             group.move(data.deltaX, data.deltaY);
           }}
-          // onStop={() => {
-          //   workspaceStore.print();
-          // }}
         >
           <Group
             style={{
-              width: groupSize[0],
-              height: groupSize[1],
+              width: lerp(
+                group.animationStartWidth,
+                targetGroupSize[0],
+                lerpValue
+              ),
+              height: lerp(
+                group.animationStartHeight,
+                targetGroupSize[1],
+                lerpValue
+              ),
               left: group.x,
               top: group.y,
               zIndex: group.zIndex,
+              display: group.id === 'hidden' ? 'none' : 'block',
             }}
           >
             <div
@@ -220,7 +231,10 @@ const Workspace = observer(() => {
   );
 
   const items = Array.from(workspaceStore.items.values()).map((item) => {
-    const group = workspaceStore.groups.get(item.groupId);
+    const group =
+      item.groupId === 'hidden'
+        ? workspaceStore.hiddenGroup
+        : workspaceStore.groups.get(item.groupId);
     if (typeof group === 'undefined') {
       throw new Error(`could not find group with id ${item.groupId}`);
     }
