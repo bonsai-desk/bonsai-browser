@@ -6,7 +6,8 @@ import { Instance } from 'mobx-state-tree';
 import workspaceStore, {
   ItemGroup,
   Item as MobxItem,
-  itemSize,
+  itemWidth,
+  itemHeight,
   groupPadding,
   groupTitleHeight,
 } from '../../store/workspace-store';
@@ -60,8 +61,8 @@ function getGroupBelowItem(
   containerPos: number[]
 ): Instance<typeof ItemGroup> | null {
   const centerPos = [
-    containerPos[0] + itemSize / 2,
-    containerPos[1] + itemSize / 2,
+    containerPos[0] + itemWidth / 2,
+    containerPos[1] + itemHeight / 2,
   ];
   const overGroup = workspaceStore.getGroupAtPoint(centerPos);
   if (overGroup !== null) {
@@ -91,8 +92,8 @@ const MainItem = observer(
       <ItemPlaceholderAndContainer>
         <ItemPlaceholder
           style={{
-            width: itemSize,
-            height: itemSize,
+            width: itemWidth,
+            height: itemHeight,
             left: placePos[0],
             top: placePos[1],
             zIndex: group.zIndex,
@@ -148,8 +149,8 @@ const MainItem = observer(
         >
           <ItemContainer
             style={{
-              width: itemSize,
-              height: itemSize,
+              width: itemWidth,
+              height: itemHeight,
               left: item.beingDragged ? item.containerDragPosX : placePos[0],
               top: item.beingDragged ? item.containerDragPosY : placePos[1],
               zIndex: item.beingDragged

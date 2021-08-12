@@ -5,8 +5,9 @@ import { Instance, types } from 'mobx-state-tree';
 import { v4 as uuidv4 } from 'uuid';
 import { clamp } from '../utils/utils';
 
-export const itemSize = 110;
-export const groupTitleHeight = 25;
+export const itemWidth = 175;
+export const itemHeight = 110;
+export const groupTitleHeight = 40;
 export const groupPadding = 10;
 export const itemSpacing = 10;
 
@@ -39,15 +40,15 @@ export const Item = types
     placeholderRelativePos(): [number, number] {
       return [
         groupPadding,
-        self.indexInGroup * (itemSize + itemSpacing) +
+        self.indexInGroup * (itemHeight + itemSpacing) +
           groupTitleHeight +
           groupPadding,
       ];
     },
     placeholderCenterPos(groupX: number, groupY: number): [number, number] {
       const relPos = this.placeholderRelativePos();
-      relPos[0] += groupX + itemSize / 2;
-      relPos[1] += groupY + itemSize / 2;
+      relPos[0] += groupX + itemWidth / 2;
+      relPos[1] += groupY + itemHeight / 2;
       return relPos;
     },
   }));
@@ -70,9 +71,9 @@ export const ItemGroup = types
   .views((self) => ({
     size(): [number, number] {
       return [
-        itemSize + groupPadding * 2,
+        itemWidth + groupPadding * 2,
         Math.max(
-          self.itemArrangement.length * itemSize +
+          self.itemArrangement.length * itemHeight +
             groupTitleHeight +
             groupPadding * 2 +
             (self.itemArrangement.length - 1) * itemSpacing,
@@ -192,7 +193,7 @@ export const WorkspaceStore = types
       const relativePos = [pos[0] - group.x, pos[1] - group.y];
       const newIndex = clamp(
         Math.floor(
-          (relativePos[1] - (groupPadding + groupTitleHeight)) / itemSize
+          (relativePos[1] - (groupPadding + groupTitleHeight)) / itemHeight
         ),
         0,
         group.itemArrangement.length - 1
