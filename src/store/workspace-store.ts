@@ -10,6 +10,7 @@ export const itemHeight = 110;
 export const groupTitleHeight = 40;
 export const groupPadding = 10;
 export const itemSpacing = 10;
+const animationTime = 0.15;
 
 export const Item = types
   .model({
@@ -23,6 +24,31 @@ export const Item = types
     containerDragPosY: 0,
     beingDragged: false,
     dragStartGroup: '',
+    animationLerp: 1,
+    animationStartX: 0,
+    animationStartY: 0,
+  }))
+  .views((self) => ({
+    placeholderRelativePos(): [number, number] {
+      return [
+        groupPadding,
+        self.indexInGroup * (itemHeight + itemSpacing) +
+          groupTitleHeight +
+          groupPadding,
+      ];
+    },
+    placeholderPos(groupX: number, groupY: number): [number, number] {
+      const relPos = this.placeholderRelativePos();
+      relPos[0] += groupX;
+      relPos[1] += groupY;
+      return relPos;
+    },
+    placeholderCenterPos(groupX: number, groupY: number): [number, number] {
+      const pos = this.placeholderPos(groupX, groupY);
+      pos[0] += itemWidth / 2;
+      pos[1] += itemHeight / 2;
+      return pos;
+    },
   }))
   .actions((self) => ({
     setContainerDragPos(dragPos: number[]) {
@@ -35,21 +61,23 @@ export const Item = types
     setDragStartGroup(dragStartGroup: string) {
       self.dragStartGroup = dragStartGroup;
     },
-  }))
-  .views((self) => ({
-    placeholderRelativePos(): [number, number] {
-      return [
-        groupPadding,
-        self.indexInGroup * (itemHeight + itemSpacing) +
-          groupTitleHeight +
-          groupPadding,
-      ];
+    setIndexInGroup(indexInGroup: number, group: Instance<typeof ItemGroup>) {
+      if (self.indexInGroup === indexInGroup) {
+        return;
+      }
+
+      const currentPos = self.placeholderPos(group.x, group.y);
+      self.animationStartX = currentPos[0];
+      self.animationStartY = currentPos[1];
+
+      if (!self.beingDragged) {
+        self.animationLerp = 0;
+      }
+
+      self.indexInGroup = indexInGroup;
     },
-    placeholderCenterPos(groupX: number, groupY: number): [number, number] {
-      const relPos = this.placeholderRelativePos();
-      relPos[0] += groupX + itemWidth / 2;
-      relPos[1] += groupY + itemHeight / 2;
-      return relPos;
+    setAnimationLerp(animationLerp: number) {
+      self.animationLerp = animationLerp;
     },
   }));
 
@@ -112,7 +140,7 @@ export const WorkspaceStore = types
     createItem(url: string, group: Instance<typeof ItemGroup>) {
       const item = Item.create({ id: uuidv4(), url });
       self.items.put(item);
-      item.indexInGroup = group.itemArrangement.length;
+      item.setIndexInGroup(group.itemArrangement.length, group);
       item.groupId = group.id;
       group.itemArrangement.push(item.id);
     },
@@ -120,7 +148,7 @@ export const WorkspaceStore = types
       for (let i = 0; i < group.itemArrangement.length; i += 1) {
         const nextItem = self.items.get(group.itemArrangement[i]);
         if (typeof nextItem !== 'undefined') {
-          nextItem.indexInGroup = i;
+          nextItem.setIndexInGroup(i, group);
         }
       }
     },
@@ -136,7 +164,7 @@ export const WorkspaceStore = types
       //   self.groups.delete(oldGroup.id);
       // }
 
-      item.indexInGroup = newGroup.itemArrangement.length;
+      item.setIndexInGroup(newGroup.itemArrangement.length, newGroup);
       item.groupId = newGroup.id;
       newGroup.itemArrangement.push(item.id);
     },
@@ -229,6 +257,30 @@ const workspaceStore = WorkspaceStore.create({
   groups: {},
   items: {},
 });
+
+let lastTime = 0;
+let startTime = -1;
+function loop(milliseconds: number) {
+  const currentTime = milliseconds / 1000;
+  if (startTime === -1) {
+    startTime = currentTime;
+  }
+  const time = currentTime - startTime;
+  const deltaTime = time - lastTime;
+  lastTime = time;
+  workspaceStore.items.forEach((item) => {
+    if (item.animationLerp !== 1) {
+      item.setAnimationLerp(
+        item.animationLerp + deltaTime * (1 / animationTime)
+      );
+      if (item.animationLerp > 1) {
+        item.setAnimationLerp(1);
+      }
+    }
+  });
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
 
 const group = workspaceStore.createGroup('media');
 const sites = ['youtube', 'twitch', 'netflix', 'disney+', 'hulu'];

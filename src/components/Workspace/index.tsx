@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { DraggableCore, DraggableData } from 'react-draggable';
 import { observer } from 'mobx-react-lite';
 import { Instance } from 'mobx-state-tree';
+import BezierEasing from 'bezier-easing';
 import workspaceStore, {
   ItemGroup,
   Item as MobxItem,
@@ -11,6 +12,9 @@ import workspaceStore, {
   groupPadding,
   groupTitleHeight,
 } from '../../store/workspace-store';
+import { lerp } from '../../utils/utils';
+
+const easeOut = BezierEasing(0, 0, 0.5, 1);
 
 const Background = styled.div`
   user-select: none;
@@ -84,9 +88,9 @@ const MainItem = observer(
     group: Instance<typeof ItemGroup>;
     item: Instance<typeof MobxItem>;
   }) => {
-    const placePos = item.placeholderRelativePos();
-    placePos[0] += group.x;
-    placePos[1] += group.y;
+    const targetPos = item.placeholderRelativePos();
+    targetPos[0] += group.x;
+    targetPos[1] += group.y;
 
     return (
       <ItemPlaceholderAndContainer>
@@ -94,9 +98,11 @@ const MainItem = observer(
           style={{
             width: itemWidth,
             height: itemHeight,
-            left: placePos[0],
-            top: placePos[1],
+            left: targetPos[0],
+            top: targetPos[1],
             zIndex: group.zIndex,
+            // display: item.beingDragged ? 'block' : 'none',
+            display: 'none',
           }}
         />
         <DraggableCore
@@ -106,7 +112,7 @@ const MainItem = observer(
           onStart={() => {
             item.setBeingDragged(true);
             item.setDragStartGroup(group.id);
-            item.setContainerDragPos(placePos);
+            item.setContainerDragPos(targetPos);
             workspaceStore.moveToFront(group);
           }}
           onDrag={(_, data: DraggableData) => {
@@ -120,7 +126,6 @@ const MainItem = observer(
             ]);
           }}
           onStop={() => {
-            item.setBeingDragged(false);
             const groupBelow = getGroupBelowItem(item, group, [
               item.containerDragPosX,
               item.containerDragPosY,
@@ -133,7 +138,7 @@ const MainItem = observer(
               );
               workspaceStore.changeGroup(item, group, createdGroup);
             }
-            item.setContainerDragPos(placePos);
+            item.setContainerDragPos(targetPos);
 
             if (item.dragStartGroup !== '') {
               const startGroup = workspaceStore.groups.get(item.dragStartGroup);
@@ -145,20 +150,27 @@ const MainItem = observer(
               }
             }
             item.setDragStartGroup('');
+            item.setBeingDragged(false);
           }}
         >
           <ItemContainer
             style={{
               width: itemWidth,
               height: itemHeight,
-              left: item.beingDragged ? item.containerDragPosX : placePos[0],
-              top: item.beingDragged ? item.containerDragPosY : placePos[1],
+              left: item.beingDragged ? item.containerDragPosX : targetPos[0],
+              top: item.beingDragged
+                ? item.containerDragPosY
+                : lerp(
+                    item.animationStartY,
+                    targetPos[1],
+                    easeOut(item.animationLerp)
+                  ),
               zIndex: item.beingDragged
                 ? Number.MAX_SAFE_INTEGER
                 : group.zIndex,
             }}
           >
-            <ItemContent>{item.url}</ItemContent>
+            <ItemContent>{`${item.url}`}</ItemContent>
           </ItemContainer>
         </DraggableCore>
       </ItemPlaceholderAndContainer>
