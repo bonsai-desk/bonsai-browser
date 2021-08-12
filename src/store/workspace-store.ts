@@ -29,25 +29,16 @@ export const Item = types
     animationStartY: 0,
   }))
   .views((self) => ({
-    placeholderRelativePos(): [number, number] {
+    placeholderPos(group: Instance<typeof ItemGroup>): [number, number] {
+      const x = self.indexInGroup % group.width;
+      const y = Math.floor(self.indexInGroup / group.width);
       return [
-        groupPadding,
-        self.indexInGroup * (itemHeight + itemSpacing) +
+        x * (itemWidth + itemSpacing) + groupPadding + group.x,
+        y * (itemHeight + itemSpacing) +
           groupTitleHeight +
-          groupPadding,
+          groupPadding +
+          group.y,
       ];
-    },
-    placeholderPos(groupX: number, groupY: number): [number, number] {
-      const relPos = this.placeholderRelativePos();
-      relPos[0] += groupX;
-      relPos[1] += groupY;
-      return relPos;
-    },
-    placeholderCenterPos(groupX: number, groupY: number): [number, number] {
-      const pos = this.placeholderPos(groupX, groupY);
-      pos[0] += itemWidth / 2;
-      pos[1] += itemHeight / 2;
-      return pos;
     },
   }))
   .actions((self) => ({
@@ -61,14 +52,17 @@ export const Item = types
     setDragStartGroup(dragStartGroup: string) {
       self.dragStartGroup = dragStartGroup;
     },
+    recordCurrentTargetAsAnimationStart(group: Instance<typeof ItemGroup>) {
+      const currentPos = self.placeholderPos(group);
+      self.animationStartX = currentPos[0];
+      self.animationStartY = currentPos[1];
+    },
     setIndexInGroup(indexInGroup: number, group: Instance<typeof ItemGroup>) {
       if (self.indexInGroup === indexInGroup) {
         return;
       }
 
-      const currentPos = self.placeholderPos(group.x, group.y);
-      self.animationStartX = currentPos[0];
-      self.animationStartY = currentPos[1];
+      this.recordCurrentTargetAsAnimationStart(group);
 
       if (!self.beingDragged) {
         self.animationLerp = 0;
@@ -89,11 +83,31 @@ export const ItemGroup = types
     x: 0,
     y: 0,
     zIndex: 0,
+    width: 1,
   })
   .volatile(() => ({
     animationLerp: 1,
     animationStartWidth: 0,
     animationStartHeight: 0,
+  }))
+  .views((self) => ({
+    size(): [number, number] {
+      return [
+        itemWidth * self.width +
+          (self.width - 1) * itemSpacing +
+          groupPadding * 2,
+        Math.max(
+          self.height() * itemHeight +
+            groupTitleHeight +
+            groupPadding * 2 +
+            (self.height() - 1) * itemSpacing,
+          groupTitleHeight + 60
+        ),
+      ];
+    },
+    height(): number {
+      return Math.ceil(self.itemArrangement.length / self.width);
+    },
   }))
   .actions((self) => ({
     move(x: number, y: number) {
@@ -102,20 +116,6 @@ export const ItemGroup = types
     },
     setAnimationLerp(animationLerp: number) {
       self.animationLerp = animationLerp;
-    },
-  }))
-  .views((self) => ({
-    size(): [number, number] {
-      return [
-        itemWidth + groupPadding * 2,
-        Math.max(
-          self.itemArrangement.length * itemHeight +
-            groupTitleHeight +
-            groupPadding * 2 +
-            (self.itemArrangement.length - 1) * itemSpacing,
-          100
-        ),
-      ];
     },
   }));
 
@@ -183,6 +183,26 @@ export const WorkspaceStore = types
       item.groupId = newGroup.id;
       newGroup.itemArrangement.push(item.id);
     },
+    setGroupWidth(width: number, group: Instance<typeof ItemGroup>) {
+      if (group.width === width) {
+        return;
+      }
+
+      group.itemArrangement.forEach((itemId) => {
+        const item = self.items.get(itemId);
+        if (typeof item !== 'undefined') {
+          item.recordCurrentTargetAsAnimationStart(group);
+          item.setAnimationLerp(0);
+        }
+      });
+
+      group.setAnimationLerp(0);
+      const size = group.size();
+      group.animationStartWidth = size[0];
+      group.animationStartHeight = size[1];
+
+      group.width = width;
+    },
     moveToFront(group: Instance<typeof ItemGroup>) {
       if (self.groups.size === 0) {
         return;
@@ -234,14 +254,19 @@ export const WorkspaceStore = types
       }
 
       const relativePos = [pos[0] - group.x, pos[1] - group.y];
-      const newIndex = clamp(
+      const x = clamp(
+        Math.floor((relativePos[0] - groupPadding) / itemWidth),
+        0,
+        group.width - 1
+      );
+      const y = clamp(
         Math.floor(
           (relativePos[1] - (groupPadding + groupTitleHeight)) / itemHeight
         ),
         0,
-        group.itemArrangement.length - 1
+        group.height() - 1
       );
-
+      const newIndex = y * group.width + x;
       if (newIndex === item.indexInGroup) {
         return;
       }
@@ -313,9 +338,13 @@ requestAnimationFrame(loop);
 
 const group = workspaceStore.createGroup('media');
 const sites = ['youtube', 'twitch', 'netflix', 'disney+', 'hulu'];
-
 sites.forEach((site) => {
   workspaceStore.createItem(site, group);
 });
+
+const group2 = workspaceStore.createGroup('test');
+for (let i = 1; i <= 20; i += 1) {
+  workspaceStore.createItem(i.toString(), group2);
+}
 
 export default workspaceStore;

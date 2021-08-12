@@ -56,6 +56,38 @@ const ItemContent = styled.div`
   margin: 5px;
 `;
 
+const GroupHeader = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+const HeaderButtons = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-grow: 1;
+  padding-right: 10px;
+`;
+
+const HeaderText = styled.div`
+  padding-left: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const HeaderButton = styled.button`
+  outline: none;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+
+  :hover {
+    background-color: gray;
+  }
+`;
+
 const Groups = styled.div``;
 const Items = styled.div``;
 
@@ -91,9 +123,7 @@ const MainItem = observer(
     group: Instance<typeof ItemGroup>;
     item: Instance<typeof MobxItem>;
   }) => {
-    const targetPos = item.placeholderRelativePos();
-    targetPos[0] += group.x;
-    targetPos[1] += group.y;
+    const targetPos = item.placeholderPos(group);
 
     const lerpValue = easeOut(item.animationLerp);
 
@@ -217,13 +247,37 @@ const Workspace = observer(() => {
               display: group.id === 'hidden' ? 'none' : 'block',
             }}
           >
-            <div
+            <GroupHeader
               style={{
-                paddingLeft: 10,
+                height: groupTitleHeight,
               }}
             >
-              {group.title}
-            </div>
+              <HeaderText>{group.title}</HeaderText>
+              <HeaderButtons>
+                <HeaderButton
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    if (group.width > 1) {
+                      workspaceStore.setGroupWidth(group.width - 1, group);
+                    }
+                  }}
+                >
+                  -
+                </HeaderButton>
+                <HeaderButton
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    if (group.width < 5) {
+                      workspaceStore.setGroupWidth(group.width + 1, group);
+                    }
+                  }}
+                >
+                  +
+                </HeaderButton>
+              </HeaderButtons>
+            </GroupHeader>
           </Group>
         </DraggableCore>
       );
