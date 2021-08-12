@@ -164,10 +164,6 @@ export const createWindow = async () => {
 
   mainWindow?.setResizable(false);
 
-  function toggle() {
-    wm.toggle();
-  }
-
   const shortCut = 'Alt+Space';
   globalShortcut.register(shortCut, () => {
     // const activeTabView = wm.allTabViews[wm.activeTabId];
