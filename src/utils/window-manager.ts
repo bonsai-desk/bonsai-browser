@@ -195,23 +195,28 @@ export default class WindowManager {
 
     let escapeActive = false;
     setInterval(() => {
+      let cursorPoint = screen.getCursorScreenPoint();
       const mainWindowVisible = mainWindow.isVisible();
       const webBrowserViewIsActive = this.webBrowserViewActive();
-      const mouseIsInBorder = !this.mouseInInner(screen.getCursorScreenPoint());
+      let mouseIsInBorder = !this.mouseInInner(cursorPoint);
+      const findIsActive = this.findActive();
       if (
         !escapeActive &&
         mainWindowVisible &&
         webBrowserViewIsActive &&
-        mouseIsInBorder
+        (mouseIsInBorder || findIsActive)
       ) {
         escapeActive = true;
         globalShortcut.register('Escape', () => {
-          this.toggle();
+          cursorPoint = screen.getCursorScreenPoint();
+          mouseIsInBorder = !this.mouseInInner(cursorPoint);
+          this.toggle(mouseIsInBorder);
         });
       } else if (
         escapeActive &&
         (!mainWindowVisible ||
-          (mainWindowVisible && webBrowserViewIsActive && !mouseIsInBorder))
+          (mainWindowVisible && webBrowserViewIsActive && !mouseIsInBorder) ||
+          (mainWindowVisible && !webBrowserViewIsActive))
       ) {
         escapeActive = false;
         globalShortcut.unregister('Escape');
@@ -1006,7 +1011,11 @@ export default class WindowManager {
     });
   }
 
-  toggle() {
+  findActive() {
+    return windowHasView(this.mainWindow, this.findView);
+  }
+
+  toggle(mouseInBorder: boolean) {
     if (this.windowFloating) {
       this.hideMainWindow();
     } else if (windowHasView(this.mainWindow, this.tabPageView)) {
@@ -1016,7 +1025,8 @@ export default class WindowManager {
         this.hideMainWindow();
       }
     } else if (windowHasView(this.mainWindow, this.titleBarView)) {
-      if (windowHasView(this.mainWindow, this.findView)) {
+      const findIsActive = this.findActive();
+      if (findIsActive && !mouseInBorder) {
         this.closeFind();
       } else {
         this.setTab(-1);
@@ -1047,5 +1057,14 @@ export default class WindowManager {
   hideMainWindow() {
     this.tabPageView.webContents.send('blur');
     this.mainWindow?.hide();
+  }
+
+  focusSearch() {
+    if (this.webBrowserViewActive()) {
+      this.titleBarView.webContents.focus();
+      this.titleBarView.webContents.send('focus');
+      // const tab = this.allTabViews[this.activeTabId];
+      // tab.view.webContents.send('pew');
+    }
   }
 }

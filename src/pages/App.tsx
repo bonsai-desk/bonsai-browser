@@ -99,6 +99,12 @@ const TitleBar = observer(() => {
         urlBoxRef.current.focus();
       }
     });
+    ipcRenderer.on('focus', () => {
+      if (urlBoxRef.current != null) {
+        urlBoxRef.current.focus();
+        urlBoxRef.current.select();
+      }
+    });
   }, [hasRunOnce]);
 
   return (

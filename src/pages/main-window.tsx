@@ -80,6 +80,16 @@ const MainWindow = observer(() => {
   const [isPinned, setIsPinned] = useState(false);
 
   useEffect(() => {
+    function clickHandler() {
+      ipcRenderer.send('click-main');
+    }
+    document.body.addEventListener('click', clickHandler);
+    return () => {
+      document.body.removeEventListener('click', clickHandler);
+    };
+  }, []);
+
+  useEffect(() => {
     if (hasRunOnce) {
       return;
     }
