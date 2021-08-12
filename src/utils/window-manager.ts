@@ -215,7 +215,8 @@ export default class WindowManager {
       } else if (
         escapeActive &&
         (!mainWindowVisible ||
-          (mainWindowVisible && webBrowserViewIsActive && !mouseIsInBorder))
+          (mainWindowVisible && webBrowserViewIsActive && !mouseIsInBorder) ||
+          (mainWindowVisible && !webBrowserViewIsActive))
       ) {
         escapeActive = false;
         globalShortcut.unregister('Escape');
