@@ -27,6 +27,8 @@ export const Item = types
     animationLerp: 1,
     animationStartX: 0,
     animationStartY: 0,
+    dragMouseStartX: 0,
+    dragMouseStartY: 0,
   }))
   .views((self) => ({
     placeholderPos(group: Instance<typeof ItemGroup>): [number, number] {
@@ -51,6 +53,10 @@ export const Item = types
     },
     setDragStartGroup(dragStartGroup: string) {
       self.dragStartGroup = dragStartGroup;
+    },
+    setDragMouseStart(x: number, y: number) {
+      self.dragMouseStartX = x;
+      self.dragMouseStartY = y;
     },
     recordCurrentTargetAsAnimationStart(group: Instance<typeof ItemGroup>) {
       const currentPos = self.placeholderPos(group);
@@ -341,10 +347,9 @@ const sites = ['youtube', 'twitch', 'netflix', 'disney+', 'hulu'];
 sites.forEach((site) => {
   workspaceStore.createItem(site, group);
 });
-
-const group2 = workspaceStore.createGroup('test');
-for (let i = 1; i <= 20; i += 1) {
-  workspaceStore.createItem(i.toString(), group2);
-}
+// const group2 = workspaceStore.createGroup('test');
+// for (let i = 1; i <= 20; i += 1) {
+//   workspaceStore.createItem(i.toString(), group2);
+// }
 
 export default workspaceStore;

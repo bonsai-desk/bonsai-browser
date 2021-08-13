@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { DraggableCore, DraggableData } from 'react-draggable';
 import { observer } from 'mobx-react-lite';
 import { Instance } from 'mobx-state-tree';
@@ -48,6 +48,13 @@ const ItemContainer = styled.div`
   border-radius: 20px;
   color: rgb(50, 50, 50);
   position: absolute;
+  transition-duration: 0.25s;
+  transition-property: filter;
+
+  ${({ beingDragged }: { beingDragged: boolean }) =>
+    css`
+      ${beingDragged ? '' : ':hover { filter: brightness(0.85);}'}
+    `};
 `;
 
 const ItemContent = styled.div`
@@ -144,51 +151,69 @@ const MainItem = observer(
           onMouseDown={(e) => {
             e.stopPropagation();
           }}
-          onStart={() => {
-            item.setBeingDragged(true);
-            item.setDragStartGroup(group.id);
-            item.setContainerDragPos(targetPos);
+          onStart={(_, data: DraggableData) => {
+            item.setDragMouseStart(data.x, data.y);
             workspaceStore.moveToFront(group);
           }}
           onDrag={(_, data: DraggableData) => {
-            item.setContainerDragPos([
-              item.containerDragPosX + data.deltaX,
-              item.containerDragPosY + data.deltaY,
-            ]);
-            getGroupBelowItem(item, group, [
-              item.containerDragPosX,
-              item.containerDragPosY,
-            ]);
-          }}
-          onStop={() => {
-            const groupBelow = getGroupBelowItem(item, group, [
-              item.containerDragPosX,
-              item.containerDragPosY,
-            ]);
-            if (groupBelow === null) {
-              const createdGroup = workspaceStore.createGroup('new group');
-              createdGroup.move(
-                item.containerDragPosX - groupPadding,
-                item.containerDragPosY - (groupPadding + groupTitleHeight)
-              );
-              workspaceStore.changeGroup(item, group, createdGroup);
-            }
-            item.setContainerDragPos(targetPos);
-
-            if (item.dragStartGroup !== '') {
-              const startGroup = workspaceStore.groups.get(item.dragStartGroup);
-              if (
-                typeof startGroup !== 'undefined' &&
-                startGroup.itemArrangement.length === 0
-              ) {
-                workspaceStore.deleteGroup(startGroup.id);
+            if (!item.beingDragged) {
+              const xDif = data.x - item.dragMouseStartX;
+              const yDif = data.y - item.dragMouseStartY;
+              const distSquared = xDif * xDif + yDif * yDif;
+              if (distSquared > 5 * 5) {
+                item.setBeingDragged(true);
+                item.setDragStartGroup(group.id);
+                item.setContainerDragPos(targetPos);
               }
             }
-            item.setDragStartGroup('');
-            item.setBeingDragged(false);
+
+            if (item.beingDragged) {
+              item.setContainerDragPos([
+                item.containerDragPosX + data.deltaX,
+                item.containerDragPosY + data.deltaY,
+              ]);
+              getGroupBelowItem(item, group, [
+                item.containerDragPosX,
+                item.containerDragPosY,
+              ]);
+            }
+          }}
+          onStop={() => {
+            if (!item.beingDragged) {
+              console.log('click');
+            } else {
+              const groupBelow = getGroupBelowItem(item, group, [
+                item.containerDragPosX,
+                item.containerDragPosY,
+              ]);
+              if (groupBelow === null) {
+                const createdGroup = workspaceStore.createGroup('new group');
+                createdGroup.move(
+                  item.containerDragPosX - groupPadding,
+                  item.containerDragPosY - (groupPadding + groupTitleHeight)
+                );
+                workspaceStore.changeGroup(item, group, createdGroup);
+              }
+              item.setContainerDragPos(targetPos);
+
+              if (item.dragStartGroup !== '') {
+                const startGroup = workspaceStore.groups.get(
+                  item.dragStartGroup
+                );
+                if (
+                  typeof startGroup !== 'undefined' &&
+                  startGroup.itemArrangement.length === 0
+                ) {
+                  workspaceStore.deleteGroup(startGroup.id);
+                }
+              }
+              item.setDragStartGroup('');
+              item.setBeingDragged(false);
+            }
           }}
         >
           <ItemContainer
+            beingDragged={item.beingDragged}
             style={{
               width: itemWidth,
               height: itemHeight,
@@ -201,6 +226,8 @@ const MainItem = observer(
               zIndex: item.beingDragged
                 ? Number.MAX_SAFE_INTEGER
                 : group.zIndex,
+              transform: item.beingDragged ? 'rotate(5deg)' : 'none',
+              cursor: item.beingDragged ? 'grabbing' : 'default',
             }}
           >
             <ItemContent>{`${item.url}`}</ItemContent>
