@@ -509,7 +509,6 @@ export default class WindowManager {
     const oldTabView = this.allTabViews[this.activeTabId];
     if (
       shouldScreenshot &&
-      shouldScreenshot.valueOf() &&
       id !== this.activeTabId &&
       typeof oldTabView !== 'undefined'
     ) {

@@ -97,10 +97,10 @@ export const ItemGroup = types
           (self.width - 1) * itemSpacing +
           groupPadding * 2,
         Math.max(
-          self.height() * itemHeight +
+          this.height() * itemHeight +
             groupTitleHeight +
             groupPadding * 2 +
-            (self.height() - 1) * itemSpacing,
+            (this.height() - 1) * itemSpacing,
           groupTitleHeight + 60
         ),
       ];
