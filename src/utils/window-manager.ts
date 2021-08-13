@@ -139,7 +139,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -509,7 +509,6 @@ export default class WindowManager {
     const oldTabView = this.allTabViews[this.activeTabId];
     if (
       shouldScreenshot &&
-      shouldScreenshot.valueOf() &&
       id !== this.activeTabId &&
       typeof oldTabView !== 'undefined'
     ) {

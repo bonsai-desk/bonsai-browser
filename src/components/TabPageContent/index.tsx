@@ -6,6 +6,8 @@ import { useStore } from '../../store/tab-page-store';
 import { ITab, TabPageColumn } from '../../interfaces/tab';
 import { getRootDomain } from '../../utils/data';
 import redX from '../../static/x-letter.svg';
+import workspaceStore from '../../store/workspace-store';
+// import moreIcon from '../../../assets/more-horizontal.svg';
 
 export const ColumnParent = styled.div`
   display: flex;
@@ -39,24 +41,15 @@ const ColumnHeaderParent = styled.div`
   margin-bottom: 5px;
   transition-duration: 0.25s;
   position: relative;
-  
+  overflow: hidden;
+
   :hover #RedX {
     opacity: 100;
   }
+
   #RedX {
-    transition-duration: 0.25s;
     opacity: 0;
-    border-radius: 999px;
-    position: absolute;
-    top: 5px;
-    right: 15px;
-    width: 30px;
-    height: 30px;
-    background: rgba(200, 200, 200, 0.7);
-    :hover {
-      transition-duration: 0s;
-      background: rgba(255, 0, 0, 1);
-    }
+  }
 `;
 const ColumnHeaderSpacer = styled.div`
   width: 10px;
@@ -111,14 +104,12 @@ export const RedX = styled.div`
   transition-duration: 0.25s;
   border-radius: 999px;
   position: absolute;
-  top: 10px;
-  right: 10px;
   width: 30px;
   height: 30px;
   background: rgba(200, 200, 200, 0.7);
   :hover {
     transition-duration: 0s;
-    background: rgba(255, 0, 0, 1);
+    background-color: ${({ hoverColor }: { hoverColor: string }) => hoverColor};
   }
 `;
 
@@ -192,16 +183,41 @@ export const Tab = observer(({ tab, hover }: ITab) => {
     >
       <TabImageParent>
         <TabImage src={imgUrl} alt="tab_image" />
-        <RedXParent hover={hover || false}>
+        <RedXParent hover={hover}>
           <TabTitle>{title === '' ? 'New Tab' : title}</TabTitle>
           <RedX
-            id="RedX"
+            style={{
+              right: 10,
+              top: 10,
+            }}
+            hoverColor="rgba(255, 0, 0, 1)"
             onClick={(e) => {
               e.stopPropagation();
               ipcRenderer.send('remove-tab', tab.id);
             }}
           >
             <img src={redX} alt="x" width="20px" />
+          </RedX>
+          <RedX
+            style={{
+              left: 10,
+              bottom: 10,
+              width: 105,
+            }}
+            hoverColor="#3572AC"
+            onClick={(e) => {
+              e.stopPropagation();
+              workspaceStore.createItem(
+                tab.url,
+                tab.title,
+                tab.image,
+                tab.favicon,
+                workspaceStore.hiddenGroup
+              );
+            }}
+          >
+            <div>Add to workspace</div>
+            {/* <img src={moreIcon} alt="." width="20px" /> */}
           </RedX>
         </RedXParent>
       </TabImageParent>
@@ -231,6 +247,11 @@ const Column = observer(({ column }: { column: TabPageColumn }) => {
         <ColumnHeaderOverlay>
           <RedX
             id="RedX"
+            style={{
+              top: 7,
+              right: 10,
+            }}
+            hoverColor="rgba(255, 0, 0, 1)"
             onClick={(e) => {
               e.stopPropagation();
               Object.keys(tabPageStore.tabs).forEach((key: string) => {

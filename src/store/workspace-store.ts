@@ -1,7 +1,7 @@
 /* eslint no-console: off */
 /* eslint prefer-destructuring: off */
 
-import { Instance, types } from 'mobx-state-tree';
+import { destroy, Instance, types } from 'mobx-state-tree';
 import { v4 as uuidv4 } from 'uuid';
 import { clamp } from '../utils/utils';
 
@@ -16,6 +16,9 @@ export const Item = types
   .model({
     id: types.identifier,
     url: '',
+    title: '',
+    image: '',
+    favicon: '',
     indexInGroup: -1,
     groupId: '',
   })
@@ -27,6 +30,8 @@ export const Item = types
     animationLerp: 1,
     animationStartX: 0,
     animationStartY: 0,
+    dragMouseStartX: 0,
+    dragMouseStartY: 0,
   }))
   .views((self) => ({
     placeholderPos(group: Instance<typeof ItemGroup>): [number, number] {
@@ -51,6 +56,10 @@ export const Item = types
     },
     setDragStartGroup(dragStartGroup: string) {
       self.dragStartGroup = dragStartGroup;
+    },
+    setDragMouseStart(x: number, y: number) {
+      self.dragMouseStartX = x;
+      self.dragMouseStartY = y;
     },
     recordCurrentTargetAsAnimationStart(group: Instance<typeof ItemGroup>) {
       const currentPos = self.placeholderPos(group);
@@ -97,10 +106,10 @@ export const ItemGroup = types
           (self.width - 1) * itemSpacing +
           groupPadding * 2,
         Math.max(
-          self.height() * itemHeight +
+          this.height() * itemHeight +
             groupTitleHeight +
             groupPadding * 2 +
-            (self.height() - 1) * itemSpacing,
+            (this.height() - 1) * itemSpacing,
           groupTitleHeight + 60
         ),
       ];
@@ -125,7 +134,23 @@ export const WorkspaceStore = types
     groups: types.map(ItemGroup),
     items: types.map(Item),
   })
+  .volatile(() => ({
+    anyDragging: false,
+    anyOverTrash: false,
+    width: 0,
+    height: 0,
+  }))
   .actions((self) => ({
+    setAnyDragging(anyDragging: boolean) {
+      self.anyDragging = anyDragging;
+    },
+    setAnyOverTrash(anyOverTrash: boolean) {
+      self.anyOverTrash = anyOverTrash;
+    },
+    setSize(width: number, height: number) {
+      self.width = width;
+      self.height = height;
+    },
     createGroup(title: string) {
       let maxGroupZ = -1;
       if (self.groups.size !== 0) {
@@ -146,12 +171,24 @@ export const WorkspaceStore = types
       self.groups.put(group);
       return group;
     },
-    createItem(url: string, group: Instance<typeof ItemGroup>) {
-      const item = Item.create({ id: uuidv4(), url });
+    createItem(
+      url: string,
+      title: string,
+      image: string,
+      favicon: string,
+      group: Instance<typeof ItemGroup>
+    ) {
+      const item = Item.create({ id: uuidv4(), url, title, image, favicon });
       self.items.put(item);
       item.setIndexInGroup(group.itemArrangement.length, group);
       item.groupId = group.id;
       group.itemArrangement.push(item.id);
+    },
+    deleteItem(item: Instance<typeof Item>, group: Instance<typeof ItemGroup>) {
+      group.itemArrangement.splice(item.indexInGroup, 1);
+      this.updateItemIndexes(group);
+
+      destroy(item);
     },
     updateItemIndexes(group: Instance<typeof ItemGroup>) {
       for (let i = 0; i < group.itemArrangement.length; i += 1) {
@@ -336,15 +373,14 @@ function loop(milliseconds: number) {
 }
 requestAnimationFrame(loop);
 
-const group = workspaceStore.createGroup('media');
-const sites = ['youtube', 'twitch', 'netflix', 'disney+', 'hulu'];
-sites.forEach((site) => {
-  workspaceStore.createItem(site, group);
-});
-
-const group2 = workspaceStore.createGroup('test');
-for (let i = 1; i <= 20; i += 1) {
-  workspaceStore.createItem(i.toString(), group2);
-}
+// const group = workspaceStore.createGroup('media');
+// const sites = ['youtube', 'twitch', 'netflix', 'disney+', 'hulu'];
+// sites.forEach((site) => {
+//   workspaceStore.createItem(site, '', '', '', group);
+// });
+// const group2 = workspaceStore.createGroup('test');
+// for (let i = 1; i <= 20; i += 1) {
+//   workspaceStore.createItem(i.toString(), group2);
+// }
 
 export default workspaceStore;
