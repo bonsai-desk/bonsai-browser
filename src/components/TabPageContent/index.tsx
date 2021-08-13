@@ -207,7 +207,13 @@ export const Tab = observer(({ tab, hover }: ITab) => {
             hoverColor="#3572AC"
             onClick={(e) => {
               e.stopPropagation();
-              workspaceStore.createItem(tab.title, workspaceStore.hiddenGroup);
+              workspaceStore.createItem(
+                tab.url,
+                tab.title,
+                tab.image,
+                tab.favicon,
+                workspaceStore.hiddenGroup
+              );
             }}
           >
             <div>Add to workspace</div>

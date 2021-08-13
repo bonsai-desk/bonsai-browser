@@ -13,6 +13,7 @@ import workspaceStore, {
   groupTitleHeight,
 } from '../../store/workspace-store';
 import { lerp } from '../../utils/utils';
+import trashIcon from '../../../assets/alternate-trash.svg';
 
 const easeOut = BezierEasing(0, 0, 0.5, 1);
 
@@ -95,8 +96,38 @@ const HeaderButton = styled.button`
   }
 `;
 
+const Trash = styled.div`
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100px;
+  height: 100px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000000;
+  border-radius: 0 20px 0 0;
+`;
+
+const TrashIcon = styled.img`
+  width: 75px;
+`;
+
 const Groups = styled.div``;
 const Items = styled.div``;
+
+function overTrash(containerPos: number[]): boolean {
+  const centerPos = [
+    containerPos[0] + itemWidth / 2,
+    containerPos[1] + itemHeight / 2,
+  ];
+  return (
+    centerPos[0] >= 0 &&
+    centerPos[0] <= 100 &&
+    centerPos[1] >= workspaceStore.height - 100 &&
+    centerPos[1] <= workspaceStore.height
+  );
+}
 
 function getGroupBelowItem(
   item: Instance<typeof MobxItem>,
@@ -108,7 +139,7 @@ function getGroupBelowItem(
     containerPos[1] + itemHeight / 2,
   ];
   const overGroup = workspaceStore.getGroupAtPoint(centerPos);
-  if (overGroup === null) {
+  if (overGroup === null && currentGroup.id !== 'hidden') {
     workspaceStore.changeGroup(item, currentGroup, workspaceStore.hiddenGroup);
   }
   if (overGroup !== null) {
@@ -131,8 +162,14 @@ const MainItem = observer(
     item: Instance<typeof MobxItem>;
   }) => {
     const targetPos = item.placeholderPos(group);
-
     const lerpValue = easeOut(item.animationLerp);
+    const containerPos = [item.containerDragPosX, item.containerDragPosY];
+    const isOverTrash = overTrash(containerPos);
+    if (isOverTrash) {
+      workspaceStore.setAnyOverTrash(true);
+    } else if (item.beingDragged) {
+      workspaceStore.setAnyOverTrash(false);
+    }
 
     return (
       <ItemPlaceholderAndContainer>
@@ -162,6 +199,7 @@ const MainItem = observer(
               const distSquared = xDif * xDif + yDif * yDif;
               if (distSquared > 5 * 5) {
                 item.setBeingDragged(true);
+                workspaceStore.setAnyDragging(true);
                 item.setDragStartGroup(group.id);
                 item.setContainerDragPos(targetPos);
               }
@@ -172,28 +210,40 @@ const MainItem = observer(
                 item.containerDragPosX + data.deltaX,
                 item.containerDragPosY + data.deltaY,
               ]);
-              getGroupBelowItem(item, group, [
-                item.containerDragPosX,
-                item.containerDragPosY,
-              ]);
+              if (isOverTrash) {
+                if (group.id !== 'hidden') {
+                  workspaceStore.changeGroup(
+                    item,
+                    group,
+                    workspaceStore.hiddenGroup
+                  );
+                }
+              } else {
+                getGroupBelowItem(item, group, containerPos);
+              }
             }
           }}
           onStop={() => {
             if (!item.beingDragged) {
               console.log('click');
             } else {
-              const groupBelow = getGroupBelowItem(item, group, [
-                item.containerDragPosX,
-                item.containerDragPosY,
-              ]);
-              if (groupBelow === null) {
-                const createdGroup = workspaceStore.createGroup('new group');
-                createdGroup.move(
-                  item.containerDragPosX - groupPadding,
-                  item.containerDragPosY - (groupPadding + groupTitleHeight)
-                );
-                workspaceStore.changeGroup(item, group, createdGroup);
+              if (isOverTrash) {
+                workspaceStore.deleteItem(item, group);
+              } else {
+                const groupBelow = getGroupBelowItem(item, group, [
+                  item.containerDragPosX,
+                  item.containerDragPosY,
+                ]);
+                if (groupBelow === null) {
+                  const createdGroup = workspaceStore.createGroup('new group');
+                  createdGroup.move(
+                    item.containerDragPosX - groupPadding,
+                    item.containerDragPosY - (groupPadding + groupTitleHeight)
+                  );
+                  workspaceStore.changeGroup(item, group, createdGroup);
+                }
               }
+
               item.setContainerDragPos(targetPos);
 
               if (item.dragStartGroup !== '') {
@@ -209,6 +259,8 @@ const MainItem = observer(
               }
               item.setDragStartGroup('');
               item.setBeingDragged(false);
+              workspaceStore.setAnyDragging(false);
+              workspaceStore.setAnyOverTrash(false);
             }
           }}
         >
@@ -228,9 +280,13 @@ const MainItem = observer(
                 : group.zIndex,
               transform: item.beingDragged ? 'rotate(5deg)' : 'none',
               cursor: item.beingDragged ? 'grabbing' : 'default',
+              opacity: isOverTrash ? 0.5 : 1,
             }}
           >
-            <ItemContent>{`${item.url}`}</ItemContent>
+            <ItemContent>
+              <div>{item.title}</div>
+              <img src={item.image} alt="tab_image" style={{ width: 100 }} />
+            </ItemContent>
           </ItemContainer>
         </DraggableCore>
       </ItemPlaceholderAndContainer>
@@ -322,10 +378,25 @@ const Workspace = observer(() => {
     return <MainItem key={item.id} item={item} group={group} />;
   });
 
+  if (backgroundRef.current !== null) {
+    const rect = backgroundRef.current.getBoundingClientRect();
+    workspaceStore.setSize(rect.width, rect.height);
+  }
+
   return (
     <Background ref={backgroundRef}>
       <Groups>{groups}</Groups>
       <Items>{items}</Items>
+      <Trash
+        style={{
+          display: workspaceStore.anyDragging ? 'flex' : 'none',
+          backgroundColor: workspaceStore.anyOverTrash
+            ? 'red'
+            : 'rgba(0, 0, 0, 0.7)',
+        }}
+      >
+        <TrashIcon src={trashIcon} />
+      </Trash>
     </Background>
   );
 });
