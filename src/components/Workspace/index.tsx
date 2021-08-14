@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import { runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
 import styled, { css } from 'styled-components';
 import { DraggableCore, DraggableData } from 'react-draggable';
@@ -15,6 +16,7 @@ import workspaceStore, {
 } from '../../store/workspace-store';
 import { lerp } from '../../utils/utils';
 import trashIcon from '../../../assets/alternate-trash.svg';
+import { useStore } from '../../store/tab-page-store';
 
 const easeOut = BezierEasing(0, 0, 0.5, 1);
 
@@ -181,6 +183,7 @@ const MainItem = observer(
     group: Instance<typeof ItemGroup>;
     item: Instance<typeof MobxItem>;
   }) => {
+    const { tabPageStore } = useStore();
     const targetPos = item.placeholderPos(group);
     const lerpValue = easeOut(item.animationLerp);
 
@@ -243,6 +246,9 @@ const MainItem = observer(
           }}
           onStop={() => {
             if (!item.beingDragged) {
+              runInAction(() => {
+                tabPageStore.workspaceActive = false;
+              });
               ipcRenderer.send('open-workspace-url', item.url);
             } else {
               if (!item.overTrash) {
