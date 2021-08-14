@@ -26,7 +26,6 @@ export const Item = types
     containerDragPosX: 0,
     containerDragPosY: 0,
     beingDragged: false,
-    overTrash: false,
     dragStartGroup: '',
     animationLerp: 1,
     animationStartX: 0,
@@ -54,9 +53,6 @@ export const Item = types
     },
     setBeingDragged(beingDragged: boolean) {
       self.beingDragged = beingDragged;
-    },
-    setOverTrash(overTrash: boolean) {
-      self.overTrash = overTrash;
     },
     setDragStartGroup(dragStartGroup: string) {
       self.dragStartGroup = dragStartGroup;
@@ -141,11 +137,19 @@ export const WorkspaceStore = types
   .volatile(() => ({
     width: 0,
     height: 0,
+    anyDragging: false,
+    anyOverTrash: false,
   }))
   .actions((self) => ({
     setSize(width: number, height: number) {
       self.width = width;
       self.height = height;
+    },
+    setAnyDragging(anyDragging: boolean) {
+      self.anyDragging = anyDragging;
+    },
+    setAnyOverTrash(anyOverTrash: boolean) {
+      self.anyOverTrash = anyOverTrash;
     },
     createGroup(title: string) {
       let maxGroupZ = -1;

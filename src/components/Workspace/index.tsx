@@ -187,6 +187,10 @@ const MainItem = observer(
   }) => {
     const targetPos = item.placeholderPos(group);
     const lerpValue = easeOut(item.animationLerp);
+    const isOverTrash = overTrash([
+      item.containerDragPosX,
+      item.containerDragPosY,
+    ]);
 
     return (
       <ItemPlaceholderAndContainer>
@@ -206,7 +210,6 @@ const MainItem = observer(
             e.stopPropagation();
           }}
           onStart={(_, data: DraggableData) => {
-            // console.log(data);
             item.setDragMouseStart(data.x, data.y);
             workspaceStore.moveToFront(group);
           }}
@@ -217,6 +220,7 @@ const MainItem = observer(
               const distSquared = xDif * xDif + yDif * yDif;
               if (distSquared > 5 * 5) {
                 item.setBeingDragged(true);
+                workspaceStore.setAnyDragging(true);
                 item.setDragStartGroup(group.id);
                 item.setContainerDragPos(targetPos);
               }
@@ -227,12 +231,8 @@ const MainItem = observer(
                 item.containerDragPosX + data.deltaX,
                 item.containerDragPosY + data.deltaY,
               ]);
-              const containerPos = [
-                item.containerDragPosX,
-                item.containerDragPosY,
-              ];
-              item.setOverTrash(overTrash(containerPos));
-              if (item.overTrash) {
+              workspaceStore.setAnyOverTrash(isOverTrash);
+              if (isOverTrash) {
                 if (group.id !== 'hidden') {
                   workspaceStore.changeGroup(
                     item,
@@ -241,7 +241,10 @@ const MainItem = observer(
                   );
                 }
               } else {
-                getGroupBelowItem(item, group, containerPos);
+                getGroupBelowItem(item, group, [
+                  item.containerDragPosX,
+                  item.containerDragPosY,
+                ]);
               }
             }
           }}
@@ -249,7 +252,7 @@ const MainItem = observer(
             if (!item.beingDragged) {
               ipcRenderer.send('open-workspace-url', item.url);
             } else {
-              if (!item.overTrash) {
+              if (!isOverTrash) {
                 const groupBelow = getGroupBelowItem(item, group, [
                   item.containerDragPosX,
                   item.containerDragPosY,
@@ -280,10 +283,12 @@ const MainItem = observer(
               item.setDragStartGroup('');
               item.setBeingDragged(false);
 
-              if (item.overTrash) {
+              if (isOverTrash) {
                 workspaceStore.deleteItem(item, group);
               }
             }
+            workspaceStore.setAnyDragging(false);
+            workspaceStore.setAnyOverTrash(false);
           }}
         >
           <ItemContainer
@@ -302,7 +307,7 @@ const MainItem = observer(
                 : group.zIndex,
               transform: item.beingDragged ? 'rotate(5deg)' : 'none',
               cursor: item.beingDragged ? 'grabbing' : 'default',
-              opacity: item.overTrash ? 0.5 : 1,
+              opacity: isOverTrash ? 0.5 : 1,
               boxShadow: item.beingDragged
                 ? '0 0 5px 0 rgba(100, 100, 100, 0.5)'
                 : 'none',
@@ -406,25 +411,16 @@ const Workspace = observer(() => {
     workspaceStore.setSize(rect.width, rect.height);
   }
 
-  let anyDragging = false;
-  let anyOverTrash = false;
-  workspaceStore.items.forEach((item) => {
-    if (item.beingDragged) {
-      anyDragging = true;
-    }
-    if (item.overTrash) {
-      anyOverTrash = true;
-    }
-  });
-
   return (
     <Background ref={backgroundRef}>
       <Groups>{groups}</Groups>
       <Items>{items}</Items>
       <Trash
         style={{
-          display: anyDragging ? 'flex' : 'none',
-          backgroundColor: anyOverTrash ? 'red' : 'rgba(0, 0, 0, 0.7)',
+          display: workspaceStore.anyDragging ? 'flex' : 'none',
+          backgroundColor: workspaceStore.anyOverTrash
+            ? 'red'
+            : 'rgba(0, 0, 0, 0.7)',
         }}
       >
         <TrashIcon src={trashIcon} />
