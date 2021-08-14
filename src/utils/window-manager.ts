@@ -505,8 +505,25 @@ export default class WindowManager {
     }
   }
 
+  screenShotTab(tabId: number, tabView: TabView) {
+    tabView.view.webContents.send('get-scroll-height');
+    tabView.view.webContents
+      .capturePage()
+      .then((image: NativeImage) => {
+        const imgString = image.toDataURL();
+        tabView.imgString = imgString;
+        this.tabPageView.webContents.send('tab-image', [tabId, imgString]);
+        return null;
+      })
+      .catch((e) => {
+        console.log(e);
+      });
+  }
+
   setTab(id: number, shouldScreenshot = true) {
     const oldTabView = this.allTabViews[this.activeTabId];
+
+    // screenshot page if needed
     if (
       shouldScreenshot &&
       id !== this.activeTabId &&
@@ -519,56 +536,51 @@ export default class WindowManager {
         this.tabPageView.webContents.send('focus-search');
         this.resize();
       }
-      ((cachedId: number) => {
-        oldTabView.view.webContents.send('get-scroll-height');
-        oldTabView.view.webContents
-          .capturePage()
-          .then((image: NativeImage) => {
-            const imgString = image.toDataURL();
-            oldTabView.imgString = imgString;
-            this.tabPageView.webContents.send('tab-image', [
-              cachedId,
-              imgString,
-            ]);
-            return null;
-          })
-          .catch((e) => {
-            console.log(e);
-          });
-      })(this.activeTabId);
+      const cachedId = this.activeTabId;
+      this.screenShotTab(cachedId, oldTabView);
       this.setTab(id, false);
-      return;
     }
 
+    // return to main tab page if needed
     if (id === -1) {
       this.mainWindow.setBrowserView(this.tabPageView);
       this.tabPageView.webContents.focus();
       this.tabPageView.webContents.send('focus-search');
     }
 
+    // break out if you're already on the right tab
+    // RETURNS
     if (id === this.activeTabId) {
       return;
     }
 
     this.activeTabId = id;
 
+    // if old tab does not exist remove it
     if (typeof oldTabView !== 'undefined') {
       this.mainWindow.removeBrowserView(oldTabView.view);
     }
 
+    // if no id, tell main window that it is inactive, resize, and return
+    // RETURNS
     if (id === -1) {
       this.mainWindow.webContents.send('set-active', false);
       this.resize();
       return;
     }
+
+    // tell main window that it is active and get the tabview reference
     this.mainWindow.webContents.send('set-active', true);
     const tabView = this.allTabViews[id];
     if (typeof tabView === 'undefined') {
       throw new Error(`setTab: tab with id ${id} does not exist`);
     }
 
+    // add title bar view to main window
+    // removes all other views as a side effect
     this.mainWindow.setBrowserView(this.titleBarView);
 
+    // add the live page to the main window and focus it a little bit later
     this.mainWindow.addBrowserView(tabView.view);
     setTimeout(() => {
       // mouse icons dont switch properly on macOS after closing and opening a BrowserView
@@ -578,28 +590,34 @@ export default class WindowManager {
     this.activeTabId = id;
     this.titleBarView.webContents.send('tab-was-set', id);
 
+    // load the url if it exists
     if (tabView.unloadedUrl !== '') {
       this.loadUrlInTab(id, tabView.unloadedUrl, false, tabView.scrollHeight);
       tabView.unloadedUrl = '';
     }
 
+    // remove the tab page view if it still exists
     if (windowHasView(this.mainWindow, this.tabPageView)) {
       this.mainWindow.removeBrowserView(this.tabPageView);
     }
 
+    // close the text finder
     this.closeFind();
 
+    // remove the url peek view if it exists
     if (windowHasView(this.mainWindow, this.urlPeekView)) {
       this.mainWindow.setTopBrowserView(this.urlPeekView);
     }
 
+    // tell the tab page that just accessed some tab
+    // this updates the access time
     this.tabPageView.webContents.send('access-tab', id);
 
+    // set the padding
     const padding = this.browserPadding();
     this.mainWindow.webContents.send('set-padding', padding.toString());
 
     this.resize();
-    // tabView.resize(padding);
     this.resizeTabView(tabView);
   }
 
