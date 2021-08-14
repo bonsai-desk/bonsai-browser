@@ -5,7 +5,7 @@ import { ipcRenderer } from 'electron';
 import pinUnselected from '../../assets/pin-unselected.svg';
 import pinSelected from '../../assets/pin-selected.svg';
 
-const OPACITY = 0.55;
+const OPACITY = 0.0;
 
 interface GlobalProps {
   floating: boolean;

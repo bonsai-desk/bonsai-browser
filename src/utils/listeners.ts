@@ -91,7 +91,7 @@ function addListeners(wm: WindowManager) {
   });
   ipcMain.on('click-main', () => {
     if (wm.webBrowserViewActive()) {
-      wm.toggle(true);
+      wm.setTab(-1);
     }
   });
   ipcMain.on('open-workspace-url', (_, url) => {
