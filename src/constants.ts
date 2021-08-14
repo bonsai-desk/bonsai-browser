@@ -23,7 +23,7 @@ export const MAIN_HTML = `file://${__dirname}/main-window.html`;
 
 export const ICON_PNG = getAssetPath('icon.png');
 
-export const ICON_SMALL_PNG = getAssetPath('/icons/48x48@2x.png');
+export const ICON_SMALL_PNG = getAssetPath('/icons/24x24-tray@2x.png');
 
 export const PRELOAD = `${__dirname}/utils/preload.js`;
 

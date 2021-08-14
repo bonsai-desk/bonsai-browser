@@ -125,6 +125,12 @@ export const TabImage = styled.img`
   background: white;
 `;
 
+export const TabImageDummy = styled.div`
+  background-color: black;
+  height: 100%;
+  width: 100%;
+`;
+
 export const Favicon = styled.img`
   width: 16px;
   height: 16px;
@@ -182,7 +188,7 @@ export const Tab = observer(({ tab, hover }: ITab) => {
       }}
     >
       <TabImageParent>
-        <TabImage src={imgUrl} alt="tab_image" />
+        {imgUrl ? <TabImage src={imgUrl} alt="tab_image" /> : <TabImageDummy />}
         <RedXParent hover={hover}>
           <TabTitle>{title === '' ? 'New Tab' : title}</TabTitle>
           <RedX
