@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import { ipcRenderer } from 'electron';
 import styled, { css } from 'styled-components';
 import { DraggableCore, DraggableData } from 'react-draggable';
 import { observer } from 'mobx-react-lite';
@@ -49,19 +50,42 @@ const ItemContainer = styled.div`
   border-radius: 20px;
   color: rgb(50, 50, 50);
   position: absolute;
-  transition-duration: 0.25s;
-  transition-property: filter;
+  transition: transform 0.05s ease-out, filter 0.25s;
+  overflow: hidden;
+  opacity: 0;
 
   ${({ beingDragged }: { beingDragged: boolean }) =>
     css`
-      ${beingDragged ? '' : ':hover { filter: brightness(0.85);}'}
+      ${beingDragged ? '' : 'div:hover { opacity: 100; }'}
     `};
 `;
 
-const ItemContent = styled.div`
+const ItemImg = styled.img`
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  background-color: white;
+
+  // :(
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+`;
+
+const ItemTitle = styled.div`
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  position: absolute;
+  font-size: 0.9rem;
   width: calc(100% - 10px);
   height: calc(100% - 10px);
-  margin: 5px;
+  padding: 5px;
+  overflow: hidden;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  transition: opacity 0.25s;
 `;
 
 const GroupHeader = styled.div`
@@ -225,7 +249,7 @@ const MainItem = observer(
           }}
           onStop={() => {
             if (!item.beingDragged) {
-              console.log('click');
+              ipcRenderer.send('open-workspace-url', item.url);
             } else {
               if (isOverTrash) {
                 workspaceStore.deleteItem(item, group);
@@ -283,10 +307,8 @@ const MainItem = observer(
               opacity: isOverTrash ? 0.5 : 1,
             }}
           >
-            <ItemContent>
-              <div>{item.title}</div>
-              <img src={item.image} alt="tab_image" style={{ width: 100 }} />
-            </ItemContent>
+            <ItemImg src={item.image} alt="tab_image" />
+            <ItemTitle>{item.title}</ItemTitle>
           </ItemContainer>
         </DraggableCore>
       </ItemPlaceholderAndContainer>

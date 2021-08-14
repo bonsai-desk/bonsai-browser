@@ -94,6 +94,9 @@ function addListeners(wm: WindowManager) {
       wm.toggle(true);
     }
   });
+  ipcMain.on('open-workspace-url', (_, url) => {
+    console.log(url);
+  });
 }
 
 export default addListeners;
