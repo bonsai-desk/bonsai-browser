@@ -538,7 +538,6 @@ export default class WindowManager {
       }
       const cachedId = this.activeTabId;
       this.screenShotTab(cachedId, oldTabView);
-      this.setTab(id, false);
     }
 
     // return to main tab page if needed
@@ -548,12 +547,6 @@ export default class WindowManager {
       this.tabPageView.webContents.send('focus-search');
     }
 
-    // break out if you're already on the right tab
-    // RETURNS
-    if (id === this.activeTabId) {
-      return;
-    }
-
     this.activeTabId = id;
 
     // if old tab does not exist remove it
@@ -561,11 +554,10 @@ export default class WindowManager {
       this.mainWindow.removeBrowserView(oldTabView.view);
     }
 
-    // if no id, tell main window that it is inactive, resize, and return
+    // if no id, tell main window that it is inactive, and return
     // RETURNS
     if (id === -1) {
       this.mainWindow.webContents.send('set-active', false);
-      this.resize();
       return;
     }
 
