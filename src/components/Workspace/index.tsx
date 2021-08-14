@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import { ipcRenderer } from 'electron';
 import styled, { css } from 'styled-components';
 import { DraggableCore, DraggableData } from 'react-draggable';
 import { observer } from 'mobx-react-lite';
@@ -49,19 +50,42 @@ const ItemContainer = styled.div`
   border-radius: 20px;
   color: rgb(50, 50, 50);
   position: absolute;
-  transition-duration: 0.25s;
-  transition-property: filter;
+  transition: transform 0.05s ease-out, filter 0.25s;
+  overflow: hidden;
+  opacity: 0;
 
   ${({ beingDragged }: { beingDragged: boolean }) =>
     css`
-      ${beingDragged ? '' : ':hover { filter: brightness(0.85);}'}
+      ${beingDragged ? '' : 'div:hover { opacity: 100; }'}
     `};
 `;
 
-const ItemContent = styled.div`
+const ItemImg = styled.img`
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  background-color: white;
+
+  // :(
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+`;
+
+const ItemTitle = styled.div`
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  position: absolute;
+  font-size: 0.9rem;
   width: calc(100% - 10px);
   height: calc(100% - 10px);
-  margin: 5px;
+  padding: 5px;
+  overflow: hidden;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  transition: opacity 0.25s;
 `;
 
 const GroupHeader = styled.div`
@@ -116,16 +140,12 @@ const TrashIcon = styled.img`
 const Groups = styled.div``;
 const Items = styled.div``;
 
-function overTrash(containerPos: number[]): boolean {
-  const centerPos = [
-    containerPos[0] + itemWidth / 2,
-    containerPos[1] + itemHeight / 2,
-  ];
+function overTrash(testPos: number[]): boolean {
   return (
-    centerPos[0] >= 0 &&
-    centerPos[0] <= 100 &&
-    centerPos[1] >= workspaceStore.height - 100 &&
-    centerPos[1] <= workspaceStore.height
+    testPos[0] >= 0 &&
+    testPos[0] <= 100 &&
+    testPos[1] >= workspaceStore.height - 100 &&
+    testPos[1] <= workspaceStore.height
   );
 }
 
@@ -163,13 +183,6 @@ const MainItem = observer(
   }) => {
     const targetPos = item.placeholderPos(group);
     const lerpValue = easeOut(item.animationLerp);
-    const containerPos = [item.containerDragPosX, item.containerDragPosY];
-    const isOverTrash = overTrash(containerPos);
-    if (isOverTrash) {
-      workspaceStore.setAnyOverTrash(true);
-    } else if (item.beingDragged) {
-      workspaceStore.setAnyOverTrash(false);
-    }
 
     return (
       <ItemPlaceholderAndContainer>
@@ -210,7 +223,9 @@ const MainItem = observer(
                 item.containerDragPosX + data.deltaX,
                 item.containerDragPosY + data.deltaY,
               ]);
-              if (isOverTrash) {
+              item.setOverTrash(overTrash([data.x, data.y]));
+              workspaceStore.setAnyOverTrash(item.overTrash);
+              if (item.overTrash) {
                 if (group.id !== 'hidden') {
                   workspaceStore.changeGroup(
                     item,
@@ -219,17 +234,18 @@ const MainItem = observer(
                   );
                 }
               } else {
-                getGroupBelowItem(item, group, containerPos);
+                getGroupBelowItem(item, group, [
+                  item.containerDragPosX,
+                  item.containerDragPosY,
+                ]);
               }
             }
           }}
           onStop={() => {
             if (!item.beingDragged) {
-              console.log('click');
+              ipcRenderer.send('open-workspace-url', item.url);
             } else {
-              if (isOverTrash) {
-                workspaceStore.deleteItem(item, group);
-              } else {
+              if (!item.overTrash) {
                 const groupBelow = getGroupBelowItem(item, group, [
                   item.containerDragPosX,
                   item.containerDragPosY,
@@ -259,9 +275,13 @@ const MainItem = observer(
               }
               item.setDragStartGroup('');
               item.setBeingDragged(false);
-              workspaceStore.setAnyDragging(false);
-              workspaceStore.setAnyOverTrash(false);
+
+              if (item.overTrash) {
+                workspaceStore.deleteItem(item, group);
+              }
             }
+            workspaceStore.setAnyDragging(false);
+            workspaceStore.setAnyOverTrash(false);
           }}
         >
           <ItemContainer
@@ -280,13 +300,14 @@ const MainItem = observer(
                 : group.zIndex,
               transform: item.beingDragged ? 'rotate(5deg)' : 'none',
               cursor: item.beingDragged ? 'grabbing' : 'default',
-              opacity: isOverTrash ? 0.5 : 1,
+              opacity: item.overTrash ? 0.5 : 1,
+              boxShadow: item.beingDragged
+                ? '0 0 5px 0 rgba(100, 100, 100, 0.5)'
+                : 'none',
             }}
           >
-            <ItemContent>
-              <div>{item.title}</div>
-              <img src={item.image} alt="tab_image" style={{ width: 100 }} />
-            </ItemContent>
+            <ItemImg src={item.image} alt="tab_image" />
+            <ItemTitle>{item.title}</ItemTitle>
           </ItemContainer>
         </DraggableCore>
       </ItemPlaceholderAndContainer>

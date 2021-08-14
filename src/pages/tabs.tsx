@@ -119,27 +119,29 @@ const Tabs = observer(() => {
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      switch (e.key) {
-        case 'Enter':
-          break;
-        case 'Escape':
-          if (tabPageStore.historyModalActive) {
-            tabPageStore.setHistoryActive(false);
-          } else if (tabPageStore.workspaceActive) {
-            tabPageStore.workspaceActive = false;
-          } else if (tabPageStore.urlText.length > 0) {
-            tabPageStore.setUrlText('');
-          } else {
-            ipcRenderer.send('toggle');
-          }
-          break;
-        case 'Tab':
-          tabPageStore.workspaceActive = !tabPageStore.workspaceActive;
-          break;
-        default:
-          tabPageStore.setFocus();
-          break;
-      }
+      runInAction(() => {
+        switch (e.key) {
+          case 'Enter':
+            break;
+          case 'Escape':
+            if (tabPageStore.historyModalActive) {
+              tabPageStore.setHistoryActive(false);
+            } else if (tabPageStore.workspaceActive) {
+              tabPageStore.workspaceActive = false;
+            } else if (tabPageStore.urlText.length > 0) {
+              tabPageStore.setUrlText('');
+            } else {
+              ipcRenderer.send('toggle');
+            }
+            break;
+          case 'Tab':
+            tabPageStore.workspaceActive = !tabPageStore.workspaceActive;
+            break;
+          default:
+            tabPageStore.setFocus();
+            break;
+        }
+      });
     }
 
     document.addEventListener('keydown', handleKeyDown);
@@ -205,7 +207,9 @@ const Tabs = observer(() => {
         <Footer>
           <FooterButton
             onClick={() => {
-              tabPageStore.workspaceActive = !tabPageStore.workspaceActive;
+              runInAction(() => {
+                tabPageStore.workspaceActive = !tabPageStore.workspaceActive;
+              });
             }}
           >
             Workspace
