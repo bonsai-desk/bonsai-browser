@@ -139,7 +139,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -530,14 +530,13 @@ export default class WindowManager {
               cachedId,
               imgString,
             ]);
-            this.setTab(id, false);
             return null;
           })
           .catch((e) => {
             console.log(e);
-            this.setTab(id, false);
           });
       })(this.activeTabId);
+      this.setTab(id, false);
       return;
     }
 
