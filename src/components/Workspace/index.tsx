@@ -140,16 +140,12 @@ const TrashIcon = styled.img`
 const Groups = styled.div``;
 const Items = styled.div``;
 
-function overTrash(containerPos: number[]): boolean {
-  const centerPos = [
-    containerPos[0] + itemWidth / 2,
-    containerPos[1] + itemHeight / 2,
-  ];
+function overTrash(testPos: number[]): boolean {
   return (
-    centerPos[0] >= 0 &&
-    centerPos[0] <= 100 &&
-    centerPos[1] >= workspaceStore.height - 100 &&
-    centerPos[1] <= workspaceStore.height
+    testPos[0] >= 0 &&
+    testPos[0] <= 100 &&
+    testPos[1] >= workspaceStore.height - 100 &&
+    testPos[1] <= workspaceStore.height
   );
 }
 
@@ -187,10 +183,6 @@ const MainItem = observer(
   }) => {
     const targetPos = item.placeholderPos(group);
     const lerpValue = easeOut(item.animationLerp);
-    const isOverTrash = overTrash([
-      item.containerDragPosX,
-      item.containerDragPosY,
-    ]);
 
     return (
       <ItemPlaceholderAndContainer>
@@ -231,8 +223,9 @@ const MainItem = observer(
                 item.containerDragPosX + data.deltaX,
                 item.containerDragPosY + data.deltaY,
               ]);
-              workspaceStore.setAnyOverTrash(isOverTrash);
-              if (isOverTrash) {
+              item.setOverTrash(overTrash([data.x, data.y]));
+              workspaceStore.setAnyOverTrash(item.overTrash);
+              if (item.overTrash) {
                 if (group.id !== 'hidden') {
                   workspaceStore.changeGroup(
                     item,
@@ -252,7 +245,7 @@ const MainItem = observer(
             if (!item.beingDragged) {
               ipcRenderer.send('open-workspace-url', item.url);
             } else {
-              if (!isOverTrash) {
+              if (!item.overTrash) {
                 const groupBelow = getGroupBelowItem(item, group, [
                   item.containerDragPosX,
                   item.containerDragPosY,
@@ -283,7 +276,7 @@ const MainItem = observer(
               item.setDragStartGroup('');
               item.setBeingDragged(false);
 
-              if (isOverTrash) {
+              if (item.overTrash) {
                 workspaceStore.deleteItem(item, group);
               }
             }
@@ -307,7 +300,7 @@ const MainItem = observer(
                 : group.zIndex,
               transform: item.beingDragged ? 'rotate(5deg)' : 'none',
               cursor: item.beingDragged ? 'grabbing' : 'default',
-              opacity: isOverTrash ? 0.5 : 1,
+              opacity: item.overTrash ? 0.5 : 1,
               boxShadow: item.beingDragged
                 ? '0 0 5px 0 rgba(100, 100, 100, 0.5)'
                 : 'none',
