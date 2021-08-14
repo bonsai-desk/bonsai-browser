@@ -143,8 +143,8 @@ export const createWindow = async () => {
   let startTime: number | null = null;
   // let lastTime = 0;
 
-  const update = () => {
-    const currentTime = new Date().getTime() / 1000.0;
+  const update = (now: number) => {
+    const currentTime = now / 1000.0;
     if (startTime === null) {
       startTime = currentTime;
     }
@@ -157,7 +157,6 @@ export const createWindow = async () => {
       fixedUpdate();
     }
   };
-
   setInterval(update, 1);
 
   const tray = createTray(ICON_SMALL_PNG, mainWindow);
