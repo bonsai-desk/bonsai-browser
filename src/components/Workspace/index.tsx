@@ -187,13 +187,6 @@ const MainItem = observer(
   }) => {
     const targetPos = item.placeholderPos(group);
     const lerpValue = easeOut(item.animationLerp);
-    const containerPos = [item.containerDragPosX, item.containerDragPosY];
-    const isOverTrash = overTrash(containerPos);
-    if (isOverTrash) {
-      workspaceStore.setAnyOverTrash(true);
-    } else if (item.beingDragged) {
-      workspaceStore.setAnyOverTrash(false);
-    }
 
     return (
       <ItemPlaceholderAndContainer>
@@ -213,6 +206,7 @@ const MainItem = observer(
             e.stopPropagation();
           }}
           onStart={(_, data: DraggableData) => {
+            // console.log(data);
             item.setDragMouseStart(data.x, data.y);
             workspaceStore.moveToFront(group);
           }}
@@ -223,7 +217,6 @@ const MainItem = observer(
               const distSquared = xDif * xDif + yDif * yDif;
               if (distSquared > 5 * 5) {
                 item.setBeingDragged(true);
-                workspaceStore.setAnyDragging(true);
                 item.setDragStartGroup(group.id);
                 item.setContainerDragPos(targetPos);
               }
@@ -234,7 +227,12 @@ const MainItem = observer(
                 item.containerDragPosX + data.deltaX,
                 item.containerDragPosY + data.deltaY,
               ]);
-              if (isOverTrash) {
+              const containerPos = [
+                item.containerDragPosX,
+                item.containerDragPosY,
+              ];
+              item.setOverTrash(overTrash(containerPos));
+              if (item.overTrash) {
                 if (group.id !== 'hidden') {
                   workspaceStore.changeGroup(
                     item,
@@ -251,9 +249,7 @@ const MainItem = observer(
             if (!item.beingDragged) {
               ipcRenderer.send('open-workspace-url', item.url);
             } else {
-              if (isOverTrash) {
-                workspaceStore.deleteItem(item, group);
-              } else {
+              if (!item.overTrash) {
                 const groupBelow = getGroupBelowItem(item, group, [
                   item.containerDragPosX,
                   item.containerDragPosY,
@@ -283,8 +279,10 @@ const MainItem = observer(
               }
               item.setDragStartGroup('');
               item.setBeingDragged(false);
-              workspaceStore.setAnyDragging(false);
-              workspaceStore.setAnyOverTrash(false);
+
+              if (item.overTrash) {
+                workspaceStore.deleteItem(item, group);
+              }
             }
           }}
         >
@@ -304,7 +302,10 @@ const MainItem = observer(
                 : group.zIndex,
               transform: item.beingDragged ? 'rotate(5deg)' : 'none',
               cursor: item.beingDragged ? 'grabbing' : 'default',
-              opacity: isOverTrash ? 0.5 : 1,
+              opacity: item.overTrash ? 0.5 : 1,
+              boxShadow: item.beingDragged
+                ? '0 0 5px 0 rgba(100, 100, 100, 0.5)'
+                : 'none',
             }}
           >
             <ItemImg src={item.image} alt="tab_image" />
@@ -405,16 +406,25 @@ const Workspace = observer(() => {
     workspaceStore.setSize(rect.width, rect.height);
   }
 
+  let anyDragging = false;
+  let anyOverTrash = false;
+  workspaceStore.items.forEach((item) => {
+    if (item.beingDragged) {
+      anyDragging = true;
+    }
+    if (item.overTrash) {
+      anyOverTrash = true;
+    }
+  });
+
   return (
     <Background ref={backgroundRef}>
       <Groups>{groups}</Groups>
       <Items>{items}</Items>
       <Trash
         style={{
-          display: workspaceStore.anyDragging ? 'flex' : 'none',
-          backgroundColor: workspaceStore.anyOverTrash
-            ? 'red'
-            : 'rgba(0, 0, 0, 0.7)',
+          display: anyDragging ? 'flex' : 'none',
+          backgroundColor: anyOverTrash ? 'red' : 'rgba(0, 0, 0, 0.7)',
         }}
       >
         <TrashIcon src={trashIcon} />

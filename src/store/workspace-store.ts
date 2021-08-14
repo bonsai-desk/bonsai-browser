@@ -26,6 +26,7 @@ export const Item = types
     containerDragPosX: 0,
     containerDragPosY: 0,
     beingDragged: false,
+    overTrash: false,
     dragStartGroup: '',
     animationLerp: 1,
     animationStartX: 0,
@@ -53,6 +54,9 @@ export const Item = types
     },
     setBeingDragged(beingDragged: boolean) {
       self.beingDragged = beingDragged;
+    },
+    setOverTrash(overTrash: boolean) {
+      self.overTrash = overTrash;
     },
     setDragStartGroup(dragStartGroup: string) {
       self.dragStartGroup = dragStartGroup;
@@ -135,18 +139,10 @@ export const WorkspaceStore = types
     items: types.map(Item),
   })
   .volatile(() => ({
-    anyDragging: false,
-    anyOverTrash: false,
     width: 0,
     height: 0,
   }))
   .actions((self) => ({
-    setAnyDragging(anyDragging: boolean) {
-      self.anyDragging = anyDragging;
-    },
-    setAnyOverTrash(anyOverTrash: boolean) {
-      self.anyOverTrash = anyOverTrash;
-    },
     setSize(width: number, height: number) {
       self.width = width;
       self.height = height;
@@ -362,11 +358,13 @@ function loop(milliseconds: number) {
     }
   });
   workspaceStore.groups.forEach((group) => {
-    group.setAnimationLerp(
-      group.animationLerp + deltaTime * (1 / animationTime)
-    );
-    if (group.animationLerp > 1) {
-      group.setAnimationLerp(1);
+    if (group.animationLerp !== 1) {
+      group.setAnimationLerp(
+        group.animationLerp + deltaTime * (1 / animationTime)
+      );
+      if (group.animationLerp > 1) {
+        group.setAnimationLerp(1);
+      }
     }
   });
   requestAnimationFrame(loop);

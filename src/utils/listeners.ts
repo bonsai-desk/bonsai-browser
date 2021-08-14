@@ -95,7 +95,25 @@ function addListeners(wm: WindowManager) {
     }
   });
   ipcMain.on('open-workspace-url', (_, url) => {
-    console.log(url);
+    wm.tabPageView.webContents.send('close-history-modal');
+
+    const baseUrl = url.split('#')[0];
+    let tabExists = false;
+
+    Object.values(wm.allTabViews).forEach((tabView) => {
+      const tabUrl = tabView.view.webContents.getURL();
+      const tabBaseUrl = tabUrl.split('#')[0];
+      if (tabBaseUrl === baseUrl) {
+        wm.setTab(tabView.id);
+        tabExists = true;
+      }
+    });
+
+    if (!tabExists) {
+      const newTabId = wm.createNewTab();
+      wm.loadUrlInTab(newTabId, url);
+      wm.setTab(newTabId);
+    }
   });
 }
 
