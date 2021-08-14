@@ -519,25 +519,20 @@ export default class WindowManager {
         this.tabPageView.webContents.send('focus-search');
         this.resize();
       }
-      ((cachedId: number) => {
-        oldTabView.view.webContents.send('get-scroll-height');
-        oldTabView.view.webContents
-          .capturePage()
-          .then((image: NativeImage) => {
-            const imgString = image.toDataURL();
-            oldTabView.imgString = imgString;
-            this.tabPageView.webContents.send('tab-image', [
-              cachedId,
-              imgString,
-            ]);
-            return null;
-          })
-          .catch((e) => {
-            console.log(e);
-          });
-      })(this.activeTabId);
+      const cachedId = this.activeTabId;
+      oldTabView.view.webContents.send('get-scroll-height');
+      oldTabView.view.webContents
+        .capturePage()
+        .then((image: NativeImage) => {
+          const imgString = image.toDataURL();
+          oldTabView.imgString = imgString;
+          this.tabPageView.webContents.send('tab-image', [cachedId, imgString]);
+          return null;
+        })
+        .catch((e) => {
+          console.log(e);
+        });
       this.setTab(id, false);
-      return;
     }
 
     if (id === -1) {
