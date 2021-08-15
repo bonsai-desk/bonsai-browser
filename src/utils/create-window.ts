@@ -13,7 +13,7 @@ import { autoUpdater } from 'electron-updater';
 import { createTray, installExtensions } from './windows';
 import addListeners from './listeners';
 import WindowManager from './window-manager';
-import { ICON_PNG, ICON_SMALL_PNG, MAIN_HTML } from '../constants';
+import { ICON_PNG, ICON_SMALL_PNG } from '../constants';
 import windowFixedUpdate from './calculate-window-physics';
 import { windowHasView } from './utils';
 
@@ -60,8 +60,6 @@ export const createWindow = async () => {
   }
 
   mainWindow.setAlwaysOnTop(true);
-
-  mainWindow.webContents.loadURL(MAIN_HTML);
 
   const displays = screen.getAllDisplays();
   if (displays.length === 0) {

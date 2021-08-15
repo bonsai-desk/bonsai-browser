@@ -6,7 +6,6 @@ import UrlPeek from './pages/url-peek';
 import Find from './pages/find';
 import { Provider, RootModel } from './utils/data';
 import './index.css';
-import MainWindow from './pages/main-window';
 import Overlay from './pages/overlay';
 import TabStore from './store/tabs';
 import TabsPage from './pages/tabs-page';
@@ -58,10 +57,6 @@ if (document.getElementById('url-peek')) {
 
 if (document.getElementById('find')) {
   render(<Find />, document.getElementById('find'));
-}
-
-if (document.getElementById('main-window')) {
-  render(<MainWindow />, document.getElementById('main-window'));
 }
 
 if (document.getElementById('overlay')) {
