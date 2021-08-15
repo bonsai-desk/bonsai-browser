@@ -26,6 +26,8 @@ import {
   FooterButton,
 } from '../components/TabPageContent';
 import Workspace from '../components/Workspace';
+import pinSelected from '../../assets/pin-selected.svg';
+import pinUnselected from '../../assets/pin-unselected.svg';
 
 const OPACITY = 0.55;
 
@@ -140,12 +142,40 @@ const MainContent = observer(() => {
   return tabPageStore.workspaceActive ? workspace : tabs;
 });
 
+const PinButton = styled.button`
+  border: none;
+  outline: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: darkgray;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+`;
+
+const Icon = styled.img`
+  pointer-events: none;
+
+  ${({ isPinned }: { isPinned: boolean }) =>
+    css`
+      width: ${isPinned ? '60' : '28'}px;
+      height: ${isPinned ? '60' : '28'}px;
+    `}
+`;
+
 const Tabs = observer(() => {
   const { tabPageStore } = useStore();
   const urlBoxRef = useRef<HTMLInputElement>(null);
   const [urlFocus, setUrlFocus] = useState(false);
   const backgroundRef = useRef(null);
   const [isActive, setIsActive] = useState(true);
+  // const [padding, setPadding] = useState('35');
+  const [isPinned, setIsPinned] = useState(false);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -191,10 +221,16 @@ const Tabs = observer(() => {
       tabPageStore.setFocus();
       tabPageStore.selectText();
     });
+    // ipcRenderer.on('set-padding', (_, newPadding) => {
+    //   // setPadding(newPadding);
+    // });
     ipcRenderer.on('set-active', (_, newIsActive) => {
       setIsActive(newIsActive);
     });
-  }, [hasRunOnce]);
+    ipcRenderer.on('set-pinned', (_, newIsPinned) => {
+      setIsPinned(newIsPinned);
+    });
+  }, [hasRunOnce, tabPageStore]);
 
   useEffect(() => {
     if (urlBoxRef.current !== null) {
@@ -274,6 +310,16 @@ const Tabs = observer(() => {
         ''
       )}
       <HistoryModalLocal />
+      <PinButton
+        onClick={() => {
+          ipcRenderer.send('toggle-pin');
+        }}
+      >
+        <Icon
+          src={isPinned ? pinSelected : pinUnselected}
+          isPinned={isPinned}
+        />
+      </PinButton>
     </Wrapper>
   );
 });

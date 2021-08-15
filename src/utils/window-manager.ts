@@ -119,6 +119,11 @@ export default class WindowManager {
 
   isPinned = false;
 
+  setPinned(pinned: boolean) {
+    this.mainWindow.webContents.send('set-pinned', pinned);
+    this.tabPageView.webContents.send('set-pinned', pinned);
+  }
+
   constructor(mainWindow: BrowserWindow, display: { activeDisplay: Display }) {
     this.mainWindow = mainWindow;
     WindowManager.display = display;

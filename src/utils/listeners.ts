@@ -80,8 +80,7 @@ function addListeners(wm: WindowManager) {
     wm.clearHistory();
   });
   ipcMain.on('toggle-pin', () => {
-    wm.isPinned = !wm.isPinned;
-    wm.mainWindow.webContents.send('set-pinned', wm.isPinned);
+    wm.setPinned(!wm.isPinned);
   });
   ipcMain.on('float', () => {
     wm.float();

@@ -175,8 +175,7 @@ export const createWindow = async () => {
       wm.mainWindow.setVisibleOnAllWorkspaces(false, {
         visibleOnFullScreen: true,
       });
-      wm.isPinned = false;
-      wm.mainWindow.webContents.send('set-pinned', wm.isPinned);
+      wm.setPinned(false);
       wm.unFloat(display.activeDisplay);
       // wm.windowPosition[0] = display.activeDisplay.workArea.x;
       // wm.windowPosition[1] = display.activeDisplay.workArea.y;
