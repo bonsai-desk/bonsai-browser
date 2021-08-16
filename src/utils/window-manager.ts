@@ -149,7 +149,6 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    console.log('asdf');
     this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
@@ -617,7 +616,6 @@ export default class WindowManager {
     if (windowHasView(this.mainWindow, this.urlPeekView)) {
       this.mainWindow.setTopBrowserView(this.urlPeekView);
     }
-
     // tell the tab page that just accessed some tab
     // this updates the access time
     this.tabPageView.webContents.send('access-tab', id);
@@ -625,6 +623,7 @@ export default class WindowManager {
     // set the padding
     const padding = this.browserPadding();
     this.mainWindow.webContents.send('set-padding', padding.toString());
+    this.tabPageView.webContents.send('set-padding', padding.toString());
 
     this.resize();
     this.resizeTabView(tabView);
@@ -997,12 +996,14 @@ export default class WindowManager {
     const findViewHeight = 50;
     const findViewMarginRight = 20;
 
-    this.titleBarView.setBounds({
+    const titleBarBounds = {
       x: padding,
       y: padding,
       width: windowSize[0] - padding * 2,
       height: hh,
-    });
+    };
+    // console.log(titleBarBounds);
+    this.titleBarView.setBounds(titleBarBounds);
     this.urlPeekView.setBounds({
       x: padding,
       y: windowSize[1] - urlPeekHeight - padding,
@@ -1059,6 +1060,7 @@ export default class WindowManager {
       if (findIsActive && !mouseInBorder) {
         this.closeFind();
       } else {
+        console.log('a');
         this.setTab(-1);
       }
     }

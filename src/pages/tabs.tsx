@@ -40,6 +40,18 @@ const Wrapper = styled.div`
   height: 100vh;
 `;
 
+const WebViewBackground = styled.div`
+  position: absolute;
+  background-color: white;
+  ${({ padding }: { padding: string }) => css`
+    top: ${padding}px;
+    left: ${padding}px;
+    width: calc(100% - ${padding}px - ${padding}px);
+    height: calc(100% - ${padding}px - ${padding}px);
+  `}//width: 100px;
+  //height: 100px;
+`;
+
 const GlobalStyle = createGlobalStyle`
   html,
   body {
@@ -174,7 +186,7 @@ const Tabs = observer(() => {
   const [urlFocus, setUrlFocus] = useState(false);
   const backgroundRef = useRef(null);
   const [isActive, setIsActive] = useState(true);
-  // const [padding, setPadding] = useState('35');
+  const [padding, setPadding] = useState('35');
   const [isPinned, setIsPinned] = useState(false);
 
   useEffect(() => {
@@ -221,9 +233,10 @@ const Tabs = observer(() => {
       tabPageStore.setFocus();
       tabPageStore.selectText();
     });
-    // ipcRenderer.on('set-padding', (_, newPadding) => {
-    //   // setPadding(newPadding);
-    // });
+    ipcRenderer.on('set-padding', (_, newPadding) => {
+      // console.log(newPadding);
+      // // setPadding(newPadding);
+    });
     ipcRenderer.on('set-active', (_, newIsActive) => {
       setIsActive(newIsActive);
     });
@@ -307,7 +320,7 @@ const Tabs = observer(() => {
           </Footer>
         </Background>
       ) : (
-        ''
+        <WebViewBackground padding={padding} />
       )}
       <HistoryModalLocal />
       <PinButton

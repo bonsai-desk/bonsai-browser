@@ -108,7 +108,7 @@ export const createWindow = async () => {
       //   activeDisplay.id === WindowManager.display.activeDisplay.id;
       // if (mouseOnWindowDisplay) {
       wm.unFloat(display.activeDisplay);
-      wm.setTab(-1);
+      // wm.setTab(-1);
       wm.hideMainWindow();
       // }
     }
