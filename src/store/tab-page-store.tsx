@@ -134,10 +134,12 @@ export default class TabPageStore {
         this.tabs[id].lastAccessTime = new Date().getTime();
       });
     });
-    ipcRenderer.on('tab-image', (_, [id, image]) => {
+    ipcRenderer.on('tab-image-native', (_, [id, thing]) => {
       runInAction(() => {
         if (typeof this.tabs[id] !== 'undefined') {
-          this.tabs[id].image = image;
+          this.tabs[id].image = URL.createObjectURL(
+            new Blob([thing.buffer], { type: 'image/jpg' })
+          );
         }
       });
     });
