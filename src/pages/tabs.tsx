@@ -74,10 +74,8 @@ const HistoryModalLocal = observer(() => {
   const historyBoxRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (historyBoxRef.current !== null) {
-      tabPageStore.historyInput = historyBoxRef.current;
-    }
-  }, [historyBoxRef.current]);
+    tabPageStore.historyBoxRef = historyBoxRef;
+  }, []);
 
   useEffect(() => {
     ipcRenderer.send(
@@ -185,9 +183,10 @@ const Tabs = observer(() => {
   const urlBoxRef = useRef<HTMLInputElement>(null);
   const [urlFocus, setUrlFocus] = useState(false);
   const backgroundRef = useRef(null);
-  const [isActive, setIsActive] = useState(true);
-  const [padding, setPadding] = useState('35');
-  const [isPinned, setIsPinned] = useState(false);
+
+  useEffect(() => {
+    tabPageStore.urlBoxRef = urlBoxRef;
+  });
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -211,6 +210,7 @@ const Tabs = observer(() => {
             break;
           default:
             tabPageStore.setFocus();
+            // urlBoxRef.current?.focus();
             break;
         }
       });
@@ -229,27 +229,7 @@ const Tabs = observer(() => {
       return;
     }
     setHasRunOnce(true);
-    ipcRenderer.on('focus-search', () => {
-      tabPageStore.setFocus();
-      tabPageStore.selectText();
-    });
-    ipcRenderer.on('set-padding', (_, newPadding) => {
-      // console.log(newPadding);
-      // // setPadding(newPadding);
-    });
-    ipcRenderer.on('set-active', (_, newIsActive) => {
-      setIsActive(newIsActive);
-    });
-    ipcRenderer.on('set-pinned', (_, newIsPinned) => {
-      setIsPinned(newIsPinned);
-    });
   }, [hasRunOnce, tabPageStore]);
-
-  useEffect(() => {
-    if (urlBoxRef.current !== null) {
-      tabPageStore.urlInput = urlBoxRef.current;
-    }
-  }, [urlBoxRef.current]);
 
   return (
     <Wrapper
@@ -263,7 +243,7 @@ const Tabs = observer(() => {
       }}
     >
       <GlobalStyle floating={false} />
-      {isActive ? (
+      {tabPageStore.isActive ? (
         <Background>
           <URLBoxParent>
             <URLBox
@@ -320,7 +300,7 @@ const Tabs = observer(() => {
           </Footer>
         </Background>
       ) : (
-        <WebViewBackground padding={padding} />
+        <WebViewBackground padding={tabPageStore.padding} />
       )}
       <HistoryModalLocal />
       <PinButton
@@ -329,8 +309,8 @@ const Tabs = observer(() => {
         }}
       >
         <Icon
-          src={isPinned ? pinSelected : pinUnselected}
-          isPinned={isPinned}
+          src={tabPageStore.isPinned ? pinSelected : pinUnselected}
+          isPinned={tabPageStore.isPinned}
         />
       </PinButton>
     </Wrapper>

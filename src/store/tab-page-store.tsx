@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
-import { createContext, useContext } from 'react';
+import { RefObject, createContext, useContext } from 'react';
 import Fuse from 'fuse.js';
 import { TabPageColumn, TabPageTab } from '../interfaces/tab';
 import { HistoryEntry } from '../utils/tab-view';
@@ -21,9 +21,15 @@ export default class TabPageStore {
 
   historyText = '';
 
-  urlInput: HTMLInputElement | null;
+  padding = '35';
 
-  historyInput: HTMLInputElement | null;
+  isActive = false;
+
+  isPinned = false;
+
+  urlBoxRef: RefObject<HTMLInputElement> | null = null;
+
+  historyBoxRef: RefObject<HTMLInputElement> | null = null;
 
   workspaceActive = false;
 
@@ -44,17 +50,17 @@ export default class TabPageStore {
 
   setFocus() {
     if (this.historyModalActive) {
-      this.historyInput?.focus();
+      this.historyBoxRef?.current?.focus();
     } else {
-      this.urlInput?.focus();
+      this.urlBoxRef?.current?.focus();
     }
   }
 
   selectText() {
     if (this.historyModalActive) {
-      this.historyInput?.select();
+      this.historyBoxRef?.current?.select();
     } else {
-      this.urlInput?.select();
+      this.urlBoxRef?.current?.select();
     }
   }
 
@@ -89,8 +95,6 @@ export default class TabPageStore {
     makeAutoObservable(this);
 
     this.filteredTabs = [];
-    this.urlInput = null;
-    this.historyInput = null;
     //
 
     ipcRenderer.on('tabView-created-with-id', (_, id) => {
@@ -191,6 +195,25 @@ export default class TabPageStore {
     ipcRenderer.on('blur', () => {
       runInAction(() => {
         this.setUrlText('');
+      });
+    });
+    ipcRenderer.on('set-padding', (_, newPadding) => {
+      runInAction(() => {
+        this.padding = newPadding;
+      });
+    });
+    ipcRenderer.on('set-active', (_, newIsActive) => {
+      runInAction(() => {
+        this.isActive = newIsActive;
+      });
+    });
+    ipcRenderer.on('focus-search', () => {
+      this.setFocus();
+      this.selectText();
+    });
+    ipcRenderer.on('set-pinned', (_, newIsPinned) => {
+      runInAction(() => {
+        this.isPinned = newIsPinned;
       });
     });
   }
