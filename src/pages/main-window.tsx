@@ -81,7 +81,7 @@ const MainWindow = observer(() => {
 
   useEffect(() => {
     function clickHandler() {
-      ipcRenderer.send('click-main');
+      // ipcRenderer.send('click-main');
     }
     document.body.addEventListener('click', clickHandler);
     return () => {

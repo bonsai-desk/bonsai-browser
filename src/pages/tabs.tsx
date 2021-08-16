@@ -184,6 +184,7 @@ const Tabs = observer(() => {
           case 'Enter':
             break;
           case 'Escape':
+            console.log('Escape');
             if (tabPageStore.historyModalActive) {
               tabPageStore.setHistoryActive(false);
             } else if (tabPageStore.workspaceActive) {

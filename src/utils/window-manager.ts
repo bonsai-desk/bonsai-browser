@@ -119,7 +119,12 @@ export default class WindowManager {
 
   isPinned = false;
 
+  webViewActive() {
+    return this.activeTabId !== -1;
+  }
+
   setPinned(pinned: boolean) {
+    this.isPinned = pinned;
     this.mainWindow.webContents.send('set-pinned', pinned);
     this.tabPageView.webContents.send('set-pinned', pinned);
   }
@@ -144,7 +149,8 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    console.log('asdf');
+    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -221,12 +227,13 @@ export default class WindowManager {
         escapeActive &&
         (!mainWindowVisible ||
           (mainWindowVisible && webBrowserViewIsActive && !mouseIsInBorder) ||
-          (mainWindowVisible && !webBrowserViewIsActive))
+          (mainWindowVisible && !webBrowserViewIsActive)) &&
+        !findIsActive
       ) {
         escapeActive = false;
         globalShortcut.unregister('Escape');
       }
-    }, 100);
+    }, 25);
   }
 
   mouseInInner(mousePoint: Electron.Point) {
@@ -322,7 +329,7 @@ export default class WindowManager {
     }
     this.closeFind();
     this.mainWindow.removeBrowserView(this.urlPeekView);
-    // eslint-disable-line
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (tabView.view.webContents as any).destroy();
     delete this.allTabViews[id];
     this.titleBarView.webContents.send('tab-removed', id);
@@ -598,9 +605,6 @@ export default class WindowManager {
     }
 
     // remove the tab page view if it still exists
-    if (windowHasView(this.mainWindow, this.tabPageView)) {
-      // this.mainWindow.removeBrowserView(this.tabPageView);
-    }
 
     // close the text finder
     this.closeFind();
@@ -914,9 +918,6 @@ export default class WindowManager {
     if (windowHasView(this.mainWindow, this.titleBarView)) {
       this.mainWindow?.removeBrowserView(this.titleBarView);
     }
-    // if (windowHasView(this.mainWindow, this.tabPageView)) {
-    //   this.mainWindow?.removeBrowserView(this.tabPageView);
-    // }
     this.windowPosition[0] =
       display.workAreaSize.width / 2.0 -
       floatingWidth / 2.0 +
@@ -1036,10 +1037,14 @@ export default class WindowManager {
     return windowHasView(this.mainWindow, this.findView);
   }
 
+  tabPageActive(): boolean {
+    return this.activeTabId === -1;
+  }
+
   toggle(mouseInBorder: boolean) {
     if (this.windowFloating) {
       this.hideMainWindow();
-    } else if (windowHasView(this.mainWindow, this.tabPageView)) {
+    } else if (this.tabPageActive()) {
       if (this.historyModalActive) {
         this.tabPageView.webContents.send('close-history-modal');
       } else {
