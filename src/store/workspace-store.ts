@@ -128,6 +128,7 @@ export const ItemGroup = types
     animationStartHeight: 0,
     resizing: false,
     tempResizeWidth: 0,
+    hovering: false,
   }))
   .views((self) => ({
     size(): [number, number] {
@@ -149,6 +150,9 @@ export const ItemGroup = types
     },
   }))
   .actions((self) => ({
+    setHovering(hovering: boolean) {
+      self.hovering = hovering;
+    },
     setResizing(resizing: boolean) {
       self.resizing = resizing;
     },

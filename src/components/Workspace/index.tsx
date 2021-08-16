@@ -54,25 +54,24 @@ const GroupResize = styled.div`
 const ItemPlaceholderAndContainer = styled.div``;
 
 const ItemPlaceholder = styled.div`
-  border-radius: 20px;
-  background-color: rgba(100, 100, 100, 0.5);
   position: absolute;
   left: 0;
   top: 0;
 `;
 
 const ItemContainer = styled.div`
-  background-color: rgb(255, 210, 181);
+  background-color: white;
   border-radius: 20px;
   color: rgb(50, 50, 50);
   position: absolute;
   transition: transform 0.05s ease-out, filter 0.25s;
   overflow: hidden;
-  opacity: 0;
 
-  ${({ beingDragged }: { beingDragged: boolean }) =>
+  ${({ showTitle }: { showTitle: boolean }) =>
     css`
-      ${beingDragged ? '' : 'div:hover { opacity: 100; }'}
+      div {
+        opacity: ${showTitle ? '100' : '0'};
+      }
     `};
 `;
 
@@ -108,25 +107,6 @@ const GroupHeader = styled.div`
   display: flex;
   align-items: center;
 `;
-
-// const HeaderButtons = styled.div`
-//   display: flex;
-//   align-items: center;
-//   justify-content: flex-end;
-//   flex-grow: 1;
-//   padding-right: 10px;
-// `;
-// const HeaderButton = styled.button`
-//   outline: none;
-//   border: none;
-//   border-radius: 50%;
-//   width: 30px;
-//   height: 30px;
-//
-//   :hover {
-//     background-color: gray;
-//   }
-// `;
 
 const HeaderText = styled.div`
   padding-left: 10px;
@@ -213,8 +193,6 @@ const MainItem = observer(
             left: targetPos[0],
             top: targetPos[1],
             zIndex: group.zIndex,
-            // display: item.beingDragged ? 'block' : 'none',
-            display: 'none',
           }}
         />
         <DraggableCore
@@ -224,6 +202,7 @@ const MainItem = observer(
           onStart={(_, data: DraggableData) => {
             item.setDragMouseStart(data.x, data.y);
             workspaceStore.moveToFront(group);
+            group.setHovering(false);
           }}
           onDrag={(_, data: DraggableData) => {
             if (!item.beingDragged) {
@@ -264,6 +243,7 @@ const MainItem = observer(
             }
           }}
           onStop={() => {
+            let newGroup = group;
             if (!item.beingDragged) {
               runInAction(() => {
                 tabPageStore.workspaceActive = false;
@@ -279,6 +259,7 @@ const MainItem = observer(
                 );
                 if (groupBelow === null) {
                   const createdGroup = workspaceStore.createGroup('new group');
+                  newGroup = createdGroup;
                   createdGroup.move(
                     item.containerDragPosX - groupPadding,
                     item.containerDragPosY - (groupPadding + groupTitleHeight)
@@ -309,10 +290,11 @@ const MainItem = observer(
             }
             workspaceStore.setAnyDragging(false);
             workspaceStore.setAnyOverTrash(false);
+            newGroup.setHovering(true);
           }}
         >
           <ItemContainer
-            beingDragged={item.beingDragged}
+            showTitle={group.hovering && !item.beingDragged && !group.resizing}
             style={{
               width: itemWidth,
               height: itemHeight,
@@ -331,6 +313,12 @@ const MainItem = observer(
               boxShadow: item.beingDragged
                 ? '0 0 5px 0 rgba(100, 100, 100, 0.5)'
                 : 'none',
+            }}
+            onMouseOver={() => {
+              group.setHovering(true);
+            }}
+            onMouseLeave={() => {
+              group.setHovering(false);
             }}
           >
             <ItemImg src={item.image} alt="tab_image" />
@@ -402,6 +390,12 @@ const Workspace = observer(() => {
               top: group.y,
               zIndex: group.zIndex,
               display: group.id === 'hidden' ? 'none' : 'block',
+            }}
+            onMouseOver={() => {
+              group.setHovering(true);
+            }}
+            onMouseLeave={() => {
+              group.setHovering(false);
             }}
           >
             <GroupHeader
