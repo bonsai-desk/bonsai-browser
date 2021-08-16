@@ -120,6 +120,16 @@ export default class WindowManager {
 
   isPinned = false;
 
+  webViewActive() {
+    return this.activeTabId !== -1;
+  }
+
+  setPinned(pinned: boolean) {
+    this.isPinned = pinned;
+    this.mainWindow.webContents.send('set-pinned', pinned);
+    this.tabPageView.webContents.send('set-pinned', pinned);
+  }
+
   constructor(mainWindow: BrowserWindow, display: { activeDisplay: Display }) {
     this.mainWindow = mainWindow;
     WindowManager.display = display;
@@ -140,7 +150,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -224,12 +234,17 @@ export default class WindowManager {
         escapeActive &&
         (!mainWindowVisible ||
           (mainWindowVisible && webBrowserViewIsActive && !mouseIsInBorder) ||
-          (mainWindowVisible && !webBrowserViewIsActive))
+          (mainWindowVisible && !webBrowserViewIsActive)) &&
+        !findIsActive
       ) {
-        escapeActive = false;
-        globalShortcut.unregister('Escape');
+        setTimeout(() => {
+          // timeout here because there was sometimes a gap between this being
+          // un-registered and the tab page taking over the escape key functionality
+          escapeActive = false;
+          globalShortcut.unregister('Escape');
+        }, 10);
       }
-    }, 100);
+    }, 10);
   }
 
   mouseInInner(mousePoint: Electron.Point) {
@@ -538,7 +553,7 @@ export default class WindowManager {
       typeof oldTabView !== 'undefined'
     ) {
       if (id === -1) {
-        this.mainWindow.addBrowserView(this.tabPageView);
+        // this.mainWindow.addBrowserView(this.tabPageView);
         this.mainWindow.setTopBrowserView(this.tabPageView);
         this.tabPageView.webContents.focus();
         this.tabPageView.webContents.send('focus-search');
@@ -550,7 +565,8 @@ export default class WindowManager {
 
     // return to main tab page if needed
     if (id === -1) {
-      this.mainWindow.setBrowserView(this.tabPageView);
+      // this.mainWindow.add(this.tabPageView);
+      this.mainWindow.setTopBrowserView(this.tabPageView);
       this.tabPageView.webContents.focus();
       this.tabPageView.webContents.send('focus-search');
     }
@@ -566,19 +582,22 @@ export default class WindowManager {
     // RETURNS
     if (id === -1) {
       this.mainWindow.webContents.send('set-active', false);
+      this.tabPageView.webContents.send('set-active', true);
+      this.resize();
       return;
     }
 
     // tell main window that it is active and get the tabview reference
     this.mainWindow.webContents.send('set-active', true);
+    this.tabPageView.webContents.send('set-active', false);
     const tabView = this.allTabViews[id];
     if (typeof tabView === 'undefined') {
       throw new Error(`setTab: tab with id ${id} does not exist`);
     }
 
     // add title bar view to main window
-    // removes all other views as a side effect
-    this.mainWindow.setBrowserView(this.titleBarView);
+    this.mainWindow.addBrowserView(this.titleBarView);
+    this.mainWindow.setTopBrowserView(this.titleBarView);
 
     // add the live page to the main window and focus it a little bit later
     this.mainWindow.addBrowserView(tabView.view);
@@ -597,9 +616,6 @@ export default class WindowManager {
     }
 
     // remove the tab page view if it still exists
-    if (windowHasView(this.mainWindow, this.tabPageView)) {
-      this.mainWindow.removeBrowserView(this.tabPageView);
-    }
 
     // close the text finder
     this.closeFind();
@@ -608,7 +624,6 @@ export default class WindowManager {
     if (windowHasView(this.mainWindow, this.urlPeekView)) {
       this.mainWindow.setTopBrowserView(this.urlPeekView);
     }
-
     // tell the tab page that just accessed some tab
     // this updates the access time
     this.tabPageView.webContents.send('access-tab', id);
@@ -616,6 +631,7 @@ export default class WindowManager {
     // set the padding
     const padding = this.browserPadding();
     this.mainWindow.webContents.send('set-padding', padding.toString());
+    this.tabPageView.webContents.send('set-padding', padding.toString());
 
     this.resize();
     this.resizeTabView(tabView);
@@ -913,9 +929,6 @@ export default class WindowManager {
     if (windowHasView(this.mainWindow, this.titleBarView)) {
       this.mainWindow?.removeBrowserView(this.titleBarView);
     }
-    // if (windowHasView(this.mainWindow, this.tabPageView)) {
-    //   this.mainWindow?.removeBrowserView(this.tabPageView);
-    // }
     this.windowPosition[0] =
       display.workAreaSize.width / 2.0 -
       floatingWidth / 2.0 +
@@ -991,12 +1004,14 @@ export default class WindowManager {
     const findViewHeight = 50;
     const findViewMarginRight = 20;
 
-    this.titleBarView.setBounds({
+    const titleBarBounds = {
       x: padding,
       y: padding,
       width: windowSize[0] - padding * 2,
       height: hh,
-    });
+    };
+    // console.log(titleBarBounds);
+    this.titleBarView.setBounds(titleBarBounds);
     this.urlPeekView.setBounds({
       x: padding,
       y: windowSize[1] - urlPeekHeight - padding,
@@ -1016,10 +1031,10 @@ export default class WindowManager {
       height: windowSize[1],
     });
     this.tabPageView.setBounds({
-      x: padding,
-      y: padding,
-      width: windowSize[0] - padding * 2 - 50,
-      height: windowSize[1] - padding * 2,
+      x: 0,
+      y: 0,
+      width: windowSize[0],
+      height: windowSize[1],
     });
 
     // const windowSize = this.window.getSize();
@@ -1035,10 +1050,14 @@ export default class WindowManager {
     return windowHasView(this.mainWindow, this.findView);
   }
 
+  tabPageActive(): boolean {
+    return this.activeTabId === -1;
+  }
+
   toggle(mouseInBorder: boolean) {
     if (this.windowFloating) {
       this.hideMainWindow();
-    } else if (windowHasView(this.mainWindow, this.tabPageView)) {
+    } else if (this.tabPageActive()) {
       if (this.historyModalActive) {
         this.tabPageView.webContents.send('close-history-modal');
       } else {
@@ -1049,6 +1068,7 @@ export default class WindowManager {
       if (findIsActive && !mouseInBorder) {
         this.closeFind();
       } else {
+        console.log('a');
         this.setTab(-1);
       }
     }
