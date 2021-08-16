@@ -157,7 +157,7 @@ export const createWindow = async () => {
   };
   setInterval(update, 1);
 
-  const tray = createTray(ICON_SMALL_PNG, mainWindow);
+  const tray = createTray(ICON_SMALL_PNG, mainWindow, wm);
 
   mainWindow?.setResizable(false);
 

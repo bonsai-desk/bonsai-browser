@@ -1,20 +1,23 @@
 import React, { useRef } from 'react';
+import { runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
 import styled, { css } from 'styled-components';
 import { DraggableCore, DraggableData } from 'react-draggable';
 import { observer } from 'mobx-react-lite';
 import { Instance } from 'mobx-state-tree';
 import BezierEasing from 'bezier-easing';
-import workspaceStore, {
+import {
   ItemGroup,
   Item as MobxItem,
   itemWidth,
   itemHeight,
   groupPadding,
   groupTitleHeight,
+  WorkspaceStore,
 } from '../../store/workspace-store';
 import { lerp } from '../../utils/utils';
 import trashIcon from '../../../assets/alternate-trash.svg';
+import { useStore } from '../../store/tab-page-store';
 
 const easeOut = BezierEasing(0, 0, 0.5, 1);
 
@@ -140,7 +143,10 @@ const TrashIcon = styled.img`
 const Groups = styled.div``;
 const Items = styled.div``;
 
-function overTrash(testPos: number[]): boolean {
+function overTrash(
+  testPos: number[],
+  workspaceStore: Instance<typeof WorkspaceStore>
+): boolean {
   return (
     testPos[0] >= 0 &&
     testPos[0] <= 100 &&
@@ -152,7 +158,8 @@ function overTrash(testPos: number[]): boolean {
 function getGroupBelowItem(
   item: Instance<typeof MobxItem>,
   currentGroup: Instance<typeof ItemGroup>,
-  containerPos: number[]
+  containerPos: number[],
+  workspaceStore: Instance<typeof WorkspaceStore>
 ): Instance<typeof ItemGroup> | null {
   const centerPos = [
     containerPos[0] + itemWidth / 2,
@@ -181,6 +188,7 @@ const MainItem = observer(
     group: Instance<typeof ItemGroup>;
     item: Instance<typeof MobxItem>;
   }) => {
+    const { tabPageStore, workspaceStore } = useStore();
     const targetPos = item.placeholderPos(group);
     const lerpValue = easeOut(item.animationLerp);
 
@@ -223,7 +231,7 @@ const MainItem = observer(
                 item.containerDragPosX + data.deltaX,
                 item.containerDragPosY + data.deltaY,
               ]);
-              item.setOverTrash(overTrash([data.x, data.y]));
+              item.setOverTrash(overTrash([data.x, data.y], workspaceStore));
               workspaceStore.setAnyOverTrash(item.overTrash);
               if (item.overTrash) {
                 if (group.id !== 'hidden') {
@@ -234,22 +242,29 @@ const MainItem = observer(
                   );
                 }
               } else {
-                getGroupBelowItem(item, group, [
-                  item.containerDragPosX,
-                  item.containerDragPosY,
-                ]);
+                getGroupBelowItem(
+                  item,
+                  group,
+                  [item.containerDragPosX, item.containerDragPosY],
+                  workspaceStore
+                );
               }
             }
           }}
           onStop={() => {
             if (!item.beingDragged) {
+              runInAction(() => {
+                tabPageStore.workspaceActive = false;
+              });
               ipcRenderer.send('open-workspace-url', item.url);
             } else {
               if (!item.overTrash) {
-                const groupBelow = getGroupBelowItem(item, group, [
-                  item.containerDragPosX,
-                  item.containerDragPosY,
-                ]);
+                const groupBelow = getGroupBelowItem(
+                  item,
+                  group,
+                  [item.containerDragPosX, item.containerDragPosY],
+                  workspaceStore
+                );
                 if (groupBelow === null) {
                   const createdGroup = workspaceStore.createGroup('new group');
                   createdGroup.move(
@@ -317,6 +332,7 @@ const MainItem = observer(
 
 const Workspace = observer(() => {
   const backgroundRef = useRef<HTMLDivElement>(null);
+  const { workspaceStore } = useStore();
 
   const groups = Array.from(workspaceStore.groups.values()).map(
     (group: Instance<typeof ItemGroup>) => {

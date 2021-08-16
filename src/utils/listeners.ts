@@ -1,5 +1,6 @@
 /* eslint no-console: off */
-import { ipcMain } from 'electron';
+import { app, ipcMain } from 'electron';
+import path from 'path';
 import WindowManager from './window-manager';
 import { HistoryEntry } from './tab-view';
 
@@ -113,6 +114,13 @@ function addListeners(wm: WindowManager) {
       wm.loadUrlInTab(newTabId, url);
       wm.setTab(newTabId);
     }
+  });
+  ipcMain.on('request-snapshot-path', () => {
+    const snapshotPath = path.join(
+      app.getPath('userData'),
+      'workspaceSnapshot.json'
+    );
+    wm.tabPageView.webContents.send('set-snapshot-path', snapshotPath);
   });
 }
 
