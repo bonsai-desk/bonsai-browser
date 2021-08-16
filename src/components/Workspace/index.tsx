@@ -14,6 +14,7 @@ import {
   groupPadding,
   groupTitleHeight,
   WorkspaceStore,
+  widthPixelsToInt,
 } from '../../store/workspace-store';
 import { lerp } from '../../utils/utils';
 import trashIcon from '../../../assets/alternate-trash.svg';
@@ -357,13 +358,17 @@ const Workspace = observer(() => {
             workspaceStore.moveToFront(group);
 
             if (data.x > group.x + group.size()[0] - 10) {
-              group.setTempResizeWidth(group.size()[0]);
+              group.setTempResizeWidth(group.width);
               group.setResizing(true);
             }
           }}
           onDrag={(_, data: DraggableData) => {
             if (group.resizing) {
-              group.setTempResizeWidth(data.x - group.x);
+              group.setTempResizeWidth(widthPixelsToInt(data.x - group.x));
+              workspaceStore.setGroupWidth(
+                Math.floor(group.tempResizeWidth),
+                group
+              );
             } else {
               group.move(data.deltaX, data.deltaY);
             }
@@ -396,30 +401,6 @@ const Workspace = observer(() => {
               }}
             >
               <HeaderText>{group.title}</HeaderText>
-              {/* <HeaderButtons> */}
-              {/*  <HeaderButton */}
-              {/*    type="button" */}
-              {/*    onMouseDown={(e) => { */}
-              {/*      e.stopPropagation(); */}
-              {/*      if (group.width > 1) { */}
-              {/*        workspaceStore.setGroupWidth(group.width - 1, group); */}
-              {/*      } */}
-              {/*    }} */}
-              {/*  > */}
-              {/*    -*/}
-              {/*  </HeaderButton> */}
-              {/*  <HeaderButton */}
-              {/*    type="button" */}
-              {/*    onMouseDown={(e) => { */}
-              {/*      e.stopPropagation(); */}
-              {/*      if (group.width < 5) { */}
-              {/*        workspaceStore.setGroupWidth(group.width + 1, group); */}
-              {/*      } */}
-              {/*    }} */}
-              {/*  > */}
-              {/*    +*/}
-              {/*  </HeaderButton> */}
-              {/* </HeaderButtons> */}
             </GroupHeader>
             <GroupResize />
           </Group>

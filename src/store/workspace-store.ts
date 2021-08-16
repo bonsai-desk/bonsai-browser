@@ -100,9 +100,17 @@ function widthIntToPixels(width: number): number {
   // p = a         * b     + (b     - 1) * c           + d            * 2;
 }
 
-// function widthPixelsToInt(pixels: number): number {
-//   return;
-// }
+export function widthPixelsToInt(pixels: number): number {
+  return (itemSpacing - 2 * groupPadding + pixels) / (itemWidth + itemSpacing);
+}
+
+function resizeCurve(width: number): number {
+  return width;
+  // const integerPart = Math.floor(width);
+  // const decimalPart = width % 1;
+  // const newDecimalPart = decimalPart * decimalPart * decimalPart;
+  // return integerPart + newDecimalPart;
+}
 
 export const ItemGroup = types
   .model({
@@ -125,7 +133,7 @@ export const ItemGroup = types
     size(): [number, number] {
       let width = widthIntToPixels(self.width);
       if (self.resizing && self.tempResizeWidth !== 0) {
-        width = self.tempResizeWidth;
+        width = widthIntToPixels(resizeCurve(self.tempResizeWidth));
       }
       const height = Math.max(
         this.height() * itemHeight +
@@ -143,14 +151,9 @@ export const ItemGroup = types
   .actions((self) => ({
     setResizing(resizing: boolean) {
       self.resizing = resizing;
-      if (!resizing) {
-        self.width = 3;
-      }
     },
     setTempResizeWidth(width: number) {
-      const minWidth = widthIntToPixels(1);
-      const maxWidth = widthIntToPixels(5);
-      self.tempResizeWidth = clamp(width, minWidth, maxWidth);
+      self.tempResizeWidth = clamp(width, 1, 5);
     },
     move(x: number, y: number) {
       self.x += x;
