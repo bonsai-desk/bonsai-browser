@@ -24,18 +24,12 @@ export function createTray(
 ) {
   const appIcon = new Tray(appIconPath);
   const contextMenu = Menu.buildFromTemplate([
-    // {
-    //   label: 'Open',
-    //   click() {
-    //     mainWindow?.show();
-    //   },
-    // },
-    // {
-    //   label: 'Close',
-    //   click() {
-    //     mainWindow?.hide();
-    //   },
-    // },
+    {
+      label: 'Alt+Space to open',
+      click() {
+        // do nothing. this is just to show the shortcut
+      },
+    },
     {
       label: 'Exit',
       click() {

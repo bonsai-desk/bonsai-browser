@@ -120,15 +120,7 @@ export default class WindowManager {
 
   isPinned = false;
 
-  webViewActive() {
-    return this.activeTabId !== -1;
-  }
-
-  setPinned(pinned: boolean) {
-    this.isPinned = pinned;
-    this.mainWindow.webContents.send('set-pinned', pinned);
-    this.tabPageView.webContents.send('set-pinned', pinned);
-  }
+  loadedOpenTabs = false;
 
   constructor(mainWindow: BrowserWindow, display: { activeDisplay: Display }) {
     this.mainWindow = mainWindow;
@@ -245,6 +237,16 @@ export default class WindowManager {
         }, 10);
       }
     }, 10);
+  }
+
+  webViewActive() {
+    return this.activeTabId !== -1;
+  }
+
+  setPinned(pinned: boolean) {
+    this.isPinned = pinned;
+    this.mainWindow.webContents.send('set-pinned', pinned);
+    this.tabPageView.webContents.send('set-pinned', pinned);
   }
 
   mouseInInner(mousePoint: Electron.Point) {
@@ -448,6 +450,9 @@ export default class WindowManager {
   }
 
   saveTabs() {
+    if (!this.loadedOpenTabs) {
+      return;
+    }
     try {
       const savePath = path.join(app.getPath('userData'), 'openTabs.json');
       const saveData = Object.values(this.allTabViews).map((tabView) => {
@@ -504,6 +509,7 @@ export default class WindowManager {
   }
 
   loadTabs() {
+    this.loadedOpenTabs = true;
     try {
       const savePath = path.join(app.getPath('userData'), 'openTabs.json');
       const saveString = fs.readFileSync(savePath, 'utf8');
