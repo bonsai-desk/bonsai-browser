@@ -184,7 +184,6 @@ const Tabs = observer(() => {
           case 'Enter':
             break;
           case 'Escape':
-            console.log('Escape');
             if (tabPageStore.historyModalActive) {
               tabPageStore.setHistoryActive(false);
             } else if (tabPageStore.workspaceActive) {
@@ -209,7 +208,7 @@ const Tabs = observer(() => {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [tabPageStore]);
 
   const [hasRunOnce, setHasRunOnce] = useState(false);
 

@@ -230,10 +230,14 @@ export default class WindowManager {
           (mainWindowVisible && !webBrowserViewIsActive)) &&
         !findIsActive
       ) {
-        escapeActive = false;
-        globalShortcut.unregister('Escape');
+        setTimeout(() => {
+          // timeout here because there was sometimes a gap between this being
+          // un-registered and the tab page taking over the escape key functionality
+          escapeActive = false;
+          globalShortcut.unregister('Escape');
+        }, 10);
       }
-    }, 25);
+    }, 10);
   }
 
   mouseInInner(mousePoint: Electron.Point) {
