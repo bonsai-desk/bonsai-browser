@@ -142,7 +142,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -381,8 +381,10 @@ export default class WindowManager {
     this.tabPageView.webContents.send('title-updated', [newTabId, title]);
     tabView.favicon = favicon;
     this.tabPageView.webContents.send('favicon-updated', [newTabId, favicon]);
+
     tabView.imgString = imgString;
-    this.tabPageView.webContents.send('tab-image', [newTabId, imgString]);
+    const jpgBuf = Buffer.from(tabView.imgString, 'base64');
+    this.tabPageView.webContents.send('tab-image-native', [newTabId, jpgBuf]);
     tabView.scrollHeight = scrollHeight;
     this.loadUrlInTab(newTabId, url, true);
   }
@@ -536,29 +538,12 @@ export default class WindowManager {
 
   screenShotTab(tabId: number, tabView: TabView) {
     tabView.view.webContents.send('get-scroll-height');
-    console.time('begin capture');
     tabView.view.webContents
       .capturePage()
       .then((image: NativeImage) => {
-        console.timeEnd('begin capture');
-        console.time('conv jpg');
         const jpgBuf = image.toJPEG(50);
-        console.timeEnd('conv jpg');
-
-        // console.time('obj url');
-        // const thing = URL.createObjectURL(
-        //   new Blob([jpgBuf.buffer], { type: 'image/jpg' })
-        // );
-        // console.timeEnd('obj url');
-
-        // console.time('assign to tabview');
-        // tabView.imgString = thing;
-        // console.timeEnd('assign to tabview');
-
-        console.log(jpgBuf);
-        console.time('send to main');
+        tabView.imgString = jpgBuf.toString('base64');
         this.tabPageView.webContents.send('tab-image-native', [tabId, jpgBuf]);
-        console.timeEnd('send to main');
         return null;
       })
       .catch((e) => {
@@ -583,9 +568,7 @@ export default class WindowManager {
         this.resize();
       }
       const cachedId = this.activeTabId;
-      console.time('invoke screenshot');
       this.screenShotTab(cachedId, oldTabView);
-      console.timeEnd('invoke screenshot');
     }
 
     // return to main tab page if needed
@@ -1093,7 +1076,6 @@ export default class WindowManager {
       if (findIsActive && !mouseInBorder) {
         this.closeFind();
       } else {
-        console.log('a');
         this.setTab(-1);
       }
     }

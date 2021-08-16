@@ -178,7 +178,6 @@ export const Tab = observer(({ tab, hover }: ITab) => {
     tab.openGraphInfo !== null && tab.openGraphInfo.image !== ''
       ? tab.openGraphInfo.image
       : tab.image;
-  console.log(imgUrl);
   return (
     <TabParent
       onClick={() => {
