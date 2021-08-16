@@ -530,12 +530,29 @@ export default class WindowManager {
 
   screenShotTab(tabId: number, tabView: TabView) {
     tabView.view.webContents.send('get-scroll-height');
+    console.time('begin capture');
     tabView.view.webContents
       .capturePage()
       .then((image: NativeImage) => {
-        const imgString = image.toDataURL();
-        tabView.imgString = imgString;
-        this.tabPageView.webContents.send('tab-image', [tabId, imgString]);
+        console.timeEnd('begin capture');
+        console.time('conv jpg');
+        const jpgBuf = image.toJPEG(50);
+        console.timeEnd('conv jpg');
+
+        // console.time('obj url');
+        // const thing = URL.createObjectURL(
+        //   new Blob([jpgBuf.buffer], { type: 'image/jpg' })
+        // );
+        // console.timeEnd('obj url');
+
+        // console.time('assign to tabview');
+        // tabView.imgString = thing;
+        // console.timeEnd('assign to tabview');
+
+        console.log(jpgBuf);
+        console.time('send to main');
+        this.tabPageView.webContents.send('tab-image-native', [tabId, jpgBuf]);
+        console.timeEnd('send to main');
         return null;
       })
       .catch((e) => {
@@ -560,7 +577,9 @@ export default class WindowManager {
         this.resize();
       }
       const cachedId = this.activeTabId;
+      console.time('invoke screenshot');
       this.screenShotTab(cachedId, oldTabView);
+      console.timeEnd('invoke screenshot');
     }
 
     // return to main tab page if needed
