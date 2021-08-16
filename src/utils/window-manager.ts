@@ -201,8 +201,8 @@ export default class WindowManager {
       }
     });
 
-    ipcMain.on('scroll-height', (_, height) => {
-      const tabView = this.allTabViews[this.activeTabId];
+    ipcMain.on('scroll-height', (_, [id, height]) => {
+      const tabView = this.allTabViews[id];
       if (typeof tabView !== 'undefined') {
         tabView.scrollHeight = height;
       }
@@ -555,7 +555,7 @@ export default class WindowManager {
   }
 
   screenShotTab(tabId: number, tabView: TabView) {
-    tabView.view.webContents.send('get-scroll-height');
+    tabView.view.webContents.send('get-scroll-height', tabId);
     tabView.view.webContents
       .capturePage()
       .then((image: NativeImage) => {

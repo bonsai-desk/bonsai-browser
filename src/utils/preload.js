@@ -31,8 +31,8 @@ window.addEventListener('DOMContentLoaded', () => {
   // ipcRenderer.send('open-graph-data', getOpenGraphData());
 });
 
-ipcRenderer.on('get-scroll-height', () => {
-  ipcRenderer.send('scroll-height', window.pageYOffset);
+ipcRenderer.on('get-scroll-height', (_, id) => {
+  ipcRenderer.send('scroll-height', [id, window.pageYOffset]);
 });
 
 ipcRenderer.on('scroll-to', (_, height) => {
