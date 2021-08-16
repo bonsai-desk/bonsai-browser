@@ -142,7 +142,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -381,8 +381,10 @@ export default class WindowManager {
     this.tabPageView.webContents.send('title-updated', [newTabId, title]);
     tabView.favicon = favicon;
     this.tabPageView.webContents.send('favicon-updated', [newTabId, favicon]);
+
     tabView.imgString = imgString;
-    this.tabPageView.webContents.send('tab-image', [newTabId, imgString]);
+    const jpgBuf = Buffer.from(tabView.imgString, 'base64');
+    this.tabPageView.webContents.send('tab-image-native', [newTabId, jpgBuf]);
     tabView.scrollHeight = scrollHeight;
     this.loadUrlInTab(newTabId, url, true);
   }
@@ -539,9 +541,9 @@ export default class WindowManager {
     tabView.view.webContents
       .capturePage()
       .then((image: NativeImage) => {
-        const imgString = image.toDataURL();
-        tabView.imgString = imgString;
-        this.tabPageView.webContents.send('tab-image', [tabId, imgString]);
+        const jpgBuf = image.toJPEG(50);
+        tabView.imgString = jpgBuf.toString('base64');
+        this.tabPageView.webContents.send('tab-image-native', [tabId, jpgBuf]);
         return null;
       })
       .catch((e) => {
@@ -1074,7 +1076,6 @@ export default class WindowManager {
       if (findIsActive && !mouseInBorder) {
         this.closeFind();
       } else {
-        console.log('a');
         this.setTab(-1);
       }
     }

@@ -49,6 +49,7 @@ class TabView {
 
   unloadedUrl = '';
 
+  // string as base 64 encoded buffer of jpg data
   imgString = '';
 
   title = '';
