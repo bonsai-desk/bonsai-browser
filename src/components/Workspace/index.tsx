@@ -38,6 +38,18 @@ const Group = styled.div`
   border: 2px solid black;
 `;
 
+const GroupResize = styled.div`
+  width: 20px;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  right: -10px;
+
+  :hover {
+    cursor: col-resize;
+  }
+`;
+
 const ItemPlaceholderAndContainer = styled.div``;
 
 const ItemPlaceholder = styled.div`
@@ -96,31 +108,30 @@ const GroupHeader = styled.div`
   align-items: center;
 `;
 
-const HeaderButtons = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-grow: 1;
-  padding-right: 10px;
-`;
+// const HeaderButtons = styled.div`
+//   display: flex;
+//   align-items: center;
+//   justify-content: flex-end;
+//   flex-grow: 1;
+//   padding-right: 10px;
+// `;
+// const HeaderButton = styled.button`
+//   outline: none;
+//   border: none;
+//   border-radius: 50%;
+//   width: 30px;
+//   height: 30px;
+//
+//   :hover {
+//     background-color: gray;
+//   }
+// `;
 
 const HeaderText = styled.div`
   padding-left: 10px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-`;
-
-const HeaderButton = styled.button`
-  outline: none;
-  border: none;
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-
-  :hover {
-    background-color: gray;
-  }
 `;
 
 const Trash = styled.div`
@@ -342,11 +353,23 @@ const Workspace = observer(() => {
       return (
         <DraggableCore
           key={group.id}
-          onStart={() => {
+          onStart={(_, data) => {
             workspaceStore.moveToFront(group);
+
+            if (data.x > group.x + group.size()[0] - 10) {
+              group.setTempResizeWidth(group.size()[0]);
+              group.setResizing(true);
+            }
           }}
           onDrag={(_, data: DraggableData) => {
-            group.move(data.deltaX, data.deltaY);
+            if (group.resizing) {
+              group.setTempResizeWidth(data.x - group.x);
+            } else {
+              group.move(data.deltaX, data.deltaY);
+            }
+          }}
+          onStop={() => {
+            group.setResizing(false);
           }}
         >
           <Group
@@ -373,31 +396,32 @@ const Workspace = observer(() => {
               }}
             >
               <HeaderText>{group.title}</HeaderText>
-              <HeaderButtons>
-                <HeaderButton
-                  type="button"
-                  onMouseDown={(e) => {
-                    e.stopPropagation();
-                    if (group.width > 1) {
-                      workspaceStore.setGroupWidth(group.width - 1, group);
-                    }
-                  }}
-                >
-                  -
-                </HeaderButton>
-                <HeaderButton
-                  type="button"
-                  onMouseDown={(e) => {
-                    e.stopPropagation();
-                    if (group.width < 5) {
-                      workspaceStore.setGroupWidth(group.width + 1, group);
-                    }
-                  }}
-                >
-                  +
-                </HeaderButton>
-              </HeaderButtons>
+              {/* <HeaderButtons> */}
+              {/*  <HeaderButton */}
+              {/*    type="button" */}
+              {/*    onMouseDown={(e) => { */}
+              {/*      e.stopPropagation(); */}
+              {/*      if (group.width > 1) { */}
+              {/*        workspaceStore.setGroupWidth(group.width - 1, group); */}
+              {/*      } */}
+              {/*    }} */}
+              {/*  > */}
+              {/*    -*/}
+              {/*  </HeaderButton> */}
+              {/*  <HeaderButton */}
+              {/*    type="button" */}
+              {/*    onMouseDown={(e) => { */}
+              {/*      e.stopPropagation(); */}
+              {/*      if (group.width < 5) { */}
+              {/*        workspaceStore.setGroupWidth(group.width + 1, group); */}
+              {/*      } */}
+              {/*    }} */}
+              {/*  > */}
+              {/*    +*/}
+              {/*  </HeaderButton> */}
+              {/* </HeaderButtons> */}
             </GroupHeader>
+            <GroupResize />
           </Group>
         </DraggableCore>
       );
