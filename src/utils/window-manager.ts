@@ -124,22 +124,22 @@ export default class WindowManager {
     WindowManager.display = display;
 
     this.mainWindow.on('resize', this.resize);
-    // this.mainWindow.webContents.openDevTools({ mode: 'detach' });
+    this.mainWindow.webContents.openDevTools({ mode: 'detach' });
 
     this.titleBarView = makeView(INDEX_HTML);
-    // this.titleBarView.webContents.openDevTools({ mode: 'detach' });
+    this.titleBarView.webContents.openDevTools({ mode: 'detach' });
 
     this.urlPeekView = makeView(URL_PEEK_HTML);
-    // this.urlPeekView.webContents.openDevTools({ mode: 'detach' });
+    this.urlPeekView.webContents.openDevTools({ mode: 'detach' });
 
     this.findView = makeView(FIND_HTML);
-    // this.findView.webContents.openDevTools({ mode: 'detach' });
+    this.findView.webContents.openDevTools({ mode: 'detach' });
 
     this.overlayView = makeView(OVERLAY_HTML);
-    // this.overlayView.webContents.openDevTools({ mode: 'detach' });
+    this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {

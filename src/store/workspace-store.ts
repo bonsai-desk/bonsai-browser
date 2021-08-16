@@ -1,8 +1,10 @@
 /* eslint no-console: off */
 /* eslint prefer-destructuring: off */
 
-import { destroy, Instance, types } from 'mobx-state-tree';
+import { destroy, getSnapshot, Instance, types } from 'mobx-state-tree';
 import { v4 as uuidv4 } from 'uuid';
+import fs from 'fs';
+import { ipcRenderer } from 'electron';
 import { clamp } from '../utils/utils';
 
 export const itemWidth = 175;
@@ -143,8 +145,12 @@ export const WorkspaceStore = types
     height: 0,
     anyDragging: false,
     anyOverTrash: false,
+    snapshotPath: '',
   }))
   .actions((self) => ({
+    setSnapshotPath(snapshotPath: string) {
+      self.snapshotPath = snapshotPath;
+    },
     setSize(width: number, height: number) {
       self.width = width;
       self.height = height;
@@ -345,6 +351,16 @@ const workspaceStore = WorkspaceStore.create({
   items: {},
 });
 
+console.log('reeee');
+
+ipcRenderer.send('request-snapshot-path');
+ipcRenderer.on('set-snapshot-path', (_, snapshotPath) => {
+  workspaceStore.setSnapshotPath(snapshotPath);
+  console.log(snapshotPath);
+});
+
+let lastSnapshotTime = 0;
+
 let lastTime = 0;
 let startTime = -1;
 function loop(milliseconds: number) {
@@ -355,6 +371,16 @@ function loop(milliseconds: number) {
   const time = currentTime - startTime;
   const deltaTime = time - lastTime;
   lastTime = time;
+
+  if (time - lastSnapshotTime > 5) {
+    lastSnapshotTime = time;
+    if (workspaceStore.snapshotPath !== '') {
+      const snapshot = getSnapshot(workspaceStore);
+      const snapshotString = JSON.stringify(snapshot);
+      fs.writeFileSync(workspaceStore.snapshotPath, snapshotString);
+    }
+  }
+
   workspaceStore.items.forEach((item) => {
     if (item.animationLerp !== 1) {
       item.setAnimationLerp(
