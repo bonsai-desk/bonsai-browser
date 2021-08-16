@@ -373,7 +373,13 @@ const Workspace = observer(() => {
               group.move(data.deltaX, data.deltaY);
             }
           }}
-          onStop={() => {
+          onStop={(_, data) => {
+            group.setTempResizeWidth(widthPixelsToInt(data.x - group.x));
+            workspaceStore.setGroupWidth(
+              Math.round(group.tempResizeWidth),
+              group,
+              true
+            );
             group.setResizing(false);
           }}
         >

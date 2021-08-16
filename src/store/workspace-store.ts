@@ -260,8 +260,12 @@ export const WorkspaceStore = types
       item.groupId = newGroup.id;
       newGroup.itemArrangement.push(item.id);
     },
-    setGroupWidth(width: number, group: Instance<typeof ItemGroup>) {
-      if (group.width === width) {
+    setGroupWidth(
+      width: number,
+      group: Instance<typeof ItemGroup>,
+      forceUpdate = false
+    ) {
+      if (group.width === width && !forceUpdate) {
         return;
       }
 
