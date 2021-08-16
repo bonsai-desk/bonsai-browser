@@ -373,8 +373,17 @@ const Workspace = observer(() => {
               group.move(data.deltaX, data.deltaY);
             }
           }}
-          onStop={() => {
-            group.setResizing(false);
+          onStop={(_, data) => {
+            if (group.resizing) {
+              const roundFunc = group.height() === 1 ? Math.round : Math.floor;
+              group.setTempResizeWidth(widthPixelsToInt(data.x - group.x));
+              workspaceStore.setGroupWidth(
+                roundFunc(group.tempResizeWidth),
+                group,
+                true
+              );
+              group.setResizing(false);
+            }
           }}
         >
           <Group
