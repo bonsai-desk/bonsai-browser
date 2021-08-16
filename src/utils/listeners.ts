@@ -121,7 +121,6 @@ function addListeners(wm: WindowManager) {
       app.getPath('userData'),
       'workspaceSnapshot.json'
     );
-    console.log('set path');
     wm.tabPageView.webContents.send('set-snapshot-path', snapshotPath);
   });
 }

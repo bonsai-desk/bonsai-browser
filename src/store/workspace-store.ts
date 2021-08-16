@@ -1,8 +1,16 @@
 /* eslint no-console: off */
 /* eslint prefer-destructuring: off */
 
-import { destroy, Instance, types } from 'mobx-state-tree';
+import {
+  applySnapshot,
+  destroy,
+  getSnapshot,
+  Instance,
+  types,
+} from 'mobx-state-tree';
 import { v4 as uuidv4 } from 'uuid';
+import { ipcRenderer } from 'electron';
+import fs from 'fs';
 import { clamp } from '../utils/utils';
 
 export const itemWidth = 175;
@@ -337,4 +345,98 @@ export const WorkspaceStore = types
     },
   }));
 
-// export default workspaceStore;
+function createWorkspaceStore() {
+  const animationTime = 0.15;
+  const workspaceStore = WorkspaceStore.create({
+    hiddenGroup: ItemGroup.create({
+      id: 'hidden',
+      title: 'hidden',
+      itemArrangement: [],
+      zIndex: 0,
+    }),
+    groups: {},
+    items: {},
+  });
+
+  function saveSnapshot() {
+    if (workspaceStore.snapshotPath !== '') {
+      const snapshot = getSnapshot(workspaceStore);
+      const snapshotString = JSON.stringify(snapshot);
+      fs.writeFileSync(workspaceStore.snapshotPath, snapshotString);
+    }
+  }
+
+  function loadSnapshot() {
+    if (workspaceStore.snapshotPath !== '') {
+      try {
+        const workspaceJson = fs.readFileSync(
+          workspaceStore.snapshotPath,
+          'utf8'
+        );
+        if (workspaceJson !== '') {
+          const workspaceSnapshot = JSON.parse(workspaceJson);
+          applySnapshot(workspaceStore, workspaceSnapshot);
+        }
+      } catch {
+        //
+      }
+    }
+  }
+
+  ipcRenderer.send('request-snapshot-path');
+
+  ipcRenderer.on('set-snapshot-path', (_, snapshotPath) => {
+    workspaceStore.setSnapshotPath(snapshotPath);
+    loadSnapshot();
+  });
+
+  ipcRenderer.on('save-snapshot', () => {
+    saveSnapshot();
+  });
+
+  let lastSnapshotTime = 0;
+
+  let lastTime = 0;
+  let startTime = -1;
+  const loop = (milliseconds: number) => {
+    const currentTime = milliseconds / 1000;
+    if (startTime === -1) {
+      startTime = currentTime;
+    }
+    const time = currentTime - startTime;
+    const deltaTime = time - lastTime;
+    lastTime = time;
+
+    if (time - lastSnapshotTime > 5) {
+      lastSnapshotTime = time;
+      saveSnapshot();
+    }
+
+    workspaceStore.items.forEach((item) => {
+      if (item.animationLerp !== 1) {
+        item.setAnimationLerp(
+          item.animationLerp + deltaTime * (1 / animationTime)
+        );
+        if (item.animationLerp > 1) {
+          item.setAnimationLerp(1);
+        }
+      }
+    });
+    workspaceStore.groups.forEach((group) => {
+      if (group.animationLerp !== 1) {
+        group.setAnimationLerp(
+          group.animationLerp + deltaTime * (1 / animationTime)
+        );
+        if (group.animationLerp > 1) {
+          group.setAnimationLerp(1);
+        }
+      }
+    });
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+
+  return workspaceStore;
+}
+
+export default createWorkspaceStore;
