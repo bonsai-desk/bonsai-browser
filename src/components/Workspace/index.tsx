@@ -374,13 +374,16 @@ const Workspace = observer(() => {
             }
           }}
           onStop={(_, data) => {
-            group.setTempResizeWidth(widthPixelsToInt(data.x - group.x));
-            workspaceStore.setGroupWidth(
-              Math.round(group.tempResizeWidth),
-              group,
-              true
-            );
-            group.setResizing(false);
+            if (group.resizing) {
+              const roundFunc = group.height() === 1 ? Math.round : Math.floor;
+              group.setTempResizeWidth(widthPixelsToInt(data.x - group.x));
+              workspaceStore.setGroupWidth(
+                roundFunc(group.tempResizeWidth),
+                group,
+                true
+              );
+              group.setResizing(false);
+            }
           }}
         >
           <Group

@@ -153,7 +153,11 @@ export const ItemGroup = types
       self.resizing = resizing;
     },
     setTempResizeWidth(width: number) {
-      self.tempResizeWidth = clamp(width, 1, 5);
+      if (width < 1) {
+        self.tempResizeWidth = 1;
+        return;
+      }
+      self.tempResizeWidth = width;
     },
     move(x: number, y: number) {
       self.x += x;
