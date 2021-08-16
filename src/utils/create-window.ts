@@ -13,7 +13,7 @@ import { autoUpdater } from 'electron-updater';
 import { createTray, installExtensions } from './windows';
 import addListeners from './listeners';
 import WindowManager from './window-manager';
-import { ICON_PNG, ICON_SMALL_PNG, MAIN_HTML } from '../constants';
+import { ICON_PNG, ICON_SMALL_PNG } from '../constants';
 import windowFixedUpdate from './calculate-window-physics';
 import { windowHasView } from './utils';
 
@@ -60,8 +60,6 @@ export const createWindow = async () => {
   }
 
   mainWindow.setAlwaysOnTop(true);
-
-  mainWindow.webContents.loadURL(MAIN_HTML);
 
   const displays = screen.getAllDisplays();
   if (displays.length === 0) {
@@ -110,7 +108,7 @@ export const createWindow = async () => {
       //   activeDisplay.id === WindowManager.display.activeDisplay.id;
       // if (mouseOnWindowDisplay) {
       wm.unFloat(display.activeDisplay);
-      wm.setTab(-1);
+      // wm.setTab(-1);
       wm.hideMainWindow();
       // }
     }
@@ -176,8 +174,7 @@ export const createWindow = async () => {
       wm.mainWindow.setVisibleOnAllWorkspaces(false, {
         visibleOnFullScreen: true,
       });
-      wm.isPinned = false;
-      wm.mainWindow.webContents.send('set-pinned', wm.isPinned);
+      wm.setPinned(false);
       wm.unFloat(display.activeDisplay);
       if (wm.activeTabId === -1) {
         // todo: search box does not get highlighted on macos unless we do this hack
