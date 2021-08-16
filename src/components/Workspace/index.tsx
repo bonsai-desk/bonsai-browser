@@ -357,8 +357,8 @@ const Workspace = observer(() => {
             workspaceStore.moveToFront(group);
 
             if (data.x > group.x + group.size()[0] - 10) {
-              group.setResizing(true);
               group.setTempResizeWidth(group.size()[0]);
+              group.setResizing(true);
             }
           }}
           onDrag={(_, data: DraggableData) => {
@@ -370,7 +370,6 @@ const Workspace = observer(() => {
           }}
           onStop={() => {
             group.setResizing(false);
-            group.setTempResizeWidth(0);
           }}
         >
           <Group

@@ -97,7 +97,12 @@ export const Item = types
 
 function widthIntToPixels(width: number): number {
   return itemWidth * width + (width - 1) * itemSpacing + groupPadding * 2;
+  // p = a         * b     + (b     - 1) * c           + d            * 2;
 }
+
+// function widthPixelsToInt(pixels: number): number {
+//   return;
+// }
 
 export const ItemGroup = types
   .model({
@@ -119,7 +124,7 @@ export const ItemGroup = types
   .views((self) => ({
     size(): [number, number] {
       let width = widthIntToPixels(self.width);
-      if (self.tempResizeWidth !== 0) {
+      if (self.resizing && self.tempResizeWidth !== 0) {
         width = self.tempResizeWidth;
       }
       const height = Math.max(
@@ -138,6 +143,9 @@ export const ItemGroup = types
   .actions((self) => ({
     setResizing(resizing: boolean) {
       self.resizing = resizing;
+      if (!resizing) {
+        self.width = 3;
+      }
     },
     setTempResizeWidth(width: number) {
       const minWidth = widthIntToPixels(1);
