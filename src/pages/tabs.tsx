@@ -191,6 +191,7 @@ const Tabs = observer(() => {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       runInAction(() => {
+        console.log(e.key);
         switch (e.key) {
           case 'Enter':
             break;
