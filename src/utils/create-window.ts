@@ -165,7 +165,6 @@ export const createWindow = async () => {
 
   const shortCut = 'Alt+Space';
   globalShortcut.register(shortCut, () => {
-    // const activeTabView = wm.allTabViews[wm.activeTabId];
     if (!mainWindow?.isVisible()) {
       const mousePoint = screen.getCursorScreenPoint();
       display.activeDisplay = screen.getDisplayNearestPoint(mousePoint);
@@ -180,14 +179,6 @@ export const createWindow = async () => {
       wm.isPinned = false;
       wm.mainWindow.webContents.send('set-pinned', wm.isPinned);
       wm.unFloat(display.activeDisplay);
-      // wm.windowPosition[0] = display.activeDisplay.workArea.x;
-      // wm.windowPosition[1] = display.activeDisplay.workArea.y;
-      // wm.windowSize.width = display.activeDisplay.workArea.width;
-      // wm.windowSize.height =
-      //   display.activeDisplay.workArea.height +
-      //   (process.platform === 'darwin' ? 0 : 1); // todo: on windows if you make it the same size as monitor, everything breaks!?!??!?!?
-      // wm.updateMainWindowBounds();
-      // wm.resize();
       if (wm.activeTabId === -1) {
         // todo: search box does not get highlighted on macos unless we do this hack
         setTimeout(() => {
@@ -196,22 +187,8 @@ export const createWindow = async () => {
       }
     } else {
       wm.unFloat(display.activeDisplay);
-      // wm.setTab(-1);
-      // toggle();
       mainWindow?.hide();
     }
-    // } else if (
-    //   !wm.windowFloating &&
-    //   activeTabView !== null &&
-    //   typeof activeTabView !== 'undefined' &&
-    //   activeTabView.view.webContents.getURL() !== ''
-    // ) {
-    //   wm.float();
-    // } else {
-    //   wm.unFloat(display.activeDisplay);
-    //   wm.setTab(-1);
-    //   mainWindow?.hide();
-    // }
   });
 
   app.on('before-quit', () => {

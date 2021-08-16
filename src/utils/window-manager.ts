@@ -120,6 +120,8 @@ export default class WindowManager {
 
   isPinned = false;
 
+  loadedOpenTabs = false;
+
   constructor(mainWindow: BrowserWindow, display: { activeDisplay: Display }) {
     this.mainWindow = mainWindow;
     WindowManager.display = display;
@@ -140,7 +142,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -433,6 +435,9 @@ export default class WindowManager {
   }
 
   saveTabs() {
+    if (!this.loadedOpenTabs) {
+      return;
+    }
     try {
       const savePath = path.join(app.getPath('userData'), 'openTabs.json');
       const saveData = Object.values(this.allTabViews).map((tabView) => {
@@ -489,6 +494,7 @@ export default class WindowManager {
   }
 
   loadTabs() {
+    this.loadedOpenTabs = true;
     try {
       const savePath = path.join(app.getPath('userData'), 'openTabs.json');
       const saveString = fs.readFileSync(savePath, 'utf8');

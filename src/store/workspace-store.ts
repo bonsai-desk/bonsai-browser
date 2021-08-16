@@ -95,6 +95,10 @@ export const Item = types
     },
   }));
 
+function widthIntToPixels(width: number): number {
+  return itemWidth * width + (width - 1) * itemSpacing + groupPadding * 2;
+}
+
 export const ItemGroup = types
   .model({
     id: types.identifier,
@@ -109,27 +113,37 @@ export const ItemGroup = types
     animationLerp: 1,
     animationStartWidth: 0,
     animationStartHeight: 0,
+    resizing: false,
+    tempResizeWidth: 0,
   }))
   .views((self) => ({
     size(): [number, number] {
-      return [
-        itemWidth * self.width +
-          (self.width - 1) * itemSpacing +
-          groupPadding * 2,
-        Math.max(
-          this.height() * itemHeight +
-            groupTitleHeight +
-            groupPadding * 2 +
-            (this.height() - 1) * itemSpacing,
-          groupTitleHeight + 60
-        ),
-      ];
+      let width = widthIntToPixels(self.width);
+      if (self.tempResizeWidth !== 0) {
+        width = self.tempResizeWidth;
+      }
+      const height = Math.max(
+        this.height() * itemHeight +
+          groupTitleHeight +
+          groupPadding * 2 +
+          (this.height() - 1) * itemSpacing,
+        groupTitleHeight + 60
+      );
+      return [width, height];
     },
     height(): number {
       return Math.ceil(self.itemArrangement.length / self.width);
     },
   }))
   .actions((self) => ({
+    setResizing(resizing: boolean) {
+      self.resizing = resizing;
+    },
+    setTempResizeWidth(width: number) {
+      const minWidth = widthIntToPixels(1);
+      const maxWidth = widthIntToPixels(5);
+      self.tempResizeWidth = clamp(width, minWidth, maxWidth);
+    },
     move(x: number, y: number) {
       self.x += x;
       self.y += y;
