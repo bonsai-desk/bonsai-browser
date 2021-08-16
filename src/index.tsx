@@ -9,7 +9,13 @@ import './index.css';
 import MainWindow from './pages/main-window';
 import Overlay from './pages/overlay';
 import TabStore from './store/tabs';
-import TabsPage from './pages/tabs-page';
+// import TabsPage from './pages/tabs-page';
+import {
+  Provider as TabPageStoreProvider,
+  tabPageStore,
+} from './store/tab-page-store';
+import Tabs from './pages/tabs-page';
+import createWorkspaceStore from './store/workspace-store';
 
 if (document.getElementById('root')) {
   const rootStore = RootModel.create({
@@ -69,5 +75,13 @@ if (document.getElementById('overlay')) {
 }
 
 if (document.getElementById('tab-page')) {
-  render(<TabsPage />, document.getElementById('tab-page'));
+  const workspaceStore = createWorkspaceStore();
+  render(
+    <>
+      <TabPageStoreProvider value={{ tabPageStore, workspaceStore }}>
+        <Tabs />
+      </TabPageStoreProvider>
+    </>,
+    document.getElementById('tab-page')
+  );
 }

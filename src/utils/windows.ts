@@ -1,5 +1,7 @@
 /* eslint no-console: off */
 import { app, BrowserView, BrowserWindow, Menu, Tray } from 'electron';
+// eslint-disable-next-line import/no-cycle
+import WindowManager from './window-manager';
 
 const installer = require('electron-devtools-installer');
 
@@ -15,7 +17,11 @@ export const installExtensions = async () => {
     .catch(console.log);
 };
 
-export function createTray(appIconPath: string, mainWindow: BrowserWindow) {
+export function createTray(
+  appIconPath: string,
+  mainWindow: BrowserWindow,
+  wm: WindowManager
+) {
   const appIcon = new Tray(appIconPath);
   const contextMenu = Menu.buildFromTemplate([
     // {
@@ -33,8 +39,11 @@ export function createTray(appIconPath: string, mainWindow: BrowserWindow) {
     {
       label: 'Exit',
       click() {
-        // app.isQuiting = true;
-        app.quit();
+        wm.tabPageView.webContents.send('save-snapshot');
+        wm.saveHistory();
+        setTimeout(() => {
+          app.quit();
+        }, 100);
       },
     },
   ]);

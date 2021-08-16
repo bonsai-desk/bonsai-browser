@@ -6,8 +6,6 @@ import { useStore } from '../../store/tab-page-store';
 import { ITab, TabPageColumn } from '../../interfaces/tab';
 import { getRootDomain } from '../../utils/data';
 import redX from '../../static/x-letter.svg';
-import workspaceStore from '../../store/workspace-store';
-// import moreIcon from '../../../assets/more-horizontal.svg';
 
 export const ColumnParent = styled.div`
   display: flex;
@@ -169,7 +167,7 @@ export const FooterButton = styled.button`
 `;
 
 export const Tab = observer(({ tab, hover }: ITab) => {
-  const { tabPageStore } = useStore();
+  const { tabPageStore, workspaceStore } = useStore();
   const title =
     tab.openGraphInfo !== null &&
     tab.openGraphInfo.title !== '' &&

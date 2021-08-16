@@ -28,6 +28,7 @@ import {
   urlToMapKey,
   windowHasView,
 } from './utils';
+// eslint-disable-next-line import/no-cycle
 import { handleFindText } from './windows';
 // eslint-disable-next-line import/no-cycle
 import calculateWindowTarget from './calculate-window-target';
@@ -143,6 +144,10 @@ export default class WindowManager {
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
+      // we do this so hot reloading does not duplicate tabs
+      Object.values(this.allTabViews).forEach((tabView) => {
+        this.removeTab(tabView.id);
+      });
       this.loadHistory();
     });
 
@@ -187,14 +192,17 @@ export default class WindowManager {
 
     setInterval(() => {
       this.saveTabs();
-    }, 1000 * 15);
+    }, 1000 * 5);
 
     setInterval(() => {
       this.saveHistory();
-    }, 1000 * 60 * 5);
+    }, 1000 * 60);
 
     let escapeActive = false;
     setInterval(() => {
+      if (mainWindow.isDestroyed()) {
+        return;
+      }
       let cursorPoint = screen.getCursorScreenPoint();
       const mainWindowVisible = mainWindow.isVisible();
       const webBrowserViewIsActive = this.webBrowserViewActive();
@@ -317,7 +325,7 @@ export default class WindowManager {
     }
     this.closeFind();
     this.mainWindow.removeBrowserView(this.urlPeekView);
-    // eslint-disable-line
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (tabView.view.webContents as any).destroy();
     delete this.allTabViews[id];
     this.titleBarView.webContents.send('tab-removed', id);

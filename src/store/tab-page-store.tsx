@@ -2,9 +2,11 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
 import { createContext, useContext } from 'react';
 import Fuse from 'fuse.js';
+import { Instance } from 'mobx-state-tree';
 import { TabPageColumn, TabPageTab } from '../interfaces/tab';
 import { HistoryEntry } from '../utils/tab-view';
 import { getRootDomain } from '../utils/data';
+import { WorkspaceStore } from './workspace-store';
 
 export default class TabPageStore {
   tabs: Record<string, TabPageTab> = {};
@@ -198,6 +200,7 @@ export default class TabPageStore {
 
 interface IContext {
   tabPageStore: TabPageStore;
+  workspaceStore: Instance<typeof WorkspaceStore>;
 }
 const TabPageContext = createContext<null | IContext>(null);
 export const { Provider } = TabPageContext;
