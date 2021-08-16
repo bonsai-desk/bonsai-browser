@@ -5,6 +5,7 @@ import {
   BrowserWindow,
   Display,
   globalShortcut,
+  ipcMain,
   NativeImage,
   screen,
 } from 'electron';
@@ -12,7 +13,7 @@ import fs from 'fs';
 import Fuse from 'fuse.js';
 import path from 'path';
 // eslint-disable-next-line import/no-cycle
-import TabView, { headerHeight, HistoryEntry } from './tab-view';
+import TabView, { headerHeight, HistoryEntry, OpenGraphInfo } from './tab-view';
 import {
   FIND_HTML,
   INDEX_HTML,
@@ -187,6 +188,23 @@ export default class WindowManager {
           // eslint-disable-next-line prefer-destructuring
           this.targetWindowPosition[1] = target[2][1];
         }
+      }
+    });
+
+    ipcMain.on('open-graph-data', (_, data: OpenGraphInfo) => {
+      const tabView = this.allTabViews[this.activeTabId];
+      if (typeof tabView !== 'undefined') {
+        if (tabView.historyEntry?.openGraphData.title === 'null') {
+          tabView.historyEntry.openGraphData = data;
+          tabView.updateHistory(this);
+        }
+      }
+    });
+
+    ipcMain.on('scroll-height', (_, height) => {
+      const tabView = this.allTabViews[this.activeTabId];
+      if (typeof tabView !== 'undefined') {
+        tabView.scrollHeight = height;
       }
     });
 
