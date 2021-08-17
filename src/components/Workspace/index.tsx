@@ -106,13 +106,21 @@ const ItemTitle = styled.div`
 const GroupHeader = styled.div`
   display: flex;
   align-items: center;
+  overflow: hidden;
+  position: relative;
 `;
 
 const HeaderText = styled.div`
-  padding-left: 10px;
+  position: absolute;
+  top: -2px;
+  left: 0;
+  width: 100%;
+  padding-left: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 2rem;
+  font-weight: bold;
 `;
 
 const Trash = styled.div`
@@ -258,7 +266,7 @@ const MainItem = observer(
                   workspaceStore
                 );
                 if (groupBelow === null) {
-                  const createdGroup = workspaceStore.createGroup('new group');
+                  const createdGroup = workspaceStore.createGroup('New Group');
                   newGroup = createdGroup;
                   createdGroup.move(
                     item.containerDragPosX - groupPadding,
@@ -344,11 +352,12 @@ const Workspace = observer(() => {
           key={group.id}
           onStart={(_, data) => {
             workspaceStore.moveToFront(group);
+            group.setDragMouseStart(data.x, data.y);
 
             if (data.x > group.x + group.size()[0] - 10) {
               group.setTempResizeWidth(group.width);
               group.setResizing(true);
-            } else {
+            } else if (data.y > group.y + groupTitleHeight + groupPadding + 1) {
               group.setBeingDragged(true);
               workspaceStore.setAnyDragging(true);
             }
@@ -361,12 +370,28 @@ const Workspace = observer(() => {
                 group
               );
             } else {
-              group.setOverTrash(overTrash([data.x, data.y], workspaceStore));
-              workspaceStore.setAnyOverTrash(group.overTrash);
-              group.move(data.deltaX, data.deltaY);
+              if (!group.beingDragged) {
+                const xDif = data.x - group.dragMouseStartX;
+                const yDif = data.y - group.dragMouseStartY;
+                const distSquared = xDif * xDif + yDif * yDif;
+                if (distSquared > 5 * 5) {
+                  group.setBeingDragged(true);
+                  workspaceStore.setAnyDragging(true);
+                }
+              }
+
+              if (group.beingDragged) {
+                group.setOverTrash(overTrash([data.x, data.y], workspaceStore));
+                workspaceStore.setAnyOverTrash(group.overTrash);
+                group.move(data.deltaX, data.deltaY);
+              }
             }
           }}
           onStop={(_, data) => {
+            if (!group.beingDragged && !group.resizing) {
+              console.log('rename');
+            }
+
             if (group.resizing) {
               const roundFunc = group.height() === 1 ? Math.round : Math.floor;
               group.setTempResizeWidth(widthPixelsToInt(data.x - group.x));
@@ -418,8 +443,10 @@ const Workspace = observer(() => {
           >
             <GroupHeader
               style={{
-                height: groupTitleHeight,
+                height: groupTitleHeight + groupPadding,
+                cursor: group.beingDragged ? 'grabbing' : 'pointer',
               }}
+              // contentEditable="true"
             >
               <HeaderText>{group.title}</HeaderText>
             </GroupHeader>

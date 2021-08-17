@@ -13,9 +13,9 @@ import { ipcRenderer } from 'electron';
 import fs from 'fs';
 import { clamp } from '../utils/utils';
 
-export const itemWidth = 175;
-export const itemHeight = 110;
-export const groupTitleHeight = 40;
+export const itemWidth = 200;
+export const itemHeight = 125;
+export const groupTitleHeight = 48;
 export const groupPadding = 10;
 export const itemSpacing = 10;
 
@@ -131,6 +131,8 @@ export const ItemGroup = types
     hovering: false,
     beingDragged: false,
     overTrash: false,
+    dragMouseStartX: 0,
+    dragMouseStartY: 0,
   }))
   .views((self) => ({
     size(): [number, number] {
@@ -170,6 +172,10 @@ export const ItemGroup = types
     },
     setOverTrash(overTrash: boolean) {
       self.overTrash = overTrash;
+    },
+    setDragMouseStart(x: number, y: number) {
+      self.dragMouseStartX = x;
+      self.dragMouseStartY = y;
     },
     move(x: number, y: number) {
       self.x += x;
