@@ -52,13 +52,21 @@ const GlobalStyle = createGlobalStyle`
     padding: 0;
     width: 100%;
     height: 100%;
-    saturate(4);
-    @media (prefers-color-scheme: dark) {
-      background-color: rgba(0, 0, 0, 0);
-    }
-    @media (prefers-color-scheme: light) {
-      background-color: rgba(0, 0, 0, 0.15);
-    }
+    ${({ mac }: { mac: boolean }) => {
+      if (mac) {
+        return css`
+          @media (prefers-color-scheme: dark) {
+            background-color: rgba(0, 0, 0, 0);
+          }
+          @media (prefers-color-scheme: light) {
+            background-color: rgba(0, 0, 0, 0.1);
+          }
+        `;
+      }
+      return css`
+        background-color: rgba(0, 0, 0, 0.7);
+      `;
+    }}}
   }
 `;
 
@@ -225,6 +233,8 @@ const Tabs = observer(() => {
     setHasRunOnce(true);
   }, [hasRunOnce, tabPageStore]);
 
+  const mac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+
   return (
     <Wrapper
       ref={backgroundRef}
@@ -236,7 +246,7 @@ const Tabs = observer(() => {
         }
       }}
     >
-      <GlobalStyle />
+      <GlobalStyle mac={mac} />
       {tabPageStore.isActive ? (
         <Background>
           <URLBoxParent>

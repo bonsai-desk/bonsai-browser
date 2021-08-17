@@ -143,7 +143,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -1024,7 +1024,6 @@ export default class WindowManager {
   }
 
   unFloat(display: Display) {
-    this.windowPosition[0] = 0;
     this.windowPosition[0] = display.bounds.x;
     this.windowPosition[1] = display.bounds.y;
     this.windowSize.width = display.workArea.width;
