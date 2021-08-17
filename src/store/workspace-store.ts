@@ -13,9 +13,9 @@ import { ipcRenderer } from 'electron';
 import fs from 'fs';
 import { clamp } from '../utils/utils';
 
-export const itemWidth = 175;
-export const itemHeight = 110;
-export const groupTitleHeight = 40;
+export const itemWidth = 200;
+export const itemHeight = 125;
+export const groupTitleHeight = 48;
 export const groupPadding = 10;
 export const itemSpacing = 10;
 
@@ -128,6 +128,11 @@ export const ItemGroup = types
     animationStartHeight: 0,
     resizing: false,
     tempResizeWidth: 0,
+    hovering: false,
+    beingDragged: false,
+    overTrash: false,
+    dragMouseStartX: 0,
+    dragMouseStartY: 0,
   }))
   .views((self) => ({
     size(): [number, number] {
@@ -149,6 +154,9 @@ export const ItemGroup = types
     },
   }))
   .actions((self) => ({
+    setHovering(hovering: boolean) {
+      self.hovering = hovering;
+    },
     setResizing(resizing: boolean) {
       self.resizing = resizing;
     },
@@ -158,6 +166,16 @@ export const ItemGroup = types
         return;
       }
       self.tempResizeWidth = width;
+    },
+    setBeingDragged(beingDragged: boolean) {
+      self.beingDragged = beingDragged;
+    },
+    setOverTrash(overTrash: boolean) {
+      self.overTrash = overTrash;
+    },
+    setDragMouseStart(x: number, y: number) {
+      self.dragMouseStartX = x;
+      self.dragMouseStartY = y;
     },
     move(x: number, y: number) {
       self.x += x;
@@ -360,8 +378,18 @@ export const WorkspaceStore = types
       group.itemArrangement.splice(newIndex, 0, item.id);
       this.updateItemIndexes(group);
     },
-    deleteGroup(groupId: string) {
-      self.groups.delete(groupId);
+    deleteGroup(group: Instance<typeof ItemGroup>) {
+      group.itemArrangement.forEach((itemId) => {
+        const item = self.items.get(itemId);
+        if (typeof item !== 'undefined') {
+          if (group.id !== 'hidden') {
+            this.changeGroup(item, group, self.hiddenGroup);
+          }
+          this.deleteItem(item, self.hiddenGroup);
+        }
+      });
+
+      destroy(group);
     },
     print() {
       console.log('---------------------------');

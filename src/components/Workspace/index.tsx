@@ -54,25 +54,24 @@ const GroupResize = styled.div`
 const ItemPlaceholderAndContainer = styled.div``;
 
 const ItemPlaceholder = styled.div`
-  border-radius: 20px;
-  background-color: rgba(100, 100, 100, 0.5);
   position: absolute;
   left: 0;
   top: 0;
 `;
 
 const ItemContainer = styled.div`
-  background-color: rgb(255, 210, 181);
+  background-color: white;
   border-radius: 20px;
   color: rgb(50, 50, 50);
   position: absolute;
   transition: transform 0.05s ease-out, filter 0.25s;
   overflow: hidden;
-  opacity: 0;
 
-  ${({ beingDragged }: { beingDragged: boolean }) =>
+  ${({ showTitle }: { showTitle: boolean }) =>
     css`
-      ${beingDragged ? '' : 'div:hover { opacity: 100; }'}
+      div {
+        opacity: ${showTitle ? '100' : '0'};
+      }
     `};
 `;
 
@@ -107,32 +106,21 @@ const ItemTitle = styled.div`
 const GroupHeader = styled.div`
   display: flex;
   align-items: center;
+  overflow: hidden;
+  position: relative;
 `;
 
-// const HeaderButtons = styled.div`
-//   display: flex;
-//   align-items: center;
-//   justify-content: flex-end;
-//   flex-grow: 1;
-//   padding-right: 10px;
-// `;
-// const HeaderButton = styled.button`
-//   outline: none;
-//   border: none;
-//   border-radius: 50%;
-//   width: 30px;
-//   height: 30px;
-//
-//   :hover {
-//     background-color: gray;
-//   }
-// `;
-
 const HeaderText = styled.div`
-  padding-left: 10px;
+  position: absolute;
+  top: -2px;
+  left: 0;
+  width: 100%;
+  padding-left: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 2rem;
+  font-weight: bold;
 `;
 
 const Trash = styled.div`
@@ -144,7 +132,7 @@ const Trash = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 10000000;
+  z-index: 10000001;
   border-radius: 0 20px 0 0;
 `;
 
@@ -213,8 +201,6 @@ const MainItem = observer(
             left: targetPos[0],
             top: targetPos[1],
             zIndex: group.zIndex,
-            // display: item.beingDragged ? 'block' : 'none',
-            display: 'none',
           }}
         />
         <DraggableCore
@@ -224,6 +210,7 @@ const MainItem = observer(
           onStart={(_, data: DraggableData) => {
             item.setDragMouseStart(data.x, data.y);
             workspaceStore.moveToFront(group);
+            group.setHovering(false);
           }}
           onDrag={(_, data: DraggableData) => {
             if (!item.beingDragged) {
@@ -264,6 +251,7 @@ const MainItem = observer(
             }
           }}
           onStop={() => {
+            let newGroup = group;
             if (!item.beingDragged) {
               runInAction(() => {
                 tabPageStore.workspaceActive = false;
@@ -278,7 +266,8 @@ const MainItem = observer(
                   workspaceStore
                 );
                 if (groupBelow === null) {
-                  const createdGroup = workspaceStore.createGroup('new group');
+                  const createdGroup = workspaceStore.createGroup('New Group');
+                  newGroup = createdGroup;
                   createdGroup.move(
                     item.containerDragPosX - groupPadding,
                     item.containerDragPosY - (groupPadding + groupTitleHeight)
@@ -297,7 +286,7 @@ const MainItem = observer(
                   typeof startGroup !== 'undefined' &&
                   startGroup.itemArrangement.length === 0
                 ) {
-                  workspaceStore.deleteGroup(startGroup.id);
+                  workspaceStore.deleteGroup(startGroup);
                 }
               }
               item.setDragStartGroup('');
@@ -309,10 +298,13 @@ const MainItem = observer(
             }
             workspaceStore.setAnyDragging(false);
             workspaceStore.setAnyOverTrash(false);
+            newGroup.setHovering(true);
           }}
         >
           <ItemContainer
-            beingDragged={item.beingDragged}
+            showTitle={
+              group.hovering && !workspaceStore.anyDragging && !group.resizing
+            }
             style={{
               width: itemWidth,
               height: itemHeight,
@@ -322,15 +314,19 @@ const MainItem = observer(
               top: item.beingDragged
                 ? item.containerDragPosY
                 : lerp(item.animationStartY, targetPos[1], lerpValue),
-              zIndex: item.beingDragged
-                ? Number.MAX_SAFE_INTEGER
-                : group.zIndex,
+              zIndex: item.beingDragged ? 10000000 : group.zIndex,
               transform: item.beingDragged ? 'rotate(5deg)' : 'none',
               cursor: item.beingDragged ? 'grabbing' : 'default',
-              opacity: item.overTrash ? 0.5 : 1,
+              // opacity: item.overTrash ? 0.5 : 1,
               boxShadow: item.beingDragged
                 ? '0 0 5px 0 rgba(100, 100, 100, 0.5)'
                 : 'none',
+            }}
+            onMouseOver={() => {
+              group.setHovering(true);
+            }}
+            onMouseLeave={() => {
+              group.setHovering(false);
             }}
           >
             <ItemImg src={item.image} alt="tab_image" />
@@ -356,10 +352,14 @@ const Workspace = observer(() => {
           key={group.id}
           onStart={(_, data) => {
             workspaceStore.moveToFront(group);
+            group.setDragMouseStart(data.x, data.y);
 
             if (data.x > group.x + group.size()[0] - 10) {
               group.setTempResizeWidth(group.width);
               group.setResizing(true);
+            } else if (data.y > group.y + groupTitleHeight + groupPadding + 1) {
+              group.setBeingDragged(true);
+              workspaceStore.setAnyDragging(true);
             }
           }}
           onDrag={(_, data: DraggableData) => {
@@ -370,10 +370,28 @@ const Workspace = observer(() => {
                 group
               );
             } else {
-              group.move(data.deltaX, data.deltaY);
+              if (!group.beingDragged) {
+                const xDif = data.x - group.dragMouseStartX;
+                const yDif = data.y - group.dragMouseStartY;
+                const distSquared = xDif * xDif + yDif * yDif;
+                if (distSquared > 5 * 5) {
+                  group.setBeingDragged(true);
+                  workspaceStore.setAnyDragging(true);
+                }
+              }
+
+              if (group.beingDragged) {
+                group.setOverTrash(overTrash([data.x, data.y], workspaceStore));
+                workspaceStore.setAnyOverTrash(group.overTrash);
+                group.move(data.deltaX, data.deltaY);
+              }
             }
           }}
           onStop={(_, data) => {
+            if (!group.beingDragged && !group.resizing) {
+              console.log('rename');
+            }
+
             if (group.resizing) {
               const roundFunc = group.height() === 1 ? Math.round : Math.floor;
               group.setTempResizeWidth(widthPixelsToInt(data.x - group.x));
@@ -384,6 +402,18 @@ const Workspace = observer(() => {
               );
               group.setResizing(false);
             }
+
+            if (group.overTrash) {
+              workspaceStore.deleteGroup(group);
+              workspaceStore.setAnyDragging(false);
+              workspaceStore.setAnyOverTrash(false);
+              return;
+            }
+
+            group.setBeingDragged(false);
+            group.setOverTrash(false);
+            workspaceStore.setAnyDragging(false);
+            workspaceStore.setAnyOverTrash(false);
           }}
         >
           <Group
@@ -402,12 +432,21 @@ const Workspace = observer(() => {
               top: group.y,
               zIndex: group.zIndex,
               display: group.id === 'hidden' ? 'none' : 'block',
+              cursor: group.beingDragged ? 'grabbing' : 'auto',
+            }}
+            onMouseOver={() => {
+              group.setHovering(true);
+            }}
+            onMouseLeave={() => {
+              group.setHovering(false);
             }}
           >
             <GroupHeader
               style={{
-                height: groupTitleHeight,
+                height: groupTitleHeight + groupPadding,
+                cursor: group.beingDragged ? 'grabbing' : 'pointer',
               }}
+              // contentEditable="true"
             >
               <HeaderText>{group.title}</HeaderText>
             </GroupHeader>
