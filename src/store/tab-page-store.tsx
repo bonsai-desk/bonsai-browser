@@ -35,6 +35,10 @@ export default class TabPageStore {
 
   workspaceActive = false;
 
+  activeGroupBoxRef: RefObject<HTMLInputElement> | null = null;
+
+  editingGroupId = '';
+
   tabPageColumns() {
     const columns: Record<string, TabPageTab[]> = {};
     Object.values(this.tabs).forEach((tab) => {
@@ -51,7 +55,9 @@ export default class TabPageStore {
   }
 
   setFocus() {
-    if (this.historyModalActive) {
+    if (this.activeGroupBoxRef !== null) {
+      this.activeGroupBoxRef.current?.focus();
+    } else if (this.historyModalActive) {
       this.historyBoxRef?.current?.focus();
     } else {
       this.urlBoxRef?.current?.focus();
@@ -59,7 +65,9 @@ export default class TabPageStore {
   }
 
   selectText() {
-    if (this.historyModalActive) {
+    if (this.activeGroupBoxRef !== null) {
+      this.activeGroupBoxRef.current?.select();
+    } else if (this.historyModalActive) {
       this.historyBoxRef?.current?.select();
     } else {
       this.urlBoxRef?.current?.select();
