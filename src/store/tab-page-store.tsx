@@ -145,9 +145,7 @@ export default class TabPageStore {
     ipcRenderer.on('tab-image-native', (_, [id, thing]) => {
       runInAction(() => {
         if (typeof this.tabs[id] !== 'undefined') {
-          this.tabs[id].image = URL.createObjectURL(
-            new Blob([thing.buffer], { type: 'image/jpg' })
-          );
+          this.tabs[id].image = thing;
         }
       });
     });

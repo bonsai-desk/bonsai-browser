@@ -3,7 +3,7 @@ import styled, { css } from 'styled-components';
 export const URLBoxParent = styled.div`
   display: flex;
   justify-content: center;
-  width: calc(100% - 2px - 10px - 4px - 20px);
+  width: 100%;
 `;
 export const URLBox = styled.input`
   ${({ windows = false }: { windows: boolean }) => {
