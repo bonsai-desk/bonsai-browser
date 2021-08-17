@@ -123,11 +123,13 @@ const HeaderText = styled.div`
   font-size: 2rem;
   font-weight: bold;
   color: rgb(250, 250, 250);
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
 `;
 
 const HeaderInput = styled.input`
   position: absolute;
-  top: -2px;
+  top: -4px;
   left: 0;
   width: 100%;
   padding-left: 12px;
@@ -137,6 +139,8 @@ const HeaderInput = styled.input`
   border: none;
   background: none;
   color: rgb(250, 250, 250);
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
 `;
 
 const Trash = styled.div`
@@ -289,6 +293,7 @@ const MainItem = observer(
                     item.containerDragPosY - (groupPadding + groupTitleHeight)
                   );
                   workspaceStore.changeGroup(item, group, createdGroup);
+                  createdGroup.setShouldEditTitle(true);
                 }
               }
 
@@ -319,7 +324,10 @@ const MainItem = observer(
         >
           <ItemContainer
             showTitle={
-              group.hovering && !workspaceStore.anyDragging && !group.resizing
+              group.hovering &&
+              !workspaceStore.anyDragging &&
+              !group.resizing &&
+              tabPageStore.editingGroupId !== group.id
             }
             style={{
               width: itemWidth,
@@ -365,9 +373,28 @@ const MainGroup = observer(
 
     useEffect(() => {
       if (tabPageStore.editingGroupId === group.id) {
-        groupTitleBoxRef.current?.select();
+        setTimeout(() => {
+          groupTitleBoxRef.current?.select();
+        }, 10);
       }
     }, [tabPageStore.editingGroupId]);
+
+    function editGroupTitle() {
+      runInAction(() => {
+        tabPageStore.activeGroupBoxRef = groupTitleBoxRef;
+        tabPageStore.editingGroupId = group.id;
+      });
+      if (groupTitleBoxRef.current !== null) {
+        groupTitleBoxRef.current.value = group.title;
+      }
+    }
+
+    useEffect(() => {
+      if (group.shouldEditTitle) {
+        group.setShouldEditTitle(false);
+        editGroupTitle();
+      }
+    }, [editGroupTitle, group, group.shouldEditTitle]);
 
     return (
       <DraggableCore
@@ -417,13 +444,7 @@ const MainGroup = observer(
             !group.resizing &&
             tabPageStore.editingGroupId !== group.id
           ) {
-            runInAction(() => {
-              tabPageStore.activeGroupBoxRef = groupTitleBoxRef;
-              tabPageStore.editingGroupId = group.id;
-            });
-            if (groupTitleBoxRef.current !== null) {
-              groupTitleBoxRef.current.value = group.title;
-            }
+            editGroupTitle();
           }
 
           if (group.resizing) {

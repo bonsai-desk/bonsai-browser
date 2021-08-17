@@ -133,6 +133,7 @@ export const ItemGroup = types
     overTrash: false,
     dragMouseStartX: 0,
     dragMouseStartY: 0,
+    shouldEditTitle: false,
   }))
   .views((self) => ({
     size(): [number, number] {
@@ -186,6 +187,9 @@ export const ItemGroup = types
     },
     setTitle(title: string) {
       self.title = title;
+    },
+    setShouldEditTitle(shouldEditTitle: boolean) {
+      self.shouldEditTitle = shouldEditTitle;
     },
   }));
 
