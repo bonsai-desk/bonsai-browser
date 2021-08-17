@@ -12,9 +12,8 @@ export const ColumnParent = styled.div`
   justify-content: center;
   flex-direction: column;
   user-select: none;
-  padding: 5px 10px 5px 10px;
-  margin-right: 25px;
-  border-radius: 25px;
+  // padding: 5px 10px 5px 10px;
+  margin-right: 1rem;
   color: white;
 `;
 const ColumnHeaderOverlay = styled.div`
@@ -143,7 +142,6 @@ export const TabColumnsParent = styled.div`
 export const Background = styled.div`
   width: 100vw;
   height: 100vh;
-  border-radius: 25px;
   display: flex;
   flex-direction: column;
 `;
@@ -280,10 +278,10 @@ const Column = observer(({ column }: { column: TabPageColumn }) => {
 export const TabColumns = observer(() => {
   const { tabPageStore } = useStore();
   return (
-    <>
+    <TabColumnsParent>
       {tabPageStore.tabPageColumns().map((column) => {
         return <Column column={column} key={column.domain} />;
       })}
-    </>
+    </TabColumnsParent>
   );
 });

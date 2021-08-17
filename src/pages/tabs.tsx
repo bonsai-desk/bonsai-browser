@@ -21,7 +21,6 @@ import {
   Background,
   Footer,
   TabColumns,
-  TabColumnsParent,
   Tab,
   FooterButton,
 } from '../components/TabPageContent';
@@ -140,14 +139,11 @@ const FuzzyTabs = observer(() => {
 
 const MainContent = observer(() => {
   const { tabPageStore } = useStore();
-  const tabs =
-    tabPageStore.urlText.length === 0 ? (
-      <TabColumnsParent>
-        <TabColumns />
-      </TabColumnsParent>
-    ) : (
-      <FuzzyTabs />
-    );
+  const tabs = (
+    <div style={{ height: '100%', padding: '0 0 0 1rem' }}>
+      {tabPageStore.urlText.length === 0 ? <TabColumns /> : <FuzzyTabs />}
+    </div>
+  );
 
   const workspace = <Workspace />;
 

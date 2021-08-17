@@ -401,8 +401,10 @@ export default class WindowManager {
     this.tabPageView.webContents.send('favicon-updated', [newTabId, favicon]);
 
     tabView.imgString = imgString;
-    const jpgBuf = Buffer.from(tabView.imgString, 'base64');
-    this.tabPageView.webContents.send('tab-image-native', [newTabId, jpgBuf]);
+    this.tabPageView.webContents.send('tab-image-native', [
+      newTabId,
+      tabView.imgString,
+    ]);
     tabView.scrollHeight = scrollHeight;
     this.loadUrlInTab(newTabId, url, true);
   }
@@ -558,8 +560,9 @@ export default class WindowManager {
     tabView.view.webContents.send('get-scroll-height', tabId);
     const handleImage = (image: NativeImage) => {
       const jpgBuf = image.toJPEG(50);
-      tabView.imgString = jpgBuf.toString('base64');
-      this.tabPageView.webContents.send('tab-image-native', [tabId, jpgBuf]);
+      const imgString = `data:image/jpg;base64, ${jpgBuf.toString('base64')}`;
+      tabView.imgString = imgString;
+      this.tabPageView.webContents.send('tab-image-native', [tabId, imgString]);
       if (callback) {
         callback();
       }
