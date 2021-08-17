@@ -1,4 +1,4 @@
-import { BrowserView, BrowserWindow, ipcMain } from 'electron';
+import { BrowserView, BrowserWindow } from 'electron';
 // eslint-disable-next-line import/no-cycle
 import { urlToMapKey, windowHasView } from './utils';
 // eslint-disable-next-line import/no-cycle
@@ -87,16 +87,16 @@ class TabView {
       wm.loadUrlInTab(newTabId, url);
     });
 
-    const updateHistory = () => {
-      if (this.historyEntry !== null) {
-        wm.addHistoryEntry(this.historyEntry);
-      }
-    };
+    // const updateHistory = () => {
+    //   if (this.historyEntry !== null) {
+    //     wm.addHistoryEntry(this.historyEntry);
+    //   }
+    // };
 
     this.view.webContents.on('page-title-updated', (_, title) => {
       if (this.historyEntry?.title === '') {
         this.historyEntry.title = title;
-        updateHistory();
+        this.updateHistory(wm);
       }
       this.title = title;
       titleBarView.webContents.send('title-updated', [id, title]);
@@ -146,7 +146,7 @@ class TabView {
         if (this.historyEntry?.favicon === '') {
           // eslint-disable-next-line prefer-destructuring
           this.historyEntry.favicon = favicons[0];
-          updateHistory();
+          this.updateHistory(wm);
         }
         // eslint-disable-next-line prefer-destructuring
         this.favicon = favicons[0];
@@ -178,24 +178,14 @@ class TabView {
       ]);
     });
 
-    ipcMain.on('open-graph-data', (event, data: OpenGraphInfo) => {
-      if (event.sender.id === id) {
-        // console.log(data.image);
-        if (this.historyEntry?.openGraphData.title === 'null') {
-          this.historyEntry.openGraphData = data;
-          updateHistory();
-        }
-      }
-    });
-
-    ipcMain.on('scroll-height', (event, height) => {
-      if (event.sender.id === id) {
-        this.scrollHeight = height;
-      }
-    });
-
     // window.addBrowserView(this.view);
     // resize();
+  }
+
+  updateHistory(wm: WindowManager) {
+    if (this.historyEntry !== null) {
+      wm.addHistoryEntry(this.historyEntry);
+    }
   }
 
   resize(bounds: Electron.Rectangle) {
