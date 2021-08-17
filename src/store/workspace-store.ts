@@ -184,6 +184,9 @@ export const ItemGroup = types
     setAnimationLerp(animationLerp: number) {
       self.animationLerp = animationLerp;
     },
+    setTitle(title: string) {
+      self.title = title;
+    },
   }));
 
 export const WorkspaceStore = types
