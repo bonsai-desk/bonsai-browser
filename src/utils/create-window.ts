@@ -69,19 +69,6 @@ export const createWindow = async () => {
 
   const wm = new WindowManager(mainWindow, display);
 
-  // app.on('activate', () => {
-  //   // On macOS it's common to re-create a window in the app when the
-  //   // dock icon is clicked and there are no other windows open.
-  //   if (!mainWindow?.isVisible()) {
-  //     wm.mainWindow.show();
-  //     wm.unFloat(display.activeDisplay);
-  //     setTimeout(() => {
-  //       // todo: search box does not get highlited on macos unless we do this hack
-  //       wm.setTab(-1);
-  //     }, 10);
-  //   }
-  // });
-
   wm.mainWindow.on('close', () => {
     wm.saveHistory();
   });
@@ -96,19 +83,13 @@ export const createWindow = async () => {
     mainWindow?.show();
     wm.unFloat(display.activeDisplay);
     setTimeout(() => {
-      wm.setTab(-1);
+      wm.unSetTab();
     }, 10);
   });
 
   mainWindow.on('blur', () => {
     if (!wm.windowFloating && wm.mainWindow.isVisible() && !wm.isPinned) {
-      // const mousePoint = screen.getCursorScreenPoint();
-      // const activeDisplay = screen.getDisplayNearestPoint(mousePoint);
-      // const mouseOnWindowDisplay =
-      //   activeDisplay.id === WindowManager.display.activeDisplay.id;
-      // if (mouseOnWindowDisplay) {
       wm.unFloat(display.activeDisplay);
-      // wm.setTab(-1);
       wm.hideMainWindow();
       // }
     }
@@ -179,7 +160,7 @@ export const createWindow = async () => {
       if (wm.activeTabId === -1) {
         // todo: search box does not get highlighted on macos unless we do this hack
         setTimeout(() => {
-          wm.setTab(-1);
+          wm.unSetTab();
         }, 10);
       }
     } else {

@@ -356,7 +356,7 @@ export default class WindowManager {
     }
     this.mainWindow.removeBrowserView(tabView.view);
     if (id === this.activeTabId) {
-      this.setTab(-1);
+      this.unSetTab();
     }
     this.closeFind();
     this.mainWindow.removeBrowserView(this.urlPeekView);
@@ -556,9 +556,11 @@ export default class WindowManager {
 
   screenShotTab(tabId: number, tabView: TabView) {
     tabView.view.webContents.send('get-scroll-height', tabId);
+    console.log('invoke capturepage');
     tabView.view.webContents
       .capturePage()
       .then((image: NativeImage) => {
+        console.log('callback');
         const jpgBuf = image.toJPEG(50);
         tabView.imgString = jpgBuf.toString('base64');
         this.tabPageView.webContents.send('tab-image-native', [tabId, jpgBuf]);
@@ -569,7 +571,38 @@ export default class WindowManager {
       });
   }
 
+  unSetTab(shouldScreenshot = true) {
+    const oldTabView = this.allTabViews[this.activeTabId];
+
+    // screenshot page if needed
+    if (shouldScreenshot && typeof oldTabView !== 'undefined') {
+      const cachedId = this.activeTabId;
+      this.screenShotTab(cachedId, oldTabView);
+    }
+
+    // return to main tab page
+    this.mainWindow.setTopBrowserView(this.tabPageView);
+    this.tabPageView.webContents.focus();
+    this.tabPageView.webContents.send('focus-search');
+
+    this.activeTabId = -1;
+
+    // if old tab exists, remove it
+    if (typeof oldTabView !== 'undefined') {
+      this.mainWindow.removeBrowserView(oldTabView.view);
+    }
+
+    // tell tab page that it is active
+    this.tabPageView.webContents.send('set-active', true);
+    this.resize();
+    console.log('break out of set tab since going back to main');
+  }
+
   setTab(id: number, shouldScreenshot = true) {
+    if (id === -1) {
+      console.log('Use unSetTab instead of setTab(-1)!');
+      return;
+    }
     const oldTabView = this.allTabViews[this.activeTabId];
 
     // screenshot page if needed
@@ -578,23 +611,8 @@ export default class WindowManager {
       id !== this.activeTabId &&
       typeof oldTabView !== 'undefined'
     ) {
-      if (id === -1) {
-        // this.mainWindow.addBrowserView(this.tabPageView);
-        this.mainWindow.setTopBrowserView(this.tabPageView);
-        this.tabPageView.webContents.focus();
-        this.tabPageView.webContents.send('focus-search');
-        this.resize();
-      }
       const cachedId = this.activeTabId;
       this.screenShotTab(cachedId, oldTabView);
-    }
-
-    // return to main tab page if needed
-    if (id === -1) {
-      // this.mainWindow.add(this.tabPageView);
-      this.mainWindow.setTopBrowserView(this.tabPageView);
-      this.tabPageView.webContents.focus();
-      this.tabPageView.webContents.send('focus-search');
     }
 
     this.activeTabId = id;
@@ -602,15 +620,6 @@ export default class WindowManager {
     // if old tab does not exist remove it
     if (typeof oldTabView !== 'undefined') {
       this.mainWindow.removeBrowserView(oldTabView.view);
-    }
-
-    // if no id, tell main window that it is inactive, and return
-    // RETURNS
-    if (id === -1) {
-      this.mainWindow.webContents.send('set-active', false);
-      this.tabPageView.webContents.send('set-active', true);
-      this.resize();
-      return;
     }
 
     // tell main window that it is active and get the tabview reference
@@ -621,9 +630,15 @@ export default class WindowManager {
       throw new Error(`setTab: tab with id ${id} does not exist`);
     }
 
+    const { padding, hh, windowSize } = this.boundsInfo();
+
+    this.resizeTitleBar(padding, hh, windowSize);
+
     // add title bar view to main window
     this.mainWindow.addBrowserView(this.titleBarView);
     this.mainWindow.setTopBrowserView(this.titleBarView);
+
+    this.resizeTabView(tabView);
 
     // add the live page to the main window and focus it a little bit later
     this.mainWindow.addBrowserView(tabView.view);
@@ -655,12 +670,12 @@ export default class WindowManager {
     this.tabPageView.webContents.send('access-tab', id);
 
     // set the padding
-    const padding = this.browserPadding();
     this.mainWindow.webContents.send('set-padding', padding.toString());
     this.tabPageView.webContents.send('set-padding', padding.toString());
 
     this.resize();
-    this.resizeTabView(tabView);
+    // this.resizeTabView(tabView);
+    console.log('END set tab');
   }
 
   loadUrlInTab(
@@ -1014,62 +1029,84 @@ export default class WindowManager {
     this.resize();
   }
 
-  resize() {
-    if (this.mainWindow === null || typeof this.mainWindow === 'undefined') {
-      return;
-    }
-
-    const padding = this.windowFloating ? 10 : this.browserPadding();
-    const hh = this.windowFloating ? 0 : headerHeight;
-    const windowSize = this.mainWindow.getSize();
-
-    const urlPeekWidth = 475;
-    const urlPeekHeight = 20;
-
-    const findViewWidth = 350;
-    const findViewHeight = 50;
-    const findViewMarginRight = 20;
-
+  resizeTitleBar(padding: number, hh: number, windowSize: number[]) {
     const titleBarBounds = {
       x: padding,
       y: padding,
       width: windowSize[0] - padding * 2,
       height: hh,
     };
-    // console.log(titleBarBounds);
     this.titleBarView.setBounds(titleBarBounds);
+  }
+
+  resizePeekView(padding: number, windowSize: number[]) {
+    const urlPeekWidth = 475;
+    const urlPeekHeight = 20;
     this.urlPeekView.setBounds({
       x: padding,
       y: windowSize[1] - urlPeekHeight - padding,
       width: urlPeekWidth,
       height: urlPeekHeight,
     });
+  }
+
+  resizeFindView(padding: number, hh: number, windowSize: number[]) {
+    const findViewWidth = 350;
+    const findViewHeight = 50;
+    const findViewMarginRight = 20;
     this.findView.setBounds({
       x: windowSize[0] - findViewWidth - findViewMarginRight - padding,
       y: hh + padding,
       width: findViewWidth,
       height: findViewHeight,
     });
+  }
+
+  resizeOverlayView(windowSize: number[]) {
     this.overlayView.setBounds({
       x: 0,
       y: 0,
       width: windowSize[0],
       height: windowSize[1],
     });
+  }
+
+  resizeTabPageView(windowSize: number[]) {
     this.tabPageView.setBounds({
       x: 0,
       y: 0,
       width: windowSize[0],
       height: windowSize[1],
     });
+  }
 
-    // const windowSize = this.window.getSize();
-    // const padding = this.windowFloating ? 10 : browserPadding;
-    // const hh = this.windowFloating ? 0 : headerHeight;
-
+  resizeWebViews() {
     Object.values(this.allTabViews).forEach((tabView) => {
       this.resizeTabView(tabView);
     });
+  }
+
+  boundsInfo() {
+    const padding = this.windowFloating ? 10 : this.browserPadding();
+    const hh = this.windowFloating ? 0 : headerHeight;
+    const windowSize = this.mainWindow.getSize();
+
+    return { padding, hh, windowSize };
+  }
+
+  resize() {
+    if (this.mainWindow === null || typeof this.mainWindow === 'undefined') {
+      return;
+    }
+
+    const { padding, hh, windowSize } = this.boundsInfo();
+
+    this.resizeTitleBar(padding, hh, windowSize);
+    this.resizePeekView(padding, windowSize);
+    this.resizeFindView(padding, hh, windowSize);
+    this.resizeOverlayView(windowSize);
+    this.resizeTabPageView(windowSize);
+    this.resizeWebViews();
   }
 
   findActive() {
@@ -1094,7 +1131,7 @@ export default class WindowManager {
       if (findIsActive && !mouseInBorder) {
         this.closeFind();
       } else {
-        this.setTab(-1);
+        this.unSetTab();
       }
     }
   }
@@ -1116,7 +1153,9 @@ export default class WindowManager {
   }
 
   resizeTabView(tabView: TabView) {
-    tabView.resize(this.innerBounds());
+    const bounds = this.innerBounds();
+    console.log('resize tab ', bounds);
+    tabView.resize(bounds);
   }
 
   hideMainWindow() {
@@ -1128,8 +1167,6 @@ export default class WindowManager {
     if (this.webBrowserViewActive()) {
       this.titleBarView.webContents.focus();
       this.titleBarView.webContents.send('focus');
-      // const tab = this.allTabViews[this.activeTabId];
-      // tab.view.webContents.send('pew');
     }
   }
 }
