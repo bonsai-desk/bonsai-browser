@@ -29,12 +29,6 @@ import Workspace from '../components/Workspace';
 import pinSelected from '../../assets/pin-selected.svg';
 import pinUnselected from '../../assets/pin-unselected.svg';
 
-const OPACITY = 0.55;
-
-interface GlobalProps {
-  floating: boolean;
-}
-
 const Wrapper = styled.div`
   width: 100vw;
   height: 100vh;
@@ -48,8 +42,7 @@ const WebViewBackground = styled.div`
     left: ${padding}px;
     width: calc(100% - ${padding}px - ${padding}px);
     height: calc(100% - ${padding}px - ${padding}px);
-  `}//width: 100px;
-  //height: 100px;
+  `}
 `;
 
 const GlobalStyle = createGlobalStyle`
@@ -59,12 +52,13 @@ const GlobalStyle = createGlobalStyle`
     padding: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0.25, 0.25, 0.25, OPACITY);
-
-    ${({ floating }: GlobalProps) =>
-      css`
-        background-color: rgba(0.25, 0.25, 0.25, ${floating ? 0 : OPACITY});
-      `}
+    saturate(4);
+    @media (prefers-color-scheme: dark) {
+      background-color: rgba(0, 0, 0, 0);
+    }
+    @media (prefers-color-scheme: light) {
+      background-color: rgba(0, 0, 0, 0.15);
+    }
   }
 `;
 
@@ -75,7 +69,7 @@ const HistoryModalLocal = observer(() => {
 
   useEffect(() => {
     tabPageStore.historyBoxRef = historyBoxRef;
-  }, []);
+  }, [tabPageStore]);
 
   useEffect(() => {
     ipcRenderer.send(
@@ -126,7 +120,7 @@ const HistoryModalLocal = observer(() => {
 const FuzzyTabs = observer(() => {
   const { tabPageStore } = useStore();
   return (
-    <div style={{ color: 'white', flexGrow: 1 }}>
+    <div style={{ flexGrow: 1 }}>
       <h1>Today</h1>
       {tabPageStore.filteredTabs.map((result) => {
         const { item } = result;
@@ -242,7 +236,7 @@ const Tabs = observer(() => {
         }
       }}
     >
-      <GlobalStyle floating={false} />
+      <GlobalStyle />
       {tabPageStore.isActive ? (
         <Background>
           <URLBoxParent>

@@ -247,7 +247,7 @@ const Column = observer(({ column }: { column: TabPageColumn }) => {
       <ColumnHeaderParent>
         <ColumnHeaderSpacer />
         <Favicon src={columnFavicon} />
-        <ColumnHeader>{column.domain}</ColumnHeader>
+        <ColumnHeader className="test">{column.domain}</ColumnHeader>
         <ColumnHeaderOverlay>
           <RedX
             id="RedX"
