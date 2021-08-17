@@ -49,6 +49,9 @@ export const createWindow = async () => {
     minWidth: 50,
     minHeight: 50,
     icon: ICON_SMALL_PNG,
+    vibrancy: 'fullscreen-ui', // menu, popover, hud, fullscreen-ui
+    enableLargerThanScreen: true,
+    visualEffectState: 'active',
     webPreferences: {
       nodeIntegration: true,
       devTools: false,
@@ -59,7 +62,7 @@ export const createWindow = async () => {
     app.dock.setIcon(ICON_PNG);
   }
 
-  mainWindow.setAlwaysOnTop(true);
+  mainWindow.setAlwaysOnTop(true, 'status');
 
   const displays = screen.getAllDisplays();
   if (displays.length === 0) {

@@ -554,18 +554,22 @@ export default class WindowManager {
     }
   }
 
-  screenShotTab(tabId: number, tabView: TabView, callback: () => void) {
+  screenShotTab(tabId: number, tabView: TabView, callback?: () => void) {
     tabView.view.webContents.send('get-scroll-height', tabId);
     const handleImage = (image: NativeImage) => {
       const jpgBuf = image.toJPEG(50);
       tabView.imgString = jpgBuf.toString('base64');
       this.tabPageView.webContents.send('tab-image-native', [tabId, jpgBuf]);
-      callback();
+      if (callback) {
+        callback();
+      }
       return null;
     };
     const handleError = (e: any) => {
       console.log(e);
-      callback();
+      if (callback) {
+        callback();
+      }
     };
     tabView.view.webContents.capturePage().then(handleImage).catch(handleError);
   }
@@ -1020,13 +1024,24 @@ export default class WindowManager {
   }
 
   unFloat(display: Display) {
-    this.windowPosition[0] = display.workArea.x;
-    this.windowPosition[1] = display.workArea.y;
+    this.windowPosition[0] = display.bounds.x;
+    this.windowPosition[1] = display.bounds.y;
     this.windowSize.width = display.workArea.width;
     this.windowSize.height =
-      display.workArea.height + (process.platform === 'darwin' ? 0 : 1); // todo: on windows if you make it the same size as monitor, everything breaks!?!??!?!?
+      display.bounds.height + (process.platform === 'darwin' ? 0 : 1); // todo: on windows if you make it the same size as monitor, everything breaks!?!??!?!?
     this.updateMainWindowBounds();
-    this.resize();
+
+    const { padding, hh, windowSize } = this.boundsInfo();
+
+    if (this.activeTabId === -1) {
+      this.resizeTabPageView(windowSize);
+    } else {
+      this.resizeTitleBar(padding, hh, windowSize);
+      this.resizePeekView(padding, windowSize);
+      this.resizeFindView(padding, hh, windowSize);
+      this.resizeOverlayView(windowSize);
+      this.resizeWebViews();
+    }
 
     if (!this.windowFloating) {
       return;
@@ -1038,12 +1053,7 @@ export default class WindowManager {
       this.mainWindow?.removeBrowserView(this.overlayView);
     }
 
-    if (!windowHasView(this.mainWindow, this.titleBarView)) {
-      this.mainWindow?.addBrowserView(this.titleBarView);
-      this.mainWindow?.setTopBrowserView(this.titleBarView);
-    }
-
-    const padding = this.browserPadding();
+    // const padding = this.browserPadding();
     this.mainWindow.webContents.send('set-padding', padding.toString());
 
     Object.values(this.allTabViews).forEach((tabView) => {
