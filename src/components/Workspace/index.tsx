@@ -124,7 +124,7 @@ const Trash = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 10000000;
+  z-index: 10000001;
   border-radius: 0 20px 0 0;
 `;
 
@@ -278,7 +278,7 @@ const MainItem = observer(
                   typeof startGroup !== 'undefined' &&
                   startGroup.itemArrangement.length === 0
                 ) {
-                  workspaceStore.deleteGroup(startGroup.id);
+                  workspaceStore.deleteGroup(startGroup);
                 }
               }
               item.setDragStartGroup('');
@@ -294,7 +294,9 @@ const MainItem = observer(
           }}
         >
           <ItemContainer
-            showTitle={group.hovering && !item.beingDragged && !group.resizing}
+            showTitle={
+              group.hovering && !workspaceStore.anyDragging && !group.resizing
+            }
             style={{
               width: itemWidth,
               height: itemHeight,
@@ -304,12 +306,10 @@ const MainItem = observer(
               top: item.beingDragged
                 ? item.containerDragPosY
                 : lerp(item.animationStartY, targetPos[1], lerpValue),
-              zIndex: item.beingDragged
-                ? Number.MAX_SAFE_INTEGER
-                : group.zIndex,
+              zIndex: item.beingDragged ? 10000000 : group.zIndex,
               transform: item.beingDragged ? 'rotate(5deg)' : 'none',
               cursor: item.beingDragged ? 'grabbing' : 'default',
-              opacity: item.overTrash ? 0.5 : 1,
+              // opacity: item.overTrash ? 0.5 : 1,
               boxShadow: item.beingDragged
                 ? '0 0 5px 0 rgba(100, 100, 100, 0.5)'
                 : 'none',
@@ -348,6 +348,9 @@ const Workspace = observer(() => {
             if (data.x > group.x + group.size()[0] - 10) {
               group.setTempResizeWidth(group.width);
               group.setResizing(true);
+            } else {
+              group.setBeingDragged(true);
+              workspaceStore.setAnyDragging(true);
             }
           }}
           onDrag={(_, data: DraggableData) => {
@@ -358,6 +361,8 @@ const Workspace = observer(() => {
                 group
               );
             } else {
+              group.setOverTrash(overTrash([data.x, data.y], workspaceStore));
+              workspaceStore.setAnyOverTrash(group.overTrash);
               group.move(data.deltaX, data.deltaY);
             }
           }}
@@ -372,6 +377,18 @@ const Workspace = observer(() => {
               );
               group.setResizing(false);
             }
+
+            if (group.overTrash) {
+              workspaceStore.deleteGroup(group);
+              workspaceStore.setAnyDragging(false);
+              workspaceStore.setAnyOverTrash(false);
+              return;
+            }
+
+            group.setBeingDragged(false);
+            group.setOverTrash(false);
+            workspaceStore.setAnyDragging(false);
+            workspaceStore.setAnyOverTrash(false);
           }}
         >
           <Group
@@ -390,6 +407,7 @@ const Workspace = observer(() => {
               top: group.y,
               zIndex: group.zIndex,
               display: group.id === 'hidden' ? 'none' : 'block',
+              cursor: group.beingDragged ? 'grabbing' : 'auto',
             }}
             onMouseOver={() => {
               group.setHovering(true);

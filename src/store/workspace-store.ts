@@ -129,6 +129,8 @@ export const ItemGroup = types
     resizing: false,
     tempResizeWidth: 0,
     hovering: false,
+    beingDragged: false,
+    overTrash: false,
   }))
   .views((self) => ({
     size(): [number, number] {
@@ -162,6 +164,12 @@ export const ItemGroup = types
         return;
       }
       self.tempResizeWidth = width;
+    },
+    setBeingDragged(beingDragged: boolean) {
+      self.beingDragged = beingDragged;
+    },
+    setOverTrash(overTrash: boolean) {
+      self.overTrash = overTrash;
     },
     move(x: number, y: number) {
       self.x += x;
@@ -364,8 +372,18 @@ export const WorkspaceStore = types
       group.itemArrangement.splice(newIndex, 0, item.id);
       this.updateItemIndexes(group);
     },
-    deleteGroup(groupId: string) {
-      self.groups.delete(groupId);
+    deleteGroup(group: Instance<typeof ItemGroup>) {
+      group.itemArrangement.forEach((itemId) => {
+        const item = self.items.get(itemId);
+        if (typeof item !== 'undefined') {
+          if (group.id !== 'hidden') {
+            this.changeGroup(item, group, self.hiddenGroup);
+          }
+          this.deleteItem(item, self.hiddenGroup);
+        }
+      });
+
+      destroy(group);
     },
     print() {
       console.log('---------------------------');
