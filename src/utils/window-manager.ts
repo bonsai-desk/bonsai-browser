@@ -626,21 +626,11 @@ export default class WindowManager {
     // this.resize();
   }
 
-  setTab(id: number, shouldScreenshot = true) {
+  setTab(id: number) {
     if (id === -1) {
       throw new Error('Use unSetTab instead of setTab(-1)!');
     }
     const oldTabView = this.allTabViews[this.activeTabId];
-
-    // screenshot page if needed
-    if (
-      shouldScreenshot &&
-      id !== this.activeTabId &&
-      typeof oldTabView !== 'undefined'
-    ) {
-      const cachedId = this.activeTabId;
-      this.screenShotTab(cachedId, oldTabView);
-    }
 
     this.activeTabId = id;
 
