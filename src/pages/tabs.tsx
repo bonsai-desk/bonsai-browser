@@ -251,6 +251,7 @@ const Tabs = observer(() => {
         <Background>
           <URLBoxParent>
             <URLBox
+              windows={!mac}
               type="text"
               spellCheck={false}
               ref={urlBoxRef}
