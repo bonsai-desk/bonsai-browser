@@ -271,6 +271,7 @@ export default class WindowManager {
         clearInterval(handle);
         this.unFloat(display.activeDisplay);
         this.mainWindow?.hide();
+        app.hide();
       }
       this.mainWindow.setOpacity(easeOut(opacity));
     }, 10);

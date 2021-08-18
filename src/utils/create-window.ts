@@ -91,6 +91,7 @@ export const createWindow = async () => {
   });
 
   mainWindow.on('blur', () => {
+    console.log('blur');
     if (!wm.windowFloating && wm.mainWindow.isVisible() && !wm.isPinned) {
       wm.unFloat(display.activeDisplay);
       wm.hideMainWindow();
