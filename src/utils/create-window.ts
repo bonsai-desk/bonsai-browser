@@ -51,11 +51,11 @@ export const createWindow = async () => {
     icon: ICON_SMALL_PNG,
     vibrancy: 'fullscreen-ui', // menu, popover, hud, fullscreen-ui
     enableLargerThanScreen: true,
-    // visualEffectState: 'active',
+    roundedCorners: false,
     webPreferences: {
-      nodeIntegration: true,
+      nodeIntegration: false,
       devTools: false,
-      contextIsolation: false, // todo: do we need this? security concern?
+      contextIsolation: true, // todo: do we need this? security concern?
     },
   });
   if (process.platform === 'darwin') {
