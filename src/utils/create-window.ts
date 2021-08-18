@@ -91,7 +91,6 @@ export const createWindow = async () => {
   });
 
   mainWindow.on('blur', () => {
-    console.log('blur');
     if (!wm.windowFloating && wm.mainWindow.isVisible() && !wm.isPinned) {
       wm.unFloat(display.activeDisplay);
       wm.hideMainWindow();
@@ -254,4 +253,14 @@ export const createWindow = async () => {
   const menu = Menu.buildFromTemplate(template);
 
   Menu.setApplicationMenu(menu);
+
+  if (process.env.NODE_ENV === 'development') {
+    let booted = false;
+    wm.tabPageView.webContents.on('did-finish-load', () => {
+      if (!booted) {
+        booted = true;
+        wm.showWindow();
+      }
+    });
+  }
 };
