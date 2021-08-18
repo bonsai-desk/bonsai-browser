@@ -51,11 +51,11 @@ export const createWindow = async () => {
     icon: ICON_SMALL_PNG,
     vibrancy: 'fullscreen-ui', // menu, popover, hud, fullscreen-ui
     enableLargerThanScreen: true,
-    // visualEffectState: 'active',
+    roundedCorners: false,
     webPreferences: {
-      nodeIntegration: true,
+      nodeIntegration: false,
       devTools: false,
-      contextIsolation: false, // todo: do we need this? security concern?
+      contextIsolation: true, // todo: do we need this? security concern?
     },
   });
   if (process.platform === 'darwin') {
@@ -148,27 +148,9 @@ export const createWindow = async () => {
   const shortCut = 'Alt+Space';
   globalShortcut.register(shortCut, () => {
     if (!mainWindow?.isVisible()) {
-      const mousePoint = screen.getCursorScreenPoint();
-      display.activeDisplay = screen.getDisplayNearestPoint(mousePoint);
-
-      wm.mainWindow.setVisibleOnAllWorkspaces(true, {
-        visibleOnFullScreen: true,
-      });
-      wm.mainWindow.show();
-      wm.mainWindow.setVisibleOnAllWorkspaces(false, {
-        visibleOnFullScreen: true,
-      });
-      wm.setPinned(false);
-      wm.unFloat(display.activeDisplay);
-      if (wm.activeTabId === -1) {
-        // todo: search box does not get highlighted on macos unless we do this hack
-        setTimeout(() => {
-          wm.unSetTab();
-        }, 10);
-      }
+      wm.showWindow();
     } else {
-      wm.unFloat(display.activeDisplay);
-      mainWindow?.hide();
+      wm.hideWindow();
     }
   });
 

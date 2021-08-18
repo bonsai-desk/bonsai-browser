@@ -257,6 +257,55 @@ export default class WindowManager {
     }, 10);
   }
 
+  hideWindow() {
+    let opacity = 1.0;
+    const display = { activeDisplay: screen.getPrimaryDisplay() };
+    this.mainWindow.setOpacity(opacity);
+    const handle = setInterval(() => {
+      opacity -= 0.05;
+      if (opacity < 0.0) {
+        opacity = 0.0;
+        clearInterval(handle);
+        this.unFloat(display.activeDisplay);
+        this.mainWindow?.hide();
+      }
+      this.mainWindow.setOpacity(opacity);
+    }, 10);
+  }
+
+  showWindow() {
+    const mousePoint = screen.getCursorScreenPoint();
+    const display = { activeDisplay: screen.getPrimaryDisplay() };
+    display.activeDisplay = screen.getDisplayNearestPoint(mousePoint);
+
+    this.mainWindow.setVisibleOnAllWorkspaces(true, {
+      visibleOnFullScreen: true,
+    });
+    this.mainWindow.show();
+    this.mainWindow.setVisibleOnAllWorkspaces(false, {
+      visibleOnFullScreen: true,
+    });
+    this.setPinned(false);
+    this.unFloat(display.activeDisplay);
+    if (this.activeTabId === -1) {
+      // todo: search box does not get highlighted on macos unless we do this hack
+      setTimeout(() => {
+        this.unSetTab();
+      }, 10);
+    }
+
+    let opacity = 0.0;
+    this.mainWindow.setOpacity(0.0);
+    const handle = setInterval(() => {
+      opacity += 0.05;
+      if (opacity > 1.0) {
+        opacity = 1.0;
+        clearInterval(handle);
+      }
+      this.mainWindow.setOpacity(opacity);
+    }, 10);
+  }
+
   webViewActive() {
     return this.activeTabId !== -1;
   }

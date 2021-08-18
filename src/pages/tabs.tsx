@@ -58,7 +58,7 @@ const GlobalStyle = createGlobalStyle`
             background-color: rgba(0, 0, 0, 0);
           }
           @media (prefers-color-scheme: light) {
-            background-color: rgba(0, 0, 0, 0.1);
+            background-color: rgba(0, 0, 0, 0);
           }
         `;
       }
