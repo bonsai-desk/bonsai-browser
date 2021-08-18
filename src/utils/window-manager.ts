@@ -82,8 +82,6 @@ export default class WindowManager {
 
   allTabViews: Record<number, TabView> = {};
 
-  // tabId = 0; // auto increment to give unique id to each tab
-
   activeTabId = -1;
 
   findText = '';
@@ -386,7 +384,6 @@ export default class WindowManager {
   }
 
   createNewTab(): number {
-    // this.tabId += 1;
     const newTabView = new TabView(
       this.mainWindow,
       this.titleBarView,
