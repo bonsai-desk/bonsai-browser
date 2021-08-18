@@ -33,17 +33,6 @@ const Wrapper = styled.div`
   height: 100vh;
 `;
 
-const WebViewBackground = styled.div`
-  position: absolute;
-  background-color: white;
-  ${({ padding }: { padding: string }) => css`
-    top: ${padding}px;
-    left: ${padding}px;
-    width: calc(100% - ${padding}px - ${padding}px);
-    height: calc(100% - ${padding}px - ${padding}px);
-  `}
-`;
-
 const GlobalStyle = createGlobalStyle`
   html,
   body {
@@ -301,7 +290,7 @@ const Tabs = observer(() => {
           </Footer>
         </Background>
       ) : (
-        <WebViewBackground padding={tabPageStore.padding} />
+        ''
       )}
       <HistoryModalLocal />
       <PinButton
