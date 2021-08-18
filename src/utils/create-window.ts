@@ -148,27 +148,9 @@ export const createWindow = async () => {
   const shortCut = 'Alt+Space';
   globalShortcut.register(shortCut, () => {
     if (!mainWindow?.isVisible()) {
-      const mousePoint = screen.getCursorScreenPoint();
-      display.activeDisplay = screen.getDisplayNearestPoint(mousePoint);
-
-      wm.mainWindow.setVisibleOnAllWorkspaces(true, {
-        visibleOnFullScreen: true,
-      });
-      wm.mainWindow.show();
-      wm.mainWindow.setVisibleOnAllWorkspaces(false, {
-        visibleOnFullScreen: true,
-      });
-      wm.setPinned(false);
-      wm.unFloat(display.activeDisplay);
-      if (wm.activeTabId === -1) {
-        // todo: search box does not get highlighted on macos unless we do this hack
-        setTimeout(() => {
-          wm.unSetTab();
-        }, 10);
-      }
+      wm.showWindow();
     } else {
-      wm.unFloat(display.activeDisplay);
-      mainWindow?.hide();
+      wm.hideWindow();
     }
   });
 
