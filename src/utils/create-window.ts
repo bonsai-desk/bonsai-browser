@@ -99,14 +99,16 @@ export const createWindow = async () => {
     }
   });
 
-  wm.hideMainWindow();
+  wm.hideWindow();
+  // wm.hideMainWindow();
 
   addListeners(wm);
 
   mainWindow.on('minimize', (e: Event) => {
     if (mainWindow !== null) {
       e.preventDefault();
-      wm.hideMainWindow();
+      wm.hideWindow();
+      // wm.hideMainWindow();
     }
   });
 

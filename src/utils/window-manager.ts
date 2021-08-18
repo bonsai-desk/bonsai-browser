@@ -268,6 +268,7 @@ export default class WindowManager {
         opacity = 0.0;
         clearInterval(handle);
         this.unFloat(display.activeDisplay);
+        this.tabPageView.webContents.send('blur');
         this.mainWindow?.hide();
         if (process.platform === 'darwin') {
           app.hide();
@@ -1202,12 +1203,14 @@ export default class WindowManager {
 
   toggle(mouseInBorder: boolean) {
     if (this.windowFloating) {
-      this.hideMainWindow();
+      this.hideWindow();
+      // this.hideMainWindow();
     } else if (this.tabPageActive()) {
       if (this.historyModalActive) {
         this.tabPageView.webContents.send('close-history-modal');
       } else {
-        this.hideMainWindow();
+        this.hideWindow();
+        // this.hideMainWindow();
       }
     } else if (windowHasView(this.mainWindow, this.titleBarView)) {
       const findIsActive = this.findActive();
@@ -1238,11 +1241,6 @@ export default class WindowManager {
   resizeTabView(tabView: TabView) {
     const bounds = this.innerBounds();
     tabView.resize(bounds);
-  }
-
-  hideMainWindow() {
-    this.tabPageView.webContents.send('blur');
-    this.mainWindow?.hide();
   }
 
   focusSearch() {
