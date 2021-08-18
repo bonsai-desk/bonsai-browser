@@ -86,7 +86,7 @@ const MainGroup = observer(
           groupTitleBoxRef.current?.select();
         }, 10);
       }
-    }, [tabPageStore.editingGroupId, group.id]);
+    }, [tabPageStore.editingGroupId, group]);
 
     useEffect(() => {
       if (group.shouldEditTitle) {
