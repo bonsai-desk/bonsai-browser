@@ -138,7 +138,7 @@ const MainItem = observer(
             let newGroup = group;
             if (!item.beingDragged) {
               runInAction(() => {
-                tabPageStore.workspaceActive = false;
+                // tabPageStore.workspaceActive = false;
               });
               ipcRenderer.send('open-workspace-url', item.url);
             } else {

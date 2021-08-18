@@ -53,6 +53,7 @@ const ColumnHeaderSpacer = styled.div`
   height: 10px;
 `;
 export const ColumnHeader = styled.div`
+  text-shadow: 0 0 5px #9c9c9c;
   font-weight: bold;
   font-size: 1.35rem;
   margin-bottom: 10px;
@@ -72,6 +73,14 @@ export const TabParent = styled.div`
   word-wrap: break-word;
   text-overflow: ellipsis;
   margin-bottom: 20px;
+  @media (prefers-color-scheme: light) {
+    box-shadow: rgba(0, 0, 0, 0.16) 0px 10px 36px 0px,
+      rgba(0, 0, 0, 0.06) 0px 0px 0px 1px;
+  }
+  @media (prefers-color-scheme: dark) {
+    box-shadow: rgba(255, 255, 255, 0.16) 0px 10px 36px 0px,
+      rgba(0, 0, 0, 0.06) 0px 0px 0px 1px;
+  }
 `;
 export const TabImageParent = styled.div`
   height: 125px;
