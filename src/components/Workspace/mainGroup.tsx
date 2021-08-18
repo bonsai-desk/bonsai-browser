@@ -231,6 +231,15 @@ const MainGroup = observer(
               onMouseDown={(e) => {
                 e.stopPropagation();
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  if (groupTitleBoxRef.current !== null) {
+                    groupTitleBoxRef.current.blur();
+                  }
+                }
+              }}
               onBlur={(e) => {
                 runInAction(() => {
                   tabPageStore.activeGroupBoxRef = null;
