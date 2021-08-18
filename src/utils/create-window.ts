@@ -50,7 +50,7 @@ export const createWindow = async () => {
     minHeight: 50,
     icon: ICON_SMALL_PNG,
     vibrancy: 'fullscreen-ui', // menu, popover, hud, fullscreen-ui
-    enableLargerThanScreen: true,
+    // enableLargerThanScreen: true,
     roundedCorners: false,
     visualEffectState: 'active',
     webPreferences: {
