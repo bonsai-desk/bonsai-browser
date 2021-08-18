@@ -196,6 +196,7 @@ export const ItemGroup = types
 export const WorkspaceStore = types
   .model({
     hiddenGroup: ItemGroup,
+    inboxGroup: ItemGroup,
     groups: types.map(ItemGroup),
     items: types.map(Item),
   })
@@ -422,6 +423,12 @@ function createWorkspaceStore() {
       itemArrangement: [],
       zIndex: 0,
     }),
+    inboxGroup: ItemGroup.create({
+      id: 'inbox',
+      title: 'inbox',
+      itemArrangement: [],
+      zIndex: 0,
+    }),
     groups: {},
     items: {},
   });
@@ -480,7 +487,7 @@ function createWorkspaceStore() {
       saveSnapshot();
     }
 
-    workspaceStore.items.forEach((item) => {
+    function animateItem(item: Instance<typeof Item>) {
       if (item.animationLerp !== 1) {
         item.setAnimationLerp(
           item.animationLerp + deltaTime * (1 / animationTime)
@@ -489,8 +496,11 @@ function createWorkspaceStore() {
           item.setAnimationLerp(1);
         }
       }
+    }
+    workspaceStore.items.forEach((item) => {
+      animateItem(item);
     });
-    workspaceStore.groups.forEach((group) => {
+    function animateGroup(group: Instance<typeof ItemGroup>) {
       if (group.animationLerp !== 1) {
         group.setAnimationLerp(
           group.animationLerp + deltaTime * (1 / animationTime)
@@ -499,7 +509,12 @@ function createWorkspaceStore() {
           group.setAnimationLerp(1);
         }
       }
+    }
+    workspaceStore.groups.forEach((group) => {
+      animateGroup(group);
     });
+    animateGroup(workspaceStore.hiddenGroup);
+    animateGroup(workspaceStore.inboxGroup);
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);

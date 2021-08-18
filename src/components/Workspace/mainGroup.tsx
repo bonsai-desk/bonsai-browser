@@ -15,7 +15,6 @@ import { easeOut, overTrash } from './utils';
 import { lerp } from '../../utils/utils';
 
 const Group = styled.div`
-  background-color: rgb(255, 170, 166);
   border-radius: 20px;
   color: rgb(250, 250, 250);
   position: absolute;
@@ -102,6 +101,10 @@ const MainGroup = observer(
     return (
       <DraggableCore
         onStart={(_, data) => {
+          if (group.id === 'inbox') {
+            return;
+          }
+
           workspaceStore.moveToFront(group);
           group.setDragMouseStart(data.x, data.y);
 
@@ -114,6 +117,10 @@ const MainGroup = observer(
           }
         }}
         onDrag={(_, data: DraggableData) => {
+          if (group.id === 'inbox') {
+            return;
+          }
+
           if (group.resizing) {
             group.setTempResizeWidth(widthPixelsToInt(data.x - group.x));
             workspaceStore.setGroupWidth(
@@ -142,6 +149,10 @@ const MainGroup = observer(
           }
         }}
         onStop={(_, data) => {
+          if (group.id === 'inbox') {
+            return;
+          }
+
           if (
             !group.beingDragged &&
             !group.resizing &&
@@ -195,8 +206,14 @@ const MainGroup = observer(
             left: group.x,
             top: group.y,
             zIndex: group.zIndex,
-            display: group.id === 'hidden' ? 'none' : 'block',
+            display:
+              group.id === 'hidden' ||
+              (group.id === 'inbox' && group.itemArrangement.length === 0)
+                ? 'none'
+                : 'block',
             cursor: group.beingDragged ? 'grabbing' : 'auto',
+            backgroundColor:
+              group.id === 'inbox' ? '#4287f5' : 'rgb(255, 170, 166)',
           }}
           onMouseOver={() => {
             group.setHovering(true);

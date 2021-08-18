@@ -48,10 +48,14 @@ const Workspace = observer(() => {
   );
 
   const items = Array.from(workspaceStore.items.values()).map((item) => {
-    const group =
-      item.groupId === 'hidden'
-        ? workspaceStore.hiddenGroup
-        : workspaceStore.groups.get(item.groupId);
+    let group;
+    if (item.groupId === 'hidden') {
+      group = workspaceStore.hiddenGroup;
+    } else if (item.groupId === 'inbox') {
+      group = workspaceStore.inboxGroup;
+    } else {
+      group = workspaceStore.groups.get(item.groupId);
+    }
     if (typeof group === 'undefined') {
       throw new Error(`could not find group with id ${item.groupId}`);
     }
@@ -66,6 +70,7 @@ const Workspace = observer(() => {
   return (
     <Background ref={backgroundRef}>
       <Groups>{groups}</Groups>
+      <MainGroup group={workspaceStore.inboxGroup} />
       <Items>{items}</Items>
       <Trash
         style={{
