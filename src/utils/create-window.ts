@@ -25,12 +25,12 @@ class AppUpdater {
   }
 }
 
-app.on('ready', () => {
-  // prevent app from moving out of fullscreen when it launches in development
-  if (process.platform === 'darwin' && process.env.NODE_ENV === 'development') {
-    app.dock.hide();
-  }
-});
+// app.on('ready', () => {
+//   // prevent app from moving out of fullscreen when it launches in development
+//   if (process.platform === 'darwin' && process.env.NODE_ENV === 'development') {
+//     app.dock.hide();
+//   }
+// });
 
 // eslint-disable-next-line import/prefer-default-export
 export const createWindow = async () => {
@@ -93,8 +93,8 @@ export const createWindow = async () => {
 
   mainWindow.on('blur', () => {
     if (!wm.windowFloating && wm.mainWindow.isVisible() && !wm.isPinned) {
-      wm.unFloat(display.activeDisplay);
-      wm.hideMainWindow();
+      // wm.unFloat(display.activeDisplay);
+      // wm.hideMainWindow();
       // }
     }
   });
@@ -150,6 +150,7 @@ export const createWindow = async () => {
   globalShortcut.register(shortCut, () => {
     if (!mainWindow?.isVisible()) {
       wm.showWindow();
+      app.dock.show();
     } else {
       wm.hideWindow();
     }
