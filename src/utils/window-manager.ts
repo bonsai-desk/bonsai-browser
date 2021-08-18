@@ -271,7 +271,11 @@ export default class WindowManager {
         clearInterval(handle);
         this.unFloat(display.activeDisplay);
         this.mainWindow?.hide();
-        app.hide();
+        if (process.platform === 'darwin') {
+          app.hide();
+        } else {
+          this.mainWindow.minimize();
+        }
       }
       this.mainWindow.setOpacity(easeOut(opacity));
     }, 10);
