@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import { observer } from 'mobx-react-lite';
-import { Instance } from 'mobx-state-tree';
+import { Instance, isValidReference } from 'mobx-state-tree';
 import React, { useEffect, useRef } from 'react';
 import { runInAction } from 'mobx';
 import { DraggableCore, DraggableData } from 'react-draggable';
@@ -78,7 +78,10 @@ const MainGroup = observer(
     const groupTitleBoxRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-      if (tabPageStore.editingGroupId === group.id) {
+      if (
+        isValidReference(() => group) &&
+        tabPageStore.editingGroupId === group.id
+      ) {
         setTimeout(() => {
           groupTitleBoxRef.current?.select();
         }, 10);
