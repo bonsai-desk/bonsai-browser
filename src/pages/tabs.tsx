@@ -66,7 +66,6 @@ const GlobalStyle = createGlobalStyle`
         background-color: rgba(0, 0, 0, 0.7);
       `;
     }}}
-  }
 `;
 
 const HistoryModalLocal = observer(() => {
@@ -284,6 +283,7 @@ const Tabs = observer(() => {
                 runInAction(() => {
                   tabPageStore.workspaceActive = !tabPageStore.workspaceActive;
                 });
+                tabPageStore.setHistoryActive(false);
               }}
             >
               Workspace
@@ -292,6 +292,9 @@ const Tabs = observer(() => {
               type="button"
               onClick={() => {
                 runInAction(() => {
+                  runInAction(() => {
+                    tabPageStore.workspaceActive = false;
+                  });
                   tabPageStore.setHistoryActive(true);
                 });
               }}
