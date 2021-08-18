@@ -287,7 +287,9 @@ export default class WindowManager {
       visibleOnFullScreen: true,
     });
     this.mainWindow.show();
-    app.dock.show();
+    if (process.platform === 'darwin') {
+      app.dock.show();
+    }
     this.mainWindow.setVisibleOnAllWorkspaces(false, {
       visibleOnFullScreen: true,
     });
