@@ -9,6 +9,7 @@ import {
   NativeImage,
   screen,
 } from 'electron';
+import BezierEasing from 'bezier-easing';
 import fs from 'fs';
 import Fuse from 'fuse.js';
 import path from 'path';
@@ -35,6 +36,8 @@ import { handleFindText } from './windows';
 import calculateWindowTarget from './calculate-window-target';
 
 const glMatrix = require('gl-matrix');
+
+const easeOut = BezierEasing(0, 0, 0.5, 1);
 
 const updateWebContents = (
   titleBarView: BrowserView,
@@ -262,14 +265,14 @@ export default class WindowManager {
     const display = { activeDisplay: screen.getPrimaryDisplay() };
     this.mainWindow.setOpacity(opacity);
     const handle = setInterval(() => {
-      opacity -= 0.05;
+      opacity -= 0.1;
       if (opacity < 0.0) {
         opacity = 0.0;
         clearInterval(handle);
         this.unFloat(display.activeDisplay);
         this.mainWindow?.hide();
       }
-      this.mainWindow.setOpacity(opacity);
+      this.mainWindow.setOpacity(easeOut(opacity));
     }, 10);
   }
 
@@ -297,12 +300,12 @@ export default class WindowManager {
     let opacity = 0.0;
     this.mainWindow.setOpacity(0.0);
     const handle = setInterval(() => {
-      opacity += 0.05;
+      opacity += 0.1;
       if (opacity > 1.0) {
         opacity = 1.0;
         clearInterval(handle);
       }
-      this.mainWindow.setOpacity(opacity);
+      this.mainWindow.setOpacity(easeOut(opacity));
     }, 10);
   }
 
