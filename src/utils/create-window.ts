@@ -7,6 +7,7 @@ import {
   MenuItem,
   MenuItemConstructorOptions,
   screen,
+  webFrameMain,
 } from 'electron';
 import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
@@ -25,13 +26,6 @@ class AppUpdater {
   }
 }
 
-// app.on('ready', () => {
-//   // prevent app from moving out of fullscreen when it launches in development
-//   if (process.platform === 'darwin' && process.env.NODE_ENV === 'development') {
-//     app.dock.hide();
-//   }
-// });
-
 // eslint-disable-next-line import/prefer-default-export
 export const createWindow = async () => {
   if (
@@ -44,10 +38,11 @@ export const createWindow = async () => {
   let mainWindow: BrowserWindow | null = new BrowserWindow({
     frame: false,
     transparent: true,
-    width: 300,
+    width: 600,
     height: 300,
     minWidth: 50,
     minHeight: 50,
+    show: false,
     icon: ICON_SMALL_PNG,
     vibrancy: 'fullscreen-ui', // menu, popover, hud, fullscreen-ui
     // enableLargerThanScreen: true,
@@ -59,6 +54,7 @@ export const createWindow = async () => {
       contextIsolation: true, // todo: do we need this? security concern?
     },
   });
+
   if (process.platform === 'darwin') {
     app.dock.setIcon(ICON_PNG);
   }
@@ -84,11 +80,12 @@ export const createWindow = async () => {
       'set-padding',
       wm.browserPadding().toString()
     );
-    mainWindow?.show();
-    wm.unFloat(display.activeDisplay);
-    setTimeout(() => {
-      wm.unSetTab();
-    }, 10);
+
+    // mainWindow?.show();
+    // wm.unFloat(display.activeDisplay);
+    // setTimeout(() => {
+    //   wm.unSetTab();
+    // }, 10);
   });
 
   mainWindow.on('blur', () => {
@@ -98,6 +95,16 @@ export const createWindow = async () => {
       // }
     }
   });
+
+  let booted = false;
+  const boot = () => {
+    if (!booted) {
+      booted = true;
+      wm.showWindow();
+    }
+  };
+  wm.tabPageView.webContents.on('did-finish-load', boot);
+  setTimeout(boot, 5000);
 
   wm.hideWindow();
   // wm.hideMainWindow();
@@ -152,14 +159,13 @@ export const createWindow = async () => {
   globalShortcut.register(shortCut, () => {
     if (!mainWindow?.isVisible()) {
       wm.showWindow();
-      app.dock.show();
     } else {
       wm.hideWindow();
     }
   });
 
   app.on('before-quit', () => {
-    tray.destroy();
+    wm.mainWindow?.destroy();
   });
 
   mainWindow.on('closed', () => {
@@ -258,13 +264,7 @@ export const createWindow = async () => {
 
   Menu.setApplicationMenu(menu);
 
-  if (process.env.NODE_ENV === 'development') {
-    let booted = false;
-    wm.tabPageView.webContents.on('did-finish-load', () => {
-      if (!booted) {
-        booted = true;
-        wm.showWindow();
-      }
-    });
-  }
+  app.on('activate', () => {
+    wm.showWindow();
+  });
 };
