@@ -52,6 +52,7 @@ export const createWindow = async () => {
     vibrancy: 'fullscreen-ui', // menu, popover, hud, fullscreen-ui
     enableLargerThanScreen: true,
     roundedCorners: false,
+    visualEffectState: 'active',
     webPreferences: {
       nodeIntegration: false,
       devTools: false,
