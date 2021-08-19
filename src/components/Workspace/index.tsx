@@ -17,7 +17,6 @@ const Background = styled.div`
   position: relative;
   overflow: hidden;
 `;
-
 const Trash = styled.div`
   position: absolute;
   left: 0;
@@ -30,11 +29,9 @@ const Trash = styled.div`
   z-index: 10000001;
   border-radius: 0 20px 0 0;
 `;
-
 const TrashIcon = styled.img`
   width: 75px;
 `;
-
 const Groups = styled.div``;
 const Items = styled.div``;
 
