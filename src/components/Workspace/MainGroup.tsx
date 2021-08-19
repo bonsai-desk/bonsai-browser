@@ -1,4 +1,3 @@
-import styled from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import { Instance, isValidReference } from 'mobx-state-tree';
 import React, { useEffect, useRef } from 'react';
@@ -13,61 +12,14 @@ import {
 import { useStore } from '../../store/tab-page-store';
 import { easeOut, overTrash } from './utils';
 import { lerp } from '../../utils/utils';
+import {
+  Group,
+  GroupHeader,
+  GroupResize,
+  HeaderInput,
+  HeaderText,
+} from './style';
 
-const Group = styled.div`
-  border-radius: 20px;
-  color: rgb(250, 250, 250);
-  position: absolute;
-  border: 2px solid black;
-`;
-const GroupResize = styled.div`
-  width: 20px;
-  height: 100%;
-  position: absolute;
-  top: 0;
-  right: -10px;
-
-  :hover {
-    cursor: col-resize;
-  }
-`;
-const GroupHeader = styled.div`
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  position: relative;
-  outline: none;
-`;
-const HeaderText = styled.div`
-  position: absolute;
-  top: -2px;
-  left: 0;
-  width: 100%;
-  padding-left: 12px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 2rem;
-  font-weight: bold;
-  color: rgb(250, 250, 250);
-  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
-    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
-`;
-const HeaderInput = styled.input`
-  position: absolute;
-  top: -4px;
-  left: 0;
-  width: 100%;
-  padding-left: 12px;
-  font-size: 2rem;
-  font-weight: bold;
-  outline: none;
-  border: none;
-  background: none;
-  color: rgb(250, 250, 250);
-  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
-    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
-`;
 const MainGroup = observer(
   ({ group }: { group: Instance<typeof ItemGroup> }) => {
     const { tabPageStore, workspaceStore } = useStore();
