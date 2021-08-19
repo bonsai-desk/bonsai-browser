@@ -59,6 +59,8 @@ const MainGroup = observer(
       group.y
     );
 
+    console.log('asdf');
+
     return (
       <DraggableCore
         onMouseDown={(e) => {
@@ -72,9 +74,15 @@ const MainGroup = observer(
           workspaceStore.moveToFront(group);
           group.setDragMouseStart(data.x, data.y);
 
-          const screenGroupY = workspaceStore.worldToScreen(0, group.y)[1];
+          const [screenGroupX, screenGroupY] = workspaceStore.worldToScreen(
+            group.x,
+            group.y
+          );
 
-          if (data.x > group.x + group.size()[0] - 10 && false) {
+          if (
+            data.x >
+            screenGroupX + (group.size()[0] - 10) * workspaceStore.scale
+          ) {
             group.setTempResizeWidth(group.width);
             group.setResizing(true);
           } else if (
@@ -92,8 +100,15 @@ const MainGroup = observer(
             return;
           }
 
+          const screenGroupX = workspaceStore.worldToScreen(
+            group.x,
+            group.y
+          )[0];
+
           if (group.resizing) {
-            group.setTempResizeWidth(widthPixelsToInt(data.x - group.x));
+            group.setTempResizeWidth(
+              widthPixelsToInt((data.x - screenGroupX) / workspaceStore.scale)
+            );
             workspaceStore.setGroupWidth(
               Math.floor(group.tempResizeWidth),
               group
@@ -135,6 +150,11 @@ const MainGroup = observer(
             return;
           }
 
+          const screenGroupX = workspaceStore.worldToScreen(
+            group.x,
+            group.y
+          )[0];
+
           if (
             !group.beingDragged &&
             !group.resizing &&
@@ -151,7 +171,9 @@ const MainGroup = observer(
 
           if (group.resizing) {
             const roundFunc = group.height() === 1 ? Math.round : Math.floor;
-            group.setTempResizeWidth(widthPixelsToInt(data.x - group.x));
+            group.setTempResizeWidth(
+              widthPixelsToInt((data.x - screenGroupX) / workspaceStore.scale)
+            );
             workspaceStore.setGroupWidth(
               roundFunc(group.tempResizeWidth),
               group,
@@ -231,7 +253,9 @@ const MainGroup = observer(
                 height: groupTitleHeight + groupPadding,
               }}
               onMouseDown={(e) => {
-                e.stopPropagation();
+                if (e.button !== 1) {
+                  e.stopPropagation();
+                }
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {

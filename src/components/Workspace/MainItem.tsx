@@ -36,7 +36,9 @@ const MainItem = observer(
     return (
       <DraggableCore
         onMouseDown={(e) => {
-          e.stopPropagation();
+          if (e.button !== 1) {
+            e.stopPropagation();
+          }
         }}
         onStart={(_, data: DraggableData) => {
           item.setDragMouseStart(data.x, data.y);

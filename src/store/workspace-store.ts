@@ -278,7 +278,7 @@ export const WorkspaceStore = types
   }))
   .views((self) => ({
     get scale() {
-      return (self.height / itemHeight / 2) * self.cameraZoom;
+      return (self.height / itemHeight / (1 / 0.75)) * self.cameraZoom;
     },
     get getMatrices() {
       const newMatrices = calculateMatrices(
