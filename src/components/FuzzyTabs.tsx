@@ -14,7 +14,7 @@ const FuzzyTabs = observer(() => {
           <Tab
             key={item.id}
             tab={item}
-            selected={idx === tabPageStore.fuzzySelection[0]}
+            selected={idx === tabPageStore.fuzzySelectionIndex[0]}
             hover
           />
         );
