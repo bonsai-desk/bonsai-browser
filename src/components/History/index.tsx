@@ -1,7 +1,7 @@
 import styled, { css } from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { runInAction } from 'mobx';
 import { useStore, View } from '../../store/tab-page-store';
 import Favicon from '../Favicon';
@@ -37,7 +37,7 @@ export const HistoryButton = observer(() => {
   );
 });
 
-export const HistoryModalParent = styled.div`
+const HistoryModalParent = styled.div`
   position: absolute;
   left: 0;
   top: 0;
@@ -49,7 +49,7 @@ export const HistoryModalParent = styled.div`
       display: ${active ? 'block' : 'none'};
     `}
 `;
-export const HistoryModalBackground = styled.div`
+const HistoryModalBackground = styled.div`
   background-color: rgba(0.25, 0.25, 0.25, 0.35);
   position: absolute;
   left: 0;
@@ -57,7 +57,7 @@ export const HistoryModalBackground = styled.div`
   width: 100vw;
   height: 100vh;
 `;
-export const HistoryModal = styled.div`
+const HistoryModal = styled.div`
   position: absolute;
   left: 0;
   top: 0;
@@ -72,19 +72,19 @@ export const HistoryModal = styled.div`
   box-shadow: 0 0 5px 0 rgba(0, 0, 0, 1);
   padding: 20px;
 `;
-export const HistoryResults = styled.div`
+const HistoryResults = styled.div`
   //background-color: blue;
   overflow-y: auto;
   height: calc(100% - 40px);
 `;
-export const HistoryHeader = styled.div`
+const HistoryHeader = styled.div`
   width: 100%;
   height: 40px;
   display: flex;
   align-items: center;
   margin-bottom: 5px;
 `;
-export const HistorySearch = styled.input`
+const HistorySearch = styled.input`
   outline: none;
   padding: 5px 10px 5px 10px;
   border-radius: 10000px;
@@ -92,7 +92,7 @@ export const HistorySearch = styled.input`
   //width: calc(100% - 20px - 4px);
   flex-grow: 1;
 `;
-export const ClearHistory = styled.button`
+const ClearHistory = styled.button`
   width: 100px;
   height: 28px;
   border-radius: 1000000px;
@@ -100,7 +100,7 @@ export const ClearHistory = styled.button`
   outline: none;
   margin-left: 5px;
 `;
-export const HistoryResult = styled.div`
+const HistoryResult = styled.div`
   background-color: gray;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -118,19 +118,19 @@ export const HistoryResult = styled.div`
     cursor: pointer;
   }
 `;
-export const HistoryTitleDiv = styled.div`
+const HistoryTitleDiv = styled.div`
   //background-color: red;
   line-height: 25px;
   margin: 10px;
   color: white;
 `;
-export const HistoryUrlDiv = styled.div`
+const HistoryUrlDiv = styled.div`
   line-height: 25px;
   margin: 10px;
   color: lightgrey;
   font-size: 15px;
 `;
-export const History = observer(() => {
+const History = observer(() => {
   const { tabPageStore } = useStore();
   let results;
   if (tabPageStore.searchResult === null) {
@@ -162,3 +162,56 @@ export const History = observer(() => {
     </>
   );
 });
+const HistoryModalLocal = observer(() => {
+  const { tabPageStore } = useStore();
+
+  const historyBoxRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    tabPageStore.historyBoxRef = historyBoxRef;
+  }, [tabPageStore]);
+
+  useEffect(() => {
+    const historyActive = tabPageStore.View === View.History;
+    ipcRenderer.send('history-modal-active-update', historyActive);
+    if (historyActive) {
+      ipcRenderer.send('history-search', tabPageStore.historyText);
+    }
+  }, [tabPageStore.View, tabPageStore.historyText]);
+
+  return (
+    <HistoryModalParent active={tabPageStore.View === View.History}>
+      <HistoryModalBackground
+        onClick={() => {
+          runInAction(() => {
+            tabPageStore.View = View.Tabs;
+          });
+        }}
+      />
+      <HistoryModal>
+        <HistoryHeader>
+          <HistorySearch
+            ref={historyBoxRef}
+            placeholder="search history"
+            value={tabPageStore.historyText}
+            onInput={(e) => {
+              tabPageStore.setHistoryText(e.currentTarget.value);
+            }}
+          />
+          <ClearHistory
+            type="button"
+            onClick={() => {
+              ipcRenderer.send('clear-history');
+            }}
+          >
+            Clear History
+          </ClearHistory>
+        </HistoryHeader>
+        <HistoryResults>
+          <History />
+        </HistoryResults>
+      </HistoryModal>
+    </HistoryModalParent>
+  );
+});
+export default HistoryModalLocal;
