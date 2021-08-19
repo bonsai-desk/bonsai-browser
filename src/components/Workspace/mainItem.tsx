@@ -73,7 +73,7 @@ const MainItem = observer(
     item: Instance<typeof MobxItem>;
   }) => {
     const { tabPageStore, workspaceStore } = useStore();
-    const targetPos = item.placeholderPos(group);
+    const targetPos = item.placeholderPos(group, workspaceStore.cameraZoom);
     const [groupX, groupY] = workspaceStore.worldToScreen(group.x, group.y);
     targetPos[0] += groupX;
     targetPos[1] += groupY;
@@ -184,7 +184,6 @@ const MainItem = observer(
       >
         <div
           style={{
-            display: 'none',
             position: 'absolute',
             width: itemWidth,
             height: itemHeight,
@@ -196,7 +195,7 @@ const MainItem = observer(
               : lerp(item.animationStartY + groupY, targetPos[1], lerpValue),
             zIndex: item.beingDragged ? 10000000 : group.zIndex,
             transformOrigin: '0px 0px',
-            // transform: `scale(${workspaceStore.cameraZoom})`,
+            transform: `scale(${workspaceStore.cameraZoom})`,
           }}
         >
           <ItemContainer

@@ -105,6 +105,8 @@ const Workspace = observer(() => {
       <Background
         ref={backgroundRef}
         onWheel={(e) => {
+          console.log(e.deltaY);
+
           const offsetX = e.pageX - workspaceStore.x;
           const offsetY = e.pageY - workspaceStore.y;
 
