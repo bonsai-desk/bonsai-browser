@@ -4,13 +4,15 @@ import { ipcRenderer } from 'electron';
 import '../tabPage.css';
 import { useStore, View } from '../store/tab-page-store';
 import URLBox from '../components/URLBox';
-import { Background, Footer, TabColumns } from '../components/TabPageContent';
-import Workspace from '../components/Workspace';
-import PinButton from './PinButton';
+import PinButton from '../components/PinButton';
 import FuzzyTabs from '../components/FuzzyTabs';
 import ClickerParent from '../components/Clicker';
-import Wrapper from '../components/Wrapper';
-import HistoryModalLocal from '../components/History';
+import Background from '../components/Background';
+import History from '../components/History';
+import Columns from '../components/Columns';
+import Footer from '../components/Footer';
+import Container from '../components/Container';
+import Workspace from '../components/Workspace';
 
 const MainContent = observer(() => {
   const { tabPageStore } = useStore();
@@ -29,7 +31,7 @@ const MainContent = observer(() => {
   }
   return (
     <div style={{ height: '100%', padding: '0 0 0 1rem' }}>
-      {tabPageStore.View === View.Tabs ? <TabColumns /> : <FuzzyTabs />}
+      {tabPageStore.View === View.Tabs ? <Columns /> : <FuzzyTabs />}
     </div>
   );
 });
@@ -48,15 +50,15 @@ const Content = observer(() => {
   }
 
   return (
-    <Background>
+    <Container>
       <URLBox />
       <MainContent />
       <Footer />
-    </Background>
+    </Container>
   );
 });
 
-const Tabs = observer(() => {
+const Home = observer(() => {
   const { tabPageStore } = useStore();
 
   useEffect(() => {
@@ -80,12 +82,12 @@ const Tabs = observer(() => {
   }, [hasRunOnce, tabPageStore]);
 
   return (
-    <Wrapper>
+    <Background>
       <Content />
-      <HistoryModalLocal />
+      <History />
       <PinButton />
-    </Wrapper>
+    </Background>
   );
 });
 
-export default Tabs;
+export default Home;

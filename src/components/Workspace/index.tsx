@@ -1,15 +1,17 @@
-import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { observer } from 'mobx-react-lite';
+import React, { useEffect, useRef, useState } from 'react';
 import { Instance } from 'mobx-state-tree';
 import { DraggableCore } from 'react-draggable';
+import MainItem from './MainItem';
+import MainGroup from './MainGroup';
+import { useStore } from '../../store/tab-page-store';
 import { ItemGroup } from '../../store/workspace-store';
 import trashIcon from '../../../assets/alternate-trash.svg';
-import { useStore } from '../../store/tab-page-store';
-import MainGroup from './mainGroup';
-import MainItem from './mainItem';
 
-const Background = styled.div`
+export { MainItem, MainGroup };
+
+export const Background = styled.div`
   user-select: none;
   flex-grow: 1;
   background-color: white;
@@ -17,8 +19,7 @@ const Background = styled.div`
   position: relative;
   overflow: hidden;
 `;
-
-const Trash = styled.div`
+export const Trash = styled.div`
   position: absolute;
   left: 0;
   bottom: 0;
@@ -30,14 +31,9 @@ const Trash = styled.div`
   z-index: 10000001;
   border-radius: 0 20px 0 0;
 `;
-
-const TrashIcon = styled.img`
+export const TrashIcon = styled.img`
   width: 75px;
 `;
-
-const Groups = styled.div``;
-const Items = styled.div``;
-
 const Workspace = observer(() => {
   const backgroundRef = useRef<HTMLDivElement>(null);
   const { workspaceStore } = useStore();
@@ -125,9 +121,9 @@ const Workspace = observer(() => {
         }}
       >
         {/* <div style={{ transform: `scale(${workspaceStore.cameraZoom})` }}> */}
-        <Groups>{groups}</Groups>
+        <div>{groups}</div>
         <MainGroup group={workspaceStore.inboxGroup} />
-        <Items>{items}</Items>
+        <div>{items}</div>
         {/* </div> */}
         <Trash
           style={{
@@ -143,5 +139,4 @@ const Workspace = observer(() => {
     </DraggableCore>
   );
 });
-
 export default Workspace;

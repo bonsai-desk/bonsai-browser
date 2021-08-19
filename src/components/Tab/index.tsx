@@ -1,102 +1,79 @@
+import { observer } from 'mobx-react-lite';
 import React from 'react';
 import { ipcRenderer } from 'electron';
-import styled, { css } from 'styled-components';
-import { observer } from 'mobx-react-lite';
-import { useStore } from '../../utils/data';
-import TabObject from '../../interfaces/tabObject';
-import xIcon from '../../../assets/x-letter.svg';
-import TabStore from '../../store/tabs';
+import { useStore } from '../../store/tab-page-store';
+import { ITab } from '../../interfaces/tab';
+import redX from '../../static/x-letter.svg';
+import RedX from '../RedX';
+import {
+  RedXParent,
+  TabImage,
+  TabImageDummy,
+  TabImageParent,
+  TabParent,
+  TabTitle,
+} from './style';
 
-interface StyledTabParentProps {
-  color: string;
-}
-
-const TabParent = styled.div`
-  -webkit-app-region: no-drag;
-  -webkit-user-select: none;
-  -webkit-user-drag: none;
-  width: 225px;
-  min-width: 0;
-  height: calc(100% - 1px);
-  border-left: 1px solid black;
-  border-top: 1px solid black;
-  border-right: 1px solid black;
-  border-radius: 10px 10px 0 0;
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-
-  ${({ color }: StyledTabParentProps) =>
-    css`
-      background-color: ${color};
-    `}
-`;
-
-const TabTileParent = styled.div`
-  width: calc(100% - 8px - 16px - 35px);
-  display: flex;
-  align-items: center;
-`;
-
-const TabTitle = styled.div`
-  overflow: hidden;
-  white-space: nowrap;
-  width: 100%;
-  padding-left: 6px;
-  color: white;
-`;
-
-const CloseButtonParent = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 35px;
-`;
-
-const XIcon = styled.img`
-  width: 28px;
-  -webkit-user-drag: none;
-`;
-
-const Favicon = styled.img`
-  width: 16px;
-  height: 16px;
-  margin-left: 8px;
-`;
-
-interface ITab {
-  tab: TabObject;
-}
-
-const Tab = observer(({ tab }: ITab) => {
-  const { tabStore } = useStore();
-  const active = tabStore.activeTabId === tab.id;
-
-  const activeColor = '#8352FF';
-  const defaultColor = '#489aff';
-
+const Tab = observer(({ tab, hover, selected = false }: ITab) => {
+  const { tabPageStore, workspaceStore } = useStore();
+  const title =
+    tab.openGraphInfo !== null &&
+    tab.openGraphInfo.title !== '' &&
+    tab.openGraphInfo.title !== 'null'
+      ? tab.openGraphInfo.title
+      : tab.title;
+  const imgUrl =
+    tab.openGraphInfo !== null && tab.openGraphInfo.image !== ''
+      ? tab.openGraphInfo.image
+      : tab.image;
   return (
     <TabParent
-      color={active ? activeColor : defaultColor}
-      onMouseDown={() => {
+      selected={selected}
+      onClick={() => {
         ipcRenderer.send('set-tab', tab.id);
+        tabPageStore.setUrlText('');
       }}
     >
-      <Favicon src={tab.faviconUrl} />
-      <TabTileParent>
-        <TabTitle>{tab.title}</TabTitle>
-      </TabTileParent>
-      <CloseButtonParent>
-        <XIcon
-          src={xIcon}
-          onMouseDown={(e) => {
-            e.stopPropagation();
-          }}
-          onClick={() => {
-            TabStore.removeTab(tab.id);
-          }}
-        />
-      </CloseButtonParent>
+      <TabImageParent>
+        {imgUrl ? <TabImage src={imgUrl} alt="tab_image" /> : <TabImageDummy />}
+        <RedXParent hover={hover}>
+          <TabTitle>{title === '' ? 'New Tab' : title}</TabTitle>
+          <RedX
+            style={{
+              right: 10,
+              top: 10,
+            }}
+            hoverColor="rgba(255, 0, 0, 1)"
+            onClick={(e) => {
+              e.stopPropagation();
+              ipcRenderer.send('remove-tab', tab.id);
+            }}
+          >
+            <img src={redX} alt="x" width="20px" />
+          </RedX>
+          <RedX
+            style={{
+              left: 10,
+              bottom: 10,
+              width: 105,
+            }}
+            hoverColor="#3572AC"
+            onClick={(e) => {
+              e.stopPropagation();
+              workspaceStore.createItem(
+                tab.url,
+                tab.title,
+                tab.image,
+                tab.favicon,
+                workspaceStore.inboxGroup
+              );
+            }}
+          >
+            <div>Add to workspace</div>
+            {/* <img src={moreIcon} alt="." width="20px" /> */}
+          </RedX>
+        </RedXParent>
+      </TabImageParent>
     </TabParent>
   );
 });
