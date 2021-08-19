@@ -27,7 +27,7 @@ import {
 import Workspace from '../components/Workspace';
 import pinSelected from '../../assets/pin-selected.svg';
 import pinUnselected from '../../assets/pin-unselected.svg';
-import { Direction } from '../render-constants';
+import { Direction, Platform, myPlatform } from '../render-constants';
 
 const Clicker = styled.div`
   position: absolute;
@@ -47,8 +47,8 @@ const GlobalStyle = createGlobalStyle`
     padding: 0;
     width: 100%;
     height: 100%;
-    ${({ mac }: { mac: boolean }) => {
-      if (mac) {
+    ${() => {
+      if (myPlatform === Platform.Mac) {
         return css`
           @media (prefers-color-scheme: dark) {
             background-color: rgba(0, 0, 0, 0);
@@ -189,14 +189,91 @@ const Icon = styled.img`
     `}
 `;
 
-const Tabs = observer(() => {
+const Content = observer(() => {
   const { tabPageStore } = useStore();
+
   const urlBoxRef = useRef<HTMLInputElement>(null);
   const [urlFocus, setUrlFocus] = useState(false);
 
   useEffect(() => {
     tabPageStore.urlBoxRef = urlBoxRef;
   });
+
+  if (tabPageStore.View !== View.None) {
+    return (
+      <Background>
+        <URLBoxParent>
+          <URLBox
+            type="text"
+            spellCheck={false}
+            ref={urlBoxRef}
+            placeholder="Search Google or type a URL"
+            value={tabPageStore.urlText}
+            onInput={(e) => {
+              tabPageStore.setUrlText(e.currentTarget.value);
+            }}
+            onKeyDown={(e) => {
+              if (e.nativeEvent.code === 'Enter') {
+                ipcRenderer.send('search-url', tabPageStore.urlText);
+                tabPageStore.setUrlText('');
+              }
+            }}
+            onClick={() => {
+              if (urlBoxRef.current != null && !urlFocus) {
+                setUrlFocus(true);
+                urlBoxRef.current.select();
+              }
+            }}
+            onBlur={() => {
+              setUrlFocus(false);
+              if (urlBoxRef.current != null) {
+                urlBoxRef.current.blur();
+                window.getSelection()?.removeAllRanges();
+              }
+            }}
+          />
+        </URLBoxParent>
+        <MainContent />
+        <Footer>
+          <FooterButton
+            onClick={() => {
+              runInAction(() => {
+                if (tabPageStore.View === View.Tabs) {
+                  tabPageStore.View = View.WorkSpace;
+                } else if (tabPageStore.View === View.WorkSpace) {
+                  tabPageStore.View = View.Tabs;
+                }
+              });
+            }}
+          >
+            Workspace
+          </FooterButton>
+          <HistoryButton
+            type="button"
+            onClick={() => {
+              runInAction(() => {
+                tabPageStore.View = View.History;
+              });
+            }}
+          >
+            History
+          </HistoryButton>
+        </Footer>
+      </Background>
+    );
+  }
+
+  return (
+    <Clicker
+      onClick={() => {
+        ipcRenderer.send('click-main');
+      }}
+    />
+  );
+});
+
+const Tabs = observer(() => {
+  const { tabPageStore } = useStore();
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -265,79 +342,10 @@ const Tabs = observer(() => {
     setHasRunOnce(true);
   }, [hasRunOnce, tabPageStore]);
 
-  const mac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-
   return (
     <Wrapper>
-      <GlobalStyle mac={mac} />
-      {tabPageStore.View !== View.None ? (
-        <Background>
-          <URLBoxParent>
-            <URLBox
-              windows={!mac}
-              type="text"
-              spellCheck={false}
-              ref={urlBoxRef}
-              placeholder="Search Google or type a URL"
-              value={tabPageStore.urlText}
-              onInput={(e) => {
-                tabPageStore.setUrlText(e.currentTarget.value);
-              }}
-              onKeyDown={(e) => {
-                if (e.nativeEvent.code === 'Enter') {
-                  ipcRenderer.send('search-url', tabPageStore.urlText);
-                  tabPageStore.setUrlText('');
-                }
-              }}
-              onClick={() => {
-                if (urlBoxRef.current != null && !urlFocus) {
-                  setUrlFocus(true);
-                  urlBoxRef.current.select();
-                }
-              }}
-              onBlur={() => {
-                setUrlFocus(false);
-                if (urlBoxRef.current != null) {
-                  urlBoxRef.current.blur();
-                  window.getSelection()?.removeAllRanges();
-                }
-              }}
-            />
-          </URLBoxParent>
-          <MainContent />
-          <Footer>
-            <FooterButton
-              onClick={() => {
-                runInAction(() => {
-                  if (tabPageStore.View === View.Tabs) {
-                    tabPageStore.View = View.WorkSpace;
-                  } else if (tabPageStore.View === View.WorkSpace) {
-                    tabPageStore.View = View.Tabs;
-                  }
-                });
-              }}
-            >
-              Workspace
-            </FooterButton>
-            <HistoryButton
-              type="button"
-              onClick={() => {
-                runInAction(() => {
-                  tabPageStore.View = View.History;
-                });
-              }}
-            >
-              History
-            </HistoryButton>
-          </Footer>
-        </Background>
-      ) : (
-        <Clicker
-          onClick={() => {
-            ipcRenderer.send('click-main');
-          }}
-        />
-      )}
+      <GlobalStyle />
+      <Content />
       <HistoryModalLocal />
       <PinButton
         onClick={() => {

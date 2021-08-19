@@ -42,13 +42,7 @@ export default class TabPageStore {
 
   padding = '35';
 
-  // historyModalActive = false;
-
-  // isActive = false;
-
   isPinned = false;
-
-  // workspaceActive = false;
 
   urlBoxRef: RefObject<HTMLInputElement> | null = null;
 

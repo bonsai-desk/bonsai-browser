@@ -1,4 +1,5 @@
 import styled, { css } from 'styled-components';
+import { myPlatform, Platform } from '../../render-constants';
 
 export const URLBoxParent = styled.div`
   display: flex;
@@ -6,8 +7,8 @@ export const URLBoxParent = styled.div`
   width: 100%;
 `;
 export const URLBox = styled.input`
-  ${({ windows = false }: { windows: boolean }) => {
-    if (windows) {
+  ${() => {
+    if (myPlatform === Platform.Windows) {
       return css`
         background-color: rgba(255, 255, 255, 0.25);
       `;
