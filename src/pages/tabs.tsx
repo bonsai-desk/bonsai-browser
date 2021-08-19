@@ -4,7 +4,7 @@ import { runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
 import '../tabPage.css';
 import styled, { createGlobalStyle, css } from 'styled-components';
-import { useStore } from '../store/tab-page-store';
+import { View, useStore } from '../store/tab-page-store';
 import {
   ClearHistory,
   History,
@@ -27,6 +27,7 @@ import {
 import Workspace from '../components/Workspace';
 import pinSelected from '../../assets/pin-selected.svg';
 import pinUnselected from '../../assets/pin-unselected.svg';
+import { Direction } from '../render-constants';
 
 const Clicker = styled.div`
   position: absolute;
@@ -74,21 +75,19 @@ const HistoryModalLocal = observer(() => {
   }, [tabPageStore]);
 
   useEffect(() => {
-    ipcRenderer.send(
-      'history-modal-active-update',
-      tabPageStore.historyModalActive
-    );
-    if (tabPageStore.historyModalActive) {
+    const historyActive = tabPageStore.View === View.History;
+    ipcRenderer.send('history-modal-active-update', historyActive);
+    if (historyActive) {
       ipcRenderer.send('history-search', tabPageStore.historyText);
     }
-  }, [tabPageStore.historyModalActive, tabPageStore.historyText]);
+  }, [tabPageStore.View, tabPageStore.historyText]);
 
   return (
-    <HistoryModalParent active={tabPageStore.historyModalActive}>
+    <HistoryModalParent active={tabPageStore.View === View.History}>
       <HistoryModalBackground
         onClick={() => {
           runInAction(() => {
-            tabPageStore.historyModalActive = false;
+            tabPageStore.View = View.Tabs;
           });
         }}
       />
@@ -124,9 +123,16 @@ const FuzzyTabs = observer(() => {
   return (
     <div style={{ flexGrow: 1 }}>
       <h1>Today</h1>
-      {tabPageStore.filteredTabs.map((result) => {
+      {tabPageStore.filteredTabs.map((result, idx) => {
         const { item } = result;
-        return <Tab key={item.id} tab={item} hover />;
+        return (
+          <Tab
+            key={item.id}
+            tab={item}
+            selected={idx === tabPageStore.fuzzySelection[0]}
+            hover
+          />
+        );
       })}
     </div>
   );
@@ -144,14 +150,17 @@ const MainContent = observer(() => {
     <>
       <Clicker
         onClick={() => {
-          tabPageStore.workspaceActive = false;
+          tabPageStore.View = View.Tabs;
         }}
       />
       <Workspace />
     </>
   );
 
-  return tabPageStore.workspaceActive ? workspace : tabs;
+  if (tabPageStore.View === View.WorkSpace) {
+    return workspace;
+  }
+  return tabs;
 });
 
 const PinButton = styled.button`
@@ -196,10 +205,10 @@ const Tabs = observer(() => {
           case 'Enter':
             break;
           case 'Escape':
-            if (tabPageStore.historyModalActive) {
-              tabPageStore.setHistoryActive(false);
-            } else if (tabPageStore.workspaceActive) {
-              tabPageStore.workspaceActive = false;
+            if (tabPageStore.View === View.History) {
+              tabPageStore.View = View.Tabs;
+            } else if (tabPageStore.View === View.WorkSpace) {
+              tabPageStore.View = View.Tabs;
             } else if (tabPageStore.urlText.length > 0) {
               tabPageStore.setUrlText('');
             } else {
@@ -207,11 +216,35 @@ const Tabs = observer(() => {
             }
             break;
           case 'Tab':
-            tabPageStore.workspaceActive = !tabPageStore.workspaceActive;
+            if (tabPageStore.View === View.Tabs) {
+              tabPageStore.View = View.WorkSpace;
+            } else if (tabPageStore.View === View.WorkSpace) {
+              tabPageStore.View = View.Tabs;
+            }
+            break;
+          case 'ArrowUp':
+            e.preventDefault();
+            tabPageStore.moveFuzzySelection(Direction.Up);
+            break;
+          case 'ArrowDown':
+            e.preventDefault();
+            tabPageStore.moveFuzzySelection(Direction.Down);
+            break;
+          case 'ArrowLeft':
+            if (tabPageStore.fuzzySelection[0] > -1) {
+              e.preventDefault();
+              tabPageStore.moveFuzzySelection(Direction.Left);
+            }
+            break;
+          case 'ArrowRight':
+            if (tabPageStore.fuzzySelection[0] > -1) {
+              e.preventDefault();
+              tabPageStore.moveFuzzySelection(Direction.Right);
+            }
             break;
           default:
             tabPageStore.setFocus();
-            // urlBoxRef.current?.focus();
+            tabPageStore.fuzzySelection = [-1, -1];
             break;
         }
       });
@@ -237,7 +270,7 @@ const Tabs = observer(() => {
   return (
     <Wrapper>
       <GlobalStyle mac={mac} />
-      {tabPageStore.isActive ? (
+      {tabPageStore.View !== View.None ? (
         <Background>
           <URLBoxParent>
             <URLBox
@@ -276,7 +309,11 @@ const Tabs = observer(() => {
             <FooterButton
               onClick={() => {
                 runInAction(() => {
-                  tabPageStore.workspaceActive = !tabPageStore.workspaceActive;
+                  if (tabPageStore.View === View.Tabs) {
+                    tabPageStore.View = View.WorkSpace;
+                  } else if (tabPageStore.View === View.WorkSpace) {
+                    tabPageStore.View = View.Tabs;
+                  }
                 });
               }}
             >
@@ -286,7 +323,7 @@ const Tabs = observer(() => {
               type="button"
               onClick={() => {
                 runInAction(() => {
-                  tabPageStore.setHistoryActive(true);
+                  tabPageStore.View = View.History;
                 });
               }}
             >

@@ -7,8 +7,27 @@ import { TabPageColumn, TabPageTab } from '../interfaces/tab';
 import { HistoryEntry } from '../utils/tab-view';
 import { getRootDomain } from '../utils/data';
 import { WorkspaceStore } from './workspace-store';
+import { Direction } from '../render-constants';
+
+export enum View {
+  None,
+  WorkSpace,
+  Tabs,
+  FuzzySearch,
+  History,
+}
 
 export default class TabPageStore {
+  private view: View = View.Tabs;
+
+  public get View() {
+    return this.view;
+  }
+
+  public set View(view: View) {
+    this.view = view;
+  }
+
   tabs: Record<string, TabPageTab> = {};
 
   filteredTabs: Fuse.FuseResult<TabPageTab>[];
@@ -17,27 +36,53 @@ export default class TabPageStore {
 
   searchResult: HistoryEntry[] | null = null;
 
-  historyModalActive = false;
-
   urlText = '';
 
   historyText = '';
 
   padding = '35';
 
-  isActive = false;
+  // historyModalActive = false;
+
+  // isActive = false;
 
   isPinned = false;
+
+  // workspaceActive = false;
 
   urlBoxRef: RefObject<HTMLInputElement> | null = null;
 
   historyBoxRef: RefObject<HTMLInputElement> | null = null;
 
-  workspaceActive = false;
-
   activeGroupBoxRef: RefObject<HTMLInputElement> | null = null;
 
   editingGroupId = '';
+
+  fuzzySelection: [number, number] = [0, 0];
+
+  moveFuzzySelection(direction: Direction) {
+    const sel = this.fuzzySelection;
+    switch (direction) {
+      case Direction.Down:
+        this.fuzzySelection = [sel[0] + 1, sel[1]];
+        break;
+      case Direction.Up:
+        this.fuzzySelection = [sel[0] - 1, sel[1]];
+        break;
+      case Direction.Left:
+        this.fuzzySelection = [sel[0], sel[1] - 1];
+        break;
+      case Direction.Right:
+        this.fuzzySelection = [sel[0], sel[1] + 1];
+        break;
+      default:
+        break;
+    }
+    this.fuzzySelection = [
+      Math.max(-1, this.fuzzySelection[0]),
+      Math.max(0, this.fuzzySelection[1]),
+    ];
+  }
 
   tabPageColumns() {
     const columns: Record<string, TabPageTab[]> = {};
@@ -57,20 +102,28 @@ export default class TabPageStore {
   setFocus() {
     if (this.activeGroupBoxRef !== null) {
       this.activeGroupBoxRef.current?.focus();
-    } else if (this.historyModalActive) {
-      this.historyBoxRef?.current?.focus();
-    } else {
-      this.urlBoxRef?.current?.focus();
+      return;
+    }
+    switch (this.view) {
+      case View.History:
+        this.historyBoxRef?.current?.focus();
+        break;
+      default:
+        this.urlBoxRef?.current?.focus();
     }
   }
 
   selectText() {
     if (this.activeGroupBoxRef !== null) {
       this.activeGroupBoxRef.current?.select();
-    } else if (this.historyModalActive) {
-      this.historyBoxRef?.current?.select();
-    } else {
-      this.urlBoxRef?.current?.select();
+      return;
+    }
+    switch (this.view) {
+      case View.History:
+        this.historyBoxRef?.current?.select();
+        break;
+      default:
+        this.urlBoxRef?.current?.select();
     }
   }
 
@@ -95,10 +148,6 @@ export default class TabPageStore {
 
   setHistoryText(newValue: string) {
     this.historyText = newValue;
-  }
-
-  setHistoryActive(active: boolean) {
-    this.historyModalActive = active;
   }
 
   constructor() {
@@ -178,17 +227,21 @@ export default class TabPageStore {
     });
     ipcRenderer.on('close-history-modal', () => {
       runInAction(() => {
-        this.historyModalActive = false;
+        this.View = View.Tabs;
       });
     });
     ipcRenderer.on('open-history-modal', () => {
       runInAction(() => {
-        this.historyModalActive = true;
+        this.View = View.History;
       });
     });
     ipcRenderer.on('toggle-history-modal', () => {
       runInAction(() => {
-        this.historyModalActive = !this.historyModalActive;
+        if (this.View !== View.History) {
+          this.View = View.History;
+        } else {
+          this.View = View.Tabs;
+        }
       });
     });
     ipcRenderer.on('favicon-updated', (_, [id, favicon]) => {
@@ -214,7 +267,11 @@ export default class TabPageStore {
     });
     ipcRenderer.on('set-active', (_, newIsActive) => {
       runInAction(() => {
-        this.isActive = newIsActive;
+        if (newIsActive) {
+          this.View = View.Tabs;
+        } else {
+          this.View = View.None;
+        }
       });
     });
     ipcRenderer.on('focus-search', () => {

@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import React, { useState } from 'react';
 import { ipcRenderer } from 'electron';
@@ -73,6 +73,18 @@ export const TabParent = styled.div`
   word-wrap: break-word;
   text-overflow: ellipsis;
   margin-bottom: 20px;
+  ${({ selected }: { selected: boolean }) => {
+    if (selected) {
+      return css`
+        border-color: white;
+        border-style: solid;
+        border-width: 4px;
+      `;
+    }
+    return css`
+      padding: 4px;
+    `;
+  }}
   @media (prefers-color-scheme: light) {
     box-shadow: rgba(0, 0, 0, 0.16) 0px 10px 36px 0px,
       rgba(0, 0, 0, 0.06) 0px 0px 0px 1px;
@@ -87,6 +99,8 @@ export const TabImageParent = styled.div`
   width: 200px;
   position: relative;
   border-radius: 10px;
+  border-width: 4px;
+  border-color: red;
   display: flex;
   justify-content: center;
   overflow: hidden;
@@ -173,7 +187,7 @@ export const FooterButton = styled.button`
   }
 `;
 
-export const Tab = observer(({ tab, hover }: ITab) => {
+export const Tab = observer(({ tab, hover, selected = false }: ITab) => {
   const { tabPageStore, workspaceStore } = useStore();
   const title =
     tab.openGraphInfo !== null &&
@@ -187,6 +201,7 @@ export const Tab = observer(({ tab, hover }: ITab) => {
       : tab.image;
   return (
     <TabParent
+      selected={selected}
       onClick={() => {
         ipcRenderer.send('set-tab', tab.id);
         tabPageStore.setUrlText('');
@@ -277,8 +292,9 @@ const Column = observer(({ column }: { column: TabPageColumn }) => {
           </RedX>
         </ColumnHeaderOverlay>
       </ColumnHeaderParent>
-      {column.tabs.map((tab) => {
-        return <Tab key={tab.id} tab={tab} hover={hovered} />;
+      {column.tabs.map((tab, idx) => {
+        console.log(idx, tabPageStore.fuzzySelection);
+        return <Tab key={tab.id} tab={tab} hover={hovered} selected={false} />;
       })}
     </ColumnParent>
   );
