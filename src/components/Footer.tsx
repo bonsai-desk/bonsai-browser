@@ -3,7 +3,7 @@ import { observer } from 'mobx-react-lite';
 import { runInAction } from 'mobx';
 import React from 'react';
 import { useStore, View } from '../store/tab-page-store';
-import HistoryButton from './History';
+import HistoryButton from './HistoryButton';
 
 const FooterParent = styled.div`
   width: 100%;
