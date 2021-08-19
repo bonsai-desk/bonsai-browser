@@ -1,16 +1,16 @@
 import { observer } from 'mobx-react-lite';
 import React from 'react';
 import { useStore } from '../../store/tab-page-store';
-import { Column, TabColumnsParent } from './Column';
+import { Column, ColumnsParent } from './Column';
 
 const Columns = observer(() => {
   const { tabPageStore } = useStore();
   return (
-    <TabColumnsParent>
+    <ColumnsParent>
       {tabPageStore.tabPageColumns().map((column) => {
         return <Column column={column} key={column.domain} />;
       })}
-    </TabColumnsParent>
+    </ColumnsParent>
   );
 });
 

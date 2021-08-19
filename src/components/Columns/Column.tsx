@@ -6,7 +6,7 @@ import { ColumnParent } from './style';
 import ColumnHeader from './ColumnHeader';
 import Tab from '../Tab';
 
-export const TabColumnsParent = styled.div`
+export const ColumnsParent = styled.div`
   display: flex;
   align-items: flex-start;
   flex-grow: 1;

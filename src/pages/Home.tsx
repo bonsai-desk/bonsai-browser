@@ -7,11 +7,11 @@ import URLBox from '../components/URLBox';
 import PinButton from '../components/PinButton';
 import FuzzyTabs from '../components/FuzzyTabs';
 import ClickerParent from '../components/Clicker';
-import Wrapper from '../components/Wrapper';
-import HistoryModalLocal from '../components/History';
+import Background from '../components/Background';
+import History from '../components/History';
 import Columns from '../components/Columns';
 import Footer from '../components/Footer';
-import Background from '../components/Background';
+import Container from '../components/Container';
 import Workspace from './Workspace';
 
 const MainContent = observer(() => {
@@ -50,15 +50,15 @@ const Content = observer(() => {
   }
 
   return (
-    <Background>
+    <Container>
       <URLBox />
       <MainContent />
       <Footer />
-    </Background>
+    </Container>
   );
 });
 
-const Tabs = observer(() => {
+const Home = observer(() => {
   const { tabPageStore } = useStore();
 
   useEffect(() => {
@@ -82,12 +82,12 @@ const Tabs = observer(() => {
   }, [hasRunOnce, tabPageStore]);
 
   return (
-    <Wrapper>
+    <Background>
       <Content />
-      <HistoryModalLocal />
+      <History />
       <PinButton />
-    </Wrapper>
+    </Background>
   );
 });
 
-export default Tabs;
+export default Home;

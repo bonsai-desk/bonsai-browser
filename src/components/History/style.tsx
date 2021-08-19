@@ -49,7 +49,7 @@ export const HistoryModal = styled.div`
   box-shadow: 0 0 5px 0 rgba(0, 0, 0, 1);
   padding: 20px;
 `;
-export const HistoryResults = styled.div`
+export const HistoryResultsParent = styled.div`
   //background-color: blue;
   overflow-y: auto;
   height: calc(100% - 40px);
