@@ -5,20 +5,24 @@ import { useStore } from '../store/tab-page-store';
 import Tab from './Tab';
 
 const FuzzyTabsParent = styled.div`
-  background-color: red;
   flex-grow: 1;
   display: flex;
+  display: flex;
+  justify-content: center;
 `;
 
 export const ColumnParent = styled.div`
   display: flex;
-  justify-content: center;
   flex-direction: column;
   user-select: none;
-  margin-right: 1rem;
   color: white;
-  background-color: blue;
   width: 15rem;
+  margin: 0 1rem 0 1rem;
+`;
+
+const FuzzyTitle = styled.h1`
+  padding-left: 4px;
+  justify-content: center;
 `;
 
 const FuzzyTabs = observer(() => {
@@ -26,28 +30,34 @@ const FuzzyTabs = observer(() => {
   return (
     <FuzzyTabsParent>
       <ColumnParent>
-        <h1>Today</h1>
+        <FuzzyTitle>Open</FuzzyTitle>
         {tabPageStore.filteredTabs.map((result, idx) => {
           const { item } = result;
           return (
             <Tab
               key={item.id}
               tab={item}
-              selected={idx === tabPageStore.fuzzySelectionIndex[0]}
+              selected={
+                idx === tabPageStore.fuzzySelectionIndex[0] &&
+                tabPageStore.fuzzySelectionIndex[1] === 0
+              }
               hover
             />
           );
         })}
       </ColumnParent>
       <ColumnParent>
-        <h1>Work Space</h1>
+        <FuzzyTitle>Workspace</FuzzyTitle>
         {tabPageStore.filteredTabs.slice(0, 2).map((result, idx) => {
           const { item } = result;
           return (
             <Tab
               key={item.id}
               tab={item}
-              selected={idx === tabPageStore.fuzzySelectionIndex[0]}
+              selected={
+                idx === tabPageStore.fuzzySelectionIndex[0] &&
+                tabPageStore.fuzzySelectionIndex[1] === 1
+              }
               hover
             />
           );

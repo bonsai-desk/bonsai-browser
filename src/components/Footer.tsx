@@ -3,7 +3,7 @@ import { observer } from 'mobx-react-lite';
 import { runInAction } from 'mobx';
 import React from 'react';
 import { useStore, View } from '../store/tab-page-store';
-import HistoryButton from './History';
+import HistoryButton from './HistoryButton';
 
 const FooterParent = styled.div`
   width: 100%;
@@ -15,9 +15,9 @@ const FooterParent = styled.div`
 const FooterButtonParent = styled.button`
   border: none;
   outline: none;
-  width: 75px;
+  width: 100px;
   height: 75px;
-  border-radius: 50%;
+  border-radius: 1rem;
 
   :hover {
     background-color: lightgray;
@@ -37,9 +37,7 @@ const Footer = observer(() => {
             }
           });
         }}
-      >
-        WorkSpace
-      </FooterButtonParent>
+      />
       <HistoryButton />
     </FooterParent>
   );
