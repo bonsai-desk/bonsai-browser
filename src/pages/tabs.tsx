@@ -8,29 +8,30 @@ import { Background, Footer, TabColumns } from '../components/TabPageContent';
 import Workspace from '../components/Workspace';
 import PinButton from './PinButton';
 import FuzzyTabs from '../components/FuzzyTabs';
-import { Clicker, ClickerParent } from '../components/Clicker';
+import ClickerParent from '../components/Clicker';
 import Wrapper from '../components/Wrapper';
 import HistoryModalLocal from '../components/History';
 
 const MainContent = observer(() => {
   const { tabPageStore } = useStore();
-  const tabs = (
-    <div style={{ flexGrow: 1, padding: '0 0 0 1rem' }}>
-      {tabPageStore.urlText.length === 0 ? <TabColumns /> : <FuzzyTabs />}
-    </div>
-  );
-
-  const workspace = (
-    <>
-      <Clicker />
-      <Workspace />
-    </>
-  );
 
   if (tabPageStore.View === View.WorkSpace) {
-    return workspace;
+    return (
+      <>
+        <ClickerParent
+          onClick={() => {
+            tabPageStore.View = View.Tabs;
+          }}
+        />
+        <Workspace />
+      </>
+    );
   }
-  return tabs;
+  return (
+    <div style={{ height: '100%', padding: '0 0 0 1rem' }}>
+      {tabPageStore.View === View.Tabs ? <TabColumns /> : <FuzzyTabs />}
+    </div>
+  );
 });
 
 const Content = observer(() => {

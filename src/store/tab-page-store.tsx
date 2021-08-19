@@ -52,11 +52,28 @@ export default class TabPageStore {
 
   editingGroupId = '';
 
-  fuzzySelection: [number, number] = [0, 0];
+  fuzzySelectionIndex: [number, number] = [0, 0];
+
+  fuzzySelectedTab(): TabPageTab | null {
+    const tab = this.filteredTabs[this.fuzzySelectionIndex[0]];
+    if (typeof tab !== 'undefined') {
+      return tab.item;
+    }
+    return null;
+  }
 
   handleKeyDown(e: KeyboardEvent) {
     switch (e.key) {
       case 'Enter':
+        if (this.View === View.FuzzySearch) {
+          const tab = this.fuzzySelectedTab();
+          if (tab) {
+            ipcRenderer.send('set-tab', tab.id);
+          } else {
+            ipcRenderer.send('search-url', this.urlText);
+          }
+          this.setUrlText('');
+        }
         break;
       case 'Escape':
         if (this.View === View.History) {
@@ -85,45 +102,45 @@ export default class TabPageStore {
         this.moveFuzzySelection(Direction.Down);
         break;
       case 'ArrowLeft':
-        if (this.fuzzySelection[0] > -1) {
+        if (this.fuzzySelectionIndex[0] > -1) {
           e.preventDefault();
           this.moveFuzzySelection(Direction.Left);
         }
         break;
       case 'ArrowRight':
-        if (this.fuzzySelection[0] > -1) {
+        if (this.fuzzySelectionIndex[0] > -1) {
           e.preventDefault();
           this.moveFuzzySelection(Direction.Right);
         }
         break;
       default:
         this.setFocus();
-        this.fuzzySelection = [-1, -1];
+        this.fuzzySelectionIndex = [-1, -1];
         break;
     }
   }
 
   moveFuzzySelection(direction: Direction) {
-    const sel = this.fuzzySelection;
+    const sel = this.fuzzySelectionIndex;
     switch (direction) {
       case Direction.Down:
-        this.fuzzySelection = [sel[0] + 1, sel[1]];
+        this.fuzzySelectionIndex = [sel[0] + 1, sel[1]];
         break;
       case Direction.Up:
-        this.fuzzySelection = [sel[0] - 1, sel[1]];
+        this.fuzzySelectionIndex = [sel[0] - 1, sel[1]];
         break;
       case Direction.Left:
-        this.fuzzySelection = [sel[0], sel[1] - 1];
+        this.fuzzySelectionIndex = [sel[0], sel[1] - 1];
         break;
       case Direction.Right:
-        this.fuzzySelection = [sel[0], sel[1] + 1];
+        this.fuzzySelectionIndex = [sel[0], sel[1] + 1];
         break;
       default:
         break;
     }
-    this.fuzzySelection = [
-      Math.max(-1, this.fuzzySelection[0]),
-      Math.max(0, this.fuzzySelection[1]),
+    this.fuzzySelectionIndex = [
+      Math.max(-1, this.fuzzySelectionIndex[0]),
+      Math.max(0, this.fuzzySelectionIndex[1]),
     ];
   }
 
@@ -179,7 +196,12 @@ export default class TabPageStore {
 
   setUrlText(newValue: string) {
     this.urlText = newValue;
-    this.searchTab(newValue);
+    if (newValue.length > 0) {
+      this.View = View.FuzzySearch;
+      this.searchTab(newValue);
+    } else {
+      this.View = View.Tabs;
+    }
   }
 
   refreshFuse() {
@@ -300,7 +322,9 @@ export default class TabPageStore {
     });
     ipcRenderer.on('blur', () => {
       runInAction(() => {
-        this.setUrlText('');
+        if (this.View === View.Tabs) {
+          this.setUrlText('');
+        }
       });
     });
     ipcRenderer.on('set-padding', (_, newPadding) => {
@@ -310,6 +334,9 @@ export default class TabPageStore {
     });
     ipcRenderer.on('set-active', (_, newIsActive) => {
       runInAction(() => {
+        if (newIsActive && this.View !== View.None) {
+          return;
+        }
         if (newIsActive) {
           this.View = View.Tabs;
         } else {
