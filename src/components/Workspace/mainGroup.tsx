@@ -101,8 +101,16 @@ const MainGroup = observer(
       }
     }, [group, group.shouldEditTitle, tabPageStore]);
 
+    const [groupScreenX, groupScreenY] = workspaceStore.worldToScreen(
+      group.x,
+      group.y
+    );
+
     return (
       <DraggableCore
+        onMouseDown={(e) => {
+          e.stopPropagation();
+        }}
         onStart={(_, data) => {
           if (group.id === 'inbox') {
             return;
@@ -111,7 +119,7 @@ const MainGroup = observer(
           workspaceStore.moveToFront(group);
           group.setDragMouseStart(data.x, data.y);
 
-          if (data.x > group.x + group.size()[0] - 10) {
+          if (data.x > group.x + group.size()[0] - 10 && false) {
             group.setTempResizeWidth(group.width);
             group.setResizing(true);
           } else if (data.y > group.y + groupTitleHeight + groupPadding + 1) {
@@ -147,7 +155,18 @@ const MainGroup = observer(
             if (group.beingDragged) {
               group.setOverTrash(overTrash([data.x, data.y], workspaceStore));
               workspaceStore.setAnyOverTrash(group.overTrash);
-              group.move(data.deltaX, data.deltaY);
+
+              const [worldLastX, worldLastY] = workspaceStore.screenToWorld(
+                data.lastX,
+                data.lastY
+              );
+              const [worldX, worldY] = workspaceStore.screenToWorld(
+                data.x,
+                data.y
+              );
+              const deltaX = worldX - worldLastX;
+              const deltaY = worldY - worldLastY;
+              group.move(deltaX, deltaY);
             }
           }
         }}
@@ -196,6 +215,8 @@ const MainGroup = observer(
       >
         <Group
           style={{
+            transformOrigin: '0px 0px',
+            transform: `scale(${workspaceStore.cameraZoom})`,
             width: lerp(
               group.animationStartWidth,
               targetGroupSize[0],
@@ -206,8 +227,8 @@ const MainGroup = observer(
               targetGroupSize[1],
               lerpValue
             ),
-            left: group.x,
-            top: group.y,
+            left: groupScreenX,
+            top: groupScreenY,
             zIndex: group.zIndex,
             display:
               group.id === 'hidden' ||
