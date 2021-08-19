@@ -51,7 +51,6 @@ export const Group = styled.div`
   border-radius: 20px;
   color: rgb(250, 250, 250);
   position: absolute;
-  border: 2px solid black;
 `;
 export const GroupResize = styled.div`
   width: 20px;

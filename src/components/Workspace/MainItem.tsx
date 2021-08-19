@@ -5,6 +5,7 @@ import { DraggableCore, DraggableData } from 'react-draggable';
 import { runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
 import {
+  groupBorder,
   groupPadding,
   groupTitleHeight,
   Item as MobxItem,
@@ -26,7 +27,7 @@ const MainItem = observer(
     item: Instance<typeof MobxItem>;
   }) => {
     const { tabPageStore, workspaceStore } = useStore();
-    const targetPos = item.placeholderPos(group, workspaceStore.cameraZoom);
+    const targetPos = item.placeholderPos(group, workspaceStore.scale);
     const [groupX, groupY] = workspaceStore.worldToScreen(group.x, group.y);
     targetPos[0] += groupX;
     targetPos[1] += groupY;
@@ -35,7 +36,9 @@ const MainItem = observer(
     return (
       <DraggableCore
         onMouseDown={(e) => {
-          e.stopPropagation();
+          if (e.button !== 1) {
+            e.stopPropagation();
+          }
         }}
         onStart={(_, data: DraggableData) => {
           item.setDragMouseStart(data.x, data.y);
@@ -99,14 +102,13 @@ const MainItem = observer(
                 const createdGroup = workspaceStore.createGroup('New Group');
                 newGroup = createdGroup;
                 const [worldX, worldY] = workspaceStore.screenToWorld(
-                  item.containerDragPosX - groupPadding,
-                  item.containerDragPosY - (groupPadding + groupTitleHeight)
+                  item.containerDragPosX -
+                    (groupPadding + groupBorder) * workspaceStore.scale,
+                  item.containerDragPosY -
+                    (groupPadding + groupTitleHeight + groupBorder) *
+                      workspaceStore.scale
                 );
                 createdGroup.move(worldX, worldY);
-                // createdGroup.move(
-                //   item.containerDragPosX - groupPadding,
-                //   item.containerDragPosY - (groupPadding + groupTitleHeight)
-                // );
                 workspaceStore.changeGroup(item, group, createdGroup);
                 createdGroup.setShouldEditTitle(true);
               }
@@ -148,7 +150,7 @@ const MainItem = observer(
               : lerp(item.animationStartY + groupY, targetPos[1], lerpValue),
             zIndex: item.beingDragged ? 10000000 : group.zIndex,
             transformOrigin: '0px 0px',
-            transform: `scale(${workspaceStore.cameraZoom})`,
+            transform: `scale(${workspaceStore.scale})`,
           }}
         >
           <ItemContainer

@@ -19,6 +19,7 @@ const noAllocPos3 = vec3.create();
 
 export const itemWidth = 200;
 export const itemHeight = 125;
+export const groupBorder = 2;
 export const groupTitleHeight = 48;
 export const groupPadding = 10;
 export const itemSpacing = 10;
@@ -48,14 +49,17 @@ export const Item = types
   .views((self) => ({
     placeholderPos(
       group: Instance<typeof ItemGroup>,
-      cameraZoom: number
+      scale: number
     ): [number, number] {
       const x = self.indexInGroup % group.width;
       const y = Math.floor(self.indexInGroup / group.width);
       return [
-        (x * (itemWidth + itemSpacing) + groupPadding) * cameraZoom,
-        (y * (itemHeight + itemSpacing) + groupTitleHeight + groupPadding) *
-          cameraZoom,
+        (x * (itemWidth + itemSpacing) + groupPadding + groupBorder) * scale,
+        (y * (itemHeight + itemSpacing) +
+          groupTitleHeight +
+          groupPadding +
+          groupBorder) *
+          scale,
       ];
     },
   }))
@@ -79,22 +83,22 @@ export const Item = types
     },
     recordCurrentTargetAsAnimationStart(
       group: Instance<typeof ItemGroup>,
-      cameraZoom: number
+      scale: number
     ) {
-      const currentPos = self.placeholderPos(group, cameraZoom);
+      const currentPos = self.placeholderPos(group, scale);
       self.animationStartX = currentPos[0];
       self.animationStartY = currentPos[1];
     },
     setIndexInGroup(
       indexInGroup: number,
       group: Instance<typeof ItemGroup>,
-      cameraZoom: number
+      scale: number
     ) {
       if (self.indexInGroup === indexInGroup) {
         return;
       }
 
-      this.recordCurrentTargetAsAnimationStart(group, cameraZoom);
+      this.recordCurrentTargetAsAnimationStart(group, scale);
 
       if (!self.beingDragged) {
         self.animationLerp = 0;
@@ -109,19 +113,10 @@ export const Item = types
 
 function widthIntToPixels(width: number): number {
   return itemWidth * width + (width - 1) * itemSpacing + groupPadding * 2;
-  // p = a         * b     + (b     - 1) * c           + d            * 2;
 }
 
 export function widthPixelsToInt(pixels: number): number {
   return (itemSpacing - 2 * groupPadding + pixels) / (itemWidth + itemSpacing);
-}
-
-function resizeCurve(width: number): number {
-  return width;
-  // const integerPart = Math.floor(width);
-  // const decimalPart = width % 1;
-  // const newDecimalPart = decimalPart * decimalPart * decimalPart;
-  // return integerPart + newDecimalPart;
 }
 
 export const ItemGroup = types
@@ -151,7 +146,7 @@ export const ItemGroup = types
     size(): [number, number] {
       let width = widthIntToPixels(self.width);
       if (self.resizing && self.tempResizeWidth !== 0) {
-        width = widthIntToPixels(resizeCurve(self.tempResizeWidth));
+        width = widthIntToPixels(self.tempResizeWidth);
       }
       const height = Math.max(
         this.height() * itemHeight +
@@ -268,20 +263,23 @@ export const WorkspaceStore = types
     inboxGroup: ItemGroup,
     groups: types.map(ItemGroup),
     items: types.map(Item),
-    cameraZoom: 1,
+    cameraZoom: 0.25,
     cameraX: 0,
     cameraY: 0,
   })
   .volatile(() => ({
     x: 0,
     y: 0,
-    width: 0,
-    height: 0,
+    width: 1,
+    height: 1,
     anyDragging: false,
     anyOverTrash: false,
     snapshotPath: '',
   }))
   .views((self) => ({
+    get scale() {
+      return (self.height / itemHeight / (1 / 0.75)) * self.cameraZoom;
+    },
     get getMatrices() {
       const newMatrices = calculateMatrices(
         self.width,
@@ -311,7 +309,7 @@ export const WorkspaceStore = types
   }))
   .actions((self) => ({
     setCameraZoom(zoom: number) {
-      self.cameraZoom = clamp(zoom, 0.2, 3);
+      self.cameraZoom = clamp(zoom, 0.035, 1);
       // console.log(`zoom: ${self.cameraZoom}`);
     },
     moveCamera(x: number, y: number) {
@@ -362,11 +360,7 @@ export const WorkspaceStore = types
     ) {
       const item = Item.create({ id: uuidv4(), url, title, image, favicon });
       self.items.put(item);
-      item.setIndexInGroup(
-        group.itemArrangement.length,
-        group,
-        self.cameraZoom
-      );
+      item.setIndexInGroup(group.itemArrangement.length, group, self.scale);
       item.groupId = group.id;
       group.itemArrangement.push(item.id);
     },
@@ -380,7 +374,7 @@ export const WorkspaceStore = types
       for (let i = 0; i < group.itemArrangement.length; i += 1) {
         const nextItem = self.items.get(group.itemArrangement[i]);
         if (typeof nextItem !== 'undefined') {
-          nextItem.setIndexInGroup(i, group, self.cameraZoom);
+          nextItem.setIndexInGroup(i, group, self.scale);
         }
       }
     },
@@ -405,7 +399,7 @@ export const WorkspaceStore = types
       item.setIndexInGroup(
         newGroup.itemArrangement.length,
         newGroup,
-        self.cameraZoom
+        self.scale
       );
       item.groupId = newGroup.id;
       newGroup.itemArrangement.push(item.id);
@@ -422,7 +416,7 @@ export const WorkspaceStore = types
       group.itemArrangement.forEach((itemId) => {
         const item = self.items.get(itemId);
         if (typeof item !== 'undefined') {
-          item.recordCurrentTargetAsAnimationStart(group, self.cameraZoom);
+          item.recordCurrentTargetAsAnimationStart(group, self.scale);
           item.setAnimationLerp(0);
         }
       });
@@ -457,11 +451,14 @@ export const WorkspaceStore = types
     },
     inGroup(pos: number[], group: Instance<typeof ItemGroup>): boolean {
       const groupSize = group.size();
+
+      const [groupScreenX, groupScreenY] = self.worldToScreen(group.x, group.y);
+
       return (
-        pos[0] >= group.x &&
-        pos[0] <= group.x + groupSize[0] &&
-        pos[1] >= group.y &&
-        pos[1] <= group.y + groupSize[1]
+        pos[0] >= groupScreenX &&
+        pos[0] <= groupScreenX + groupSize[0] * self.scale &&
+        pos[1] >= groupScreenY &&
+        pos[1] <= groupScreenY + groupSize[1] * self.scale
       );
     },
     getGroupAtPoint(pos: number[]): Instance<typeof ItemGroup> | null {
@@ -484,15 +481,22 @@ export const WorkspaceStore = types
         return;
       }
 
-      const relativePos = [pos[0] - group.x, pos[1] - group.y];
+      const [groupScreenX, groupScreenY] = self.worldToScreen(group.x, group.y);
+
+      const relativePos = [pos[0] - groupScreenX, pos[1] - groupScreenY];
       const x = clamp(
-        Math.floor((relativePos[0] - groupPadding) / itemWidth),
+        Math.floor(
+          (relativePos[0] - (groupPadding + groupBorder) * self.scale) /
+            (itemWidth * self.scale)
+        ),
         0,
         group.width - 1
       );
       const y = clamp(
         Math.floor(
-          (relativePos[1] - (groupPadding + groupTitleHeight)) / itemHeight
+          (relativePos[1] -
+            (groupPadding + groupTitleHeight + groupBorder) * self.scale) /
+            (itemHeight * self.scale)
         ),
         0,
         group.height() - 1
