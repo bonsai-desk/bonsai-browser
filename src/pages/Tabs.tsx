@@ -9,7 +9,7 @@ import FuzzyTabs from '../components/FuzzyTabs';
 import ClickerParent from '../components/Clicker';
 import Wrapper from '../components/Wrapper';
 import HistoryModalLocal from '../components/History';
-import TabColumns from '../components/Column';
+import Columns from '../components/Columns';
 import Footer from '../components/Footer';
 import Background from '../components/Background';
 import Workspace from './Workspace';
@@ -31,7 +31,7 @@ const MainContent = observer(() => {
   }
   return (
     <div style={{ height: '100%', padding: '0 0 0 1rem' }}>
-      {tabPageStore.View === View.Tabs ? <TabColumns /> : <FuzzyTabs />}
+      {tabPageStore.View === View.Tabs ? <Columns /> : <FuzzyTabs />}
     </div>
   );
 });
