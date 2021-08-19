@@ -7,7 +7,6 @@ import {
   MenuItem,
   MenuItemConstructorOptions,
   screen,
-  webFrameMain,
 } from 'electron';
 import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';

@@ -19,6 +19,7 @@ export interface TabPageTab {
 export interface ITab {
   tab: TabPageTab;
   hover: boolean;
+  selected: boolean;
 }
 
 export interface TabPageColumn {

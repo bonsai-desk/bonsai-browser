@@ -13,7 +13,7 @@ import {
   itemHeight,
   itemWidth,
 } from '../../store/workspace-store';
-import { useStore } from '../../store/tab-page-store';
+import { useStore, View } from '../../store/tab-page-store';
 import { easeOut, getGroupBelowItem, overTrash } from './utils';
 import { lerp } from '../../utils/utils';
 
@@ -131,7 +131,7 @@ const MainItem = observer(
           let newGroup = group;
           if (!item.beingDragged) {
             runInAction(() => {
-              tabPageStore.workspaceActive = false;
+              tabPageStore.View = View.Tabs;
             });
             ipcRenderer.send('open-workspace-url', item.url);
           } else {
