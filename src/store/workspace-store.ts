@@ -451,11 +451,14 @@ export const WorkspaceStore = types
     },
     inGroup(pos: number[], group: Instance<typeof ItemGroup>): boolean {
       const groupSize = group.size();
+
+      const [groupScreenX, groupScreenY] = self.worldToScreen(group.x, group.y);
+
       return (
-        pos[0] >= group.x &&
-        pos[0] <= group.x + groupSize[0] &&
-        pos[1] >= group.y &&
-        pos[1] <= group.y + groupSize[1]
+        pos[0] >= groupScreenX &&
+        pos[0] <= groupScreenX + groupSize[0] * self.scale &&
+        pos[1] >= groupScreenY &&
+        pos[1] <= groupScreenY + groupSize[1] * self.scale
       );
     },
     getGroupAtPoint(pos: number[]): Instance<typeof ItemGroup> | null {

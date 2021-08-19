@@ -27,8 +27,8 @@ export function getGroupBelowItem(
   workspaceStore: Instance<typeof WorkspaceStore>
 ): Instance<typeof ItemGroup> | null {
   const centerPos = [
-    containerPos[0] + itemWidth / 2,
-    containerPos[1] + itemHeight / 2,
+    containerPos[0] + (itemWidth / 2) * workspaceStore.scale,
+    containerPos[1] + (itemHeight / 2) * workspaceStore.scale,
   ];
   const overGroup = workspaceStore.getGroupAtPoint(centerPos);
   if (overGroup === null && currentGroup.id !== 'hidden') {
