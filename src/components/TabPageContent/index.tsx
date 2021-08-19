@@ -2,10 +2,13 @@ import styled, { css } from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import React, { useState } from 'react';
 import { ipcRenderer } from 'electron';
-import { useStore } from '../../store/tab-page-store';
+import { runInAction } from 'mobx';
+import { useStore, View } from '../../store/tab-page-store';
 import { ITab, TabPageColumn } from '../../interfaces/tab';
 import { getRootDomain } from '../../utils/data';
 import redX from '../../static/x-letter.svg';
+import { HistoryButton } from '../History';
+import Favicon from '../Favicon';
 
 export const ColumnParent = styled.div`
   display: flex;
@@ -73,6 +76,14 @@ export const TabParent = styled.div`
   word-wrap: break-word;
   text-overflow: ellipsis;
   margin-bottom: 20px;
+  @media (prefers-color-scheme: dark) {
+    box-shadow: rgba(255, 255, 255, 0.16) 0px 10px 36px 0px,
+      rgba(0, 0, 0, 0.06) 0px 0px 0px 1px;
+  }
+  @media (prefers-color-scheme: light) {
+    box-shadow: rgba(0, 0, 0, 0.16) 0px 10px 36px 0px,
+      rgba(0, 0, 0, 0.06) 0px 0px 0px 1px;
+  }
   ${({ selected }: { selected: boolean }) => {
     if (selected) {
       return css`
@@ -85,14 +96,6 @@ export const TabParent = styled.div`
       padding: 4px;
     `;
   }}
-  @media (prefers-color-scheme: light) {
-    box-shadow: rgba(0, 0, 0, 0.16) 0px 10px 36px 0px,
-      rgba(0, 0, 0, 0.06) 0px 0px 0px 1px;
-  }
-  @media (prefers-color-scheme: dark) {
-    box-shadow: rgba(255, 255, 255, 0.16) 0px 10px 36px 0px,
-      rgba(0, 0, 0, 0.06) 0px 0px 0px 1px;
-  }
 `;
 export const TabImageParent = styled.div`
   height: 125px;
@@ -151,11 +154,6 @@ export const TabImageDummy = styled.div`
   width: 100%;
 `;
 
-export const Favicon = styled.img`
-  width: 16px;
-  height: 16px;
-  //margin-left: 40px;
-`;
 export const TabColumnsParent = styled.div`
   display: flex;
   align-items: flex-start;
@@ -168,14 +166,15 @@ export const Background = styled.div`
   display: flex;
   flex-direction: column;
 `;
-export const Footer = styled.div`
+const FooterParent = styled.div`
   width: 100%;
   height: 85px;
   display: flex;
   justify-content: center;
   align-items: center;
 `;
-export const FooterButton = styled.button`
+
+export const FooterButtonParent = styled.button`
   border: none;
   outline: none;
   width: 75px;
@@ -186,6 +185,28 @@ export const FooterButton = styled.button`
     background-color: lightgray;
   }
 `;
+
+export const Footer = observer(() => {
+  const { tabPageStore } = useStore();
+  return (
+    <FooterParent>
+      <FooterButtonParent
+        onClick={() => {
+          runInAction(() => {
+            if (tabPageStore.View === View.Tabs) {
+              tabPageStore.View = View.WorkSpace;
+            } else if (tabPageStore.View === View.WorkSpace) {
+              tabPageStore.View = View.Tabs;
+            }
+          });
+        }}
+      >
+        Workspace
+        <HistoryButton />
+      </FooterButtonParent>
+    </FooterParent>
+  );
+});
 
 export const Tab = observer(({ tab, hover, selected = false }: ITab) => {
   const { tabPageStore, workspaceStore } = useStore();

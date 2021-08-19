@@ -3,12 +3,11 @@ import { observer } from 'mobx-react-lite';
 import { runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
 import '../tabPage.css';
-import styled, { createGlobalStyle, css } from 'styled-components';
+import styled, { css } from 'styled-components';
 import { View, useStore } from '../store/tab-page-store';
 import {
   ClearHistory,
   History,
-  HistoryButton,
   HistoryHeader,
   HistoryModal,
   HistoryModalBackground,
@@ -22,7 +21,6 @@ import {
   Footer,
   TabColumns,
   Tab,
-  FooterButton,
 } from '../components/TabPageContent';
 import Workspace from '../components/Workspace';
 import pinSelected from '../../assets/pin-selected.svg';
@@ -244,31 +242,7 @@ const Content = observer(() => {
           />
         </URLBoxParent>
         <MainContent />
-        <Footer>
-          <FooterButton
-            onClick={() => {
-              runInAction(() => {
-                if (tabPageStore.View === View.Tabs) {
-                  tabPageStore.View = View.WorkSpace;
-                } else if (tabPageStore.View === View.WorkSpace) {
-                  tabPageStore.View = View.Tabs;
-                }
-              });
-            }}
-          >
-            Workspace
-          </FooterButton>
-          <HistoryButton
-            type="button"
-            onClick={() => {
-              runInAction(() => {
-                tabPageStore.View = View.History;
-              });
-            }}
-          >
-            History
-          </HistoryButton>
-        </Footer>
+        <Footer />
       </Background>
     );
   }
@@ -289,11 +263,21 @@ const Tabs = observer(() => {
     function handleKeyDown(e: KeyboardEvent) {
       tabPageStore.handleKeyDown(e);
     }
+
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [tabPageStore]);
+
+  const [hasRunOnce, setHasRunOnce] = useState(false);
+
+  useEffect(() => {
+    if (hasRunOnce) {
+      return;
+    }
+    setHasRunOnce(true);
+  }, [hasRunOnce, tabPageStore]);
 
   return (
     <Wrapper>

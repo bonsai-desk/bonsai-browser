@@ -2,27 +2,41 @@ import styled, { css } from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import React from 'react';
-import { useStore } from '../../store/tab-page-store';
-import { Favicon } from '../TabPageContent';
+import { runInAction } from 'mobx';
+import { useStore, View } from '../../store/tab-page-store';
+import Favicon from '../Favicon';
 
-export const HistoryButton = styled.button`
+const HistoryButtonParent = styled.button`
   position: absolute;
   bottom: 0;
   right: 0;
   width: 125px;
   height: 50px;
   border-radius: 10px;
-  //border: 2px solid white;
   border: none;
   outline: none;
-  //font-size: 25px;
-  //color: white;
-  //background-color: rgb(100, 100, 100);
 
   :hover {
     background-color: lightgray;
   }
 `;
+
+export const HistoryButton = observer(() => {
+  const { tabPageStore } = useStore();
+  return (
+    <HistoryButtonParent
+      type="button"
+      onClick={() => {
+        runInAction(() => {
+          tabPageStore.View = View.History;
+        });
+      }}
+    >
+      History
+    </HistoryButtonParent>
+  );
+});
+
 export const HistoryModalParent = styled.div`
   position: absolute;
   left: 0;
