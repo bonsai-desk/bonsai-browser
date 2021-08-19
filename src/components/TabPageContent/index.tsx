@@ -10,7 +10,7 @@ import redX from '../../static/x-letter.svg';
 import { HistoryButton } from '../History';
 import Favicon from '../Favicon';
 
-export const ColumnParent = styled.div`
+const ColumnParent = styled.div`
   display: flex;
   justify-content: center;
   flex-direction: column;
@@ -55,7 +55,7 @@ const ColumnHeaderSpacer = styled.div`
   width: 10px;
   height: 10px;
 `;
-export const ColumnHeader = styled.div`
+const ColumnHeader = styled.div`
   text-shadow: 0 0 5px #9c9c9c;
   font-weight: bold;
   font-size: 1.35rem;
@@ -67,7 +67,7 @@ export const ColumnHeader = styled.div`
   margin-left: 5px;
 `;
 
-export const TabParent = styled.div`
+const TabParent = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -97,7 +97,7 @@ export const TabParent = styled.div`
     `;
   }}
 `;
-export const TabImageParent = styled.div`
+const TabImageParent = styled.div`
   height: 125px;
   width: 200px;
   position: relative;
@@ -110,7 +110,7 @@ export const TabImageParent = styled.div`
   object-fit: cover;
 `;
 
-export const RedXParent = styled.div`
+const RedXParent = styled.div`
   font-size: 0.6rem;
   position: absolute;
   width: 100%;
@@ -119,7 +119,7 @@ export const RedXParent = styled.div`
   transition-duration: 0.25s;
   opacity: ${({ hover }: { hover: boolean }) => (hover ? 100 : 0)};
 `;
-export const RedX = styled.div`
+const RedX = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-content: center;
@@ -136,25 +136,25 @@ export const RedX = styled.div`
   }
 `;
 
-export const TabTitle = styled.div`
+const TabTitle = styled.div`
   width: calc(100% - 40px - 10px);
   height: 100%;
   padding: 5px;
   font-size: 15px;
   overflow: hidden;
 `;
-export const TabImage = styled.img`
+const TabImage = styled.img`
   height: 100%;
   background: white;
 `;
 
-export const TabImageDummy = styled.div`
+const TabImageDummy = styled.div`
   background-color: black;
   height: 100%;
   width: 100%;
 `;
 
-export const TabColumnsParent = styled.div`
+const TabColumnsParent = styled.div`
   display: flex;
   align-items: flex-start;
   flex-grow: 1;
@@ -174,7 +174,7 @@ const FooterParent = styled.div`
   align-items: center;
 `;
 
-export const FooterButtonParent = styled.button`
+const FooterButtonParent = styled.button`
   border: none;
   outline: none;
   width: 75px;
@@ -202,8 +202,8 @@ export const Footer = observer(() => {
         }}
       >
         WorkSpace
-        <HistoryButton />
       </FooterButtonParent>
+      <HistoryButton />
     </FooterParent>
   );
 });
