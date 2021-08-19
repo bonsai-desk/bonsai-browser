@@ -1,102 +1,140 @@
-import React from 'react';
-import { ipcRenderer } from 'electron';
 import styled, { css } from 'styled-components';
 import { observer } from 'mobx-react-lite';
-import { useStore } from '../../utils/data';
-import TabObject from '../../interfaces/tabObject';
-import xIcon from '../../../assets/x-letter.svg';
-import TabStore from '../../store/tabs';
-
-interface StyledTabParentProps {
-  color: string;
-}
+import React from 'react';
+import { ipcRenderer } from 'electron';
+import { useStore } from '../../store/tab-page-store';
+import { ITab } from '../../interfaces/tab';
+import redX from '../../static/x-letter.svg';
+import RedX from '../RedX';
 
 const TabParent = styled.div`
-  -webkit-app-region: no-drag;
-  -webkit-user-select: none;
-  -webkit-user-drag: none;
-  width: 225px;
-  min-width: 0;
-  height: calc(100% - 1px);
-  border-left: 1px solid black;
-  border-top: 1px solid black;
-  border-right: 1px solid black;
-  border-radius: 10px 10px 0 0;
   display: flex;
-  flex-wrap: nowrap;
+  flex-direction: column;
   align-items: center;
-
-  ${({ color }: StyledTabParentProps) =>
-    css`
-      background-color: ${color};
-    `}
-`;
-
-const TabTileParent = styled.div`
-  width: calc(100% - 8px - 16px - 35px);
-  display: flex;
-  align-items: center;
-`;
-
-const TabTitle = styled.div`
-  overflow: hidden;
-  white-space: nowrap;
+  flex-shrink: 0;
+  word-wrap: break-word;
+  text-overflow: ellipsis;
+  margin-bottom: 20px;
+  height: 9rem;
   width: 100%;
-  padding-left: 6px;
-  color: white;
+  background-color: black;
+  @media (prefers-color-scheme: dark) {
+    box-shadow: rgba(255, 255, 255, 0.16) 0 10px 36px 0,
+      rgba(0, 0, 0, 0.06) 0 0 0 1px;
+  }
+  @media (prefers-color-scheme: light) {
+    box-shadow: rgba(0, 0, 0, 0.16) 0 10px 36px 0, rgba(0, 0, 0, 0.06) 0 0 0 1px;
+  }
+  ${({ selected }: { selected: boolean }) => {
+    if (selected) {
+      return css`
+        border-color: white;
+        border-style: solid;
+        border-width: 4px;
+      `;
+    }
+    return css`
+      padding: 4px;
+    `;
+  }}
 `;
-
-const CloseButtonParent = styled.div`
+const TabImageParent = styled.div`
+  width: 100%;
+  height: 100%;
+  position: relative;
+  border-radius: 10px;
+  border-width: 4px;
   display: flex;
   justify-content: center;
-  align-items: center;
-  width: 35px;
+  overflow: hidden;
+  object-fit: cover;
+`;
+const RedXParent = styled.div`
+  font-size: 0.6rem;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  transition-duration: 0.25s;
+  opacity: ${({ hover }: { hover: boolean }) => (hover ? 100 : 0)};
+`;
+const TabTitle = styled.div`
+  width: calc(100% - 40px - 10px);
+  height: 100%;
+  padding: 5px;
+  font-size: 15px;
+  overflow: hidden;
+`;
+const TabImage = styled.img`
+  height: 100%;
+  background: white;
+`;
+const TabImageDummy = styled.div`
+  background-color: black;
+  height: 100%;
+  width: 100%;
 `;
 
-const XIcon = styled.img`
-  width: 28px;
-  -webkit-user-drag: none;
-`;
-
-const Favicon = styled.img`
-  width: 16px;
-  height: 16px;
-  margin-left: 8px;
-`;
-
-interface ITab {
-  tab: TabObject;
-}
-
-const Tab = observer(({ tab }: ITab) => {
-  const { tabStore } = useStore();
-  const active = tabStore.activeTabId === tab.id;
-
-  const activeColor = '#8352FF';
-  const defaultColor = '#489aff';
-
+const Tab = observer(({ tab, hover, selected = false }: ITab) => {
+  const { tabPageStore, workspaceStore } = useStore();
+  const title =
+    tab.openGraphInfo !== null &&
+    tab.openGraphInfo.title !== '' &&
+    tab.openGraphInfo.title !== 'null'
+      ? tab.openGraphInfo.title
+      : tab.title;
+  const imgUrl =
+    tab.openGraphInfo !== null && tab.openGraphInfo.image !== ''
+      ? tab.openGraphInfo.image
+      : tab.image;
   return (
     <TabParent
-      color={active ? activeColor : defaultColor}
-      onMouseDown={() => {
+      selected={selected}
+      onClick={() => {
         ipcRenderer.send('set-tab', tab.id);
+        tabPageStore.setUrlText('');
       }}
     >
-      <Favicon src={tab.faviconUrl} />
-      <TabTileParent>
-        <TabTitle>{tab.title}</TabTitle>
-      </TabTileParent>
-      <CloseButtonParent>
-        <XIcon
-          src={xIcon}
-          onMouseDown={(e) => {
-            e.stopPropagation();
-          }}
-          onClick={() => {
-            TabStore.removeTab(tab.id);
-          }}
-        />
-      </CloseButtonParent>
+      <TabImageParent>
+        {imgUrl ? <TabImage src={imgUrl} alt="tab_image" /> : <TabImageDummy />}
+        <RedXParent hover={hover}>
+          <TabTitle>{title === '' ? 'New Tab' : title}</TabTitle>
+          <RedX
+            style={{
+              right: 10,
+              top: 10,
+            }}
+            hoverColor="rgba(255, 0, 0, 1)"
+            onClick={(e) => {
+              e.stopPropagation();
+              ipcRenderer.send('remove-tab', tab.id);
+            }}
+          >
+            <img src={redX} alt="x" width="20px" />
+          </RedX>
+          <RedX
+            style={{
+              left: 10,
+              bottom: 10,
+              width: 105,
+            }}
+            hoverColor="#3572AC"
+            onClick={(e) => {
+              e.stopPropagation();
+              workspaceStore.createItem(
+                tab.url,
+                tab.title,
+                tab.image,
+                tab.favicon,
+                workspaceStore.inboxGroup
+              );
+            }}
+          >
+            <div>Add to workspace</div>
+            {/* <img src={moreIcon} alt="." width="20px" /> */}
+          </RedX>
+        </RedXParent>
+      </TabImageParent>
     </TabParent>
   );
 });

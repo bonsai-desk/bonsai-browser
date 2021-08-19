@@ -2,7 +2,7 @@ import { observer } from 'mobx-react-lite';
 import React from 'react';
 import styled from 'styled-components';
 import { useStore } from '../store/tab-page-store';
-import Tab from './TabPageContent';
+import Tab from './Tab';
 
 const FuzzyTabsParent = styled.div`
   background-color: red;

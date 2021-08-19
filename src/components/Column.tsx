@@ -7,7 +7,7 @@ import { TabPageColumn } from '../interfaces/tab';
 import Favicon from './Favicon';
 import { getRootDomain } from '../utils/data';
 import redX from '../static/x-letter.svg';
-import Tab from './TabPageContent';
+import Tab from './Tab';
 import RedX from './RedX';
 
 const ColumnParent = styled.div`
