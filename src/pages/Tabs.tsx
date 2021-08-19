@@ -4,13 +4,15 @@ import { ipcRenderer } from 'electron';
 import '../tabPage.css';
 import { useStore, View } from '../store/tab-page-store';
 import URLBox from '../components/URLBox';
-import { Background, Footer, TabColumns } from '../components/TabPageContent';
-import Workspace from '../components/Workspace';
-import PinButton from './PinButton';
+import PinButton from '../components/PinButton';
 import FuzzyTabs from '../components/FuzzyTabs';
 import ClickerParent from '../components/Clicker';
 import Wrapper from '../components/Wrapper';
 import HistoryModalLocal from '../components/History';
+import TabColumns from '../components/Column';
+import Footer from '../components/Footer';
+import Background from '../components/Background';
+import Workspace from './Workspace';
 
 const MainContent = observer(() => {
   const { tabPageStore } = useStore();

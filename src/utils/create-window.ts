@@ -90,7 +90,8 @@ export const createWindow = async () => {
   mainWindow.on('blur', () => {
     if (!wm.windowFloating && wm.mainWindow.isVisible() && !wm.isPinned) {
       // wm.unFloat(display.activeDisplay);
-      // wm.hideMainWindow();
+      // wm.mainWindow?.hide();
+      // wm.hideWindow();
       // }
     }
   });

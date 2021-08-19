@@ -1,88 +1,29 @@
 import styled, { css } from 'styled-components';
 import { observer } from 'mobx-react-lite';
-import React, { useState } from 'react';
+import React from 'react';
 import { ipcRenderer } from 'electron';
-import { runInAction } from 'mobx';
-import { useStore, View } from '../../store/tab-page-store';
-import { ITab, TabPageColumn } from '../../interfaces/tab';
-import { getRootDomain } from '../../utils/data';
+import { useStore } from '../../store/tab-page-store';
+import { ITab } from '../../interfaces/tab';
 import redX from '../../static/x-letter.svg';
-import { HistoryButton } from '../History';
-import Favicon from '../Favicon';
-
-const ColumnParent = styled.div`
-  display: flex;
-  justify-content: center;
-  flex-direction: column;
-  user-select: none;
-  // padding: 5px 10px 5px 10px;
-  margin-right: 1rem;
-  color: white;
-`;
-const ColumnHeaderOverlay = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: 10px;
-  transition-duration: 0.25s;
-
-  :hover {
-    background-color: rgba(0, 0, 0, 0.6);
-  }
-`;
-const ColumnHeaderParent = styled.div`
-  display: flex;
-  align-items: center;
-  width: 100%;
-  border-radius: 10px;
-  height: 40px;
-  margin-bottom: 5px;
-  transition-duration: 0.25s;
-  position: relative;
-  overflow: hidden;
-
-  :hover #RedX {
-    opacity: 100;
-  }
-
-  #RedX {
-    opacity: 0;
-  }
-`;
-const ColumnHeaderSpacer = styled.div`
-  width: 10px;
-  height: 10px;
-`;
-const ColumnHeader = styled.div`
-  text-shadow: 0 0 5px #9c9c9c;
-  font-weight: bold;
-  font-size: 1.35rem;
-  margin-bottom: 10px;
-  width: 174px;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
-  margin-left: 5px;
-`;
+import RedX from '../RedX';
 
 const TabParent = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   flex-shrink: 0;
-  width: 200px;
   word-wrap: break-word;
   text-overflow: ellipsis;
   margin-bottom: 20px;
+  height: 9rem;
+  width: 100%;
+  background-color: black;
   @media (prefers-color-scheme: dark) {
-    box-shadow: rgba(255, 255, 255, 0.16) 0px 10px 36px 0px,
-      rgba(0, 0, 0, 0.06) 0px 0px 0px 1px;
+    box-shadow: rgba(255, 255, 255, 0.16) 0 10px 36px 0,
+      rgba(0, 0, 0, 0.06) 0 0 0 1px;
   }
   @media (prefers-color-scheme: light) {
-    box-shadow: rgba(0, 0, 0, 0.16) 0px 10px 36px 0px,
-      rgba(0, 0, 0, 0.06) 0px 0px 0px 1px;
+    box-shadow: rgba(0, 0, 0, 0.16) 0 10px 36px 0, rgba(0, 0, 0, 0.06) 0 0 0 1px;
   }
   ${({ selected }: { selected: boolean }) => {
     if (selected) {
@@ -98,18 +39,16 @@ const TabParent = styled.div`
   }}
 `;
 const TabImageParent = styled.div`
-  height: 125px;
-  width: 200px;
+  width: 100%;
+  height: 100%;
   position: relative;
   border-radius: 10px;
   border-width: 4px;
-  border-color: red;
   display: flex;
   justify-content: center;
   overflow: hidden;
   object-fit: cover;
 `;
-
 const RedXParent = styled.div`
   font-size: 0.6rem;
   position: absolute;
@@ -119,23 +58,6 @@ const RedXParent = styled.div`
   transition-duration: 0.25s;
   opacity: ${({ hover }: { hover: boolean }) => (hover ? 100 : 0)};
 `;
-const RedX = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-content: center;
-  justify-content: center;
-  transition-duration: 0.25s;
-  border-radius: 999px;
-  position: absolute;
-  width: 30px;
-  height: 30px;
-  background: rgba(200, 200, 200, 0.7);
-  :hover {
-    transition-duration: 0s;
-    background-color: ${({ hoverColor }: { hoverColor: string }) => hoverColor};
-  }
-`;
-
 const TabTitle = styled.div`
   width: calc(100% - 40px - 10px);
   height: 100%;
@@ -147,68 +69,13 @@ const TabImage = styled.img`
   height: 100%;
   background: white;
 `;
-
 const TabImageDummy = styled.div`
   background-color: black;
   height: 100%;
   width: 100%;
 `;
 
-const TabColumnsParent = styled.div`
-  display: flex;
-  align-items: flex-start;
-  flex-grow: 1;
-  overflow: auto;
-`;
-export const Background = styled.div`
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-`;
-const FooterParent = styled.div`
-  width: 100%;
-  height: 85px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;
-
-const FooterButtonParent = styled.button`
-  border: none;
-  outline: none;
-  width: 75px;
-  height: 75px;
-  border-radius: 50%;
-
-  :hover {
-    background-color: lightgray;
-  }
-`;
-
-export const Footer = observer(() => {
-  const { tabPageStore } = useStore();
-  return (
-    <FooterParent>
-      <FooterButtonParent
-        onClick={() => {
-          runInAction(() => {
-            if (tabPageStore.View === View.Tabs) {
-              tabPageStore.View = View.WorkSpace;
-            } else if (tabPageStore.View === View.WorkSpace) {
-              tabPageStore.View = View.Tabs;
-            }
-          });
-        }}
-      >
-        WorkSpace
-      </FooterButtonParent>
-      <HistoryButton />
-    </FooterParent>
-  );
-});
-
-export const Tab = observer(({ tab, hover, selected = false }: ITab) => {
+const Tab = observer(({ tab, hover, selected = false }: ITab) => {
   const { tabPageStore, workspaceStore } = useStore();
   const title =
     tab.openGraphInfo !== null &&
@@ -272,61 +139,4 @@ export const Tab = observer(({ tab, hover, selected = false }: ITab) => {
   );
 });
 
-const Column = observer(({ column }: { column: TabPageColumn }) => {
-  const { tabPageStore } = useStore();
-  const [hovered, setHovered] = useState(false);
-  let columnFavicon = '';
-  if (column.tabs.length > 0) {
-    columnFavicon = column.tabs[0].favicon;
-  }
-  function handleMouseOver() {
-    setHovered(true);
-  }
-  function handleMouseExit() {
-    setHovered(false);
-  }
-  return (
-    <ColumnParent onMouseOver={handleMouseOver} onMouseLeave={handleMouseExit}>
-      <ColumnHeaderParent>
-        <ColumnHeaderSpacer />
-        <Favicon src={columnFavicon} />
-        <ColumnHeader>{column.domain}</ColumnHeader>
-        <ColumnHeaderOverlay>
-          <RedX
-            id="RedX"
-            style={{
-              top: 7,
-              right: 10,
-            }}
-            hoverColor="rgba(255, 0, 0, 1)"
-            onClick={(e) => {
-              e.stopPropagation();
-              Object.keys(tabPageStore.tabs).forEach((key: string) => {
-                const tab = tabPageStore.tabs[key];
-                if (getRootDomain(tab.url) === column.domain) {
-                  ipcRenderer.send('remove-tab', tab.id);
-                }
-              });
-            }}
-          >
-            <img src={redX} alt="x" width="20px" />
-          </RedX>
-        </ColumnHeaderOverlay>
-      </ColumnHeaderParent>
-      {column.tabs.map((tab) => {
-        return <Tab key={tab.id} tab={tab} hover={hovered} selected={false} />;
-      })}
-    </ColumnParent>
-  );
-});
-
-export const TabColumns = observer(() => {
-  const { tabPageStore } = useStore();
-  return (
-    <TabColumnsParent>
-      {tabPageStore.tabPageColumns().map((column) => {
-        return <Column column={column} key={column.domain} />;
-      })}
-    </TabColumnsParent>
-  );
-});
+export default Tab;

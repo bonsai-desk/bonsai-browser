@@ -2,18 +2,17 @@ import React from 'react';
 import { render } from 'react-dom';
 import App from './pages/App';
 import DebugApp from './pages/DebugApp';
-import UrlPeek from './pages/url-peek';
-import Find from './pages/find';
+import UrlPeek from './pages/UrlPeek';
+import Find from './pages/Find';
 import { Provider, RootModel } from './utils/data';
 import './index.css';
-import Overlay from './pages/overlay';
+import Overlay from './pages/Overlay';
 import TabStore from './store/tabs';
-// import TabsPage from './pages/tabs-page';
 import {
   Provider as TabPageStoreProvider,
   tabPageStore,
 } from './store/tab-page-store';
-import Tabs from './pages/tabs-page';
+import Tabs from './pages/Tabs';
 import createWorkspaceStore from './store/workspace-store';
 
 if (document.getElementById('root')) {
