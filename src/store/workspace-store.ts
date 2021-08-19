@@ -268,15 +268,15 @@ export const WorkspaceStore = types
     inboxGroup: ItemGroup,
     groups: types.map(ItemGroup),
     items: types.map(Item),
-    cameraZoom: 1,
+    cameraZoom: 0.25,
     cameraX: 0,
     cameraY: 0,
   })
   .volatile(() => ({
     x: 0,
     y: 0,
-    width: 0,
-    height: 0,
+    width: 1,
+    height: 1,
     anyDragging: false,
     anyOverTrash: false,
     snapshotPath: '',
@@ -311,8 +311,8 @@ export const WorkspaceStore = types
   }))
   .actions((self) => ({
     setCameraZoom(zoom: number) {
-      self.cameraZoom = clamp(zoom, 0.2, 3);
-      // console.log(`zoom: ${self.cameraZoom}`);
+      self.cameraZoom = clamp(zoom, 0.05, 1);
+      console.log(`zoom: ${self.cameraZoom}`);
     },
     moveCamera(x: number, y: number) {
       self.cameraX += x;

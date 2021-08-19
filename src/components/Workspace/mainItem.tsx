@@ -195,7 +195,11 @@ const MainItem = observer(
               : lerp(item.animationStartY + groupY, targetPos[1], lerpValue),
             zIndex: item.beingDragged ? 10000000 : group.zIndex,
             transformOrigin: '0px 0px',
-            transform: `scale(${workspaceStore.cameraZoom})`,
+            // transform: `scale(${workspaceStore.cameraZoom})`,
+            transform: `scale(${
+              (workspaceStore.height / itemHeight / 2) *
+              workspaceStore.cameraZoom
+            })`,
           }}
         >
           <ItemContainer

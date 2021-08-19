@@ -69,6 +69,10 @@ const Workspace = observer(() => {
       return;
     }
     setHasRunOnce(true);
+    if (backgroundRef.current !== null) {
+      const rect = backgroundRef.current.getBoundingClientRect();
+      workspaceStore.setRect(rect.x, rect.y, rect.width, rect.height);
+    }
     window.addEventListener(
       'resize',
       () => {
@@ -80,11 +84,6 @@ const Workspace = observer(() => {
       false
     );
   }, [hasRunOnce, workspaceStore]);
-
-  if (backgroundRef.current !== null) {
-    const rect = backgroundRef.current.getBoundingClientRect();
-    workspaceStore.setRect(rect.x, rect.y, rect.width, rect.height);
-  }
 
   return (
     <DraggableCore
@@ -105,8 +104,6 @@ const Workspace = observer(() => {
       <Background
         ref={backgroundRef}
         onWheel={(e) => {
-          console.log(e.deltaY);
-
           const offsetX = e.pageX - workspaceStore.x;
           const offsetY = e.pageY - workspaceStore.y;
 

@@ -202,8 +202,8 @@ export const Footer = observer(() => {
         }}
       >
         WorkSpace
-        <HistoryButton />
       </FooterButtonParent>
+      <HistoryButton />
     </FooterParent>
   );
 });
