@@ -8,12 +8,6 @@ import {
   WorkspaceStore,
 } from '../../store/workspace-store';
 
-export function calculateScale(
-  workspaceStore: Instance<typeof WorkspaceStore>
-) {
-  return (workspaceStore.height / itemHeight / 2) * workspaceStore.cameraZoom;
-}
-
 export function overTrash(
   testPos: number[],
   workspaceStore: Instance<typeof WorkspaceStore>

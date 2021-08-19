@@ -48,14 +48,14 @@ export const Item = types
   .views((self) => ({
     placeholderPos(
       group: Instance<typeof ItemGroup>,
-      cameraZoom: number
+      scale: number
     ): [number, number] {
       const x = self.indexInGroup % group.width;
       const y = Math.floor(self.indexInGroup / group.width);
       return [
-        (x * (itemWidth + itemSpacing) + groupPadding) * cameraZoom,
+        (x * (itemWidth + itemSpacing) + groupPadding) * scale,
         (y * (itemHeight + itemSpacing) + groupTitleHeight + groupPadding) *
-          cameraZoom,
+          scale,
       ];
     },
   }))
@@ -79,22 +79,22 @@ export const Item = types
     },
     recordCurrentTargetAsAnimationStart(
       group: Instance<typeof ItemGroup>,
-      cameraZoom: number
+      scale: number
     ) {
-      const currentPos = self.placeholderPos(group, cameraZoom);
+      const currentPos = self.placeholderPos(group, scale);
       self.animationStartX = currentPos[0];
       self.animationStartY = currentPos[1];
     },
     setIndexInGroup(
       indexInGroup: number,
       group: Instance<typeof ItemGroup>,
-      cameraZoom: number
+      scale: number
     ) {
       if (self.indexInGroup === indexInGroup) {
         return;
       }
 
-      this.recordCurrentTargetAsAnimationStart(group, cameraZoom);
+      this.recordCurrentTargetAsAnimationStart(group, scale);
 
       if (!self.beingDragged) {
         self.animationLerp = 0;
@@ -282,6 +282,9 @@ export const WorkspaceStore = types
     snapshotPath: '',
   }))
   .views((self) => ({
+    get scale() {
+      return (self.height / itemHeight / 2) * self.cameraZoom;
+    },
     get getMatrices() {
       const newMatrices = calculateMatrices(
         self.width,
@@ -362,11 +365,7 @@ export const WorkspaceStore = types
     ) {
       const item = Item.create({ id: uuidv4(), url, title, image, favicon });
       self.items.put(item);
-      item.setIndexInGroup(
-        group.itemArrangement.length,
-        group,
-        self.cameraZoom
-      );
+      item.setIndexInGroup(group.itemArrangement.length, group, self.scale);
       item.groupId = group.id;
       group.itemArrangement.push(item.id);
     },
@@ -380,7 +379,7 @@ export const WorkspaceStore = types
       for (let i = 0; i < group.itemArrangement.length; i += 1) {
         const nextItem = self.items.get(group.itemArrangement[i]);
         if (typeof nextItem !== 'undefined') {
-          nextItem.setIndexInGroup(i, group, self.cameraZoom);
+          nextItem.setIndexInGroup(i, group, self.scale);
         }
       }
     },
@@ -405,7 +404,7 @@ export const WorkspaceStore = types
       item.setIndexInGroup(
         newGroup.itemArrangement.length,
         newGroup,
-        self.cameraZoom
+        self.scale
       );
       item.groupId = newGroup.id;
       newGroup.itemArrangement.push(item.id);
@@ -422,7 +421,7 @@ export const WorkspaceStore = types
       group.itemArrangement.forEach((itemId) => {
         const item = self.items.get(itemId);
         if (typeof item !== 'undefined') {
-          item.recordCurrentTargetAsAnimationStart(group, self.cameraZoom);
+          item.recordCurrentTargetAsAnimationStart(group, self.scale);
           item.setAnimationLerp(0);
         }
       });
