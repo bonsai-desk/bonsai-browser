@@ -54,6 +54,55 @@ export default class TabPageStore {
 
   fuzzySelection: [number, number] = [0, 0];
 
+  handleKeyDown(e: KeyboardEvent) {
+    switch (e.key) {
+      case 'Enter':
+        break;
+      case 'Escape':
+        if (this.View === View.History) {
+          this.View = View.Tabs;
+        } else if (this.View === View.WorkSpace) {
+          this.View = View.Tabs;
+        } else if (this.urlText.length > 0) {
+          this.setUrlText('');
+        } else {
+          ipcRenderer.send('toggle');
+        }
+        break;
+      case 'Tab':
+        if (this.View === View.Tabs) {
+          this.View = View.WorkSpace;
+        } else if (this.View === View.WorkSpace) {
+          this.View = View.Tabs;
+        }
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        this.moveFuzzySelection(Direction.Up);
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        this.moveFuzzySelection(Direction.Down);
+        break;
+      case 'ArrowLeft':
+        if (this.fuzzySelection[0] > -1) {
+          e.preventDefault();
+          this.moveFuzzySelection(Direction.Left);
+        }
+        break;
+      case 'ArrowRight':
+        if (this.fuzzySelection[0] > -1) {
+          e.preventDefault();
+          this.moveFuzzySelection(Direction.Right);
+        }
+        break;
+      default:
+        this.setFocus();
+        this.fuzzySelection = [-1, -1];
+        break;
+    }
+  }
+
   moveFuzzySelection(direction: Direction) {
     const sel = this.fuzzySelection;
     switch (direction) {

@@ -277,54 +277,7 @@ const Tabs = observer(() => {
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      runInAction(() => {
-        switch (e.key) {
-          case 'Enter':
-            break;
-          case 'Escape':
-            if (tabPageStore.View === View.History) {
-              tabPageStore.View = View.Tabs;
-            } else if (tabPageStore.View === View.WorkSpace) {
-              tabPageStore.View = View.Tabs;
-            } else if (tabPageStore.urlText.length > 0) {
-              tabPageStore.setUrlText('');
-            } else {
-              ipcRenderer.send('toggle');
-            }
-            break;
-          case 'Tab':
-            if (tabPageStore.View === View.Tabs) {
-              tabPageStore.View = View.WorkSpace;
-            } else if (tabPageStore.View === View.WorkSpace) {
-              tabPageStore.View = View.Tabs;
-            }
-            break;
-          case 'ArrowUp':
-            e.preventDefault();
-            tabPageStore.moveFuzzySelection(Direction.Up);
-            break;
-          case 'ArrowDown':
-            e.preventDefault();
-            tabPageStore.moveFuzzySelection(Direction.Down);
-            break;
-          case 'ArrowLeft':
-            if (tabPageStore.fuzzySelection[0] > -1) {
-              e.preventDefault();
-              tabPageStore.moveFuzzySelection(Direction.Left);
-            }
-            break;
-          case 'ArrowRight':
-            if (tabPageStore.fuzzySelection[0] > -1) {
-              e.preventDefault();
-              tabPageStore.moveFuzzySelection(Direction.Right);
-            }
-            break;
-          default:
-            tabPageStore.setFocus();
-            tabPageStore.fuzzySelection = [-1, -1];
-            break;
-        }
-      });
+      tabPageStore.handleKeyDown(e);
     }
 
     document.addEventListener('keydown', handleKeyDown);
