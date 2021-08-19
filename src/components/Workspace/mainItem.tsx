@@ -14,7 +14,7 @@ import {
   itemWidth,
 } from '../../store/workspace-store';
 import { useStore, View } from '../../store/tab-page-store';
-import { easeOut, getGroupBelowItem, overTrash } from './utils';
+import { calculateScale, easeOut, getGroupBelowItem, overTrash } from './utils';
 import { lerp } from '../../utils/utils';
 
 // const ItemPlaceholderAndContainer = styled.div``;
@@ -195,11 +195,7 @@ const MainItem = observer(
               : lerp(item.animationStartY + groupY, targetPos[1], lerpValue),
             zIndex: item.beingDragged ? 10000000 : group.zIndex,
             transformOrigin: '0px 0px',
-            // transform: `scale(${workspaceStore.cameraZoom})`,
-            transform: `scale(${
-              (workspaceStore.height / itemHeight / 2) *
-              workspaceStore.cameraZoom
-            })`,
+            transform: `scale(${calculateScale(workspaceStore)})`,
           }}
         >
           <ItemContainer

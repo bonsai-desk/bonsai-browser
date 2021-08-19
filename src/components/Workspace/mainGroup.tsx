@@ -11,7 +11,7 @@ import {
   widthPixelsToInt,
 } from '../../store/workspace-store';
 import { useStore } from '../../store/tab-page-store';
-import { easeOut, overTrash } from './utils';
+import { calculateScale, easeOut, overTrash } from './utils';
 import { lerp } from '../../utils/utils';
 
 const Group = styled.div`
@@ -216,7 +216,7 @@ const MainGroup = observer(
         <Group
           style={{
             transformOrigin: '0px 0px',
-            transform: `scale(${workspaceStore.cameraZoom})`,
+            transform: `scale(${calculateScale(workspaceStore)})`,
             width: lerp(
               group.animationStartWidth,
               targetGroupSize[0],

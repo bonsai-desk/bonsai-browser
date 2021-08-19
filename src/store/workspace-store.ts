@@ -312,7 +312,7 @@ export const WorkspaceStore = types
   .actions((self) => ({
     setCameraZoom(zoom: number) {
       self.cameraZoom = clamp(zoom, 0.05, 1);
-      console.log(`zoom: ${self.cameraZoom}`);
+      // console.log(`zoom: ${self.cameraZoom}`);
     },
     moveCamera(x: number, y: number) {
       self.cameraX += x;
