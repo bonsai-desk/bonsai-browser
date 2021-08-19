@@ -6,35 +6,18 @@ import { useStore, View } from '../../store/tab-page-store';
 import Favicon from '../Favicon';
 import {
   ClearHistory,
-  HistoryButtonParent,
   HistoryHeader,
   HistoryModal,
   HistoryModalBackground,
   HistoryModalParent,
   HistoryResult,
-  HistoryResults,
+  HistoryResultsParent,
   HistorySearch,
   HistoryTitleDiv,
   HistoryUrlDiv,
 } from './style';
 
-export const HistoryButton = observer(() => {
-  const { tabPageStore } = useStore();
-  return (
-    <HistoryButtonParent
-      type="button"
-      onClick={() => {
-        runInAction(() => {
-          tabPageStore.View = View.History;
-        });
-      }}
-    >
-      History
-    </HistoryButtonParent>
-  );
-});
-
-const History = observer(() => {
+const HistoryResults = observer(() => {
   const { tabPageStore } = useStore();
   let results;
   if (tabPageStore.searchResult === null) {
@@ -48,7 +31,7 @@ const History = observer(() => {
   }
 
   return (
-    <>
+    <HistoryResultsParent>
       {results.map((entry) => {
         return (
           <HistoryResult
@@ -63,10 +46,11 @@ const History = observer(() => {
           </HistoryResult>
         );
       })}
-    </>
+    </HistoryResultsParent>
   );
 });
-const HistoryModalLocal = observer(() => {
+
+const History = observer(() => {
   const { tabPageStore } = useStore();
 
   const historyBoxRef = useRef<HTMLInputElement>(null);
@@ -111,11 +95,10 @@ const HistoryModalLocal = observer(() => {
             Clear History
           </ClearHistory>
         </HistoryHeader>
-        <HistoryResults>
-          <History />
-        </HistoryResults>
+        <HistoryResults />
       </HistoryModal>
     </HistoryModalParent>
   );
 });
-export default HistoryModalLocal;
+
+export default History;

@@ -12,7 +12,7 @@ import {
   Provider as TabPageStoreProvider,
   tabPageStore,
 } from './store/tab-page-store';
-import Tabs from './pages/Tabs';
+import Home from './pages/Home';
 import createWorkspaceStore from './store/workspace-store';
 
 if (document.getElementById('root')) {
@@ -73,7 +73,7 @@ if (document.getElementById('tab-page')) {
   render(
     <>
       <TabPageStoreProvider value={{ tabPageStore, workspaceStore }}>
-        <Tabs />
+        <Home />
       </TabPageStoreProvider>
     </>,
     document.getElementById('tab-page')
