@@ -12,7 +12,7 @@ import History from '../components/History';
 import Columns from '../components/Columns';
 import Footer from '../components/Footer';
 import Container from '../components/Container';
-import Workspace from './Workspace';
+import Workspace from '../components/Workspace';
 
 const MainContent = observer(() => {
   const { tabPageStore } = useStore();
