@@ -3,6 +3,7 @@ import MainItem from './MainItem';
 import MainGroup from './MainGroup';
 
 export { MainItem, MainGroup };
+
 export const Background = styled.div`
   user-select: none;
   flex-grow: 1;
