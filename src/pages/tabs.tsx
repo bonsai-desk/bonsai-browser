@@ -27,7 +27,7 @@ import {
 import Workspace from '../components/Workspace';
 import pinSelected from '../../assets/pin-selected.svg';
 import pinUnselected from '../../assets/pin-unselected.svg';
-import { Direction, Platform, myPlatform } from '../render-constants';
+import { Platform, myPlatform } from '../render-constants';
 
 const Clicker = styled.div`
   position: absolute;
@@ -38,11 +38,6 @@ const Clicker = styled.div`
 const Wrapper = styled.div`
   width: 100vw;
   height: 100vh;
-`;
-
-const GlobalStyle = createGlobalStyle`
-  html,
-  body {
     margin: 0;
     padding: 0;
     width: 100%;
@@ -62,7 +57,6 @@ const GlobalStyle = createGlobalStyle`
         background-color: rgba(0, 0, 0, 0.7);
       `;
     }}}
-  }
 `;
 
 const HistoryModalLocal = observer(() => {
@@ -163,7 +157,7 @@ const MainContent = observer(() => {
   return tabs;
 });
 
-const PinButton = styled.button`
+const PinButtonParent = styled.button`
   border: none;
   outline: none;
   width: 50px;
@@ -188,6 +182,22 @@ const Icon = styled.img`
       height: ${isPinned ? '60' : '28'}px;
     `}
 `;
+
+const PinButton = observer(() => {
+  const { tabPageStore } = useStore();
+  return (
+    <PinButtonParent
+      onClick={() => {
+        ipcRenderer.send('toggle-pin');
+      }}
+    >
+      <Icon
+        src={tabPageStore.isPinned ? pinSelected : pinUnselected}
+        isPinned={tabPageStore.isPinned}
+      />
+    </PinButtonParent>
+  );
+});
 
 const Content = observer(() => {
   const { tabPageStore } = useStore();
@@ -279,37 +289,17 @@ const Tabs = observer(() => {
     function handleKeyDown(e: KeyboardEvent) {
       tabPageStore.handleKeyDown(e);
     }
-
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [tabPageStore]);
 
-  const [hasRunOnce, setHasRunOnce] = useState(false);
-
-  useEffect(() => {
-    if (hasRunOnce) {
-      return;
-    }
-    setHasRunOnce(true);
-  }, [hasRunOnce, tabPageStore]);
-
   return (
     <Wrapper>
-      <GlobalStyle />
       <Content />
       <HistoryModalLocal />
-      <PinButton
-        onClick={() => {
-          ipcRenderer.send('toggle-pin');
-        }}
-      >
-        <Icon
-          src={tabPageStore.isPinned ? pinSelected : pinUnselected}
-          isPinned={tabPageStore.isPinned}
-        />
-      </PinButton>
+      <PinButton />
     </Wrapper>
   );
 });

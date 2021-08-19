@@ -292,8 +292,7 @@ const Column = observer(({ column }: { column: TabPageColumn }) => {
           </RedX>
         </ColumnHeaderOverlay>
       </ColumnHeaderParent>
-      {column.tabs.map((tab, idx) => {
-        console.log(idx, tabPageStore.fuzzySelection);
+      {column.tabs.map((tab) => {
         return <Tab key={tab.id} tab={tab} hover={hovered} selected={false} />;
       })}
     </ColumnParent>
