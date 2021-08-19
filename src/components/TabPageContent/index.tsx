@@ -223,7 +223,7 @@ export const Tab = observer(({ tab, hover }: ITab) => {
                 tab.title,
                 tab.image,
                 tab.favicon,
-                workspaceStore.hiddenGroup
+                workspaceStore.inboxGroup
               );
             }}
           >

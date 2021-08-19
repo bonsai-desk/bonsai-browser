@@ -179,16 +179,19 @@ export default class TabPageStore {
     ipcRenderer.on('close-history-modal', () => {
       runInAction(() => {
         this.historyModalActive = false;
+        this.workspaceActive = false;
       });
     });
     ipcRenderer.on('open-history-modal', () => {
       runInAction(() => {
         this.historyModalActive = true;
+        this.workspaceActive = false;
       });
     });
     ipcRenderer.on('toggle-history-modal', () => {
       runInAction(() => {
         this.historyModalActive = !this.historyModalActive;
+        this.workspaceActive = false;
       });
     });
     ipcRenderer.on('favicon-updated', (_, [id, favicon]) => {

@@ -61,7 +61,6 @@ const GlobalStyle = createGlobalStyle`
         background-color: rgba(0, 0, 0, 0.7);
       `;
     }}}
-  }
 `;
 
 const HistoryModalLocal = observer(() => {
@@ -135,7 +134,7 @@ const FuzzyTabs = observer(() => {
 const MainContent = observer(() => {
   const { tabPageStore } = useStore();
   const tabs = (
-    <div style={{ height: '100%', padding: '0 0 0 1rem' }}>
+    <div style={{ flexGrow: 1, padding: '0 0 0 1rem' }}>
       {tabPageStore.urlText.length === 0 ? <TabColumns /> : <FuzzyTabs />}
     </div>
   );
@@ -208,6 +207,7 @@ const Tabs = observer(() => {
             break;
           case 'Tab':
             tabPageStore.workspaceActive = !tabPageStore.workspaceActive;
+            tabPageStore.setHistoryActive(false);
             break;
           default:
             tabPageStore.setFocus();
@@ -278,6 +278,7 @@ const Tabs = observer(() => {
                 runInAction(() => {
                   tabPageStore.workspaceActive = !tabPageStore.workspaceActive;
                 });
+                tabPageStore.setHistoryActive(false);
               }}
             >
               Workspace
@@ -286,6 +287,9 @@ const Tabs = observer(() => {
               type="button"
               onClick={() => {
                 runInAction(() => {
+                  runInAction(() => {
+                    tabPageStore.workspaceActive = false;
+                  });
                   tabPageStore.setHistoryActive(true);
                 });
               }}

@@ -1,7 +1,8 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import { Instance } from 'mobx-state-tree';
+import { DraggableCore } from 'react-draggable';
 import { ItemGroup } from '../../store/workspace-store';
 import trashIcon from '../../../assets/alternate-trash.svg';
 import { useStore } from '../../store/tab-page-store';
@@ -48,36 +49,101 @@ const Workspace = observer(() => {
   );
 
   const items = Array.from(workspaceStore.items.values()).map((item) => {
-    const group =
-      item.groupId === 'hidden'
-        ? workspaceStore.hiddenGroup
-        : workspaceStore.groups.get(item.groupId);
+    let group;
+    if (item.groupId === 'hidden') {
+      group = workspaceStore.hiddenGroup;
+    } else if (item.groupId === 'inbox') {
+      group = workspaceStore.inboxGroup;
+    } else {
+      group = workspaceStore.groups.get(item.groupId);
+    }
     if (typeof group === 'undefined') {
       throw new Error(`could not find group with id ${item.groupId}`);
     }
     return <MainItem key={item.id} item={item} group={group} />;
   });
 
+  const [hasRunOnce, setHasRunOnce] = useState(false);
+  useEffect(() => {
+    if (hasRunOnce) {
+      return;
+    }
+    setHasRunOnce(true);
+    window.addEventListener(
+      'resize',
+      () => {
+        if (backgroundRef.current !== null) {
+          const rect = backgroundRef.current.getBoundingClientRect();
+          workspaceStore.setRect(rect.x, rect.y, rect.width, rect.height);
+        }
+      },
+      false
+    );
+  }, [hasRunOnce, workspaceStore]);
+
   if (backgroundRef.current !== null) {
     const rect = backgroundRef.current.getBoundingClientRect();
-    workspaceStore.setSize(rect.width, rect.height);
+    workspaceStore.setRect(rect.x, rect.y, rect.width, rect.height);
   }
 
   return (
-    <Background ref={backgroundRef}>
-      <Groups>{groups}</Groups>
-      <Items>{items}</Items>
-      <Trash
-        style={{
-          display: workspaceStore.anyDragging ? 'flex' : 'none',
-          backgroundColor: workspaceStore.anyOverTrash
-            ? 'red'
-            : 'rgba(0, 0, 0, 0.7)',
+    <DraggableCore
+      onMouseDown={(e) => {
+        e.stopPropagation();
+      }}
+      onDrag={(_, data) => {
+        const [worldLastX, worldLastY] = workspaceStore.screenToWorld(
+          data.lastX,
+          data.lastY
+        );
+        const [worldX, worldY] = workspaceStore.screenToWorld(data.x, data.y);
+        const deltaX = worldX - worldLastX;
+        const deltaY = worldY - worldLastY;
+        workspaceStore.moveCamera(-deltaX, -deltaY);
+      }}
+    >
+      <Background
+        ref={backgroundRef}
+        onWheel={(e) => {
+          console.log(e.deltaY);
+
+          const offsetX = e.pageX - workspaceStore.x;
+          const offsetY = e.pageY - workspaceStore.y;
+
+          const lastMouseWorldPos = workspaceStore.screenToWorld(
+            offsetX,
+            offsetY
+          );
+
+          workspaceStore.setCameraZoom(
+            workspaceStore.cameraZoom +
+              workspaceStore.cameraZoom * (-e.deltaY / 1000) * 2
+          );
+
+          const mouseWorldPos = workspaceStore.screenToWorld(offsetX, offsetY);
+          const mouseWorldDeltaX = lastMouseWorldPos[0] - mouseWorldPos[0];
+          const mouseWorldDeltaY = lastMouseWorldPos[1] - mouseWorldPos[1];
+
+          workspaceStore.moveCamera(mouseWorldDeltaX, mouseWorldDeltaY);
         }}
       >
-        <TrashIcon src={trashIcon} />
-      </Trash>
-    </Background>
+        {/* <div style={{ transform: `scale(${workspaceStore.cameraZoom})` }}> */}
+        <Groups>{groups}</Groups>
+        <MainGroup group={workspaceStore.inboxGroup} />
+        <Items>{items}</Items>
+        {/* </div> */}
+        <Trash
+          style={{
+            display: workspaceStore.anyDragging ? 'flex' : 'none',
+            backgroundColor: workspaceStore.anyOverTrash
+              ? 'red'
+              : 'rgba(0, 0, 0, 0.7)',
+          }}
+        >
+          <TrashIcon src={trashIcon} />
+        </Trash>
+      </Background>
+    </DraggableCore>
   );
 });
 
