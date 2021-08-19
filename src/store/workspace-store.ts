@@ -19,6 +19,7 @@ const noAllocPos3 = vec3.create();
 
 export const itemWidth = 200;
 export const itemHeight = 125;
+export const groupBorder = 2;
 export const groupTitleHeight = 48;
 export const groupPadding = 10;
 export const itemSpacing = 10;
@@ -53,8 +54,11 @@ export const Item = types
       const x = self.indexInGroup % group.width;
       const y = Math.floor(self.indexInGroup / group.width);
       return [
-        (x * (itemWidth + itemSpacing) + groupPadding) * scale,
-        (y * (itemHeight + itemSpacing) + groupTitleHeight + groupPadding) *
+        (x * (itemWidth + itemSpacing) + groupPadding + groupBorder) * scale,
+        (y * (itemHeight + itemSpacing) +
+          groupTitleHeight +
+          groupPadding +
+          groupBorder) *
           scale,
       ];
     },
@@ -109,19 +113,10 @@ export const Item = types
 
 function widthIntToPixels(width: number): number {
   return itemWidth * width + (width - 1) * itemSpacing + groupPadding * 2;
-  // p = a         * b     + (b     - 1) * c           + d            * 2;
 }
 
 export function widthPixelsToInt(pixels: number): number {
   return (itemSpacing - 2 * groupPadding + pixels) / (itemWidth + itemSpacing);
-}
-
-function resizeCurve(width: number): number {
-  return width;
-  // const integerPart = Math.floor(width);
-  // const decimalPart = width % 1;
-  // const newDecimalPart = decimalPart * decimalPart * decimalPart;
-  // return integerPart + newDecimalPart;
 }
 
 export const ItemGroup = types
@@ -151,7 +146,7 @@ export const ItemGroup = types
     size(): [number, number] {
       let width = widthIntToPixels(self.width);
       if (self.resizing && self.tempResizeWidth !== 0) {
-        width = widthIntToPixels(resizeCurve(self.tempResizeWidth));
+        width = widthIntToPixels(self.tempResizeWidth);
       }
       const height = Math.max(
         this.height() * itemHeight +
@@ -485,13 +480,14 @@ export const WorkspaceStore = types
 
       const relativePos = [pos[0] - group.x, pos[1] - group.y];
       const x = clamp(
-        Math.floor((relativePos[0] - groupPadding) / itemWidth),
+        Math.floor((relativePos[0] - (groupPadding + groupBorder)) / itemWidth),
         0,
         group.width - 1
       );
       const y = clamp(
         Math.floor(
-          (relativePos[1] - (groupPadding + groupTitleHeight)) / itemHeight
+          (relativePos[1] - (groupPadding + groupTitleHeight + groupBorder)) /
+            itemHeight
         ),
         0,
         group.height() - 1

@@ -5,6 +5,7 @@ import { DraggableCore, DraggableData } from 'react-draggable';
 import { runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
 import {
+  groupBorder,
   groupPadding,
   groupTitleHeight,
   Item as MobxItem,
@@ -99,9 +100,11 @@ const MainItem = observer(
                 const createdGroup = workspaceStore.createGroup('New Group');
                 newGroup = createdGroup;
                 const [worldX, worldY] = workspaceStore.screenToWorld(
-                  item.containerDragPosX - groupPadding * workspaceStore.scale,
+                  item.containerDragPosX -
+                    (groupPadding + groupBorder) * workspaceStore.scale,
                   item.containerDragPosY -
-                    (groupPadding + groupTitleHeight) * workspaceStore.scale
+                    (groupPadding + groupTitleHeight + groupBorder) *
+                      workspaceStore.scale
                 );
                 createdGroup.move(worldX, worldY);
                 workspaceStore.changeGroup(item, group, createdGroup);

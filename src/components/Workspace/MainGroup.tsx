@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { runInAction } from 'mobx';
 import { DraggableCore, DraggableData } from 'react-draggable';
 import {
+  groupBorder,
   groupPadding,
   groupTitleHeight,
   ItemGroup,
@@ -71,10 +72,17 @@ const MainGroup = observer(
           workspaceStore.moveToFront(group);
           group.setDragMouseStart(data.x, data.y);
 
+          const screenGroupY = workspaceStore.worldToScreen(0, group.y)[1];
+
           if (data.x > group.x + group.size()[0] - 10 && false) {
             group.setTempResizeWidth(group.width);
             group.setResizing(true);
-          } else if (data.y > group.y + groupTitleHeight + groupPadding + 1) {
+          } else if (
+            data.y >=
+            screenGroupY +
+              (groupTitleHeight + groupPadding + groupBorder) *
+                workspaceStore.scale
+          ) {
             group.setBeingDragged(true);
             workspaceStore.setAnyDragging(true);
           }
@@ -182,6 +190,7 @@ const MainGroup = observer(
             left: groupScreenX,
             top: groupScreenY,
             zIndex: group.zIndex,
+            border: `${groupBorder}px solid black`,
             display:
               group.id === 'hidden' ||
               (group.id === 'inbox' && group.itemArrangement.length === 0)
