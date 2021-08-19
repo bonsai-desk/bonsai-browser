@@ -57,6 +57,11 @@ export default class TabPageStore {
   handleKeyDown(e: KeyboardEvent) {
     switch (e.key) {
       case 'Enter':
+        if (this.View === View.FuzzySearch) {
+          console.log(this.View);
+          ipcRenderer.send('search-url', this.urlText);
+          this.setUrlText('');
+        }
         break;
       case 'Escape':
         if (this.View === View.History) {
@@ -179,7 +184,12 @@ export default class TabPageStore {
 
   setUrlText(newValue: string) {
     this.urlText = newValue;
-    this.searchTab(newValue);
+    if (newValue.length > 0) {
+      this.View = View.FuzzySearch;
+      this.searchTab(newValue);
+    } else {
+      this.View = View.Tabs;
+    }
   }
 
   refreshFuse() {
@@ -300,7 +310,9 @@ export default class TabPageStore {
     });
     ipcRenderer.on('blur', () => {
       runInAction(() => {
-        this.setUrlText('');
+        if (this.View === View.Tabs) {
+          this.setUrlText('');
+        }
       });
     });
     ipcRenderer.on('set-padding', (_, newPadding) => {
@@ -310,6 +322,9 @@ export default class TabPageStore {
     });
     ipcRenderer.on('set-active', (_, newIsActive) => {
       runInAction(() => {
+        if (newIsActive && this.View !== View.None) {
+          return;
+        }
         if (newIsActive) {
           this.View = View.Tabs;
         } else {

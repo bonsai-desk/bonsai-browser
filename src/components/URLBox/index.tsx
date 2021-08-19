@@ -1,5 +1,4 @@
 import styled, { css } from 'styled-components';
-import { ipcRenderer } from 'electron';
 import React, { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { myPlatform, Platform } from '../../render-constants';
@@ -49,12 +48,6 @@ const URLBox = observer(() => {
         value={tabPageStore.urlText}
         onInput={(e) => {
           tabPageStore.setUrlText(e.currentTarget.value);
-        }}
-        onKeyDown={(e) => {
-          if (e.nativeEvent.code === 'Enter') {
-            ipcRenderer.send('search-url', tabPageStore.urlText);
-            tabPageStore.setUrlText('');
-          }
         }}
         onClick={() => {
           if (urlBoxRef.current != null && !urlFocus) {
