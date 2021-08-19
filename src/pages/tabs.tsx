@@ -15,7 +15,7 @@ import HistoryModalLocal from '../components/History';
 const MainContent = observer(() => {
   const { tabPageStore } = useStore();
   const tabs = (
-    <div style={{ height: '100%', padding: '0 0 0 1rem' }}>
+    <div style={{ flexGrow: 1, padding: '0 0 0 1rem' }}>
       {tabPageStore.urlText.length === 0 ? <TabColumns /> : <FuzzyTabs />}
     </div>
   );

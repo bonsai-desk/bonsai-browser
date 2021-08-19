@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import { observer } from 'mobx-react-lite';
-import { Instance } from 'mobx-state-tree';
+import { Instance, isValidReference } from 'mobx-state-tree';
 import React, { useEffect, useRef } from 'react';
 import { runInAction } from 'mobx';
 import { DraggableCore, DraggableData } from 'react-draggable';
@@ -15,7 +15,6 @@ import { easeOut, overTrash } from './utils';
 import { lerp } from '../../utils/utils';
 
 const Group = styled.div`
-  background-color: rgb(255, 170, 166);
   border-radius: 20px;
   color: rgb(250, 250, 250);
   position: absolute;
@@ -79,12 +78,15 @@ const MainGroup = observer(
     const groupTitleBoxRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-      if (tabPageStore.editingGroupId === group.id) {
+      if (
+        isValidReference(() => group) &&
+        tabPageStore.editingGroupId === group.id
+      ) {
         setTimeout(() => {
           groupTitleBoxRef.current?.select();
         }, 10);
       }
-    }, [tabPageStore.editingGroupId, group.id]);
+    }, [tabPageStore.editingGroupId, group]);
 
     useEffect(() => {
       if (group.shouldEditTitle) {
@@ -99,13 +101,25 @@ const MainGroup = observer(
       }
     }, [group, group.shouldEditTitle, tabPageStore]);
 
+    const [groupScreenX, groupScreenY] = workspaceStore.worldToScreen(
+      group.x,
+      group.y
+    );
+
     return (
       <DraggableCore
+        onMouseDown={(e) => {
+          e.stopPropagation();
+        }}
         onStart={(_, data) => {
+          if (group.id === 'inbox') {
+            return;
+          }
+
           workspaceStore.moveToFront(group);
           group.setDragMouseStart(data.x, data.y);
 
-          if (data.x > group.x + group.size()[0] - 10) {
+          if (data.x > group.x + group.size()[0] - 10 && false) {
             group.setTempResizeWidth(group.width);
             group.setResizing(true);
           } else if (data.y > group.y + groupTitleHeight + groupPadding + 1) {
@@ -114,6 +128,10 @@ const MainGroup = observer(
           }
         }}
         onDrag={(_, data: DraggableData) => {
+          if (group.id === 'inbox') {
+            return;
+          }
+
           if (group.resizing) {
             group.setTempResizeWidth(widthPixelsToInt(data.x - group.x));
             workspaceStore.setGroupWidth(
@@ -137,11 +155,26 @@ const MainGroup = observer(
             if (group.beingDragged) {
               group.setOverTrash(overTrash([data.x, data.y], workspaceStore));
               workspaceStore.setAnyOverTrash(group.overTrash);
-              group.move(data.deltaX, data.deltaY);
+
+              const [worldLastX, worldLastY] = workspaceStore.screenToWorld(
+                data.lastX,
+                data.lastY
+              );
+              const [worldX, worldY] = workspaceStore.screenToWorld(
+                data.x,
+                data.y
+              );
+              const deltaX = worldX - worldLastX;
+              const deltaY = worldY - worldLastY;
+              group.move(deltaX, deltaY);
             }
           }
         }}
         onStop={(_, data) => {
+          if (group.id === 'inbox') {
+            return;
+          }
+
           if (
             !group.beingDragged &&
             !group.resizing &&
@@ -182,6 +215,8 @@ const MainGroup = observer(
       >
         <Group
           style={{
+            transformOrigin: '0px 0px',
+            transform: `scale(${workspaceStore.cameraZoom})`,
             width: lerp(
               group.animationStartWidth,
               targetGroupSize[0],
@@ -192,11 +227,17 @@ const MainGroup = observer(
               targetGroupSize[1],
               lerpValue
             ),
-            left: group.x,
-            top: group.y,
+            left: groupScreenX,
+            top: groupScreenY,
             zIndex: group.zIndex,
-            display: group.id === 'hidden' ? 'none' : 'block',
+            display:
+              group.id === 'hidden' ||
+              (group.id === 'inbox' && group.itemArrangement.length === 0)
+                ? 'none'
+                : 'block',
             cursor: group.beingDragged ? 'grabbing' : 'auto',
+            backgroundColor:
+              group.id === 'inbox' ? '#4287f5' : 'rgb(255, 170, 166)',
           }}
           onMouseOver={() => {
             group.setHovering(true);
@@ -230,6 +271,15 @@ const MainGroup = observer(
               }}
               onMouseDown={(e) => {
                 e.stopPropagation();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  if (groupTitleBoxRef.current !== null) {
+                    groupTitleBoxRef.current.blur();
+                  }
+                }
               }}
               onBlur={(e) => {
                 runInAction(() => {

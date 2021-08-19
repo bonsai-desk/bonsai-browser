@@ -11,7 +11,11 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { ipcRenderer } from 'electron';
 import fs from 'fs';
+import { mat4, vec4, vec3 } from 'gl-matrix';
 import { clamp } from '../utils/utils';
+
+const noAllocPos = vec4.create();
+const noAllocPos3 = vec3.create();
 
 export const itemWidth = 200;
 export const itemHeight = 125;
@@ -42,15 +46,16 @@ export const Item = types
     dragMouseStartY: 0,
   }))
   .views((self) => ({
-    placeholderPos(group: Instance<typeof ItemGroup>): [number, number] {
+    placeholderPos(
+      group: Instance<typeof ItemGroup>,
+      cameraZoom: number
+    ): [number, number] {
       const x = self.indexInGroup % group.width;
       const y = Math.floor(self.indexInGroup / group.width);
       return [
-        x * (itemWidth + itemSpacing) + groupPadding + group.x,
-        y * (itemHeight + itemSpacing) +
-          groupTitleHeight +
-          groupPadding +
-          group.y,
+        (x * (itemWidth + itemSpacing) + groupPadding) * cameraZoom,
+        (y * (itemHeight + itemSpacing) + groupTitleHeight + groupPadding) *
+          cameraZoom,
       ];
     },
   }))
@@ -72,17 +77,24 @@ export const Item = types
       self.dragMouseStartX = x;
       self.dragMouseStartY = y;
     },
-    recordCurrentTargetAsAnimationStart(group: Instance<typeof ItemGroup>) {
-      const currentPos = self.placeholderPos(group);
+    recordCurrentTargetAsAnimationStart(
+      group: Instance<typeof ItemGroup>,
+      cameraZoom: number
+    ) {
+      const currentPos = self.placeholderPos(group, cameraZoom);
       self.animationStartX = currentPos[0];
       self.animationStartY = currentPos[1];
     },
-    setIndexInGroup(indexInGroup: number, group: Instance<typeof ItemGroup>) {
+    setIndexInGroup(
+      indexInGroup: number,
+      group: Instance<typeof ItemGroup>,
+      cameraZoom: number
+    ) {
       if (self.indexInGroup === indexInGroup) {
         return;
       }
 
-      this.recordCurrentTargetAsAnimationStart(group);
+      this.recordCurrentTargetAsAnimationStart(group, cameraZoom);
 
       if (!self.beingDragged) {
         self.animationLerp = 0;
@@ -182,6 +194,10 @@ export const ItemGroup = types
       self.x += x;
       self.y += y;
     },
+    setPos(x: number, y: number) {
+      self.x = x;
+      self.y = y;
+    },
     setAnimationLerp(animationLerp: number) {
       self.animationLerp = animationLerp;
     },
@@ -193,24 +209,121 @@ export const ItemGroup = types
     },
   }));
 
+const WorldToClip = mat4.create();
+const ClipToWorld = mat4.create();
+const ScreenToClip = mat4.create();
+const ClipToScreen = mat4.create();
+
+function calculateMatrices(
+  width: number,
+  height: number,
+  cameraZoom: number,
+  cameraX: number,
+  cameraY: number
+) {
+  const aspectRatio = width / height;
+  mat4.ortho(
+    WorldToClip,
+    -aspectRatio / cameraZoom,
+    aspectRatio / cameraZoom,
+    -1 / cameraZoom,
+    1 / cameraZoom,
+    -1,
+    1
+  );
+  noAllocPos3[0] = -cameraX;
+  noAllocPos3[1] = -cameraY;
+  noAllocPos3[2] = 0;
+  mat4.translate(WorldToClip, WorldToClip, noAllocPos3);
+  mat4.invert(ClipToWorld, WorldToClip);
+  mat4.ortho(ScreenToClip, 0, width, 0, height, -1, 1);
+  mat4.invert(ClipToScreen, ScreenToClip);
+
+  return {
+    worldToClip: WorldToClip,
+    clipToWorld: ClipToWorld,
+    screenToClip: ScreenToClip,
+    clipToScreen: ClipToScreen,
+  };
+}
+
+function transformPosition(
+  x: number,
+  y: number,
+  m1: mat4,
+  m2: mat4
+): [number, number] {
+  noAllocPos[0] = x;
+  noAllocPos[1] = y;
+  noAllocPos[2] = 0;
+  noAllocPos[3] = 1;
+  vec4.transformMat4(noAllocPos, noAllocPos, m1);
+  vec4.transformMat4(noAllocPos, noAllocPos, m2);
+  return [noAllocPos[0], noAllocPos[1]];
+}
+
 export const WorkspaceStore = types
   .model({
     hiddenGroup: ItemGroup,
+    inboxGroup: ItemGroup,
     groups: types.map(ItemGroup),
     items: types.map(Item),
+    cameraZoom: 1,
+    cameraX: 0,
+    cameraY: 0,
   })
   .volatile(() => ({
+    x: 0,
+    y: 0,
     width: 0,
     height: 0,
     anyDragging: false,
     anyOverTrash: false,
     snapshotPath: '',
   }))
+  .views((self) => ({
+    get getMatrices() {
+      const newMatrices = calculateMatrices(
+        self.width,
+        self.height,
+        self.cameraZoom,
+        self.cameraX,
+        self.cameraY
+      );
+      const [left, top] = transformPosition(
+        0,
+        0,
+        newMatrices.screenToClip,
+        newMatrices.clipToWorld
+      );
+      self.inboxGroup.setPos(left, top);
+      self.hiddenGroup.setPos(left, top);
+      return newMatrices;
+    },
+    worldToScreen(x: number, y: number): [number, number] {
+      const { worldToClip, clipToScreen } = this.getMatrices;
+      return transformPosition(x, y, worldToClip, clipToScreen);
+    },
+    screenToWorld(x: number, y: number): [number, number] {
+      const { screenToClip, clipToWorld } = this.getMatrices;
+      return transformPosition(x, y, screenToClip, clipToWorld);
+    },
+  }))
   .actions((self) => ({
+    setCameraZoom(zoom: number) {
+      self.cameraZoom = clamp(zoom, 0.2, 3);
+      // console.log(`zoom: ${self.cameraZoom}`);
+    },
+    moveCamera(x: number, y: number) {
+      self.cameraX += x;
+      self.cameraY += y;
+    },
     setSnapshotPath(snapshotPath: string) {
       self.snapshotPath = snapshotPath;
     },
-    setSize(width: number, height: number) {
+    setRect(x: number, y: number, width: number, height: number) {
+      self.x = x;
+      self.y = y;
       self.width = width;
       self.height = height;
     },
@@ -249,7 +362,11 @@ export const WorkspaceStore = types
     ) {
       const item = Item.create({ id: uuidv4(), url, title, image, favicon });
       self.items.put(item);
-      item.setIndexInGroup(group.itemArrangement.length, group);
+      item.setIndexInGroup(
+        group.itemArrangement.length,
+        group,
+        self.cameraZoom
+      );
       item.groupId = group.id;
       group.itemArrangement.push(item.id);
     },
@@ -263,7 +380,7 @@ export const WorkspaceStore = types
       for (let i = 0; i < group.itemArrangement.length; i += 1) {
         const nextItem = self.items.get(group.itemArrangement[i]);
         if (typeof nextItem !== 'undefined') {
-          nextItem.setIndexInGroup(i, group);
+          nextItem.setIndexInGroup(i, group, self.cameraZoom);
         }
       }
     },
@@ -285,7 +402,11 @@ export const WorkspaceStore = types
       oldGroup.itemArrangement.splice(item.indexInGroup, 1);
       this.updateItemIndexes(oldGroup);
 
-      item.setIndexInGroup(newGroup.itemArrangement.length, newGroup);
+      item.setIndexInGroup(
+        newGroup.itemArrangement.length,
+        newGroup,
+        self.cameraZoom
+      );
       item.groupId = newGroup.id;
       newGroup.itemArrangement.push(item.id);
     },
@@ -301,7 +422,7 @@ export const WorkspaceStore = types
       group.itemArrangement.forEach((itemId) => {
         const item = self.items.get(itemId);
         if (typeof item !== 'undefined') {
-          item.recordCurrentTargetAsAnimationStart(group);
+          item.recordCurrentTargetAsAnimationStart(group, self.cameraZoom);
           item.setAnimationLerp(0);
         }
       });
@@ -422,6 +543,12 @@ function createWorkspaceStore() {
       itemArrangement: [],
       zIndex: 0,
     }),
+    inboxGroup: ItemGroup.create({
+      id: 'inbox',
+      title: 'inbox',
+      itemArrangement: [],
+      zIndex: 0,
+    }),
     groups: {},
     items: {},
   });
@@ -480,7 +607,7 @@ function createWorkspaceStore() {
       saveSnapshot();
     }
 
-    workspaceStore.items.forEach((item) => {
+    function animateItem(item: Instance<typeof Item>) {
       if (item.animationLerp !== 1) {
         item.setAnimationLerp(
           item.animationLerp + deltaTime * (1 / animationTime)
@@ -489,8 +616,11 @@ function createWorkspaceStore() {
           item.setAnimationLerp(1);
         }
       }
+    }
+    workspaceStore.items.forEach((item) => {
+      animateItem(item);
     });
-    workspaceStore.groups.forEach((group) => {
+    function animateGroup(group: Instance<typeof ItemGroup>) {
       if (group.animationLerp !== 1) {
         group.setAnimationLerp(
           group.animationLerp + deltaTime * (1 / animationTime)
@@ -499,7 +629,12 @@ function createWorkspaceStore() {
           group.setAnimationLerp(1);
         }
       }
+    }
+    workspaceStore.groups.forEach((group) => {
+      animateGroup(group);
     });
+    animateGroup(workspaceStore.hiddenGroup);
+    animateGroup(workspaceStore.inboxGroup);
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
