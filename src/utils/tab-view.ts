@@ -74,9 +74,10 @@ class TabView {
         nodeIntegration: false,
         sandbox: true,
         preload: PRELOAD,
-        contextIsolation: false, // todo: do we need this? security concern?
+        contextIsolation: true, // todo: do we need this? security concern?
       },
     });
+    this.view.setBackgroundColor('#FFFFFF');
     const { id } = this.view.webContents;
     this.id = id;
 

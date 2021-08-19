@@ -268,6 +268,7 @@ export default class WindowManager {
         opacity = 0.0;
         clearInterval(handle);
         this.unFloat(display.activeDisplay);
+        this.tabPageView.webContents.send('blur');
         this.mainWindow?.hide();
         if (process.platform === 'darwin') {
           app.hide();
@@ -286,9 +287,13 @@ export default class WindowManager {
       visibleOnFullScreen: true,
     });
     this.mainWindow.show();
+    if (process.platform === 'darwin') {
+      app.dock.show();
+    }
     this.mainWindow.setVisibleOnAllWorkspaces(false, {
       visibleOnFullScreen: true,
     });
+    this.mainWindow.setOpacity(1.0);
     this.setPinned(false);
     this.unFloat(display.activeDisplay);
     if (this.activeTabId === -1) {
@@ -298,16 +303,20 @@ export default class WindowManager {
       }, 10);
     }
 
-    let opacity = 0.0;
-    this.mainWindow.setOpacity(0.0);
-    const handle = setInterval(() => {
-      opacity += 0.1;
-      if (opacity > 1.0) {
-        opacity = 1.0;
-        clearInterval(handle);
-      }
-      this.mainWindow.setOpacity(easeOut(opacity));
-    }, 10);
+    // todo: setting the opacity to zero here
+    // makes the vibrancy colors bad so we just don't
+    // fade in until a workaround is found
+
+    // let opacity = 0.0;
+    // this.mainWindow.setOpacity(opacity);
+    // const handle = setInterval(() => {
+    //   opacity += 0.1;
+    //   if (opacity > 1.0) {
+    //     opacity = 1.0;
+    //     clearInterval(handle);
+    //   }
+    //   this.mainWindow.setOpacity(easeOut(opacity));
+    // }, 10);
   }
 
   webViewActive() {
@@ -1197,12 +1206,14 @@ export default class WindowManager {
 
   toggle(mouseInBorder: boolean) {
     if (this.windowFloating) {
-      this.hideMainWindow();
+      this.hideWindow();
+      // this.hideMainWindow();
     } else if (this.tabPageActive()) {
       if (this.historyModalActive) {
         this.tabPageView.webContents.send('close-history-modal');
       } else {
-        this.hideMainWindow();
+        this.hideWindow();
+        // this.hideMainWindow();
       }
     } else if (windowHasView(this.mainWindow, this.titleBarView)) {
       const findIsActive = this.findActive();
@@ -1233,11 +1244,6 @@ export default class WindowManager {
   resizeTabView(tabView: TabView) {
     const bounds = this.innerBounds();
     tabView.resize(bounds);
-  }
-
-  hideMainWindow() {
-    this.tabPageView.webContents.send('blur');
-    this.mainWindow?.hide();
   }
 
   focusSearch() {

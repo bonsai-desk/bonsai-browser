@@ -28,20 +28,15 @@ import Workspace from '../components/Workspace';
 import pinSelected from '../../assets/pin-selected.svg';
 import pinUnselected from '../../assets/pin-unselected.svg';
 
+const Clicker = styled.div`
+  position: absolute;
+  height: 100vh;
+  width: 100vw;
+`;
+
 const Wrapper = styled.div`
   width: 100vw;
   height: 100vh;
-`;
-
-const WebViewBackground = styled.div`
-  position: absolute;
-  background-color: white;
-  ${({ padding }: { padding: string }) => css`
-    top: ${padding}px;
-    left: ${padding}px;
-    width: calc(100% - ${padding}px - ${padding}px);
-    height: calc(100% - ${padding}px - ${padding}px);
-  `}
 `;
 
 const GlobalStyle = createGlobalStyle`
@@ -144,7 +139,16 @@ const MainContent = observer(() => {
     </div>
   );
 
-  const workspace = <Workspace />;
+  const workspace = (
+    <>
+      <Clicker
+        onClick={() => {
+          tabPageStore.workspaceActive = false;
+        }}
+      />
+      <Workspace />
+    </>
+  );
 
   return tabPageStore.workspaceActive ? workspace : tabs;
 });
@@ -179,7 +183,6 @@ const Tabs = observer(() => {
   const { tabPageStore } = useStore();
   const urlBoxRef = useRef<HTMLInputElement>(null);
   const [urlFocus, setUrlFocus] = useState(false);
-  const backgroundRef = useRef(null);
 
   useEffect(() => {
     tabPageStore.urlBoxRef = urlBoxRef;
@@ -232,16 +235,7 @@ const Tabs = observer(() => {
   const mac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
 
   return (
-    <Wrapper
-      ref={backgroundRef}
-      onClick={(e) => {
-        if (backgroundRef.current !== null) {
-          if (backgroundRef.current === e.target) {
-            ipcRenderer.send('click-main');
-          }
-        }
-      }}
-    >
+    <Wrapper>
       <GlobalStyle mac={mac} />
       {tabPageStore.isActive ? (
         <Background>
@@ -305,7 +299,11 @@ const Tabs = observer(() => {
           </Footer>
         </Background>
       ) : (
-        <WebViewBackground padding={tabPageStore.padding} />
+        <Clicker
+          onClick={() => {
+            ipcRenderer.send('click-main');
+          }}
+        />
       )}
       <HistoryModalLocal />
       <PinButton
