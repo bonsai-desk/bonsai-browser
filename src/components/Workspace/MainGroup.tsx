@@ -59,8 +59,6 @@ const MainGroup = observer(
       group.y
     );
 
-    console.log('asdf');
-
     return (
       <DraggableCore
         onMouseDown={(e) => {

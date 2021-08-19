@@ -309,7 +309,7 @@ export const WorkspaceStore = types
   }))
   .actions((self) => ({
     setCameraZoom(zoom: number) {
-      self.cameraZoom = clamp(zoom, 0.05, 1);
+      self.cameraZoom = clamp(zoom, 0.035, 1);
       // console.log(`zoom: ${self.cameraZoom}`);
     },
     moveCamera(x: number, y: number) {
@@ -481,16 +481,22 @@ export const WorkspaceStore = types
         return;
       }
 
-      const relativePos = [pos[0] - group.x, pos[1] - group.y];
+      const [groupScreenX, groupScreenY] = self.worldToScreen(group.x, group.y);
+
+      const relativePos = [pos[0] - groupScreenX, pos[1] - groupScreenY];
       const x = clamp(
-        Math.floor((relativePos[0] - (groupPadding + groupBorder)) / itemWidth),
+        Math.floor(
+          (relativePos[0] - (groupPadding + groupBorder) * self.scale) /
+            (itemWidth * self.scale)
+        ),
         0,
         group.width - 1
       );
       const y = clamp(
         Math.floor(
-          (relativePos[1] - (groupPadding + groupTitleHeight + groupBorder)) /
-            itemHeight
+          (relativePos[1] -
+            (groupPadding + groupTitleHeight + groupBorder) * self.scale) /
+            (itemHeight * self.scale)
         ),
         0,
         group.height() - 1
