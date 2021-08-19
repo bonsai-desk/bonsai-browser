@@ -99,14 +99,11 @@ const MainItem = observer(
                 const createdGroup = workspaceStore.createGroup('New Group');
                 newGroup = createdGroup;
                 const [worldX, worldY] = workspaceStore.screenToWorld(
-                  item.containerDragPosX - groupPadding,
-                  item.containerDragPosY - (groupPadding + groupTitleHeight)
+                  item.containerDragPosX - groupPadding * workspaceStore.scale,
+                  item.containerDragPosY -
+                    (groupPadding + groupTitleHeight) * workspaceStore.scale
                 );
                 createdGroup.move(worldX, worldY);
-                // createdGroup.move(
-                //   item.containerDragPosX - groupPadding,
-                //   item.containerDragPosY - (groupPadding + groupTitleHeight)
-                // );
                 workspaceStore.changeGroup(item, group, createdGroup);
                 createdGroup.setShouldEditTitle(true);
               }
