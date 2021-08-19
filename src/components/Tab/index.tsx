@@ -2,40 +2,32 @@ import { observer } from 'mobx-react-lite';
 import React from 'react';
 import { ipcRenderer } from 'electron';
 import { useStore } from '../../store/tab-page-store';
-import { ITab } from '../../interfaces/tab';
+import { ITab, TabPageTab } from '../../interfaces/tab';
 import redX from '../../static/x-letter.svg';
 import RedX from '../RedX';
 import {
   RedXParent,
-  TabImage,
+  TabImg,
   TabImageDummy,
   TabImageParent,
   TabParent,
   TabTitle,
 } from './style';
 
-const Tab = observer(({ tab, hover, selected = false }: ITab) => {
-  const { tabPageStore, workspaceStore } = useStore();
-  const title =
-    tab.openGraphInfo !== null &&
-    tab.openGraphInfo.title !== '' &&
-    tab.openGraphInfo.title !== 'null'
-      ? tab.openGraphInfo.title
-      : tab.title;
-  const imgUrl =
-    tab.openGraphInfo !== null && tab.openGraphInfo.image !== ''
-      ? tab.openGraphInfo.image
-      : tab.image;
-  return (
-    <TabParent
-      selected={selected}
-      onClick={() => {
-        ipcRenderer.send('set-tab', tab.id);
-        tabPageStore.setUrlText('');
-      }}
-    >
-      <TabImageParent>
-        {imgUrl ? <TabImage src={imgUrl} alt="tab_image" /> : <TabImageDummy />}
+interface ITabImage {
+  hover: boolean;
+  title: string;
+  imgUrl: string;
+  tab: TabPageTab;
+  selected: boolean;
+}
+
+const TabImage = observer(
+  ({ selected, hover, imgUrl, tab, title }: ITabImage) => {
+    const { workspaceStore } = useStore();
+    return (
+      <TabImageParent selected={selected}>
+        {imgUrl ? <TabImg src={imgUrl} alt="tab_image" /> : <TabImageDummy />}
         <RedXParent hover={hover}>
           <TabTitle>{title === '' ? 'New Tab' : title}</TabTitle>
           <RedX
@@ -70,10 +62,39 @@ const Tab = observer(({ tab, hover, selected = false }: ITab) => {
             }}
           >
             <div>Add to workspace</div>
-            {/* <img src={moreIcon} alt="." width="20px" /> */}
           </RedX>
         </RedXParent>
       </TabImageParent>
+    );
+  }
+);
+
+const Tab = observer(({ tab, hover, selected = false }: ITab) => {
+  const { tabPageStore } = useStore();
+  const title =
+    tab.openGraphInfo !== null &&
+    tab.openGraphInfo.title !== '' &&
+    tab.openGraphInfo.title !== 'null'
+      ? tab.openGraphInfo.title
+      : tab.title;
+  const imgUrl =
+    tab.openGraphInfo !== null && tab.openGraphInfo.image !== ''
+      ? tab.openGraphInfo.image
+      : tab.image;
+  return (
+    <TabParent
+      onClick={() => {
+        ipcRenderer.send('set-tab', tab.id);
+        tabPageStore.setUrlText('');
+      }}
+    >
+      <TabImage
+        selected={selected}
+        hover={hover}
+        title={title}
+        imgUrl={imgUrl}
+        tab={tab}
+      />
     </TabParent>
   );
 });

@@ -29,11 +29,7 @@ const MainContent = observer(() => {
       </>
     );
   }
-  return (
-    <div style={{ height: '100%', padding: '0 0 0 1rem' }}>
-      {tabPageStore.View === View.Tabs ? <Columns /> : <FuzzyTabs />}
-    </div>
-  );
+  return tabPageStore.View === View.Tabs ? <Columns /> : <FuzzyTabs />;
 });
 
 const Content = observer(() => {

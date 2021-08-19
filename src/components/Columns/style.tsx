@@ -7,7 +7,6 @@ export const ColumnParent = styled.div`
   user-select: none;
   margin-right: 1rem;
   color: white;
-  background-color: blue;
   width: 20rem;
 `;
 export const HeaderOverlay = styled.div`
