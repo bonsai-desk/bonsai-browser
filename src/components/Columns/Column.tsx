@@ -14,12 +14,7 @@ export const ColumnsParent = styled.div`
 `;
 
 export const Column = observer(({ column }: { column: TabPageColumn }) => {
-  // const { tabPageStore } = useStore();
   const [hovered, setHovered] = useState(false);
-  // let columnFavicon = '';
-  // if (column.tabs.length > 0) {
-  //   columnFavicon = column.tabs[0].favicon;
-  // }
   function handleMouseOver() {
     setHovered(true);
   }

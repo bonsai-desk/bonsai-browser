@@ -7,10 +7,18 @@ export const TabParent = styled.div`
   flex-shrink: 0;
   word-wrap: break-word;
   text-overflow: ellipsis;
-  margin-bottom: 20px;
-  height: 9rem;
+  margin-bottom: 1rem;
+`;
+
+export const TabImageParent = styled.div`
   width: 100%;
-  background-color: black;
+  padding-top: 56.25%;
+  position: relative; /* If you want text inside of it */
+  border-radius: 10px;
+  border-width: 4px;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
   @media (prefers-color-scheme: dark) {
     box-shadow: rgba(255, 255, 255, 0.16) 0 10px 36px 0,
       rgba(0, 0, 0, 0.06) 0 0 0 1px;
@@ -27,29 +35,21 @@ export const TabParent = styled.div`
       `;
     }
     return css`
-      padding: 4px;
+      margin: 4px;
     `;
   }}
-`;
-export const TabImageParent = styled.div`
-  width: 100%;
-  height: 100%;
-  position: relative;
-  border-radius: 10px;
-  border-width: 4px;
-  display: flex;
-  justify-content: center;
-  overflow: hidden;
-  object-fit: cover;
 `;
 export const RedXParent = styled.div`
   font-size: 0.6rem;
   position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.6);
   transition-duration: 0.25s;
   opacity: ${({ hover }: { hover: boolean }) => (hover ? 100 : 0)};
+  z-index: 10;
 `;
 export const TabTitle = styled.div`
   width: calc(100% - 40px - 10px);
@@ -58,11 +58,17 @@ export const TabTitle = styled.div`
   font-size: 15px;
   overflow: hidden;
 `;
-export const TabImage = styled.img`
+export const TabImg = styled.img`
+  position: absolute;
+  top: 0;
   height: 100%;
-  background: white;
+  object-fit: cover;
+  z-index: -10;
 `;
 export const TabImageDummy = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
   background-color: black;
   height: 100%;
   width: 100%;
