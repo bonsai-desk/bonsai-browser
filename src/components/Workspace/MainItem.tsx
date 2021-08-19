@@ -1,4 +1,3 @@
-import styled, { css } from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import { Instance } from 'mobx-state-tree';
 import React from 'react';
@@ -16,54 +15,8 @@ import {
 import { useStore, View } from '../../store/tab-page-store';
 import { easeOut, getGroupBelowItem, overTrash } from './utils';
 import { lerp } from '../../utils/utils';
+import { ItemContainer, ItemImg, ItemTitle } from './style';
 
-// const ItemPlaceholderAndContainer = styled.div``;
-// const ItemPlaceholder = styled.div`
-//   position: absolute;
-//   left: 0;
-//   top: 0;
-// `;
-const ItemContainer = styled.div`
-  background-color: white;
-  border-radius: 20px;
-  color: rgb(50, 50, 50);
-  position: absolute;
-  transition: transform 0.05s ease-out, filter 0.25s;
-  overflow: hidden;
-
-  ${({ showTitle }: { showTitle: boolean }) =>
-    css`
-      div {
-        opacity: ${showTitle ? '100' : '0'};
-      }
-    `};
-`;
-const ItemImg = styled.img`
-  height: 100%;
-  width: 100%;
-  object-fit: cover;
-  background-color: white;
-
-  // :(
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  user-select: none;
-  -webkit-user-drag: none;
-`;
-const ItemTitle = styled.div`
-  background-color: rgba(0, 0, 0, 0.6);
-  color: white;
-  position: absolute;
-  font-size: 0.9rem;
-  width: calc(100% - 10px);
-  height: calc(100% - 10px);
-  padding: 5px;
-  overflow: hidden;
-  top: 0;
-  left: 0;
-  opacity: 0;
-  transition: opacity 0.25s;
-`;
 const MainItem = observer(
   ({
     group,

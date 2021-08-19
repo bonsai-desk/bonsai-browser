@@ -1,6 +1,6 @@
 import styled from 'styled-components';
-import MainItem from './mainItem';
-import MainGroup from './mainGroup';
+import MainItem from './MainItem';
+import MainGroup from './MainGroup';
 
 export { MainItem, MainGroup };
 export const Background = styled.div`
