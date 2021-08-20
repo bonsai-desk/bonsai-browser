@@ -260,6 +260,7 @@ function transformPosition(
 
 const minZoom = 0.035;
 const maxZoom = 1;
+const defaultZoom = 0.25;
 
 export const WorkspaceStore = types
   .model({
@@ -267,7 +268,7 @@ export const WorkspaceStore = types
     inboxGroup: ItemGroup,
     groups: types.map(ItemGroup),
     items: types.map(Item),
-    cameraZoom: 0.25,
+    cameraZoom: defaultZoom,
     cameraX: 0,
     cameraY: 0,
   })
@@ -334,7 +335,7 @@ export const WorkspaceStore = types
       self.cameraY = y;
     },
     centerCamera() {
-      let edges: number[] | null = null;
+      let edges = [0, 0, 0, 0];
       self.groups.forEach((group) => {
         const screenPos = self.worldToScreen(group.x, group.y);
         const size = group.size();
@@ -377,13 +378,6 @@ export const WorkspaceStore = types
           }
         }
       });
-      if (edges === null) {
-        edges = [0, 0, 0, 0];
-        this.setCameraPosition(0, 0);
-        self.tempMinCameraZoom = minZoom;
-        this.setCameraZoom(0.25);
-        return;
-      }
 
       const padding = 0.5;
       edges[0] += padding;
@@ -402,7 +396,7 @@ export const WorkspaceStore = types
       const aspectRatio = self.width / self.height;
       const xZoom = 1 / (width / (aspectRatio * 2));
 
-      const zoom = Math.min(yZoom, xZoom);
+      const zoom = Math.min(yZoom, xZoom, defaultZoom);
       self.tempMinCameraZoom = Math.min(zoom, minZoom);
 
       this.setCameraZoom(zoom);
