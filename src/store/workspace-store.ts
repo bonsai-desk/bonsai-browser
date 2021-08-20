@@ -188,6 +188,7 @@ export const ItemGroup = types
     move(x: number, y: number) {
       self.x += x;
       self.y += y;
+      // console.log([self.x, self.y]);
     },
     setPos(x: number, y: number) {
       self.x = x;
@@ -231,7 +232,7 @@ function calculateMatrices(
   noAllocPos3[2] = 0;
   mat4.translate(WorldToClip, WorldToClip, noAllocPos3);
   mat4.invert(ClipToWorld, WorldToClip);
-  mat4.ortho(ScreenToClip, 0, width, 0, height, -1, 1);
+  mat4.ortho(ScreenToClip, 0, width, height, 0, -1, 1);
   mat4.invert(ClipToScreen, ScreenToClip);
 
   return {
@@ -257,6 +258,9 @@ function transformPosition(
   return [noAllocPos[0], noAllocPos[1]];
 }
 
+const minZoom = 0.035;
+const maxZoom = 1;
+
 export const WorkspaceStore = types
   .model({
     hiddenGroup: ItemGroup,
@@ -275,6 +279,7 @@ export const WorkspaceStore = types
     anyDragging: false,
     anyOverTrash: false,
     snapshotPath: '',
+    tempMinCameraZoom: 0.035,
   }))
   .views((self) => ({
     get scale() {
@@ -308,13 +313,99 @@ export const WorkspaceStore = types
     },
   }))
   .actions((self) => ({
+    moveGroupsToPosition(x: number, y: number) {
+      self.groups.forEach((group) => {
+        group.setPos(x, y);
+      });
+    },
     setCameraZoom(zoom: number) {
-      self.cameraZoom = clamp(zoom, 0.035, 1);
+      self.cameraZoom = clamp(zoom, self.tempMinCameraZoom, maxZoom);
+      if (zoom > self.tempMinCameraZoom) {
+        self.tempMinCameraZoom = Math.min(zoom, minZoom);
+      }
       // console.log(`zoom: ${self.cameraZoom}`);
     },
     moveCamera(x: number, y: number) {
       self.cameraX += x;
       self.cameraY += y;
+    },
+    setCameraPosition(x: number, y: number) {
+      self.cameraX = x;
+      self.cameraY = y;
+    },
+    centerCamera() {
+      let edges: number[] | null = null;
+      self.groups.forEach((group) => {
+        const screenPos = self.worldToScreen(group.x, group.y);
+        const size = group.size();
+        size[0] *= self.scale;
+        size[1] *= self.scale;
+        const corners = [
+          [screenPos[0], screenPos[1]],
+          [screenPos[0] + size[0], screenPos[1]],
+          [screenPos[0] + size[0], screenPos[1] + size[1]],
+          [screenPos[0], screenPos[1] + size[1]],
+        ];
+        const testPositions = [
+          self.screenToWorld(corners[0][0], corners[0][1]),
+          self.screenToWorld(corners[1][0], corners[1][1]),
+          self.screenToWorld(corners[2][0], corners[2][1]),
+          self.screenToWorld(corners[3][0], corners[3][1]),
+        ];
+        if (edges === null) {
+          edges = [
+            testPositions[0][1],
+            testPositions[1][0],
+            testPositions[2][1],
+            testPositions[3][0],
+          ];
+        } else {
+          for (let i = 0; i < 4; i += 1) {
+            const testPos = testPositions[i];
+            if (testPos[1] > edges[0]) {
+              edges[0] = testPos[1];
+            }
+            if (testPos[0] > edges[1]) {
+              edges[1] = testPos[0];
+            }
+            if (testPos[1] < edges[2]) {
+              edges[2] = testPos[1];
+            }
+            if (testPos[0] < edges[3]) {
+              edges[3] = testPos[0];
+            }
+          }
+        }
+      });
+      if (edges === null) {
+        edges = [0, 0, 0, 0];
+        this.setCameraPosition(0, 0);
+        self.tempMinCameraZoom = minZoom;
+        this.setCameraZoom(0.25);
+        return;
+      }
+
+      const padding = 0.5;
+      edges[0] += padding;
+      edges[1] += padding;
+      edges[2] -= padding;
+      edges[3] -= padding;
+
+      this.setCameraPosition(
+        (edges[1] + edges[3]) / 2,
+        (edges[0] + edges[2]) / 2
+      );
+      const height = edges[0] - edges[2];
+      const yZoom = 1 / (height / 2);
+
+      const width = edges[1] - edges[3];
+      const aspectRatio = self.width / self.height;
+      const xZoom = 1 / (width / (aspectRatio * 2));
+
+      const zoom = Math.min(yZoom, xZoom);
+      self.tempMinCameraZoom = Math.min(zoom, minZoom);
+
+      this.setCameraZoom(zoom);
     },
     setSnapshotPath(snapshotPath: string) {
       self.snapshotPath = snapshotPath;

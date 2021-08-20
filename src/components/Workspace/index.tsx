@@ -8,6 +8,7 @@ import MainGroup from './MainGroup';
 import { useStore } from '../../store/tab-page-store';
 import { ItemGroup } from '../../store/workspace-store';
 import trashIcon from '../../../assets/alternate-trash.svg';
+import centerIcon from '../../../assets/center-square.svg';
 
 export { MainItem, MainGroup };
 
@@ -19,20 +20,36 @@ export const Background = styled.div`
   position: relative;
   overflow: hidden;
 `;
-export const Trash = styled.div`
+export const CornerButton = styled.div`
   position: absolute;
-  left: 0;
-  bottom: 0;
   width: 100px;
   height: 100px;
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 10000001;
-  border-radius: 0 20px 0 0;
 `;
-export const TrashIcon = styled.img`
+export const CenterButton = styled.div`
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000001;
+  background-color: rgba(0, 0, 0, 0.7);
+
+  :hover {
+    background-color: rgba(50, 50, 50, 0.7);
+  }
+`;
+export const CornerButtonIcon = styled.img`
   width: 75px;
+
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
 `;
 const Workspace = observer(() => {
   const backgroundRef = useRef<HTMLDivElement>(null);
@@ -85,6 +102,15 @@ const Workspace = observer(() => {
     <DraggableCore
       onMouseDown={(e) => {
         e.stopPropagation();
+        // console.log(e.nativeEvent.offsetX);
+        // const worldPos = workspaceStore.screenToWorld(
+        //   e.nativeEvent.offsetX,
+        //   e.nativeEvent.offsetY
+        // );
+        // console.log('---');
+        // console.log([e.nativeEvent.offsetX, e.nativeEvent.offsetY]);
+        // console.log(worldPos);
+        // workspaceStore.moveGroupsToPosition(worldPos[0], worldPos[1]);
       }}
       onDrag={(_, data) => {
         const [worldLastX, worldLastY] = workspaceStore.screenToWorld(
@@ -120,21 +146,37 @@ const Workspace = observer(() => {
           workspaceStore.moveCamera(mouseWorldDeltaX, mouseWorldDeltaY);
         }}
       >
-        {/* <div style={{ transform: `scale(${workspaceStore.cameraZoom})` }}> */}
         <div>{groups}</div>
         <MainGroup group={workspaceStore.inboxGroup} />
         <div>{items}</div>
-        {/* </div> */}
-        <Trash
+        <CornerButton
           style={{
+            left: 0,
+            bottom: 0,
+            borderRadius: '0 20px 0 0',
             display: workspaceStore.anyDragging ? 'flex' : 'none',
             backgroundColor: workspaceStore.anyOverTrash
               ? 'red'
               : 'rgba(0, 0, 0, 0.7)',
           }}
         >
-          <TrashIcon src={trashIcon} />
-        </Trash>
+          <CornerButtonIcon src={trashIcon} />
+        </CornerButton>
+        <CenterButton
+          style={{
+            right: 0,
+            bottom: 0,
+            borderRadius: '20px 0 0 0',
+          }}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+          }}
+          onClick={() => {
+            workspaceStore.centerCamera();
+          }}
+        >
+          <CornerButtonIcon src={centerIcon} />
+        </CenterButton>
       </Background>
     </DraggableCore>
   );
