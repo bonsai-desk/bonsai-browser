@@ -6,8 +6,9 @@ import { Instance } from 'mobx-state-tree';
 import { TabPageColumn, TabPageTab } from '../interfaces/tab';
 import { HistoryEntry } from '../utils/tab-view';
 import { getRootDomain } from '../utils/data';
-import { WorkspaceStore } from './workspace-store';
+import { Item, WorkspaceStore } from './workspace-store';
 import { Direction } from '../render-constants';
+import { clamp } from '../utils/utils';
 
 export enum View {
   None,
@@ -32,7 +33,7 @@ export default class TabPageStore {
 
   filteredOpenTabs: Fuse.FuseResult<TabPageTab>[];
 
-  filteredWorkspaceTabs: Fuse.FuseResult<TabPageTab>[];
+  filteredWorkspaceTabs: Fuse.FuseResult<Instance<typeof Item>>[];
 
   historyMap = new Map<string, HistoryEntry>();
 
@@ -56,10 +57,19 @@ export default class TabPageStore {
 
   fuzzySelectionIndex: [number, number] = [0, 0];
 
-  fuzzySelectedTab(): TabPageTab | null {
-    const tab = this.filteredOpenTabs[this.fuzzySelectionIndex[0]];
-    if (typeof tab !== 'undefined') {
-      return tab.item;
+  private workspaceStore: Instance<typeof WorkspaceStore>;
+
+  fuzzySelectedTab(): [boolean, TabPageTab | Instance<typeof Item>] | null {
+    if (this.fuzzySelectionIndex[1] === 0) {
+      const tab = this.filteredOpenTabs[this.fuzzySelectionIndex[0]];
+      if (typeof tab !== 'undefined') {
+        return [true, tab.item];
+      }
+    } else {
+      const tab = this.filteredWorkspaceTabs[this.fuzzySelectionIndex[0]];
+      if (typeof tab !== 'undefined') {
+        return [false, tab.item];
+      }
     }
     return null;
   }
@@ -68,9 +78,14 @@ export default class TabPageStore {
     switch (e.key) {
       case 'Enter':
         if (this.View === View.FuzzySearch) {
-          const tab = this.fuzzySelectedTab();
-          if (tab) {
-            ipcRenderer.send('set-tab', tab.id);
+          const data = this.fuzzySelectedTab();
+          if (data) {
+            const [open, tab] = data;
+            if (open) {
+              ipcRenderer.send('set-tab', tab.id);
+            } else {
+              ipcRenderer.send('open-workspace-url', tab.url);
+            }
           } else {
             ipcRenderer.send('search-url', this.urlText);
           }
@@ -124,25 +139,50 @@ export default class TabPageStore {
 
   moveFuzzySelection(direction: Direction) {
     const sel = this.fuzzySelectionIndex;
+
+    const openNum = this.filteredOpenTabs.length;
+    const workNum = this.filteredWorkspaceTabs.length;
+
     switch (direction) {
       case Direction.Down:
-        this.fuzzySelectionIndex = [sel[0] + 1, sel[1]];
+        if (openNum === 0 && workNum > 0) {
+          this.fuzzySelectionIndex = [sel[0] + 1, 1];
+        } else {
+          this.fuzzySelectionIndex = [sel[0] + 1, sel[1]];
+        }
         break;
       case Direction.Up:
         this.fuzzySelectionIndex = [sel[0] - 1, sel[1]];
         break;
       case Direction.Left:
-        this.fuzzySelectionIndex = [sel[0], sel[1] - 1];
+        if (sel[1] === 1 && openNum === 0) {
+          this.fuzzySelectionIndex = [sel[0], sel[1]];
+        } else {
+          this.fuzzySelectionIndex = [sel[0], sel[1] - 1];
+        }
         break;
       case Direction.Right:
-        this.fuzzySelectionIndex = [sel[0], sel[1] + 1];
+        if (sel[1] === 0 && workNum === 0) {
+          this.fuzzySelectionIndex = [sel[0], sel[1]];
+        } else {
+          this.fuzzySelectionIndex = [sel[0], sel[1] + 1];
+        }
         break;
       default:
         break;
     }
+    if (this.fuzzySelectionIndex[1] === 0) {
+      if (this.fuzzySelectionIndex[0] > openNum - 1) {
+        this.fuzzySelectionIndex[0] = openNum - 1;
+      }
+    } else if (this.fuzzySelectionIndex[1] === 1) {
+      if (this.fuzzySelectionIndex[0] > workNum - 1) {
+        this.fuzzySelectionIndex[0] = workNum - 1;
+      }
+    }
     this.fuzzySelectionIndex = [
       Math.max(-1, this.fuzzySelectionIndex[0]),
-      Math.max(0, this.fuzzySelectionIndex[1]),
+      clamp(this.fuzzySelectionIndex[1], 0, 1),
     ];
   }
 
@@ -193,14 +233,12 @@ export default class TabPageStore {
     const openTabFuse = new Fuse<TabPageTab>(Object.values(this.openTabs), {
       keys: ['title', 'openGraphData.title'],
     });
-    const workspaceTabFuse = new Fuse<TabPageTab>(
-      Object.values(this.openTabs),
-      {
-        keys: ['title', 'openGraphData.title'],
-      }
-    );
-    // todo: workspace tab fuse
     this.filteredOpenTabs = openTabFuse.search(pattern);
+
+    const workspaceItems = Array.from(this.workspaceStore.items.values());
+    const workspaceTabFuse = new Fuse<Instance<typeof Item>>(workspaceItems, {
+      keys: ['title'],
+    });
     this.filteredWorkspaceTabs = workspaceTabFuse.search(pattern);
   }
 
@@ -223,6 +261,7 @@ export default class TabPageStore {
   }
 
   constructor(workSpaceStore: Instance<typeof WorkspaceStore>) {
+    this.workspaceStore = workSpaceStore;
     makeAutoObservable(this);
 
     this.filteredOpenTabs = [];

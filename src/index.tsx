@@ -69,8 +69,9 @@ if (document.getElementById('overlay')) {
 
 if (document.getElementById('tab-page')) {
   const workspaceStore = createWorkspaceStore();
-  const tabPageStore = new TabPageStore();
+  const tabPageStore = new TabPageStore(workspaceStore);
   render(
+    // use a memo here?
     <>
       <TabPageStoreProvider value={{ tabPageStore, workspaceStore }}>
         <Home />

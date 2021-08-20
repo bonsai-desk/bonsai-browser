@@ -135,8 +135,8 @@ export const createWindow = async () => {
   let startTime: number | null = null;
   // let lastTime = 0;
 
-  const update = (now: number) => {
-    const currentTime = now / 1000.0;
+  const update = () => {
+    const currentTime = Date.now() / 1000.0;
     if (startTime === null) {
       startTime = currentTime;
     }

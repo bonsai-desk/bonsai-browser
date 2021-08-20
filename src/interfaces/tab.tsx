@@ -20,6 +20,7 @@ export interface ITab {
   tab: TabPageTab;
   hover: boolean;
   selected: boolean;
+  callback?: () => void;
 }
 
 export interface TabPageColumn {
