@@ -1,6 +1,7 @@
 import { Instance } from 'mobx-state-tree';
 import BezierEasing from 'bezier-easing';
 import {
+  InboxColumnWidth,
   Item as MobxItem,
   ItemGroup,
   itemHeight,
@@ -13,8 +14,8 @@ export function overTrash(
   workspaceStore: Instance<typeof WorkspaceStore>
 ): boolean {
   return (
-    testPos[0] >= 0 &&
-    testPos[0] <= 100 &&
+    testPos[0] >= InboxColumnWidth &&
+    testPos[0] <= InboxColumnWidth + 100 &&
     testPos[1] >= workspaceStore.height - 100 &&
     testPos[1] <= workspaceStore.height
   );

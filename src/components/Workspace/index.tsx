@@ -6,7 +6,7 @@ import { DraggableCore } from 'react-draggable';
 import MainItem from './MainItem';
 import MainGroup from './MainGroup';
 import { useStore } from '../../store/tab-page-store';
-import { ItemGroup } from '../../store/workspace-store';
+import { InboxColumnWidth, ItemGroup } from '../../store/workspace-store';
 import trashIcon from '../../../assets/alternate-trash.svg';
 import centerIcon from '../../../assets/center-square.svg';
 
@@ -17,13 +17,6 @@ export const Background = styled.div`
   flex-grow: 1;
   display: flex;
 `;
-
-// const WorkspaceInbox = styled.div`
-//   background-color: gray;
-//   border-radius: 10px;
-//   width: 300px;
-// `;
-
 export const WorkspaceContentBackground = styled.div`
   user-select: none;
   flex-grow: 1;
@@ -31,6 +24,14 @@ export const WorkspaceContentBackground = styled.div`
   border-radius: 10px;
   position: relative;
   overflow: hidden;
+`;
+const InboxColumn = styled.div`
+  background-color: gray;
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  z-index: 10000000;
 `;
 export const CornerButton = styled.div`
   position: absolute;
@@ -112,7 +113,6 @@ const Workspace = observer(() => {
 
   return (
     <Background>
-      {/* <WorkspaceInbox /> */}
       <DraggableCore
         onMouseDown={(e) => {
           e.stopPropagation();
@@ -154,12 +154,13 @@ const Workspace = observer(() => {
             workspaceStore.moveCamera(mouseWorldDeltaX, mouseWorldDeltaY);
           }}
         >
+          <InboxColumn style={{ width: InboxColumnWidth }} />
           <div>{groups}</div>
           <MainGroup group={workspaceStore.inboxGroup} />
           <div>{items}</div>
           <CornerButton
             style={{
-              left: 0,
+              left: InboxColumnWidth,
               bottom: 0,
               borderRadius: '0 20px 0 0',
               display: workspaceStore.anyDragging ? 'flex' : 'none',

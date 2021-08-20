@@ -23,6 +23,7 @@ export const groupBorder = 2;
 export const groupTitleHeight = 48;
 export const groupPadding = 10;
 export const itemSpacing = 10;
+export const InboxColumnWidth = 300;
 
 export const Item = types
   .model({
@@ -312,6 +313,11 @@ export const WorkspaceStore = types
       const { screenToClip, clipToWorld } = this.getMatrices;
       return transformPosition(x, y, screenToClip, clipToWorld);
     },
+    screenVectorToWorldVector(x: number, y: number): [number, number] {
+      const world0 = this.screenToWorld(0, 0);
+      const worldV = this.screenToWorld(x, y);
+      return [worldV[0] - world0[0], worldV[1] - world0[1]];
+    },
   }))
   .actions((self) => ({
     moveGroupsToPosition(x: number, y: number) {
@@ -385,21 +391,23 @@ export const WorkspaceStore = types
       edges[2] -= padding;
       edges[3] -= padding;
 
-      this.setCameraPosition(
-        (edges[1] + edges[3]) / 2,
-        (edges[0] + edges[2]) / 2
-      );
       const height = edges[0] - edges[2];
       const yZoom = 1 / (height / 2);
 
       const width = edges[1] - edges[3];
-      const aspectRatio = self.width / self.height;
+      const aspectRatio = (self.width - InboxColumnWidth) / self.height;
       const xZoom = 1 / (width / (aspectRatio * 2));
 
       const zoom = Math.min(yZoom, xZoom, defaultZoom);
       self.tempMinCameraZoom = Math.min(zoom, minZoom);
 
       this.setCameraZoom(zoom);
+
+      this.setCameraPosition(
+        (edges[1] + edges[3]) / 2 -
+          self.screenVectorToWorldVector(300, 0)[0] / 2,
+        (edges[0] + edges[2]) / 2
+      );
     },
     setSnapshotPath(snapshotPath: string) {
       self.snapshotPath = snapshotPath;
