@@ -31,7 +31,7 @@ const FuzzyTabs = observer(() => {
     <FuzzyTabsParent>
       <ColumnParent>
         <FuzzyTitle>Open</FuzzyTitle>
-        {tabPageStore.filteredTabs.map((result, idx) => {
+        {tabPageStore.filteredOpenTabs.map((result, idx) => {
           const { item } = result;
           return (
             <Tab
@@ -48,7 +48,7 @@ const FuzzyTabs = observer(() => {
       </ColumnParent>
       <ColumnParent>
         <FuzzyTitle>Workspace</FuzzyTitle>
-        {tabPageStore.filteredTabs.slice(0, 2).map((result, idx) => {
+        {tabPageStore.filteredWorkspaceTabs.map((result, idx) => {
           const { item } = result;
           return (
             <Tab

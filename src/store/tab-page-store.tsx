@@ -28,9 +28,11 @@ export default class TabPageStore {
     this.view = view;
   }
 
-  tabs: Record<string, TabPageTab> = {};
+  openTabs: Record<string, TabPageTab> = {};
 
-  filteredTabs: Fuse.FuseResult<TabPageTab>[];
+  filteredOpenTabs: Fuse.FuseResult<TabPageTab>[];
+
+  filteredWorkspaceTabs: Fuse.FuseResult<TabPageTab>[];
 
   historyMap = new Map<string, HistoryEntry>();
 
@@ -55,7 +57,7 @@ export default class TabPageStore {
   fuzzySelectionIndex: [number, number] = [0, 0];
 
   fuzzySelectedTab(): TabPageTab | null {
-    const tab = this.filteredTabs[this.fuzzySelectionIndex[0]];
+    const tab = this.filteredOpenTabs[this.fuzzySelectionIndex[0]];
     if (typeof tab !== 'undefined') {
       return tab.item;
     }
@@ -146,7 +148,7 @@ export default class TabPageStore {
 
   tabPageColumns() {
     const columns: Record<string, TabPageTab[]> = {};
-    Object.values(this.tabs).forEach((tab) => {
+    Object.values(this.openTabs).forEach((tab) => {
       const domain = getRootDomain(tab.url);
       if (!columns[domain]) {
         columns[domain] = [];
@@ -188,10 +190,18 @@ export default class TabPageStore {
   }
 
   searchTab(pattern: string) {
-    const tabFuse = new Fuse<TabPageTab>(Object.values(this.tabs), {
+    const openTabFuse = new Fuse<TabPageTab>(Object.values(this.openTabs), {
       keys: ['title', 'openGraphData.title'],
     });
-    this.filteredTabs = tabFuse.search(pattern);
+    const workspaceTabFuse = new Fuse<TabPageTab>(
+      Object.values(this.openTabs),
+      {
+        keys: ['title', 'openGraphData.title'],
+      }
+    );
+    // todo: workspace tab fuse
+    this.filteredOpenTabs = openTabFuse.search(pattern);
+    this.filteredWorkspaceTabs = workspaceTabFuse.search(pattern);
   }
 
   setUrlText(newValue: string) {
@@ -205,25 +215,23 @@ export default class TabPageStore {
   }
 
   refreshFuse() {
-    const tabFuse = new Fuse<TabPageTab>(Object.values(this.tabs), {
-      keys: ['title', 'openGraphData.title'],
-    });
-    this.filteredTabs = tabFuse.search(this.urlText);
+    this.searchTab(this.urlText);
   }
 
   setHistoryText(newValue: string) {
     this.historyText = newValue;
   }
 
-  constructor() {
+  constructor(workSpaceStore: Instance<typeof WorkspaceStore>) {
     makeAutoObservable(this);
 
-    this.filteredTabs = [];
+    this.filteredOpenTabs = [];
+    this.filteredWorkspaceTabs = [];
     //
 
     ipcRenderer.on('tabView-created-with-id', (_, id) => {
       runInAction(() => {
-        this.tabs[id] = {
+        this.openTabs[id] = {
           id,
           lastAccessTime: new Date().getTime(),
           url: '',
@@ -236,37 +244,37 @@ export default class TabPageStore {
     });
     ipcRenderer.on('tab-removed', (_, id) => {
       runInAction(() => {
-        delete this.tabs[id];
+        delete this.openTabs[id];
         // todo: could filter the fuse instead if it was a property
         this.refreshFuse();
       });
     });
     ipcRenderer.on('url-changed', (_, [id, url]) => {
       runInAction(() => {
-        this.tabs[id].url = url;
+        this.openTabs[id].url = url;
       });
     });
     ipcRenderer.on('title-updated', (_, [id, title]) => {
       runInAction(() => {
-        this.tabs[id].title = title;
+        this.openTabs[id].title = title;
       });
     });
     ipcRenderer.on('access-tab', (_, id) => {
       runInAction(() => {
-        this.tabs[id].lastAccessTime = new Date().getTime();
+        this.openTabs[id].lastAccessTime = new Date().getTime();
       });
     });
     ipcRenderer.on('tab-image-native', (_, [id, thing]) => {
       runInAction(() => {
-        if (typeof this.tabs[id] !== 'undefined') {
-          this.tabs[id].image = thing;
+        if (typeof this.openTabs[id] !== 'undefined') {
+          this.openTabs[id].image = thing;
         }
       });
     });
     ipcRenderer.on('add-history', (_, entry: HistoryEntry) => {
       runInAction(() => {
         if (entry.openGraphData.title !== 'null') {
-          Object.values(this.tabs).forEach((tab) => {
+          Object.values(this.openTabs).forEach((tab) => {
             if (tab.url === entry.url) {
               tab.openGraphInfo = entry.openGraphData;
             }
@@ -311,7 +319,7 @@ export default class TabPageStore {
     });
     ipcRenderer.on('favicon-updated', (_, [id, favicon]) => {
       runInAction(() => {
-        this.tabs[id].favicon = favicon;
+        this.openTabs[id].favicon = favicon;
       });
     });
     ipcRenderer.on('history-cleared', () => {
@@ -369,5 +377,3 @@ export function useStore() {
   }
   return store;
 }
-
-export const tabPageStore = new TabPageStore();

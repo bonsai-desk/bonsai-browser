@@ -35,8 +35,8 @@ const ColumnHeader = observer(({ column }: { column: TabPageColumn }) => {
           hoverColor="rgba(255, 0, 0, 1)"
           onClick={(e) => {
             e.stopPropagation();
-            Object.keys(tabPageStore.tabs).forEach((key: string) => {
-              const tab = tabPageStore.tabs[key];
+            Object.keys(tabPageStore.openTabs).forEach((key: string) => {
+              const tab = tabPageStore.openTabs[key];
               if (getRootDomain(tab.url) === column.domain) {
                 ipcRenderer.send('remove-tab', tab.id);
               }

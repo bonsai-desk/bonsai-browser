@@ -8,9 +8,8 @@ import { Provider, RootModel } from './utils/data';
 import './index.css';
 import Overlay from './pages/Overlay';
 import TabStore from './store/tabs';
-import {
+import TabPageStore, {
   Provider as TabPageStoreProvider,
-  tabPageStore,
 } from './store/tab-page-store';
 import Home from './pages/Home';
 import createWorkspaceStore from './store/workspace-store';
@@ -70,6 +69,7 @@ if (document.getElementById('overlay')) {
 
 if (document.getElementById('tab-page')) {
   const workspaceStore = createWorkspaceStore();
+  const tabPageStore = new TabPageStore();
   render(
     <>
       <TabPageStoreProvider value={{ tabPageStore, workspaceStore }}>
