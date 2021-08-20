@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { runInAction } from 'mobx';
 import { DraggableCore, DraggableData } from 'react-draggable';
 import {
+  groupBorder,
   groupPadding,
   groupTitleHeight,
   ItemGroup,
@@ -71,10 +72,23 @@ const MainGroup = observer(
           workspaceStore.moveToFront(group);
           group.setDragMouseStart(data.x, data.y);
 
-          if (data.x > group.x + group.size()[0] - 10 && false) {
+          const [screenGroupX, screenGroupY] = workspaceStore.worldToScreen(
+            group.x,
+            group.y
+          );
+
+          if (
+            data.x >
+            screenGroupX + (group.size()[0] - 10) * workspaceStore.scale
+          ) {
             group.setTempResizeWidth(group.width);
             group.setResizing(true);
-          } else if (data.y > group.y + groupTitleHeight + groupPadding + 1) {
+          } else if (
+            data.y >=
+            screenGroupY +
+              (groupTitleHeight + groupPadding + groupBorder) *
+                workspaceStore.scale
+          ) {
             group.setBeingDragged(true);
             workspaceStore.setAnyDragging(true);
           }
@@ -84,8 +98,15 @@ const MainGroup = observer(
             return;
           }
 
+          const screenGroupX = workspaceStore.worldToScreen(
+            group.x,
+            group.y
+          )[0];
+
           if (group.resizing) {
-            group.setTempResizeWidth(widthPixelsToInt(data.x - group.x));
+            group.setTempResizeWidth(
+              widthPixelsToInt((data.x - screenGroupX) / workspaceStore.scale)
+            );
             workspaceStore.setGroupWidth(
               Math.floor(group.tempResizeWidth),
               group
@@ -127,6 +148,11 @@ const MainGroup = observer(
             return;
           }
 
+          const screenGroupX = workspaceStore.worldToScreen(
+            group.x,
+            group.y
+          )[0];
+
           if (
             !group.beingDragged &&
             !group.resizing &&
@@ -143,7 +169,9 @@ const MainGroup = observer(
 
           if (group.resizing) {
             const roundFunc = group.height() === 1 ? Math.round : Math.floor;
-            group.setTempResizeWidth(widthPixelsToInt(data.x - group.x));
+            group.setTempResizeWidth(
+              widthPixelsToInt((data.x - screenGroupX) / workspaceStore.scale)
+            );
             workspaceStore.setGroupWidth(
               roundFunc(group.tempResizeWidth),
               group,
@@ -168,7 +196,7 @@ const MainGroup = observer(
         <Group
           style={{
             transformOrigin: '0px 0px',
-            transform: `scale(${workspaceStore.cameraZoom})`,
+            transform: `scale(${workspaceStore.scale})`,
             width: lerp(
               group.animationStartWidth,
               targetGroupSize[0],
@@ -182,6 +210,7 @@ const MainGroup = observer(
             left: groupScreenX,
             top: groupScreenY,
             zIndex: group.zIndex,
+            border: `${groupBorder}px solid black`,
             display:
               group.id === 'hidden' ||
               (group.id === 'inbox' && group.itemArrangement.length === 0)
@@ -222,7 +251,9 @@ const MainGroup = observer(
                 height: groupTitleHeight + groupPadding,
               }}
               onMouseDown={(e) => {
-                e.stopPropagation();
+                if (e.button !== 1) {
+                  e.stopPropagation();
+                }
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
