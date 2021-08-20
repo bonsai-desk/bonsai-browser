@@ -5,7 +5,7 @@ import { urlToMapKey, windowHasView } from './utils';
 import WindowManager from './window-manager';
 import { PRELOAD } from '../constants';
 
-export const headerHeight = 79 - 32 - 10; // 79 or 79 - 32 - 10
+export const headerHeight = 79 - 32 - 10;
 
 export interface OpenGraphInfo {
   title: string;
@@ -83,16 +83,9 @@ class TabView {
 
     this.view.webContents.on('new-window', (event, url) => {
       event.preventDefault();
-      // shell.openExternal(url);
       const newTabId = wm.createNewTab();
       wm.loadUrlInTab(newTabId, url);
     });
-
-    // const updateHistory = () => {
-    //   if (this.historyEntry !== null) {
-    //     wm.addHistoryEntry(this.historyEntry);
-    //   }
-    // };
 
     this.view.webContents.on('page-title-updated', (_, title) => {
       if (this.historyEntry?.title === '') {
@@ -142,7 +135,6 @@ class TabView {
     });
 
     this.view.webContents.on('page-favicon-updated', (_, favicons) => {
-      // favicons.map((url) => console.log(url));
       if (favicons.length > 0) {
         if (this.historyEntry?.favicon === '') {
           // eslint-disable-next-line prefer-destructuring
@@ -178,9 +170,6 @@ class TabView {
         result.matches,
       ]);
     });
-
-    // window.addBrowserView(this.view);
-    // resize();
   }
 
   updateHistory(wm: WindowManager) {
@@ -190,16 +179,7 @@ class TabView {
   }
 
   resize(bounds: Electron.Rectangle) {
-    // const windowSize = this.window.getSize();
-    // const padding = this.windowFloating ? 10 : browserPadding;
-    // const hh = this.windowFloating ? 0 : headerHeight;
     this.view.setBounds(bounds);
-    // this.view.setBounds({
-    //   x: padding,
-    //   y: hh + padding,
-    //   width: windowSize[0] - padding * 2,
-    //   height: Math.max(windowSize[1] - hh, 0) - padding * 2,
-    // });
   }
 }
 

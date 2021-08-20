@@ -13,6 +13,7 @@ import Columns from '../components/Columns';
 import Footer from '../components/Footer';
 import Container from '../components/Container';
 import Workspace from '../components/Workspace';
+import Navigator from '../components/Navigator';
 
 const MainContent = observer(() => {
   const { tabPageStore } = useStore();
@@ -43,6 +44,10 @@ const Content = observer(() => {
         }}
       />
     );
+  }
+
+  if (tabPageStore.View === View.Navigator) {
+    return <Navigator />;
   }
 
   return (

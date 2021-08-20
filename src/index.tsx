@@ -1,5 +1,7 @@
 import React from 'react';
 import { render } from 'react-dom';
+// import { v4 as uuidv4 } from 'uuid';
+// import { getSnapshot, Instance } from 'mobx-state-tree';
 import App from './pages/App';
 import DebugApp from './pages/DebugApp';
 import UrlPeek from './pages/UrlPeek';
@@ -13,6 +15,7 @@ import TabPageStore, {
 } from './store/tab-page-store';
 import Home from './pages/Home';
 import createWorkspaceStore from './store/workspace-store';
+// import { Node, Root } from './store/history-store';
 
 if (document.getElementById('root')) {
   const rootStore = RootModel.create({
@@ -70,8 +73,26 @@ if (document.getElementById('overlay')) {
 if (document.getElementById('tab-page')) {
   const workspaceStore = createWorkspaceStore();
   const tabPageStore = new TabPageStore(workspaceStore);
+
+  // const data = { url: 'url', scroll: 0 };
+  //
+  // const root = Root.create({ nodes: {} });
+  //
+  // const a = Node.create({ id: '1', data });
+  // const b = Node.create({ id: '2', data });
+  // const c = Node.create({ id: '3', data });
+  //
+  // root.addNode(a);
+  // root.addNode(b);
+  // root.addNode(c);
+  //
+  // root.linkChild(a, b);
+  //
+  // console.log(JSON.stringify(root));
+
+  // console.log(JSON.stringify(root.nextRef));
+
   render(
-    // use a memo here?
     <>
       <TabPageStoreProvider value={{ tabPageStore, workspaceStore }}>
         <Home />

@@ -16,6 +16,7 @@ export enum View {
   Tabs,
   FuzzySearch,
   History,
+  Navigator,
 }
 
 export default class TabPageStore {
@@ -56,6 +57,10 @@ export default class TabPageStore {
   editingGroupId = '';
 
   fuzzySelectionIndex: [number, number] = [0, 0];
+
+  screen: { width: number; height: number };
+
+  innerBounds: { x: number; y: number; width: number; height: number };
 
   private workspaceStore: Instance<typeof WorkspaceStore>;
 
@@ -261,12 +266,21 @@ export default class TabPageStore {
   }
 
   constructor(workSpaceStore: Instance<typeof WorkspaceStore>) {
+    this.screen = { width: 200, height: 200 };
+    this.innerBounds = { x: 0, y: 0, width: 100, height: 100 };
     this.workspaceStore = workSpaceStore;
     makeAutoObservable(this);
 
     this.filteredOpenTabs = [];
     this.filteredWorkspaceTabs = [];
     //
+
+    ipcRenderer.on('inner-bounds', (_, { screen, bounds }) => {
+      runInAction(() => {
+        this.screen = screen;
+        this.innerBounds = bounds;
+      });
+    });
 
     ipcRenderer.on('tabView-created-with-id', (_, id) => {
       runInAction(() => {
@@ -381,13 +395,13 @@ export default class TabPageStore {
     });
     ipcRenderer.on('set-active', (_, newIsActive) => {
       runInAction(() => {
-        if (newIsActive && this.View !== View.None) {
+        if (newIsActive && this.View !== View.Navigator) {
           return;
         }
         if (newIsActive) {
           this.View = View.Tabs;
         } else {
-          this.View = View.None;
+          this.View = View.Navigator;
         }
       });
     });

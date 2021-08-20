@@ -124,6 +124,24 @@ export default class WindowManager {
 
   loadedOpenTabs = false;
 
+  startMouseX: number | null = null;
+
+  startMouseY: number | null = null;
+
+  lastX: number | null = null;
+
+  lastY: number | null = null;
+
+  validFloatingClick = false;
+
+  lastTime = 0;
+
+  targetWindowPosition = glMatrix.vec2.create();
+
+  windowSpeeds: number[][] = [];
+
+  static dragThresholdSquared = 5 * 5;
+
   constructor(mainWindow: BrowserWindow, display: { activeDisplay: Display }) {
     this.mainWindow = mainWindow;
     WindowManager.display = display;
@@ -270,7 +288,10 @@ export default class WindowManager {
         this.unFloat(display.activeDisplay);
         this.tabPageView.webContents.send('blur');
         this.mainWindow?.hide();
-        if (process.platform === 'darwin') {
+        if (
+          process.platform === 'darwin' &&
+          process.env.NODE_ENV !== 'development'
+        ) {
           app.hide();
         }
       }
@@ -331,15 +352,12 @@ export default class WindowManager {
 
   mouseInInner(mousePoint: Electron.Point) {
     const bounds = this.innerBounds();
-    const padding = this.browserPadding();
-    const hh = this.headerHeight();
-    const [x0, y0] = this.mainWindow.getPosition();
 
-    const innerX0 = x0 + padding;
-    const innerX1 = innerX0 + bounds.width;
+    const innerX0 = bounds.x;
+    const innerX1 = bounds.x + bounds.width;
 
-    const innerY0 = y0 + padding;
-    const innerY1 = innerY0 + hh + bounds.height;
+    const innerY0 = bounds.y;
+    const innerY1 = bounds.y + bounds.height;
 
     const inX = innerX0 < mousePoint.x && mousePoint.x < innerX1;
     const inY = innerY0 < mousePoint.y && mousePoint.y < innerY1;
@@ -717,7 +735,7 @@ export default class WindowManager {
     if (!windowHasView(this.mainWindow, this.titleBarView)) {
       this.mainWindow.addBrowserView(this.titleBarView);
     }
-    this.resizeTitleBar(padding, hh, windowSize);
+    this.resizeTitleBar();
     this.mainWindow.setTopBrowserView(this.titleBarView);
 
     this.resizeTabView(tabView);
@@ -866,24 +884,6 @@ export default class WindowManager {
       );
     }
   }
-
-  startMouseX: number | null = null;
-
-  startMouseY: number | null = null;
-
-  lastX: number | null = null;
-
-  lastY: number | null = null;
-
-  validFloatingClick = false;
-
-  lastTime = 0;
-
-  targetWindowPosition = glMatrix.vec2.create();
-
-  windowSpeeds: number[][] = [];
-
-  static dragThresholdSquared = 5 * 5;
 
   windowMoving(mouseX: number, mouseY: number) {
     this.movingWindow = true;
@@ -1090,7 +1090,7 @@ export default class WindowManager {
     if (this.activeTabId === -1) {
       this.resizeTabPageView(windowSize);
     } else {
-      this.resizeTitleBar(padding, hh, windowSize);
+      this.resizeTitleBar();
       this.resizePeekView(padding, windowSize);
       this.resizeFindView(padding, hh, windowSize);
       this.resizeOverlayView(windowSize);
@@ -1116,11 +1116,13 @@ export default class WindowManager {
     this.resize();
   }
 
-  resizeTitleBar(padding: number, hh: number, windowSize: number[]) {
+  resizeTitleBar() {
+    const bounds = this.innerBounds();
+    const hh = this.headerHeight();
     const titleBarBounds = {
-      x: padding,
-      y: padding,
-      width: windowSize[0] - padding * 2,
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
       height: hh,
     };
     this.titleBarView.setBounds(titleBarBounds);
@@ -1188,7 +1190,7 @@ export default class WindowManager {
 
     const { padding, hh, windowSize } = this.boundsInfo();
 
-    this.resizeTitleBar(padding, hh, windowSize);
+    this.resizeTitleBar();
     this.resizePeekView(padding, windowSize);
     this.resizeFindView(padding, hh, windowSize);
     this.resizeOverlayView(windowSize);
@@ -1230,19 +1232,34 @@ export default class WindowManager {
   }
 
   innerBounds(): Electron.Rectangle {
+    // const hh = this.headerHeight();
     const padding = this.windowFloating ? 10 : this.browserPadding();
+
     const windowSize = this.mainWindow.getSize();
-    const hh = this.headerHeight();
+
+    const height = Math.max(windowSize[1], 0) - padding * 2;
+    const width = Math.round((4 / 3) * height);
+
+    const xPadding = Math.round((windowSize[0] - width) / 2);
+
     return {
-      x: padding,
-      y: hh + padding,
-      width: windowSize[0] - padding * 2,
-      height: Math.max(windowSize[1] - hh, 0) - padding * 2,
+      x: xPadding,
+      y: padding,
+      width,
+      height,
     };
   }
 
   resizeTabView(tabView: TabView) {
     const bounds = this.innerBounds();
+    const windowSize = this.mainWindow.getSize();
+    this.tabPageView.webContents.send('inner-bounds', {
+      screen: { width: windowSize[0], height: windowSize[1] },
+      bounds,
+    });
+    const hh = this.headerHeight();
+    bounds.y += hh;
+    bounds.height -= hh;
     tabView.resize(bounds);
   }
 
