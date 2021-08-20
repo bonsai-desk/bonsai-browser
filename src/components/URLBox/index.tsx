@@ -39,7 +39,7 @@ const URLBox = observer(() => {
     tabPageStore.urlBoxRef = urlBoxRef;
   });
   return (
-    <URLBoxParent>
+    <URLBoxParent id="header">
       <Input
         type="text"
         spellCheck={false}

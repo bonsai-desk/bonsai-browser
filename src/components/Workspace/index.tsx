@@ -15,6 +15,18 @@ export { MainItem, MainGroup };
 export const Background = styled.div`
   user-select: none;
   flex-grow: 1;
+  display: flex;
+`;
+
+// const WorkspaceInbox = styled.div`
+//   background-color: gray;
+//   border-radius: 10px;
+//   width: 300px;
+// `;
+
+export const WorkspaceContentBackground = styled.div`
+  user-select: none;
+  flex-grow: 1;
   background-color: white;
   border-radius: 10px;
   position: relative;
@@ -99,86 +111,83 @@ const Workspace = observer(() => {
   }, [hasRunOnce, workspaceStore]);
 
   return (
-    <DraggableCore
-      onMouseDown={(e) => {
-        e.stopPropagation();
-        // console.log(e.nativeEvent.offsetX);
-        // const worldPos = workspaceStore.screenToWorld(
-        //   e.nativeEvent.offsetX,
-        //   e.nativeEvent.offsetY
-        // );
-        // console.log('---');
-        // console.log([e.nativeEvent.offsetX, e.nativeEvent.offsetY]);
-        // console.log(worldPos);
-        // workspaceStore.moveGroupsToPosition(worldPos[0], worldPos[1]);
-      }}
-      onDrag={(_, data) => {
-        const [worldLastX, worldLastY] = workspaceStore.screenToWorld(
-          data.lastX,
-          data.lastY
-        );
-        const [worldX, worldY] = workspaceStore.screenToWorld(data.x, data.y);
-        const deltaX = worldX - worldLastX;
-        const deltaY = worldY - worldLastY;
-        workspaceStore.moveCamera(-deltaX, -deltaY);
-      }}
-    >
-      <Background
-        ref={backgroundRef}
-        onWheel={(e) => {
-          const offsetX = e.pageX - workspaceStore.x;
-          const offsetY = e.pageY - workspaceStore.y;
-
-          const lastMouseWorldPos = workspaceStore.screenToWorld(
-            offsetX,
-            offsetY
+    <Background>
+      {/* <WorkspaceInbox /> */}
+      <DraggableCore
+        onMouseDown={(e) => {
+          e.stopPropagation();
+        }}
+        onDrag={(_, data) => {
+          const [worldLastX, worldLastY] = workspaceStore.screenToWorld(
+            data.lastX,
+            data.lastY
           );
-
-          workspaceStore.setCameraZoom(
-            workspaceStore.cameraZoom +
-              workspaceStore.cameraZoom * (-e.deltaY / 1000) * 2
-          );
-
-          const mouseWorldPos = workspaceStore.screenToWorld(offsetX, offsetY);
-          const mouseWorldDeltaX = lastMouseWorldPos[0] - mouseWorldPos[0];
-          const mouseWorldDeltaY = lastMouseWorldPos[1] - mouseWorldPos[1];
-
-          workspaceStore.moveCamera(mouseWorldDeltaX, mouseWorldDeltaY);
+          const [worldX, worldY] = workspaceStore.screenToWorld(data.x, data.y);
+          const deltaX = worldX - worldLastX;
+          const deltaY = worldY - worldLastY;
+          workspaceStore.moveCamera(-deltaX, -deltaY);
         }}
       >
-        <div>{groups}</div>
-        <MainGroup group={workspaceStore.inboxGroup} />
-        <div>{items}</div>
-        <CornerButton
-          style={{
-            left: 0,
-            bottom: 0,
-            borderRadius: '0 20px 0 0',
-            display: workspaceStore.anyDragging ? 'flex' : 'none',
-            backgroundColor: workspaceStore.anyOverTrash
-              ? 'red'
-              : 'rgba(0, 0, 0, 0.7)',
+        <WorkspaceContentBackground
+          ref={backgroundRef}
+          onWheel={(e) => {
+            const offsetX = e.pageX - workspaceStore.x;
+            const offsetY = e.pageY - workspaceStore.y;
+
+            const lastMouseWorldPos = workspaceStore.screenToWorld(
+              offsetX,
+              offsetY
+            );
+
+            workspaceStore.setCameraZoom(
+              workspaceStore.cameraZoom +
+                workspaceStore.cameraZoom * (-e.deltaY / 1000) * 2
+            );
+
+            const mouseWorldPos = workspaceStore.screenToWorld(
+              offsetX,
+              offsetY
+            );
+            const mouseWorldDeltaX = lastMouseWorldPos[0] - mouseWorldPos[0];
+            const mouseWorldDeltaY = lastMouseWorldPos[1] - mouseWorldPos[1];
+
+            workspaceStore.moveCamera(mouseWorldDeltaX, mouseWorldDeltaY);
           }}
         >
-          <CornerButtonIcon src={trashIcon} />
-        </CornerButton>
-        <CenterButton
-          style={{
-            right: 0,
-            bottom: 0,
-            borderRadius: '20px 0 0 0',
-          }}
-          onMouseDown={(e) => {
-            e.stopPropagation();
-          }}
-          onClick={() => {
-            workspaceStore.centerCamera();
-          }}
-        >
-          <CornerButtonIcon src={centerIcon} />
-        </CenterButton>
-      </Background>
-    </DraggableCore>
+          <div>{groups}</div>
+          <MainGroup group={workspaceStore.inboxGroup} />
+          <div>{items}</div>
+          <CornerButton
+            style={{
+              left: 0,
+              bottom: 0,
+              borderRadius: '0 20px 0 0',
+              display: workspaceStore.anyDragging ? 'flex' : 'none',
+              backgroundColor: workspaceStore.anyOverTrash
+                ? 'red'
+                : 'rgba(0, 0, 0, 0.7)',
+            }}
+          >
+            <CornerButtonIcon src={trashIcon} />
+          </CornerButton>
+          <CenterButton
+            style={{
+              right: 0,
+              bottom: 0,
+              borderRadius: '20px 0 0 0',
+            }}
+            onMouseDown={(e) => {
+              e.stopPropagation();
+            }}
+            onClick={() => {
+              workspaceStore.centerCamera();
+            }}
+          >
+            <CornerButtonIcon src={centerIcon} />
+          </CenterButton>
+        </WorkspaceContentBackground>
+      </DraggableCore>
+    </Background>
   );
 });
 export default Workspace;

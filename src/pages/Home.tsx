@@ -18,16 +18,7 @@ const MainContent = observer(() => {
   const { tabPageStore } = useStore();
 
   if (tabPageStore.View === View.WorkSpace) {
-    return (
-      <>
-        <ClickerParent
-          onClick={() => {
-            tabPageStore.View = View.Tabs;
-          }}
-        />
-        <Workspace />
-      </>
-    );
+    return <Workspace />;
   }
   return tabPageStore.View === View.Tabs ? <Columns /> : <FuzzyTabs />;
 });
@@ -78,7 +69,15 @@ const Home = observer(() => {
   }, [hasRunOnce, tabPageStore]);
 
   return (
-    <Background>
+    <Background
+      onClick={(e) => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        if (e.target.id === 'header' || e.target.id === 'footer') {
+          tabPageStore.View = View.Tabs;
+        }
+      }}
+    >
       <Content />
       <History />
       <PinButton />

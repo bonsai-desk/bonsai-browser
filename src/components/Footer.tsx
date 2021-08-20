@@ -26,7 +26,7 @@ const FooterButtonParent = styled.button`
 const Footer = observer(() => {
   const { tabPageStore } = useStore();
   return (
-    <FooterParent>
+    <FooterParent id="footer">
       <FooterButtonParent
         onClick={() => {
           runInAction(() => {
