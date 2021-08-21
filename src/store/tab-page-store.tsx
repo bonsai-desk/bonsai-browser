@@ -30,6 +30,8 @@ export default class TabPageStore {
     this.view = view;
   }
 
+  hoveringUrlInput = false;
+
   openTabs: Record<string, TabPageTab> = {};
 
   filteredOpenTabs: Fuse.FuseResult<TabPageTab>[];

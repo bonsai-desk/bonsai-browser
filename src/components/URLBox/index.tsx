@@ -1,6 +1,7 @@
 import styled, { css } from 'styled-components';
 import React, { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
+import { runInAction } from 'mobx';
 import { myPlatform, Platform } from '../../render-constants';
 import { useStore } from '../../store/tab-page-store';
 
@@ -51,6 +52,16 @@ const URLBox = observer(() => {
   return (
     <URLBoxParent>
       <Input
+        onMouseOver={() => {
+          runInAction(() => {
+            tabPageStore.hoveringUrlInput = true;
+          });
+        }}
+        onMouseLeave={() => {
+          runInAction(() => {
+            tabPageStore.hoveringUrlInput = false;
+          });
+        }}
         type="text"
         spellCheck={false}
         ref={urlBoxRef}

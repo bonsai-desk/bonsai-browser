@@ -81,6 +81,9 @@ const Tab = observer(({ tab, hover, selected = false, callback }: ITab) => {
     tab.openGraphInfo !== null && tab.openGraphInfo.image !== ''
       ? tab.openGraphInfo.image
       : tab.image;
+
+  const hovering = hover || tabPageStore.hoveringUrlInput;
+
   return (
     <TabParent
       onClick={() => {
@@ -94,7 +97,7 @@ const Tab = observer(({ tab, hover, selected = false, callback }: ITab) => {
     >
       <TabImage
         selected={selected}
-        hover={hover}
+        hover={hovering}
         title={title}
         imgUrl={imgUrl}
         tab={tab}
