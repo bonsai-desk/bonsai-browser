@@ -1,4 +1,4 @@
-import { OpenGraphInfo } from '../utils/tab-view';
+import { OpenGraphInfo } from '../utils/interfaces';
 
 export interface TabPageTab {
   id: number;

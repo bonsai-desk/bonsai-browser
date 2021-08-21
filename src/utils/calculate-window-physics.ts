@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/no-cycle
 import WindowManager from './window-manager';
 import { clamp } from './utils';
 

@@ -7,10 +7,10 @@ import {
   MenuItem,
   MenuItemConstructorOptions,
   screen,
+  Tray,
 } from 'electron';
 import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
-import { createTray, installExtensions } from './windows';
 import addListeners from './listeners';
 import WindowManager from './window-manager';
 import { ICON_PNG, ICON_SMALL_PNG } from '../constants';
@@ -25,6 +25,53 @@ class AppUpdater {
   }
 }
 
+export function createTray(
+  appIconPath: string,
+  mainWindow: BrowserWindow,
+  wm: WindowManager
+) {
+  const appIcon = new Tray(appIconPath);
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Alt+Space to open',
+      click() {
+        // do nothing. this is just to show the shortcut
+      },
+    },
+    {
+      label: 'Exit',
+      click() {
+        wm.tabPageView.webContents.send('save-snapshot');
+        wm.saveHistory();
+        setTimeout(() => {
+          wm.mainWindow?.destroy();
+          app.quit();
+        }, 100);
+      },
+    },
+  ]);
+
+  appIcon.on('double-click', () => {
+    mainWindow?.show();
+  });
+  appIcon.setToolTip('Bonsai Browser');
+  appIcon.setContextMenu(contextMenu);
+  return appIcon;
+}
+
+const installer = require('electron-devtools-installer');
+
+export const installExtensions = async () => {
+  const forceDownload = !!process.env.UPGRADE_EXTENSIONS;
+  const extensions = ['REACT_DEVELOPER_TOOLS'];
+
+  return installer
+    .default(
+      extensions.map((name) => installer[name]),
+      forceDownload
+    )
+    .catch(console.log);
+};
 // eslint-disable-next-line import/prefer-default-export
 export const createWindow = async () => {
   if (

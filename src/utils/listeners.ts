@@ -2,7 +2,7 @@
 import { app, ipcMain } from 'electron';
 import path from 'path';
 import WindowManager from './window-manager';
-import { HistoryEntry } from './tab-view';
+import { HistoryEntry } from './interfaces';
 
 function addListeners(wm: WindowManager) {
   ipcMain.on('create-new-tab', () => {

@@ -1,6 +1,5 @@
 import { BrowserView, BrowserWindow } from 'electron';
-// eslint-disable-next-line import/no-cycle
-import { HistoryEntry } from './tab-view';
+import { HistoryEntry } from './interfaces';
 
 export const windowHasView = (
   window: BrowserWindow,

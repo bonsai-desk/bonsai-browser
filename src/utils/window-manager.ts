@@ -13,16 +13,15 @@ import BezierEasing from 'bezier-easing';
 import fs from 'fs';
 import Fuse from 'fuse.js';
 import path from 'path';
-// eslint-disable-next-line import/no-cycle
-import TabView, { headerHeight, HistoryEntry, OpenGraphInfo } from './tab-view';
+import { headerHeight } from './tab-view';
 import {
   FIND_HTML,
   INDEX_HTML,
   OVERLAY_HTML,
+  PRELOAD,
   TAB_PAGE,
   URL_PEEK_HTML,
 } from '../constants';
-// eslint-disable-next-line import/no-cycle
 import {
   parseMap,
   stringifyMap,
@@ -30,39 +29,19 @@ import {
   urlToMapKey,
   windowHasView,
 } from './utils';
-// eslint-disable-next-line import/no-cycle
-import { handleFindText } from './windows';
-// eslint-disable-next-line import/no-cycle
 import calculateWindowTarget from './calculate-window-target';
-import { pointInBounds, innerBounds } from './wm-utils';
+import {
+  handleFindText,
+  innerBounds,
+  makeView,
+  pointInBounds,
+  updateWebContents,
+} from './wm-utils';
+import { HistoryEntry, ITabView, OpenGraphInfo } from './interfaces';
 
 const glMatrix = require('gl-matrix');
 
 const easeOut = BezierEasing(0, 0, 0.5, 1);
-
-const updateWebContents = (
-  titleBarView: BrowserView,
-  id: number,
-  tabView: TabView
-) => {
-  titleBarView.webContents.send('web-contents-update', [
-    id,
-    tabView.view.webContents.canGoBack(),
-    tabView.view.webContents.canGoForward(),
-    tabView.view.webContents.getURL(),
-  ]);
-};
-
-function makeView(loadURL: string) {
-  const newView = new BrowserView({
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false, // todo: do we need this? security concern?
-    },
-  });
-  newView.webContents.loadURL(loadURL);
-  return newView;
-}
 
 interface TabInfo {
   url: string;
@@ -76,10 +55,139 @@ interface TabInfo {
   scrollHeight: number;
 }
 
+export function createTabView(
+  window: BrowserWindow,
+  titleBarView: BrowserView,
+  urlPeekView: BrowserView,
+  findView: BrowserView,
+  wm: WindowManager
+): ITabView {
+  if (!window) {
+    throw new Error('"window" is not defined');
+  }
+
+  const tabView: ITabView = {
+    id: -1,
+    window,
+    view: new BrowserView({
+      webPreferences: {
+        nodeIntegration: false,
+        sandbox: true,
+        preload: PRELOAD,
+        contextIsolation: true, // todo: do we need this? security concern?
+      },
+    }),
+    historyEntry: null,
+    title: '',
+    favicon: '',
+    windowFloating: false,
+    unloadedUrl: '',
+    imgString: '',
+    scrollHeight: 0,
+  };
+
+  tabView.view.setBackgroundColor('#FFFFFF');
+  tabView.id = tabView.view.webContents.id;
+
+  tabView.view.webContents.on('new-window', (event, url) => {
+    event.preventDefault();
+    const newTabId = wm.createNewTab();
+    wm.loadUrlInTab(newTabId, url);
+  });
+  tabView.view.webContents.on('page-title-updated', (_, title) => {
+    if (tabView.historyEntry?.title === '') {
+      tabView.historyEntry.title = title;
+      wm.addHistoryEntry(tabView.historyEntry);
+    }
+    tabView.title = title;
+    titleBarView.webContents.send('title-updated', [tabView.id, title]);
+    wm.tabPageView.webContents.send('title-updated', [tabView.id, title]);
+  });
+
+  const updateContents = () => {
+    const url = tabView.view.webContents.getURL();
+    const key = urlToMapKey(url);
+    if (tabView.historyEntry === null || tabView.historyEntry.key !== key) {
+      tabView.historyEntry = {
+        url,
+        key,
+        title: '',
+        favicon: '',
+        openGraphData: { title: 'null', type: '', image: '', url: '' },
+      };
+    } else {
+      tabView.historyEntry.url = url;
+    }
+
+    titleBarView.webContents.send('web-contents-update', [
+      tabView.id,
+      tabView.view.webContents.canGoBack(),
+      tabView.view.webContents.canGoForward(),
+      url,
+    ]);
+    wm.tabPageView.webContents.send('url-changed', [tabView.id, url]);
+  };
+
+  tabView.view.webContents.on('did-navigate', () => {
+    if (windowHasView(window, findView)) {
+      window.removeBrowserView(findView);
+    }
+    updateContents();
+  });
+  tabView.view.webContents.on('did-frame-navigate', () => {
+    updateContents();
+  });
+  tabView.view.webContents.on('did-navigate-in-page', () => {
+    updateContents();
+  });
+  tabView.view.webContents.on('page-favicon-updated', (_, favicons) => {
+    if (favicons.length > 0) {
+      if (tabView.historyEntry?.favicon === '') {
+        // eslint-disable-next-line prefer-destructuring
+        tabView.historyEntry.favicon = favicons[0];
+        wm.addHistoryEntry(tabView.historyEntry);
+      }
+      // eslint-disable-next-line prefer-destructuring
+      tabView.favicon = favicons[0];
+      titleBarView.webContents.send('favicon-updated', [
+        tabView.id,
+        favicons[0],
+      ]);
+      wm.tabPageView.webContents.send('favicon-updated', [
+        tabView.id,
+        favicons[0],
+      ]);
+    }
+  });
+  tabView.view.webContents.on('update-target-url', (_, url) => {
+    if (url === '') {
+      if (windowHasView(window, urlPeekView)) {
+        window.removeBrowserView(urlPeekView);
+      }
+    }
+    if (url !== '') {
+      if (!windowHasView(window, urlPeekView)) {
+        window.addBrowserView(urlPeekView);
+        window.setTopBrowserView(urlPeekView);
+        wm.resize();
+      }
+      urlPeekView.webContents.send('peek-url-updated', url);
+    }
+  });
+  tabView.view.webContents.on('found-in-page', (_, result) => {
+    findView.webContents.send('find-results', [
+      result.activeMatchOrdinal,
+      result.matches,
+    ]);
+  });
+
+  return tabView;
+}
+
 export default class WindowManager {
   windowFloating = false;
 
-  allTabViews: Record<number, TabView> = {};
+  allTabViews: Record<number, ITabView> = {};
 
   activeTabId = -1;
 
@@ -94,8 +202,6 @@ export default class WindowManager {
   windowPosition = glMatrix.vec2.create();
 
   windowVelocity = glMatrix.vec2.create();
-
-  private windowSize = { width: 0, height: 0 };
 
   historyFuse = new Fuse<HistoryEntry>([], {
     keys: ['url', 'title', 'openGraphData.title'],
@@ -113,15 +219,17 @@ export default class WindowManager {
 
   targetWindowPosition = glMatrix.vec2.create();
 
+  windowSize = { width: 0, height: 0 };
+
   private findText = '';
 
   private lastFindTextSearch = '';
 
-  private urlPeekView: BrowserView;
+  private readonly urlPeekView: BrowserView;
 
-  private findView: BrowserView;
+  private readonly findView: BrowserView;
 
-  private overlayView: BrowserView;
+  private readonly overlayView: BrowserView;
 
   static display: { activeDisplay: Display };
 
@@ -198,7 +306,8 @@ export default class WindowManager {
           0,
           0,
           this.windowSize,
-          this.windowPosition
+          this.windowPosition,
+          WindowManager.display.activeDisplay
         );
         if (target[0]) {
           // eslint-disable-next-line prefer-destructuring
@@ -214,7 +323,7 @@ export default class WindowManager {
       if (typeof tabView !== 'undefined') {
         if (tabView.historyEntry?.openGraphData.title === 'null') {
           tabView.historyEntry.openGraphData = data;
-          tabView.updateHistory(this);
+          this.addHistoryEntry(tabView.historyEntry);
         }
       }
     });
@@ -241,10 +350,9 @@ export default class WindowManager {
       if (mainWindow.isDestroyed()) {
         return;
       }
-      let cursorPoint = screen.getCursorScreenPoint();
       const mainWindowVisible = mainWindow.isVisible();
       const webBrowserViewIsActive = this.webBrowserViewActive();
-      let mouseIsInBorder = !this.mouseInInner(cursorPoint);
+      const mouseIsInBorder = !this.mouseInInner;
       const findIsActive = this.findActive;
       if (
         !escapeActive &&
@@ -254,9 +362,7 @@ export default class WindowManager {
       ) {
         escapeActive = true;
         globalShortcut.register('Escape', () => {
-          cursorPoint = screen.getCursorScreenPoint();
-          mouseIsInBorder = !this.mouseInInner(cursorPoint);
-          this.toggle(mouseIsInBorder);
+          this.toggle(!this.mouseInInner);
         });
       } else if (
         escapeActive &&
@@ -386,7 +492,7 @@ export default class WindowManager {
   }
 
   createNewTab(): number {
-    const newTabView = new TabView(
+    const newTabView = createTabView(
       this.mainWindow,
       this.titleBarView,
       this.urlPeekView,
@@ -520,7 +626,7 @@ export default class WindowManager {
         width: windowSize[0] - padding * 2,
         height: Math.max(windowSize[1] - hh, 0) - padding * 2,
       };
-      oldTabView.resize(webViewBounds);
+      oldTabView.view.setBounds(webViewBounds);
     }
 
     // remove webview callback
@@ -664,7 +770,7 @@ export default class WindowManager {
       this.closeFind();
       this.titleBarView.webContents.send('url-changed', [id, newUrl]);
       this.tabPageView.webContents.send('url-changed', [id, newUrl]);
-      updateWebContents(this.titleBarView, id, tabView);
+      updateWebContents(this.titleBarView, id, tabView.view);
     })();
   }
 
@@ -676,7 +782,7 @@ export default class WindowManager {
       this.closeFind();
       this.allTabViews[id].view.webContents.goBack();
     }
-    updateWebContents(this.titleBarView, id, this.allTabViews[id]);
+    updateWebContents(this.titleBarView, id, this.allTabViews[id].view);
   }
 
   tabForward(id: number) {
@@ -687,7 +793,7 @@ export default class WindowManager {
       this.closeFind();
       this.allTabViews[id].view.webContents.goForward();
     }
-    updateWebContents(this.titleBarView, id, this.allTabViews[id]);
+    updateWebContents(this.titleBarView, id, this.allTabViews[id].view);
   }
 
   tabRefresh(id: number) {
@@ -808,7 +914,8 @@ export default class WindowManager {
         last[1],
         last[2],
         this.windowSize,
-        this.windowPosition
+        this.windowPosition,
+        WindowManager.display.activeDisplay
       );
 
       if (firstTarget === null && valid) {
@@ -969,7 +1076,7 @@ export default class WindowManager {
 
   private screenShotTab(
     tabId: number,
-    tabView: TabView,
+    tabView: ITabView,
     callback?: () => void
   ) {
     tabView.view.webContents.send('get-scroll-height', tabId);
@@ -983,7 +1090,7 @@ export default class WindowManager {
       }
       return null;
     };
-    const handleError = (e: any) => {
+    const handleError = (e: unknown) => {
       console.log(e);
       if (callback) {
         callback();
@@ -992,8 +1099,8 @@ export default class WindowManager {
     tabView.view.webContents.capturePage().then(handleImage).catch(handleError);
   }
 
-  private mouseInInner(mousePoint: Electron.Point) {
-    return pointInBounds(mousePoint, this.innerBounds);
+  private get mouseInInner() {
+    return pointInBounds(screen.getCursorScreenPoint(), this.innerBounds);
   }
 
   private resetTextSearch() {
@@ -1239,7 +1346,7 @@ export default class WindowManager {
     return [x, y];
   }
 
-  private resizeTabView(tabView: TabView) {
+  private resizeTabView(tabView: ITabView) {
     const bounds = this.innerBounds;
     const windowSize = this.mainWindow.getSize();
     this.tabPageView.webContents.send('inner-bounds', {
@@ -1249,6 +1356,6 @@ export default class WindowManager {
     const hh = this.headerHeight;
     bounds.y += hh;
     bounds.height -= hh;
-    tabView.resize(bounds);
+    tabView.view.setBounds(bounds);
   }
 }

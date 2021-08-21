@@ -4,11 +4,11 @@ import { RefObject, createContext, useContext } from 'react';
 import Fuse from 'fuse.js';
 import { Instance } from 'mobx-state-tree';
 import { TabPageColumn, TabPageTab } from '../interfaces/tab';
-import { HistoryEntry } from '../utils/tab-view';
 import { getRootDomain } from '../utils/data';
 import { Item, WorkspaceStore } from './workspace-store';
 import { Direction } from '../render-constants';
 import { clamp } from '../utils/utils';
+import { HistoryEntry } from '../utils/interfaces';
 
 export enum View {
   None,

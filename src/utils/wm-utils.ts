@@ -1,3 +1,5 @@
+import { BrowserView } from 'electron';
+
 function pointInBounds(
   mousePoint: Electron.Point,
   bounds: Electron.Rectangle
@@ -30,3 +32,51 @@ function innerBounds(
 }
 
 export { pointInBounds, innerBounds };
+
+export function makeView(loadURL: string) {
+  const newView = new BrowserView({
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false, // todo: do we need this? security concern?
+    },
+  });
+  newView.webContents.loadURL(loadURL);
+  return newView;
+}
+
+export const updateWebContents = (
+  titleBarView: BrowserView,
+  id: number,
+  view: BrowserView
+) => {
+  titleBarView.webContents.send('web-contents-update', [
+    id,
+    view.webContents.canGoBack(),
+    view.webContents.canGoForward(),
+    view.webContents.getURL(),
+  ]);
+};
+
+export function handleFindText(
+  tabView: BrowserView,
+  search: string,
+  lastSearch: string,
+  searchBack?: boolean
+) {
+  if (tabView === null) {
+    return '';
+  }
+  if (search === '') {
+    // stop finding if find text is empty
+    tabView.webContents.stopFindInPage('clearSelection');
+    return '';
+  }
+  const shouldSearchBack = typeof searchBack !== 'undefined' && searchBack;
+  const sameAsLastSearch = search === lastSearch;
+  tabView.webContents.findInPage(search, {
+    forward: !shouldSearchBack,
+    findNext: !sameAsLastSearch,
+  });
+
+  return search;
+}
