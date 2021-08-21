@@ -14,6 +14,7 @@ export const TabImageParent = styled.div`
   width: 100%;
   padding-top: 56.25%;
   position: relative; /* If you want text inside of it */
+  z-index: 0;
   border-radius: 10px;
   border-width: 4px;
   display: flex;

@@ -80,6 +80,8 @@ export const createWindow = async () => {
     await installExtensions();
   }
 
+  const mac = process.platform === 'darwin';
+
   let mainWindow: BrowserWindow | null = new BrowserWindow({
     frame: false,
     transparent: true,
@@ -89,10 +91,9 @@ export const createWindow = async () => {
     minHeight: 50,
     show: false,
     icon: ICON_SMALL_PNG,
-    vibrancy: 'fullscreen-ui', // menu, popover, hud, fullscreen-ui
-    // enableLargerThanScreen: true,
+    vibrancy: mac ? 'fullscreen-ui' : undefined, // menu, popover, hud, fullscreen-ui
     roundedCorners: false,
-    visualEffectState: 'active',
+    visualEffectState: mac ? 'active' : undefined,
     webPreferences: {
       nodeIntegration: false,
       devTools: false,

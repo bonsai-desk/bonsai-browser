@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
-import '../tabPage.css';
 import { useStore, View } from '../store/tab-page-store';
 import URLBox from '../components/URLBox';
 import PinButton from '../components/PinButton';
