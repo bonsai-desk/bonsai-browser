@@ -1,4 +1,4 @@
-import { BrowserView } from 'electron';
+import { BrowserView, BrowserWindow } from 'electron';
 import { IWebView } from './interfaces';
 
 function pointInBounds(
@@ -18,11 +18,12 @@ function pointInBounds(
 }
 
 function innerRectangle(
+  aspect: number,
   windowSize: [number, number],
   verticalPadding: number
 ): Electron.Rectangle {
   const height = Math.max(windowSize[1], 0) - verticalPadding * 2;
-  const width = Math.round((4 / 3) * height);
+  const width = Math.round(aspect * height);
   const xPadding = Math.round((windowSize[0] - width) / 2);
   return {
     x: xPadding,
@@ -153,4 +154,9 @@ export function resizeAsOverlayView(view: BrowserView, windowSize: number[]) {
     width: windowSize[0],
     height: windowSize[1],
   });
+}
+
+export function currentWindowSize(window: BrowserWindow): [number, number] {
+  const [x, y] = window.getSize();
+  return [x, y];
 }

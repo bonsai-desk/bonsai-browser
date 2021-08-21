@@ -31,6 +31,7 @@ import {
 } from './utils';
 import calculateWindowTarget from './calculate-window-target';
 import {
+  currentWindowSize,
   handleFindText,
   innerRectangle,
   makeView,
@@ -254,7 +255,7 @@ export default class WindowManager {
 
   get browserPadding(): number {
     if (WindowManager.display !== null) {
-      const ratio = this.activeTabId === -1 ? 50 : 15;
+      const ratio = this.webViewIsActive ? 50 : 15;
       return Math.floor(
         WindowManager.display.activeDisplay.workAreaSize.height / ratio
       );
@@ -550,7 +551,7 @@ export default class WindowManager {
     this.mainWindow.setOpacity(1.0);
     this.setPinned(false);
     this.unFloat(display.activeDisplay);
-    if (this.activeTabId === -1) {
+    if (this.webViewIsActive) {
       // todo: search box does not get highlighted on macos unless we do this hack
       setTimeout(() => {
         this.unSetTab();
@@ -623,7 +624,7 @@ export default class WindowManager {
         this.tabPageView,
         this.innerBounds,
         this.headerHeight,
-        this.currentWindowSize
+        currentWindowSize(this.mainWindow)
       );
     });
   }
@@ -690,7 +691,7 @@ export default class WindowManager {
     // move title bar off screen
     const hh = this.headerHeight;
     const { padding } = this;
-    const windowSize = this.currentWindowSize;
+    const windowSize = currentWindowSize(this.mainWindow);
     const titleBarBounds = {
       x: 0,
       y: windowSize[1] + 1,
@@ -764,7 +765,7 @@ export default class WindowManager {
     }
 
     const hh = this.headerHeight;
-    const windowSize = this.currentWindowSize;
+    const windowSize = currentWindowSize(this.mainWindow);
     const { padding } = this;
 
     // add title bar view to main window
@@ -779,7 +780,7 @@ export default class WindowManager {
       this.tabPageView,
       this.innerBounds,
       this.headerHeight,
-      this.currentWindowSize
+      currentWindowSize(this.mainWindow)
     );
 
     // add the live page to the main window and focus it a little bit later
@@ -1167,7 +1168,7 @@ export default class WindowManager {
         this.tabPageView,
         this.innerBounds,
         this.headerHeight,
-        this.currentWindowSize
+        currentWindowSize(this.mainWindow)
       );
     });
 
@@ -1180,7 +1181,7 @@ export default class WindowManager {
     }
 
     const hh = this.headerHeight;
-    const windowSize = this.currentWindowSize;
+    const windowSize = currentWindowSize(this.mainWindow);
     // const { padding } = this;
 
     resizeAsTitleBar(this.titleBarView, hh, this.innerBounds);
@@ -1371,10 +1372,10 @@ export default class WindowManager {
     this.updateMainWindowBounds();
 
     const hh = this.headerHeight;
-    const windowSize = this.currentWindowSize;
+    const windowSize = currentWindowSize(this.mainWindow);
     const { padding } = this;
 
-    if (this.activeTabId === -1) {
+    if (this.webViewIsActive) {
       this.resizeTabPageView(windowSize);
     } else {
       resizeAsTitleBar(this.titleBarView, this.headerHeight, this.innerBounds);
@@ -1429,11 +1430,10 @@ export default class WindowManager {
   }
 
   private get innerBounds(): Electron.Rectangle {
-    return innerRectangle(this.currentWindowSize, this.padding);
-  }
-
-  private get currentWindowSize(): [number, number] {
-    const [x, y] = this.mainWindow?.getSize();
-    return [x, y];
+    return innerRectangle(
+      4 / 3,
+      currentWindowSize(this.mainWindow),
+      this.padding
+    );
   }
 }
