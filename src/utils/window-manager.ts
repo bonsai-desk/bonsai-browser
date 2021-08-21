@@ -34,6 +34,7 @@ import {
 import { handleFindText } from './windows';
 // eslint-disable-next-line import/no-cycle
 import calculateWindowTarget from './calculate-window-target';
+import { pointInBounds, innerBounds } from './wm-utils';
 
 const glMatrix = require('gl-matrix');
 
@@ -59,8 +60,6 @@ function makeView(loadURL: string) {
       contextIsolation: false, // todo: do we need this? security concern?
     },
   });
-  // newView.webContents.setZoomLevel(1);
-  // newView.webContents.setZoomFactor(1);
   newView.webContents.loadURL(loadURL);
   return newView;
 }
@@ -84,33 +83,19 @@ export default class WindowManager {
 
   activeTabId = -1;
 
-  findText = '';
-
-  lastFindTextSearch = '';
-
   movingWindow = false;
 
   mainWindow: BrowserWindow;
 
   titleBarView: BrowserView;
 
-  urlPeekView: BrowserView;
-
-  findView: BrowserView;
-
-  overlayView: BrowserView;
-
   tabPageView: BrowserView;
-
-  static display: { activeDisplay: Display };
 
   windowPosition = glMatrix.vec2.create();
 
   windowVelocity = glMatrix.vec2.create();
 
-  windowSize = { width: 0, height: 0 };
-
-  historyMap = new Map<string, HistoryEntry>();
+  private windowSize = { width: 0, height: 0 };
 
   historyFuse = new Fuse<HistoryEntry>([], {
     keys: ['url', 'title', 'openGraphData.title'],
@@ -118,27 +103,41 @@ export default class WindowManager {
 
   historyModalActive = false;
 
-  removedTabsStack: TabInfo[][] = [];
-
   isPinned = false;
-
-  loadedOpenTabs = false;
-
-  startMouseX: number | null = null;
-
-  startMouseY: number | null = null;
 
   lastX: number | null = null;
 
   lastY: number | null = null;
 
-  validFloatingClick = false;
-
   lastTime = 0;
 
   targetWindowPosition = glMatrix.vec2.create();
 
-  windowSpeeds: number[][] = [];
+  private findText = '';
+
+  private lastFindTextSearch = '';
+
+  private urlPeekView: BrowserView;
+
+  private findView: BrowserView;
+
+  private overlayView: BrowserView;
+
+  static display: { activeDisplay: Display };
+
+  private historyMap = new Map<string, HistoryEntry>();
+
+  private removedTabsStack: TabInfo[][] = [];
+
+  private loadedOpenTabs = false;
+
+  private startMouseX: number | null = null;
+
+  private startMouseY: number | null = null;
+
+  private validFloatingClick = false;
+
+  private windowSpeeds: number[][] = [];
 
   static dragThresholdSquared = 5 * 5;
 
@@ -246,7 +245,7 @@ export default class WindowManager {
       const mainWindowVisible = mainWindow.isVisible();
       const webBrowserViewIsActive = this.webBrowserViewActive();
       let mouseIsInBorder = !this.mouseInInner(cursorPoint);
-      const findIsActive = this.findActive();
+      const findIsActive = this.findActive;
       if (
         !escapeActive &&
         mainWindowVisible &&
@@ -502,7 +501,9 @@ export default class WindowManager {
     const oldTabView = this.allTabViews[this.activeTabId];
 
     // move title bar off screen
-    const { padding, windowSize, hh } = this.boundsInfo();
+    const hh = this.headerHeight;
+    const { padding } = this;
+    const windowSize = this.currentWindowSize;
     const titleBarBounds = {
       x: 0,
       y: windowSize[1] + 1,
@@ -571,7 +572,9 @@ export default class WindowManager {
       throw new Error(`setTab: tab with id ${id} does not exist`);
     }
 
-    const { padding, hh, windowSize } = this.boundsInfo();
+    const hh = this.headerHeight;
+    const windowSize = this.currentWindowSize;
+    const { padding } = this;
 
     // add title bar view to main window
     if (!windowHasView(this.mainWindow, this.titleBarView)) {
@@ -924,7 +927,9 @@ export default class WindowManager {
       return;
     }
 
-    const { padding, hh, windowSize } = this.boundsInfo();
+    const hh = this.headerHeight;
+    const windowSize = this.currentWindowSize;
+    const { padding } = this;
 
     this.resizeTitleBar();
     this.resizePeekView(padding, windowSize);
@@ -938,7 +943,7 @@ export default class WindowManager {
     if (this.windowFloating) {
       this.hideWindow();
       // this.hideMainWindow();
-    } else if (this.tabPageActive()) {
+    } else if (this.tabPageActive) {
       if (this.historyModalActive) {
         this.tabPageView.webContents.send('close-history-modal');
       } else {
@@ -946,7 +951,7 @@ export default class WindowManager {
         // this.hideMainWindow();
       }
     } else if (windowHasView(this.mainWindow, this.titleBarView)) {
-      const findIsActive = this.findActive();
+      const findIsActive = this.findActive;
       if (findIsActive && !mouseInBorder) {
         this.closeFind();
       } else {
@@ -988,18 +993,7 @@ export default class WindowManager {
   }
 
   private mouseInInner(mousePoint: Electron.Point) {
-    const bounds = this.innerBounds();
-
-    const innerX0 = bounds.x;
-    const innerX1 = bounds.x + bounds.width;
-
-    const innerY0 = bounds.y;
-    const innerY1 = bounds.y + bounds.height;
-
-    const inX = innerX0 < mousePoint.x && mousePoint.x < innerX1;
-    const inY = innerY0 < mousePoint.y && mousePoint.y < innerY1;
-
-    return inX && inY;
+    return pointInBounds(mousePoint, this.innerBounds);
   }
 
   private resetTextSearch() {
@@ -1128,7 +1122,9 @@ export default class WindowManager {
       display.bounds.height + (process.platform === 'darwin' ? 0 : 1); // todo: on windows if you make it the same size as monitor, everything breaks!?!??!?!?
     this.updateMainWindowBounds();
 
-    const { padding, hh, windowSize } = this.boundsInfo();
+    const hh = this.headerHeight;
+    const windowSize = this.currentWindowSize;
+    const { padding } = this;
 
     if (this.activeTabId === -1) {
       this.resizeTabPageView(windowSize);
@@ -1160,8 +1156,8 @@ export default class WindowManager {
   }
 
   private resizeTitleBar() {
-    const bounds = this.innerBounds();
-    const hh = this.headerHeight();
+    const bounds = this.innerBounds;
+    const hh = this.headerHeight;
     const titleBarBounds = {
       x: bounds.x,
       y: bounds.y,
@@ -1218,53 +1214,39 @@ export default class WindowManager {
     });
   }
 
-  private boundsInfo() {
-    const padding = this.windowFloating ? 10 : this.browserPadding();
-    const hh = this.windowFloating ? 0 : headerHeight;
-    const windowSize = this.mainWindow.getSize();
-
-    return { padding, hh, windowSize };
+  private get padding(): number {
+    return this.windowFloating ? 10 : this.browserPadding();
   }
 
-  private findActive() {
+  private get findActive(): boolean {
     return windowHasView(this.mainWindow, this.findView);
   }
 
-  private tabPageActive(): boolean {
+  private get tabPageActive(): boolean {
     return this.activeTabId === -1;
   }
 
-  private headerHeight() {
+  private get headerHeight(): number {
     return this.windowFloating ? 0 : headerHeight;
   }
 
-  private innerBounds(): Electron.Rectangle {
-    // const hh = this.headerHeight();
-    const padding = this.windowFloating ? 10 : this.browserPadding();
+  private get innerBounds(): Electron.Rectangle {
+    return innerBounds(this.currentWindowSize, this.padding);
+  }
 
-    const windowSize = this.mainWindow.getSize();
-
-    const height = Math.max(windowSize[1], 0) - padding * 2;
-    const width = Math.round((4 / 3) * height);
-
-    const xPadding = Math.round((windowSize[0] - width) / 2);
-
-    return {
-      x: xPadding,
-      y: padding,
-      width,
-      height,
-    };
+  private get currentWindowSize(): [number, number] {
+    const [x, y] = this.mainWindow?.getSize();
+    return [x, y];
   }
 
   private resizeTabView(tabView: TabView) {
-    const bounds = this.innerBounds();
+    const bounds = this.innerBounds;
     const windowSize = this.mainWindow.getSize();
     this.tabPageView.webContents.send('inner-bounds', {
       screen: { width: windowSize[0], height: windowSize[1] },
       bounds,
     });
-    const hh = this.headerHeight();
+    const hh = this.headerHeight;
     bounds.y += hh;
     bounds.height -= hh;
     tabView.resize(bounds);
