@@ -723,6 +723,10 @@ export default class WindowManager {
     this.tabPageView.webContents.focus();
     this.tabPageView.webContents.send('focus-search');
 
+    if (this.findActive) {
+      this.closeFind();
+    }
+
     // screenshot page if needed
     if (shouldScreenshot && typeof oldTabView !== 'undefined') {
       const cachedId = this.activeTabId;
