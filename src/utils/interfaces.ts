@@ -37,3 +37,15 @@ export interface ITabView {
 
   scrollHeight: number;
 }
+
+export interface TabInfo {
+  url: string;
+
+  title: string;
+
+  favicon: string;
+
+  imgString: string;
+
+  scrollHeight: number;
+}

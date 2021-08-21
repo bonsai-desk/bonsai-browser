@@ -37,152 +37,11 @@ import {
   pointInBounds,
   updateWebContents,
 } from './wm-utils';
-import { HistoryEntry, ITabView, OpenGraphInfo } from './interfaces';
+import { HistoryEntry, ITabView, OpenGraphInfo, TabInfo } from './interfaces';
 
 const glMatrix = require('gl-matrix');
 
 const easeOut = BezierEasing(0, 0, 0.5, 1);
-
-interface TabInfo {
-  url: string;
-
-  title: string;
-
-  favicon: string;
-
-  imgString: string;
-
-  scrollHeight: number;
-}
-
-export function createTabView(
-  window: BrowserWindow,
-  titleBarView: BrowserView,
-  urlPeekView: BrowserView,
-  findView: BrowserView,
-  wm: WindowManager
-): ITabView {
-  if (!window) {
-    throw new Error('"window" is not defined');
-  }
-
-  const tabView: ITabView = {
-    id: -1,
-    window,
-    view: new BrowserView({
-      webPreferences: {
-        nodeIntegration: false,
-        sandbox: true,
-        preload: PRELOAD,
-        contextIsolation: true, // todo: do we need this? security concern?
-      },
-    }),
-    historyEntry: null,
-    title: '',
-    favicon: '',
-    windowFloating: false,
-    unloadedUrl: '',
-    imgString: '',
-    scrollHeight: 0,
-  };
-
-  tabView.view.setBackgroundColor('#FFFFFF');
-  tabView.id = tabView.view.webContents.id;
-
-  tabView.view.webContents.on('new-window', (event, url) => {
-    event.preventDefault();
-    const newTabId = wm.createNewTab();
-    wm.loadUrlInTab(newTabId, url);
-  });
-  tabView.view.webContents.on('page-title-updated', (_, title) => {
-    if (tabView.historyEntry?.title === '') {
-      tabView.historyEntry.title = title;
-      wm.addHistoryEntry(tabView.historyEntry);
-    }
-    tabView.title = title;
-    titleBarView.webContents.send('title-updated', [tabView.id, title]);
-    wm.tabPageView.webContents.send('title-updated', [tabView.id, title]);
-  });
-
-  const updateContents = () => {
-    const url = tabView.view.webContents.getURL();
-    const key = urlToMapKey(url);
-    if (tabView.historyEntry === null || tabView.historyEntry.key !== key) {
-      tabView.historyEntry = {
-        url,
-        key,
-        title: '',
-        favicon: '',
-        openGraphData: { title: 'null', type: '', image: '', url: '' },
-      };
-    } else {
-      tabView.historyEntry.url = url;
-    }
-
-    titleBarView.webContents.send('web-contents-update', [
-      tabView.id,
-      tabView.view.webContents.canGoBack(),
-      tabView.view.webContents.canGoForward(),
-      url,
-    ]);
-    wm.tabPageView.webContents.send('url-changed', [tabView.id, url]);
-  };
-
-  tabView.view.webContents.on('did-navigate', () => {
-    if (windowHasView(window, findView)) {
-      window.removeBrowserView(findView);
-    }
-    updateContents();
-  });
-  tabView.view.webContents.on('did-frame-navigate', () => {
-    updateContents();
-  });
-  tabView.view.webContents.on('did-navigate-in-page', () => {
-    updateContents();
-  });
-  tabView.view.webContents.on('page-favicon-updated', (_, favicons) => {
-    if (favicons.length > 0) {
-      if (tabView.historyEntry?.favicon === '') {
-        // eslint-disable-next-line prefer-destructuring
-        tabView.historyEntry.favicon = favicons[0];
-        wm.addHistoryEntry(tabView.historyEntry);
-      }
-      // eslint-disable-next-line prefer-destructuring
-      tabView.favicon = favicons[0];
-      titleBarView.webContents.send('favicon-updated', [
-        tabView.id,
-        favicons[0],
-      ]);
-      wm.tabPageView.webContents.send('favicon-updated', [
-        tabView.id,
-        favicons[0],
-      ]);
-    }
-  });
-  tabView.view.webContents.on('update-target-url', (_, url) => {
-    if (url === '') {
-      if (windowHasView(window, urlPeekView)) {
-        window.removeBrowserView(urlPeekView);
-      }
-    }
-    if (url !== '') {
-      if (!windowHasView(window, urlPeekView)) {
-        window.addBrowserView(urlPeekView);
-        window.setTopBrowserView(urlPeekView);
-        wm.resize();
-      }
-      urlPeekView.webContents.send('peek-url-updated', url);
-    }
-  });
-  tabView.view.webContents.on('found-in-page', (_, result) => {
-    findView.webContents.send('find-results', [
-      result.activeMatchOrdinal,
-      result.matches,
-    ]);
-  });
-
-  return tabView;
-}
 
 export default class WindowManager {
   windowFloating = false;
@@ -381,6 +240,134 @@ export default class WindowManager {
     }, 10);
   }
 
+  createTabView(
+    window: BrowserWindow,
+    titleBarView: BrowserView,
+    urlPeekView: BrowserView,
+    findView: BrowserView
+  ): ITabView {
+    if (!window) {
+      throw new Error('"window" is not defined');
+    }
+
+    const tabView: ITabView = {
+      id: -1,
+      window,
+      view: new BrowserView({
+        webPreferences: {
+          nodeIntegration: false,
+          sandbox: true,
+          preload: PRELOAD,
+          contextIsolation: true, // todo: do we need this? security concern?
+        },
+      }),
+      historyEntry: null,
+      title: '',
+      favicon: '',
+      windowFloating: false,
+      unloadedUrl: '',
+      imgString: '',
+      scrollHeight: 0,
+    };
+
+    tabView.view.setBackgroundColor('#FFFFFF');
+    tabView.id = tabView.view.webContents.id;
+
+    tabView.view.webContents.on('new-window', (event, url) => {
+      event.preventDefault();
+      const newTabId = this.createNewTab();
+      this.loadUrlInTab(newTabId, url);
+    });
+    tabView.view.webContents.on('page-title-updated', (_, title) => {
+      if (tabView.historyEntry?.title === '') {
+        tabView.historyEntry.title = title;
+        this.addHistoryEntry(tabView.historyEntry);
+      }
+      tabView.title = title;
+      titleBarView.webContents.send('title-updated', [tabView.id, title]);
+      this.tabPageView.webContents.send('title-updated', [tabView.id, title]);
+    });
+
+    const updateContents = () => {
+      const url = tabView.view.webContents.getURL();
+      const key = urlToMapKey(url);
+      if (tabView.historyEntry === null || tabView.historyEntry.key !== key) {
+        tabView.historyEntry = {
+          url,
+          key,
+          title: '',
+          favicon: '',
+          openGraphData: { title: 'null', type: '', image: '', url: '' },
+        };
+      } else {
+        tabView.historyEntry.url = url;
+      }
+
+      titleBarView.webContents.send('web-contents-update', [
+        tabView.id,
+        tabView.view.webContents.canGoBack(),
+        tabView.view.webContents.canGoForward(),
+        url,
+      ]);
+      this.tabPageView.webContents.send('url-changed', [tabView.id, url]);
+    };
+
+    tabView.view.webContents.on('did-navigate', () => {
+      if (windowHasView(window, findView)) {
+        window.removeBrowserView(findView);
+      }
+      updateContents();
+    });
+    tabView.view.webContents.on('did-frame-navigate', () => {
+      updateContents();
+    });
+    tabView.view.webContents.on('did-navigate-in-page', () => {
+      updateContents();
+    });
+    tabView.view.webContents.on('page-favicon-updated', (_, favicons) => {
+      if (favicons.length > 0) {
+        if (tabView.historyEntry?.favicon === '') {
+          // eslint-disable-next-line prefer-destructuring
+          tabView.historyEntry.favicon = favicons[0];
+          this.addHistoryEntry(tabView.historyEntry);
+        }
+        // eslint-disable-next-line prefer-destructuring
+        tabView.favicon = favicons[0];
+        titleBarView.webContents.send('favicon-updated', [
+          tabView.id,
+          favicons[0],
+        ]);
+        this.tabPageView.webContents.send('favicon-updated', [
+          tabView.id,
+          favicons[0],
+        ]);
+      }
+    });
+    tabView.view.webContents.on('update-target-url', (_, url) => {
+      if (url === '') {
+        if (windowHasView(window, urlPeekView)) {
+          window.removeBrowserView(urlPeekView);
+        }
+      }
+      if (url !== '') {
+        if (!windowHasView(window, urlPeekView)) {
+          window.addBrowserView(urlPeekView);
+          window.setTopBrowserView(urlPeekView);
+          this.resize();
+        }
+        urlPeekView.webContents.send('peek-url-updated', url);
+      }
+    });
+    tabView.view.webContents.on('found-in-page', (_, result) => {
+      findView.webContents.send('find-results', [
+        result.activeMatchOrdinal,
+        result.matches,
+      ]);
+    });
+
+    return tabView;
+  }
+
   hideWindow() {
     let opacity = 1.0;
     const display = { activeDisplay: screen.getPrimaryDisplay() };
@@ -492,12 +479,11 @@ export default class WindowManager {
   }
 
   createNewTab(): number {
-    const newTabView = createTabView(
+    const newTabView = this.createTabView(
       this.mainWindow,
       this.titleBarView,
       this.urlPeekView,
-      this.findView,
-      this
+      this.findView
     );
     const { id } = newTabView;
     this.allTabViews[id] = newTabView;
