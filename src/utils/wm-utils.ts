@@ -1,5 +1,5 @@
 import { BrowserView } from 'electron';
-import { ITabView } from './interfaces';
+import { IWebView } from './interfaces';
 
 function pointInBounds(
   mousePoint: Electron.Point,
@@ -98,21 +98,20 @@ export function resizeAsTitleBar(
 
 export function resizeAsPeekView(
   view: BrowserView,
-  padding: number,
-  windowSize: number[]
+  pageInnerBounds: Electron.Rectangle
 ) {
   const urlPeekWidth = 475;
   const urlPeekHeight = 20;
   view.setBounds({
-    x: padding,
-    y: windowSize[1] - urlPeekHeight - padding,
+    x: pageInnerBounds.x,
+    y: pageInnerBounds.y + pageInnerBounds.height - urlPeekHeight,
     width: urlPeekWidth,
     height: urlPeekHeight,
   });
 }
 
 export function resizeAsTabView(
-  tabView: ITabView,
+  tabView: IWebView,
   tabPage: BrowserView,
   bounds: Electron.Rectangle,
   urlHeight: number,
@@ -127,4 +126,28 @@ export function resizeAsTabView(
   bounds.y += hh;
   bounds.height -= hh;
   tabView.view.setBounds(bounds);
+}
+export function resizeAsFindView(
+  view: BrowserView,
+  padding: number,
+  hh: number,
+  windowSize: number[]
+) {
+  const findViewWidth = 350;
+  const findViewHeight = 50;
+  const findViewMarginRight = 20;
+  view.setBounds({
+    x: windowSize[0] - findViewWidth - findViewMarginRight - padding,
+    y: hh + padding,
+    width: findViewWidth,
+    height: findViewHeight,
+  });
+}
+export function resizeAsOverlayView(view: BrowserView, windowSize: number[]) {
+  view.setBounds({
+    x: 0,
+    y: 0,
+    width: windowSize[0],
+    height: windowSize[1],
+  });
 }

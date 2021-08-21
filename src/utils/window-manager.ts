@@ -35,12 +35,14 @@ import {
   innerRectangle,
   makeView,
   pointInBounds,
+  resizeAsFindView,
+  resizeAsOverlayView,
   resizeAsPeekView,
   resizeAsTabView,
   resizeAsTitleBar,
   updateWebContents,
 } from './wm-utils';
-import { HistoryEntry, ITabView, OpenGraphInfo, TabInfo } from './interfaces';
+import { HistoryEntry, IWebView, OpenGraphInfo, TabInfo } from './interfaces';
 
 const glMatrix = require('gl-matrix');
 
@@ -90,7 +92,7 @@ function addListeners(wm: WindowManager) {
     wm.handleWindowMoved();
   });
   ipcMain.on('wheel', (_, [deltaX, deltaY]) => {
-    const activeTabView = wm.allTabViews[wm.activeTabId];
+    const activeTabView = wm.allWebViews[wm.activeTabId];
     if (activeTabView !== null) {
       activeTabView.view.webContents.executeJavaScript(`
         window.scrollBy(${deltaX}, ${deltaY});
@@ -142,7 +144,7 @@ function addListeners(wm: WindowManager) {
     const baseUrl = url.split('#')[0];
     let tabExists = false;
 
-    Object.values(wm.allTabViews).forEach((tabView) => {
+    Object.values(wm.allWebViews).forEach((tabView) => {
       const tabUrl = tabView.view.webContents.getURL();
       const tabBaseUrl = tabUrl.split('#')[0];
       if (tabBaseUrl === baseUrl) {
@@ -165,7 +167,7 @@ function addListeners(wm: WindowManager) {
     wm.tabPageView.webContents.send('set-snapshot-path', snapshotPath);
   });
   ipcMain.on('open-graph-data', (_, data: OpenGraphInfo) => {
-    const tabView = wm.allTabViews[wm.activeTabId];
+    const tabView = wm.allWebViews[wm.activeTabId];
     if (typeof tabView !== 'undefined') {
       if (tabView.historyEntry?.openGraphData.title === 'null') {
         tabView.historyEntry.openGraphData = data;
@@ -174,7 +176,7 @@ function addListeners(wm: WindowManager) {
     }
   });
   ipcMain.on('scroll-height', (_, [id, height]) => {
-    const tabView = wm.allTabViews[id];
+    const tabView = wm.allWebViews[id];
     if (typeof tabView !== 'undefined') {
       tabView.scrollHeight = height;
     }
@@ -184,7 +186,7 @@ function addListeners(wm: WindowManager) {
 export default class WindowManager {
   windowFloating = false;
 
-  allTabViews: Record<number, ITabView> = {};
+  allWebViews: Record<number, IWebView> = {};
 
   activeTabId = -1;
 
@@ -195,6 +197,12 @@ export default class WindowManager {
   titleBarView: BrowserView;
 
   tabPageView: BrowserView;
+
+  private readonly urlPeekView: BrowserView;
+
+  private readonly findView: BrowserView;
+
+  private readonly overlayView: BrowserView;
 
   windowPosition = glMatrix.vec2.create();
 
@@ -221,12 +229,6 @@ export default class WindowManager {
   private findText = '';
 
   private lastFindTextSearch = '';
-
-  private readonly urlPeekView: BrowserView;
-
-  private readonly findView: BrowserView;
-
-  private readonly overlayView: BrowserView;
 
   static display: { activeDisplay: Display };
 
@@ -285,7 +287,7 @@ export default class WindowManager {
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
       // we do this so hot reloading does not duplicate tabs
-      Object.values(this.allTabViews).forEach((tabView) => {
+      Object.values(this.allWebViews).forEach((tabView) => {
         this.removeTab(tabView.id);
       });
       this.loadHistory();
@@ -382,12 +384,12 @@ export default class WindowManager {
     titleBarView: BrowserView,
     urlPeekView: BrowserView,
     findView: BrowserView
-  ): ITabView {
+  ): IWebView {
     if (!window) {
       throw new Error('"window" is not defined');
     }
 
-    const tabView: ITabView = {
+    const webView: IWebView = {
       id: -1,
       window,
       view: new BrowserView({
@@ -407,29 +409,29 @@ export default class WindowManager {
       scrollHeight: 0,
     };
 
-    tabView.view.setBackgroundColor('#FFFFFF');
-    tabView.id = tabView.view.webContents.id;
+    webView.view.setBackgroundColor('#FFFFFF');
+    webView.id = webView.view.webContents.id;
 
-    tabView.view.webContents.on('new-window', (event, url) => {
+    webView.view.webContents.on('new-window', (event, url) => {
       event.preventDefault();
       const newTabId = this.createNewTab();
       this.loadUrlInTab(newTabId, url);
     });
-    tabView.view.webContents.on('page-title-updated', (_, title) => {
-      if (tabView.historyEntry?.title === '') {
-        tabView.historyEntry.title = title;
-        this.addHistoryEntry(tabView.historyEntry);
+    webView.view.webContents.on('page-title-updated', (_, title) => {
+      if (webView.historyEntry?.title === '') {
+        webView.historyEntry.title = title;
+        this.addHistoryEntry(webView.historyEntry);
       }
-      tabView.title = title;
-      titleBarView.webContents.send('title-updated', [tabView.id, title]);
-      this.tabPageView.webContents.send('title-updated', [tabView.id, title]);
+      webView.title = title;
+      titleBarView.webContents.send('title-updated', [webView.id, title]);
+      this.tabPageView.webContents.send('title-updated', [webView.id, title]);
     });
 
     const updateContents = () => {
-      const url = tabView.view.webContents.getURL();
+      const url = webView.view.webContents.getURL();
       const key = urlToMapKey(url);
-      if (tabView.historyEntry === null || tabView.historyEntry.key !== key) {
-        tabView.historyEntry = {
+      if (webView.historyEntry === null || webView.historyEntry.key !== key) {
+        webView.historyEntry = {
           url,
           key,
           title: '',
@@ -437,50 +439,50 @@ export default class WindowManager {
           openGraphData: { title: 'null', type: '', image: '', url: '' },
         };
       } else {
-        tabView.historyEntry.url = url;
+        webView.historyEntry.url = url;
       }
 
       titleBarView.webContents.send('web-contents-update', [
-        tabView.id,
-        tabView.view.webContents.canGoBack(),
-        tabView.view.webContents.canGoForward(),
+        webView.id,
+        webView.view.webContents.canGoBack(),
+        webView.view.webContents.canGoForward(),
         url,
       ]);
-      this.tabPageView.webContents.send('url-changed', [tabView.id, url]);
+      this.tabPageView.webContents.send('url-changed', [webView.id, url]);
     };
 
-    tabView.view.webContents.on('did-navigate', () => {
+    webView.view.webContents.on('did-navigate', () => {
       if (windowHasView(window, findView)) {
         window.removeBrowserView(findView);
       }
       updateContents();
     });
-    tabView.view.webContents.on('did-frame-navigate', () => {
+    webView.view.webContents.on('did-frame-navigate', () => {
       updateContents();
     });
-    tabView.view.webContents.on('did-navigate-in-page', () => {
+    webView.view.webContents.on('did-navigate-in-page', () => {
       updateContents();
     });
-    tabView.view.webContents.on('page-favicon-updated', (_, favicons) => {
+    webView.view.webContents.on('page-favicon-updated', (_, favicons) => {
       if (favicons.length > 0) {
-        if (tabView.historyEntry?.favicon === '') {
+        if (webView.historyEntry?.favicon === '') {
           // eslint-disable-next-line prefer-destructuring
-          tabView.historyEntry.favicon = favicons[0];
-          this.addHistoryEntry(tabView.historyEntry);
+          webView.historyEntry.favicon = favicons[0];
+          this.addHistoryEntry(webView.historyEntry);
         }
         // eslint-disable-next-line prefer-destructuring
-        tabView.favicon = favicons[0];
+        webView.favicon = favicons[0];
         titleBarView.webContents.send('favicon-updated', [
-          tabView.id,
+          webView.id,
           favicons[0],
         ]);
         this.tabPageView.webContents.send('favicon-updated', [
-          tabView.id,
+          webView.id,
           favicons[0],
         ]);
       }
     });
-    tabView.view.webContents.on('update-target-url', (_, url) => {
+    webView.view.webContents.on('update-target-url', (_, url) => {
       if (url === '') {
         if (windowHasView(window, urlPeekView)) {
           window.removeBrowserView(urlPeekView);
@@ -495,14 +497,14 @@ export default class WindowManager {
         urlPeekView.webContents.send('peek-url-updated', url);
       }
     });
-    tabView.view.webContents.on('found-in-page', (_, result) => {
+    webView.view.webContents.on('found-in-page', (_, result) => {
       findView.webContents.send('find-results', [
         result.activeMatchOrdinal,
         result.matches,
       ]);
     });
 
-    return tabView;
+    return webView;
   }
 
   // window
@@ -606,12 +608,24 @@ export default class WindowManager {
   closeFind() {
     if (windowHasView(this.mainWindow, this.findView)) {
       this.mainWindow.removeBrowserView(this.findView);
-      const tabView = this.allTabViews[this.activeTabId];
+      const tabView = this.allWebViews[this.activeTabId];
       if (typeof tabView !== 'undefined') {
         tabView.view.webContents.stopFindInPage('clearSelection');
         this.lastFindTextSearch = '';
       }
     }
+  }
+
+  resizeWebViews() {
+    Object.values(this.allWebViews).forEach((tabView) => {
+      resizeAsTabView(
+        tabView,
+        this.tabPageView,
+        this.innerBounds,
+        this.headerHeight,
+        this.currentWindowSize
+      );
+    });
   }
 
   // tabs
@@ -624,7 +638,7 @@ export default class WindowManager {
       this.findView
     );
     const { id } = newTabView;
-    this.allTabViews[id] = newTabView;
+    this.allWebViews[id] = newTabView;
     this.titleBarView.webContents.send('tabView-created-with-id', id);
     this.tabPageView.webContents.send('tabView-created-with-id', id);
     return id;
@@ -636,7 +650,7 @@ export default class WindowManager {
     }
 
     const tabs = ids.map((id) => {
-      const tabView = this.allTabViews[id];
+      const tabView = this.allWebViews[id];
       return {
         url:
           tabView.unloadedUrl === ''
@@ -671,7 +685,7 @@ export default class WindowManager {
   }
 
   unSetTab(shouldScreenshot = true) {
-    const oldTabView = this.allTabViews[this.activeTabId];
+    const oldTabView = this.allWebViews[this.activeTabId];
 
     // move title bar off screen
     const hh = this.headerHeight;
@@ -728,7 +742,7 @@ export default class WindowManager {
     if (id === -1) {
       throw new Error('Use unSetTab instead of setTab(-1)!');
     }
-    const oldTabView = this.allTabViews[this.activeTabId];
+    const oldTabView = this.allWebViews[this.activeTabId];
 
     this.activeTabId = id;
 
@@ -740,7 +754,7 @@ export default class WindowManager {
     // tell main window that it is active and get the tabview reference
     this.mainWindow.webContents.send('set-active', true);
     this.tabPageView.webContents.send('set-active', false);
-    const tabView = this.allTabViews[id];
+    const tabView = this.allWebViews[id];
     if (typeof tabView === 'undefined') {
       throw new Error(`setTab: tab with id ${id} does not exist`);
     }
@@ -795,9 +809,9 @@ export default class WindowManager {
     this.tabPageView.webContents.send('set-padding', padding.toString());
 
     // this.resize();
-    resizeAsPeekView(this.urlPeekView, padding, windowSize);
-    this.resizeFindView(padding, hh, windowSize);
-    this.resizeOverlayView(windowSize);
+    resizeAsPeekView(this.urlPeekView, this.innerBounds);
+    resizeAsFindView(this.findView, padding, hh, windowSize);
+    resizeAsOverlayView(this.overlayView, windowSize);
     this.resizeWebViews();
   }
 
@@ -810,7 +824,7 @@ export default class WindowManager {
     if (id === -1 || url === '') {
       return;
     }
-    const tabView = this.allTabViews[id];
+    const tabView = this.allWebViews[id];
     if (typeof tabView === 'undefined') {
       throw new Error(
         `load-url-in-active-tab: tab with id ${id} does not exist`
@@ -848,25 +862,25 @@ export default class WindowManager {
   }
 
   tabBack(id: number) {
-    if (!this.allTabViews[id]) {
+    if (!this.allWebViews[id]) {
       return;
     }
-    if (this.allTabViews[id].view.webContents.canGoBack()) {
+    if (this.allWebViews[id].view.webContents.canGoBack()) {
       this.closeFind();
-      this.allTabViews[id].view.webContents.goBack();
+      this.allWebViews[id].view.webContents.goBack();
     }
-    updateWebContents(this.titleBarView, id, this.allTabViews[id].view);
+    updateWebContents(this.titleBarView, id, this.allWebViews[id].view);
   }
 
   tabForward(id: number) {
-    if (!this.allTabViews[id]) {
+    if (!this.allWebViews[id]) {
       return;
     }
-    if (this.allTabViews[id].view.webContents.canGoForward()) {
+    if (this.allWebViews[id].view.webContents.canGoForward()) {
       this.closeFind();
-      this.allTabViews[id].view.webContents.goForward();
+      this.allWebViews[id].view.webContents.goForward();
     }
-    updateWebContents(this.titleBarView, id, this.allTabViews[id].view);
+    updateWebContents(this.titleBarView, id, this.allWebViews[id].view);
   }
 
   tabRefresh(id: number) {
@@ -924,7 +938,7 @@ export default class WindowManager {
 
   findTextChange(boxText: string) {
     this.findText = boxText;
-    const tabView = this.allTabViews[this.activeTabId];
+    const tabView = this.allWebViews[this.activeTabId];
     if (typeof tabView !== 'undefined') {
       this.lastFindTextSearch = handleFindText(
         tabView.view,
@@ -935,7 +949,7 @@ export default class WindowManager {
   }
 
   findPrevious() {
-    const tabView = this.allTabViews[this.activeTabId];
+    const tabView = this.allWebViews[this.activeTabId];
     if (typeof tabView !== 'undefined') {
       this.lastFindTextSearch = handleFindText(
         tabView.view,
@@ -947,7 +961,7 @@ export default class WindowManager {
   }
 
   findNext() {
-    const tabView = this.allTabViews[this.activeTabId];
+    const tabView = this.allWebViews[this.activeTabId];
     if (typeof tabView !== 'undefined') {
       this.lastFindTextSearch = handleFindText(
         tabView.view,
@@ -1096,7 +1110,7 @@ export default class WindowManager {
       this.handleResize();
     }
 
-    const tabView = this.allTabViews[this.activeTabId];
+    const tabView = this.allWebViews[this.activeTabId];
     if (typeof tabView !== 'undefined') {
       this.findView.webContents.focus();
       this.findView.webContents.send('open-find');
@@ -1141,7 +1155,7 @@ export default class WindowManager {
     this.mainWindow.webContents.send('set-padding', '');
 
     // const padding = this.browserPadding();
-    Object.values(this.allTabViews).forEach((tabView) => {
+    Object.values(this.allWebViews).forEach((tabView) => {
       tabView.windowFloating = this.windowFloating;
       // tabView.resize(padding);
       resizeAsTabView(
@@ -1165,10 +1179,10 @@ export default class WindowManager {
     const windowSize = this.currentWindowSize;
     const { padding } = this;
 
-    resizeAsTitleBar(this.titleBarView, this.headerHeight, this.innerBounds);
-    resizeAsPeekView(this.urlPeekView, padding, windowSize);
-    this.resizeFindView(padding, hh, windowSize);
-    this.resizeOverlayView(windowSize);
+    resizeAsTitleBar(this.titleBarView, hh, this.innerBounds);
+    resizeAsPeekView(this.urlPeekView, this.innerBounds);
+    resizeAsFindView(this.findView, padding, hh, windowSize);
+    resizeAsOverlayView(this.overlayView, windowSize);
     this.resizeTabPageView(windowSize);
     this.resizeWebViews();
   }
@@ -1177,7 +1191,7 @@ export default class WindowManager {
     if (this.windowFloating) {
       this.hideWindow();
       // this.hideMainWindow();
-    } else if (this.tabPageActive) {
+    } else if (this.webViewIsActive) {
       if (this.historyModalActive) {
         this.tabPageView.webContents.send('close-history-modal');
       } else {
@@ -1203,7 +1217,7 @@ export default class WindowManager {
 
   private screenShotTab(
     tabId: number,
-    tabView: ITabView,
+    tabView: IWebView,
     callback?: () => void
   ) {
     tabView.view.webContents.send('get-scroll-height', tabId);
@@ -1231,11 +1245,11 @@ export default class WindowManager {
   }
 
   private reloadTab(id: number) {
-    this.allTabViews[id]?.view.webContents.reload();
+    this.allWebViews[id]?.view.webContents.reload();
   }
 
   private removeTab(id: number) {
-    const tabView = this.allTabViews[id];
+    const tabView = this.allWebViews[id];
     if (typeof tabView === 'undefined') {
       throw new Error(`remove-tab: tab with id ${id} does not exist`);
     }
@@ -1247,7 +1261,7 @@ export default class WindowManager {
     this.mainWindow.removeBrowserView(this.urlPeekView);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (tabView.view.webContents as any).destroy();
-    delete this.allTabViews[id];
+    delete this.allWebViews[id];
     this.titleBarView.webContents.send('tab-removed', id);
     this.tabPageView.webContents.send('tab-removed', id);
   }
@@ -1255,7 +1269,7 @@ export default class WindowManager {
   private loadTabFromTabInfo(tab: TabInfo) {
     const { url, title, favicon, imgString, scrollHeight }: TabInfo = tab;
     const newTabId = this.createNewTab();
-    const tabView = this.allTabViews[newTabId];
+    const tabView = this.allWebViews[newTabId];
     tabView.title = title;
     this.tabPageView.webContents.send('title-updated', [newTabId, title]);
     tabView.favicon = favicon;
@@ -1276,7 +1290,7 @@ export default class WindowManager {
     }
     try {
       const savePath = path.join(app.getPath('userData'), 'openTabs.json');
-      const saveData = Object.values(this.allTabViews).map((tabView) => {
+      const saveData = Object.values(this.allWebViews).map((tabView) => {
         return {
           url:
             tabView.unloadedUrl === ''
@@ -1360,9 +1374,9 @@ export default class WindowManager {
       this.resizeTabPageView(windowSize);
     } else {
       resizeAsTitleBar(this.titleBarView, this.headerHeight, this.innerBounds);
-      resizeAsPeekView(this.urlPeekView, padding, windowSize);
-      this.resizeFindView(padding, hh, windowSize);
-      this.resizeOverlayView(windowSize);
+      resizeAsPeekView(this.urlPeekView, this.innerBounds);
+      resizeAsFindView(this.findView, padding, hh, windowSize);
+      resizeAsOverlayView(this.overlayView, windowSize);
       this.resizeWebViews();
     }
 
@@ -1379,31 +1393,10 @@ export default class WindowManager {
     // const padding = this.browserPadding();
     this.mainWindow.webContents.send('set-padding', padding.toString());
 
-    Object.values(this.allTabViews).forEach((tabView) => {
+    Object.values(this.allWebViews).forEach((tabView) => {
       tabView.windowFloating = this.windowFloating;
     });
     this.handleResize();
-  }
-
-  private resizeFindView(padding: number, hh: number, windowSize: number[]) {
-    const findViewWidth = 350;
-    const findViewHeight = 50;
-    const findViewMarginRight = 20;
-    this.findView.setBounds({
-      x: windowSize[0] - findViewWidth - findViewMarginRight - padding,
-      y: hh + padding,
-      width: findViewWidth,
-      height: findViewHeight,
-    });
-  }
-
-  private resizeOverlayView(windowSize: number[]) {
-    this.overlayView.setBounds({
-      x: 0,
-      y: 0,
-      width: windowSize[0],
-      height: windowSize[1],
-    });
   }
 
   private resizeTabPageView(windowSize: number[]) {
@@ -1415,18 +1408,6 @@ export default class WindowManager {
     });
   }
 
-  private resizeWebViews() {
-    Object.values(this.allTabViews).forEach((tabView) => {
-      resizeAsTabView(
-        tabView,
-        this.tabPageView,
-        this.innerBounds,
-        this.headerHeight,
-        this.currentWindowSize
-      );
-    });
-  }
-
   private get padding(): number {
     return this.windowFloating ? 10 : this.browserPadding;
   }
@@ -1435,7 +1416,7 @@ export default class WindowManager {
     return windowHasView(this.mainWindow, this.findView);
   }
 
-  private get tabPageActive(): boolean {
+  private get webViewIsActive(): boolean {
     return this.activeTabId === -1;
   }
 

@@ -15,7 +15,7 @@ export interface HistoryEntry {
   openGraphData: OpenGraphInfo;
 }
 
-export interface ITabView {
+export interface IWebView {
   id: number;
 
   window: BrowserWindow;
