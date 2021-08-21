@@ -1,4 +1,5 @@
 import { BrowserView } from 'electron';
+import { ITabView } from './interfaces';
 
 function pointInBounds(
   mousePoint: Electron.Point,
@@ -16,7 +17,7 @@ function pointInBounds(
   return inX && inY;
 }
 
-function innerBounds(
+function innerRectangle(
   windowSize: [number, number],
   verticalPadding: number
 ): Electron.Rectangle {
@@ -31,7 +32,7 @@ function innerBounds(
   };
 }
 
-export { pointInBounds, innerBounds };
+export { pointInBounds, innerRectangle };
 
 export function makeView(loadURL: string) {
   const newView = new BrowserView({
@@ -79,4 +80,51 @@ export function handleFindText(
   });
 
   return search;
+}
+
+export function resizeAsTitleBar(
+  view: BrowserView,
+  height: number,
+  pageInnerBounds: Electron.Rectangle
+) {
+  const titleBarBounds = {
+    x: pageInnerBounds.x,
+    y: pageInnerBounds.y,
+    width: pageInnerBounds.width,
+    height,
+  };
+  view.setBounds(titleBarBounds);
+}
+
+export function resizeAsPeekView(
+  view: BrowserView,
+  padding: number,
+  windowSize: number[]
+) {
+  const urlPeekWidth = 475;
+  const urlPeekHeight = 20;
+  view.setBounds({
+    x: padding,
+    y: windowSize[1] - urlPeekHeight - padding,
+    width: urlPeekWidth,
+    height: urlPeekHeight,
+  });
+}
+
+export function resizeAsTabView(
+  tabView: ITabView,
+  tabPage: BrowserView,
+  bounds: Electron.Rectangle,
+  urlHeight: number,
+  windowSize: [number, number]
+) {
+  // const windowSize = this.mainWindow.getSize();
+  tabPage.webContents.send('inner-bounds', {
+    screen: { width: windowSize[0], height: windowSize[1] },
+    bounds,
+  });
+  const hh = urlHeight;
+  bounds.y += hh;
+  bounds.height -= hh;
+  tabView.view.setBounds(bounds);
 }

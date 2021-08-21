@@ -32,9 +32,12 @@ import {
 import calculateWindowTarget from './calculate-window-target';
 import {
   handleFindText,
-  innerBounds,
+  innerRectangle,
   makeView,
   pointInBounds,
+  resizeAsPeekView,
+  resizeAsTabView,
+  resizeAsTitleBar,
   updateWebContents,
 } from './wm-utils';
 import { HistoryEntry, ITabView, OpenGraphInfo, TabInfo } from './interfaces';
@@ -42,6 +45,141 @@ import { HistoryEntry, ITabView, OpenGraphInfo, TabInfo } from './interfaces';
 const glMatrix = require('gl-matrix');
 
 const easeOut = BezierEasing(0, 0, 0.5, 1);
+
+function addListeners(wm: WindowManager) {
+  ipcMain.on('create-new-tab', () => {
+    wm.createNewTab();
+  });
+  ipcMain.on('remove-tab', (_, id) => {
+    wm.removeTabs([id]);
+  });
+  ipcMain.on('remove-tabs', (_, ids) => {
+    wm.removeTabs(ids);
+  });
+  ipcMain.on('set-tab', (_, id) => {
+    wm.setTab(id);
+  });
+  ipcMain.on('load-url-in-tab', (_, [id, url]) => {
+    wm.loadUrlInTab(id, url);
+  });
+  ipcMain.on('tab-back', (_, id) => {
+    wm.tabBack(id);
+  });
+  ipcMain.on('tab-forward', (_, id) => {
+    wm.tabForward(id);
+  });
+  ipcMain.on('tab-refresh', (_, id) => {
+    wm.tabRefresh(id);
+  });
+  ipcMain.on('close-find', () => {
+    wm.closeFind();
+  });
+  ipcMain.on('find-text-change', (_, boxText) => {
+    wm.findTextChange(boxText);
+  });
+  ipcMain.on('find-previous', () => {
+    wm.findPrevious();
+  });
+  ipcMain.on('find-next', () => {
+    wm.findNext();
+  });
+  ipcMain.on('windowMoving', (_, { mouseX, mouseY }) => {
+    wm.handleWindowMoving(mouseX, mouseY);
+  });
+  ipcMain.on('windowMoved', () => {
+    wm.handleWindowMoved();
+  });
+  ipcMain.on('wheel', (_, [deltaX, deltaY]) => {
+    const activeTabView = wm.allTabViews[wm.activeTabId];
+    if (activeTabView !== null) {
+      activeTabView.view.webContents.executeJavaScript(`
+        window.scrollBy(${deltaX}, ${deltaY});
+      `);
+    }
+  });
+  ipcMain.on('search-url', (_, url) => {
+    wm.tabPageView.webContents.send('close-history-modal');
+    const newTabId = wm.createNewTab();
+    wm.loadUrlInTab(newTabId, url);
+    wm.setTab(newTabId);
+  });
+  ipcMain.on('history-search', (_, query) => {
+    if (query === '') {
+      wm.tabPageView.webContents.send('history-search-result', null);
+    } else {
+      const result = wm.historyFuse.search(query, { limit: 50 });
+      wm.tabPageView.webContents.send(
+        'history-search-result',
+        result.map((entry: { item: HistoryEntry }) => {
+          return entry.item;
+        })
+      );
+    }
+  });
+  ipcMain.on('history-modal-active-update', (_, historyModalActive) => {
+    wm.historyModalActive = historyModalActive;
+  });
+  ipcMain.on('clear-history', () => {
+    wm.clearHistory();
+  });
+  ipcMain.on('toggle-pin', () => {
+    wm.setPinned(!wm.isPinned);
+  });
+  ipcMain.on('float', () => {
+    wm.float();
+  });
+  ipcMain.on('toggle', () => {
+    wm.toggle(true);
+  });
+  ipcMain.on('click-main', () => {
+    if (wm.webBrowserViewActive) {
+      wm.unSetTab();
+    }
+  });
+  ipcMain.on('open-workspace-url', (_, url) => {
+    wm.tabPageView.webContents.send('close-history-modal');
+
+    const baseUrl = url.split('#')[0];
+    let tabExists = false;
+
+    Object.values(wm.allTabViews).forEach((tabView) => {
+      const tabUrl = tabView.view.webContents.getURL();
+      const tabBaseUrl = tabUrl.split('#')[0];
+      if (tabBaseUrl === baseUrl) {
+        wm.setTab(tabView.id);
+        tabExists = true;
+      }
+    });
+
+    if (!tabExists) {
+      const newTabId = wm.createNewTab();
+      wm.loadUrlInTab(newTabId, url);
+      wm.setTab(newTabId);
+    }
+  });
+  ipcMain.on('request-snapshot-path', () => {
+    const snapshotPath = path.join(
+      app.getPath('userData'),
+      'workspaceSnapshot.json'
+    );
+    wm.tabPageView.webContents.send('set-snapshot-path', snapshotPath);
+  });
+  ipcMain.on('open-graph-data', (_, data: OpenGraphInfo) => {
+    const tabView = wm.allTabViews[wm.activeTabId];
+    if (typeof tabView !== 'undefined') {
+      if (tabView.historyEntry?.openGraphData.title === 'null') {
+        tabView.historyEntry.openGraphData = data;
+        wm.addHistoryEntry(tabView.historyEntry);
+      }
+    }
+  });
+  ipcMain.on('scroll-height', (_, [id, height]) => {
+    const tabView = wm.allTabViews[id];
+    if (typeof tabView !== 'undefined') {
+      tabView.scrollHeight = height;
+    }
+  });
+}
 
 export default class WindowManager {
   windowFloating = false;
@@ -108,11 +246,25 @@ export default class WindowManager {
 
   static dragThresholdSquared = 5 * 5;
 
+  get webBrowserViewActive(): boolean {
+    return this.activeTabId !== -1;
+  }
+
+  get browserPadding(): number {
+    if (WindowManager.display !== null) {
+      const ratio = this.activeTabId === -1 ? 50 : 15;
+      return Math.floor(
+        WindowManager.display.activeDisplay.workAreaSize.height / ratio
+      );
+    }
+    return 35;
+  }
+
   constructor(mainWindow: BrowserWindow, display: { activeDisplay: Display }) {
     this.mainWindow = mainWindow;
     WindowManager.display = display;
 
-    this.mainWindow.on('resize', this.resize);
+    this.mainWindow.on('resize', this.handleResize);
     // this.mainWindow.webContents.openDevTools({ mode: 'detach' });
 
     this.titleBarView = makeView(INDEX_HTML);
@@ -155,7 +307,7 @@ export default class WindowManager {
         if (!this.windowFloating) {
           this.unFloat(WindowManager.display.activeDisplay);
         }
-        this.resize();
+        this.handleResize();
 
         const target = calculateWindowTarget(
           1,
@@ -177,24 +329,7 @@ export default class WindowManager {
       }
     });
 
-    ipcMain.on('open-graph-data', (_, data: OpenGraphInfo) => {
-      const tabView = this.allTabViews[this.activeTabId];
-      if (typeof tabView !== 'undefined') {
-        if (tabView.historyEntry?.openGraphData.title === 'null') {
-          tabView.historyEntry.openGraphData = data;
-          this.addHistoryEntry(tabView.historyEntry);
-        }
-      }
-    });
-
-    ipcMain.on('scroll-height', (_, [id, height]) => {
-      const tabView = this.allTabViews[id];
-      if (typeof tabView !== 'undefined') {
-        tabView.scrollHeight = height;
-      }
-    });
-
-    this.resize();
+    this.handleResize();
 
     setInterval(() => {
       this.saveTabs();
@@ -210,7 +345,7 @@ export default class WindowManager {
         return;
       }
       const mainWindowVisible = mainWindow.isVisible();
-      const webBrowserViewIsActive = this.webBrowserViewActive();
+      const webBrowserViewIsActive = this.webBrowserViewActive;
       const mouseIsInBorder = !this.mouseInInner;
       const findIsActive = this.findActive;
       if (
@@ -238,6 +373,8 @@ export default class WindowManager {
         }, 10);
       }
     }, 10);
+
+    addListeners(this);
   }
 
   createTabView(
@@ -353,7 +490,7 @@ export default class WindowManager {
         if (!windowHasView(window, urlPeekView)) {
           window.addBrowserView(urlPeekView);
           window.setTopBrowserView(urlPeekView);
-          this.resize();
+          this.handleResize();
         }
         urlPeekView.webContents.send('peek-url-updated', url);
       }
@@ -367,6 +504,8 @@ export default class WindowManager {
 
     return tabView;
   }
+
+  // window
 
   hideWindow() {
     let opacity = 1.0;
@@ -438,20 +577,6 @@ export default class WindowManager {
     this.tabPageView.webContents.send('set-pinned', pinned);
   }
 
-  webBrowserViewActive() {
-    return this.activeTabId !== -1;
-  }
-
-  browserPadding(): number {
-    if (WindowManager.display !== null) {
-      const ratio = this.activeTabId === -1 ? 50 : 15;
-      return Math.floor(
-        WindowManager.display.activeDisplay.workAreaSize.height / ratio
-      );
-    }
-    return 35;
-  }
-
   updateMainWindowBounds() {
     let x = Math.round(this.windowPosition[0]);
     // why do you do this to me JavaScript?
@@ -477,6 +602,19 @@ export default class WindowManager {
       );
     }
   }
+
+  closeFind() {
+    if (windowHasView(this.mainWindow, this.findView)) {
+      this.mainWindow.removeBrowserView(this.findView);
+      const tabView = this.allTabViews[this.activeTabId];
+      if (typeof tabView !== 'undefined') {
+        tabView.view.webContents.stopFindInPage('clearSelection');
+        this.lastFindTextSearch = '';
+      }
+    }
+  }
+
+  // tabs
 
   createNewTab(): number {
     const newTabView = this.createTabView(
@@ -529,63 +667,6 @@ export default class WindowManager {
     this.tabPageView.webContents.send('close-history-modal');
     for (let i = 0; i < tabs.length; i += 1) {
       this.loadTabFromTabInfo(tabs[i]);
-    }
-  }
-
-  addHistoryEntry(entry: HistoryEntry) {
-    // if key exists, delete it. it will be added again to the end of the map
-    const entryKey = urlToMapKey(entry.url);
-    this.historyMap.delete(entryKey);
-
-    // add entry to end of map
-    this.historyMap.set(entryKey, entry);
-
-    const keys = this.historyMap.keys();
-
-    let result = keys.next();
-    while (!result.done) {
-      if (this.historyMap.size < 10000) {
-        break;
-      }
-      this.historyMap.delete(result.value);
-      result = keys.next();
-    }
-
-    this.historyFuse.remove((removeEntry) => {
-      return removeEntry.key === entryKey;
-    });
-    this.historyFuse.add(entry);
-    this.tabPageView.webContents.send('add-history', entry);
-  }
-
-  clearHistory() {
-    this.historyMap.clear();
-    this.historyFuse.setCollection([]);
-    this.removedTabsStack = [];
-    this.tabPageView.webContents.send('history-cleared');
-    this.saveHistory();
-  }
-
-  saveHistory() {
-    try {
-      const savePath = path.join(app.getPath('userData'), 'history.json');
-      const saveString = stringifyMap(this.historyMap);
-      fs.writeFileSync(savePath, saveString);
-      this.saveTabs();
-    } catch {
-      // console.log('saveHistory error');
-      // console.log(e);
-    }
-  }
-
-  closeFind() {
-    if (windowHasView(this.mainWindow, this.findView)) {
-      this.mainWindow.removeBrowserView(this.findView);
-      const tabView = this.allTabViews[this.activeTabId];
-      if (typeof tabView !== 'undefined') {
-        tabView.view.webContents.stopFindInPage('clearSelection');
-        this.resetTextSearch();
-      }
     }
   }
 
@@ -672,10 +753,16 @@ export default class WindowManager {
     if (!windowHasView(this.mainWindow, this.titleBarView)) {
       this.mainWindow.addBrowserView(this.titleBarView);
     }
-    this.resizeTitleBar();
+    resizeAsTitleBar(this.titleBarView, this.headerHeight, this.innerBounds);
     this.mainWindow.setTopBrowserView(this.titleBarView);
 
-    this.resizeTabView(tabView);
+    resizeAsTabView(
+      tabView,
+      this.tabPageView,
+      this.innerBounds,
+      this.headerHeight,
+      this.currentWindowSize
+    );
 
     // add the live page to the main window and focus it a little bit later
     this.mainWindow.addBrowserView(tabView.view);
@@ -708,7 +795,7 @@ export default class WindowManager {
     this.tabPageView.webContents.send('set-padding', padding.toString());
 
     // this.resize();
-    this.resizePeekView(padding, windowSize);
+    resizeAsPeekView(this.urlPeekView, padding, windowSize);
     this.resizeFindView(padding, hh, windowSize);
     this.resizeOverlayView(windowSize);
     this.resizeWebViews();
@@ -787,6 +874,54 @@ export default class WindowManager {
     this.reloadTab(id);
   }
 
+  // history
+
+  addHistoryEntry(entry: HistoryEntry) {
+    // if key exists, delete it. it will be added again to the end of the map
+    const entryKey = urlToMapKey(entry.url);
+    this.historyMap.delete(entryKey);
+
+    // add entry to end of map
+    this.historyMap.set(entryKey, entry);
+
+    const keys = this.historyMap.keys();
+
+    let result = keys.next();
+    while (!result.done) {
+      if (this.historyMap.size < 10000) {
+        break;
+      }
+      this.historyMap.delete(result.value);
+      result = keys.next();
+    }
+
+    this.historyFuse.remove((removeEntry) => {
+      return removeEntry.key === entryKey;
+    });
+    this.historyFuse.add(entry);
+    this.tabPageView.webContents.send('add-history', entry);
+  }
+
+  clearHistory() {
+    this.historyMap.clear();
+    this.historyFuse.setCollection([]);
+    this.removedTabsStack = [];
+    this.tabPageView.webContents.send('history-cleared');
+    this.saveHistory();
+  }
+
+  saveHistory() {
+    try {
+      const savePath = path.join(app.getPath('userData'), 'history.json');
+      const saveString = stringifyMap(this.historyMap);
+      fs.writeFileSync(savePath, saveString);
+      this.saveTabs();
+    } catch {
+      // console.log('saveHistory error');
+      // console.log(e);
+    }
+  }
+
   findTextChange(boxText: string) {
     this.findText = boxText;
     const tabView = this.allTabViews[this.activeTabId];
@@ -822,7 +957,7 @@ export default class WindowManager {
     }
   }
 
-  windowMoving(mouseX: number, mouseY: number) {
+  handleWindowMoving(mouseX: number, mouseY: number) {
     this.movingWindow = true;
 
     const mousePoint = screen.getCursorScreenPoint();
@@ -837,7 +972,7 @@ export default class WindowManager {
     this.windowSize.width = floatingWidth;
     this.windowSize.height = floatingHeight;
     this.updateMainWindowBounds();
-    this.resize();
+    this.handleResize();
 
     const { x, y } = mousePoint;
     const currentTime = new Date().getTime() / 1000.0;
@@ -879,7 +1014,7 @@ export default class WindowManager {
     }
   }
 
-  windowMoved() {
+  handleWindowMoved() {
     let setTarget = false;
     let firstTarget: number[] | null = null;
     let firstVelocity: number[] | null = null;
@@ -958,7 +1093,7 @@ export default class WindowManager {
     ) {
       this.mainWindow.addBrowserView(this.findView);
       this.mainWindow.setTopBrowserView(this.findView);
-      this.resize();
+      this.handleResize();
     }
 
     const tabView = this.allTabViews[this.activeTabId];
@@ -1009,13 +1144,19 @@ export default class WindowManager {
     Object.values(this.allTabViews).forEach((tabView) => {
       tabView.windowFloating = this.windowFloating;
       // tabView.resize(padding);
-      this.resizeTabView(tabView);
+      resizeAsTabView(
+        tabView,
+        this.tabPageView,
+        this.innerBounds,
+        this.headerHeight,
+        this.currentWindowSize
+      );
     });
 
-    this.resize();
+    this.handleResize();
   }
 
-  resize() {
+  handleResize() {
     if (this.mainWindow === null || typeof this.mainWindow === 'undefined') {
       return;
     }
@@ -1024,8 +1165,8 @@ export default class WindowManager {
     const windowSize = this.currentWindowSize;
     const { padding } = this;
 
-    this.resizeTitleBar();
-    this.resizePeekView(padding, windowSize);
+    resizeAsTitleBar(this.titleBarView, this.headerHeight, this.innerBounds);
+    resizeAsPeekView(this.urlPeekView, padding, windowSize);
     this.resizeFindView(padding, hh, windowSize);
     this.resizeOverlayView(windowSize);
     this.resizeTabPageView(windowSize);
@@ -1054,7 +1195,7 @@ export default class WindowManager {
   }
 
   focusSearch() {
-    if (this.webBrowserViewActive()) {
+    if (this.webBrowserViewActive) {
       this.titleBarView.webContents.focus();
       this.titleBarView.webContents.send('focus');
     }
@@ -1087,10 +1228,6 @@ export default class WindowManager {
 
   private get mouseInInner() {
     return pointInBounds(screen.getCursorScreenPoint(), this.innerBounds);
-  }
-
-  private resetTextSearch() {
-    this.lastFindTextSearch = '';
   }
 
   private reloadTab(id: number) {
@@ -1222,8 +1359,8 @@ export default class WindowManager {
     if (this.activeTabId === -1) {
       this.resizeTabPageView(windowSize);
     } else {
-      this.resizeTitleBar();
-      this.resizePeekView(padding, windowSize);
+      resizeAsTitleBar(this.titleBarView, this.headerHeight, this.innerBounds);
+      resizeAsPeekView(this.urlPeekView, padding, windowSize);
       this.resizeFindView(padding, hh, windowSize);
       this.resizeOverlayView(windowSize);
       this.resizeWebViews();
@@ -1245,30 +1382,7 @@ export default class WindowManager {
     Object.values(this.allTabViews).forEach((tabView) => {
       tabView.windowFloating = this.windowFloating;
     });
-    this.resize();
-  }
-
-  private resizeTitleBar() {
-    const bounds = this.innerBounds;
-    const hh = this.headerHeight;
-    const titleBarBounds = {
-      x: bounds.x,
-      y: bounds.y,
-      width: bounds.width,
-      height: hh,
-    };
-    this.titleBarView.setBounds(titleBarBounds);
-  }
-
-  private resizePeekView(padding: number, windowSize: number[]) {
-    const urlPeekWidth = 475;
-    const urlPeekHeight = 20;
-    this.urlPeekView.setBounds({
-      x: padding,
-      y: windowSize[1] - urlPeekHeight - padding,
-      width: urlPeekWidth,
-      height: urlPeekHeight,
-    });
+    this.handleResize();
   }
 
   private resizeFindView(padding: number, hh: number, windowSize: number[]) {
@@ -1303,12 +1417,18 @@ export default class WindowManager {
 
   private resizeWebViews() {
     Object.values(this.allTabViews).forEach((tabView) => {
-      this.resizeTabView(tabView);
+      resizeAsTabView(
+        tabView,
+        this.tabPageView,
+        this.innerBounds,
+        this.headerHeight,
+        this.currentWindowSize
+      );
     });
   }
 
   private get padding(): number {
-    return this.windowFloating ? 10 : this.browserPadding();
+    return this.windowFloating ? 10 : this.browserPadding;
   }
 
   private get findActive(): boolean {
@@ -1324,24 +1444,11 @@ export default class WindowManager {
   }
 
   private get innerBounds(): Electron.Rectangle {
-    return innerBounds(this.currentWindowSize, this.padding);
+    return innerRectangle(this.currentWindowSize, this.padding);
   }
 
   private get currentWindowSize(): [number, number] {
     const [x, y] = this.mainWindow?.getSize();
     return [x, y];
-  }
-
-  private resizeTabView(tabView: ITabView) {
-    const bounds = this.innerBounds;
-    const windowSize = this.mainWindow.getSize();
-    this.tabPageView.webContents.send('inner-bounds', {
-      screen: { width: windowSize[0], height: windowSize[1] },
-      bounds,
-    });
-    const hh = this.headerHeight;
-    bounds.y += hh;
-    bounds.height -= hh;
-    tabView.view.setBounds(bounds);
   }
 }

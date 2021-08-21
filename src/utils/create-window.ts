@@ -11,7 +11,6 @@ import {
 } from 'electron';
 import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
-import addListeners from './listeners';
 import WindowManager from './window-manager';
 import { ICON_PNG, ICON_SMALL_PNG } from '../constants';
 import windowFixedUpdate from './calculate-window-physics';
@@ -122,10 +121,7 @@ export const createWindow = async () => {
   mainWindow.webContents.on('did-finish-load', () => {
     const mousePoint = screen.getCursorScreenPoint();
     display.activeDisplay = screen.getDisplayNearestPoint(mousePoint);
-    wm.mainWindow.webContents.send(
-      'set-padding',
-      wm.browserPadding().toString()
-    );
+    wm.mainWindow.webContents.send('set-padding', wm.browserPadding.toString());
 
     // mainWindow?.show();
     // wm.unFloat(display.activeDisplay);
@@ -156,7 +152,7 @@ export const createWindow = async () => {
   wm.hideWindow();
   // wm.hideMainWindow();
 
-  addListeners(wm);
+  // addListeners(wm);
 
   mainWindow.on('minimize', (e: Event) => {
     if (mainWindow !== null) {
@@ -166,7 +162,7 @@ export const createWindow = async () => {
     }
   });
 
-  wm.resize();
+  wm.handleResize();
 
   const fixedTimeStep = 0.01;
   let lastFixedUpdateTime = 0;

@@ -275,7 +275,9 @@ export default class TabPageStore {
     this.filteredWorkspaceTabs = [];
     //
 
+    console.log('setup');
     ipcRenderer.on('inner-bounds', (_, { screen, bounds }) => {
+      console.log(screen, bounds);
       runInAction(() => {
         this.screen = screen;
         this.innerBounds = bounds;
