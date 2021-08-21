@@ -810,7 +810,7 @@ export default class WindowManager {
 
     // this.resize();
     resizeAsPeekView(this.urlPeekView, this.innerBounds);
-    resizeAsFindView(this.findView, padding, hh, windowSize);
+    resizeAsFindView(this.findView, hh, this.innerBounds);
     resizeAsOverlayView(this.overlayView, windowSize);
     this.resizeWebViews();
   }
@@ -1177,11 +1177,11 @@ export default class WindowManager {
 
     const hh = this.headerHeight;
     const windowSize = this.currentWindowSize;
-    const { padding } = this;
+    // const { padding } = this;
 
     resizeAsTitleBar(this.titleBarView, hh, this.innerBounds);
     resizeAsPeekView(this.urlPeekView, this.innerBounds);
-    resizeAsFindView(this.findView, padding, hh, windowSize);
+    resizeAsFindView(this.findView, hh, this.innerBounds);
     resizeAsOverlayView(this.overlayView, windowSize);
     this.resizeTabPageView(windowSize);
     this.resizeWebViews();
@@ -1375,7 +1375,7 @@ export default class WindowManager {
     } else {
       resizeAsTitleBar(this.titleBarView, this.headerHeight, this.innerBounds);
       resizeAsPeekView(this.urlPeekView, this.innerBounds);
-      resizeAsFindView(this.findView, padding, hh, windowSize);
+      resizeAsFindView(this.findView, hh, this.innerBounds);
       resizeAsOverlayView(this.overlayView, windowSize);
       this.resizeWebViews();
     }

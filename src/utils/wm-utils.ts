@@ -129,16 +129,19 @@ export function resizeAsTabView(
 }
 export function resizeAsFindView(
   view: BrowserView,
-  padding: number,
-  hh: number,
-  windowSize: number[]
+  headerHeight: number,
+  pageInnerBounds: Electron.Rectangle
 ) {
   const findViewWidth = 350;
   const findViewHeight = 50;
   const findViewMarginRight = 20;
   view.setBounds({
-    x: windowSize[0] - findViewWidth - findViewMarginRight - padding,
-    y: hh + padding,
+    x:
+      pageInnerBounds.x +
+      pageInnerBounds.width -
+      findViewWidth -
+      findViewMarginRight,
+    y: pageInnerBounds.y + headerHeight,
     width: findViewWidth,
     height: findViewHeight,
   });
