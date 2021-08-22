@@ -1,4 +1,6 @@
-import { BrowserView, BrowserWindow } from 'electron';
+import { app, BrowserView, BrowserWindow } from 'electron';
+import path from 'path';
+import fs from 'fs';
 import { IWebView } from './interfaces';
 import { urlToMapKey } from './utils';
 
@@ -211,3 +213,28 @@ export const updateContents = (
   ]);
   tabPageView.webContents.send('url-changed', [webView.id, url]);
 };
+
+export function reloadTab(allWebViews: Record<number, IWebView>, id: number) {
+  allWebViews[id]?.view.webContents.reload();
+}
+
+export function saveTabs(allWebViews: Record<number, IWebView>) {
+  try {
+    const savePath = path.join(app.getPath('userData'), 'openTabs.json');
+    const saveData = Object.values(allWebViews).map((tabView) => {
+      return {
+        url:
+          tabView.unloadedUrl === ''
+            ? tabView.view.webContents.getURL()
+            : tabView.unloadedUrl,
+        title: tabView.title,
+        favicon: tabView.favicon,
+        imgString: tabView.imgString,
+        scrollHeight: tabView.scrollHeight,
+      };
+    });
+    fs.writeFileSync(savePath, JSON.stringify(saveData));
+  } catch {
+    //
+  }
+}

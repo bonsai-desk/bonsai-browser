@@ -36,12 +36,14 @@ import {
   innerBounds,
   makeView,
   pointInBounds,
+  reloadTab,
   resizeAsFindView,
   resizeAsOverlayView,
   resizeAsPeekView,
   resizeAsTabPageView,
   resizeAsTitleBar,
   resizeAsWebView,
+  saveTabs,
   updateContents,
   updateWebContents,
 } from './wm-utils';
@@ -137,7 +139,7 @@ export function addListeners(wm: WindowManager) {
     wm.toggle(true);
   });
   ipcMain.on('click-main', () => {
-    if (wm.webBrowserViewActive) {
+    if (wm.webBrowserViewActive()) {
       wm.unSetTab();
     }
   });
@@ -227,13 +229,13 @@ export default class WindowManager {
 
   display: Display;
 
-  get webBrowserViewActive(): boolean {
+  webBrowserViewActive(): boolean {
     return this.activeTabId !== -1;
   }
 
-  get browserPadding(): number {
+  browserPadding(): number {
     if (this.display !== null) {
-      const ratio = this.webViewIsActive ? 50 : 15;
+      const ratio = this.webViewIsActive() ? 50 : 15;
       return Math.floor(this.display.workAreaSize.height / ratio);
     }
     return 35;
@@ -342,7 +344,9 @@ export default class WindowManager {
     this.handleResize();
 
     setInterval(() => {
-      this.saveTabs();
+      if (this.loadedOpenTabs) {
+        saveTabs(this.allWebViews);
+      }
     }, 1000 * 5);
 
     setInterval(() => {
@@ -357,7 +361,7 @@ export default class WindowManager {
       const mainWindowVisible = mainWindow.isVisible();
       const webBrowserViewIsActive = this.webBrowserViewActive;
       const mouseIsInBorder = !this.mouseInInner;
-      const findIsActive = this.findActive;
+      const findIsActive = windowHasView(this.mainWindow, this.findView);
       if (
         !escapeActive &&
         mainWindowVisible &&
@@ -572,7 +576,7 @@ export default class WindowManager {
     this.mainWindow.setOpacity(1.0);
     this.setPinned(false);
     this.unFloat();
-    if (this.webViewIsActive) {
+    if (this.webViewIsActive()) {
       // todo: search box does not get highlighted on macos unless we do this hack
       setTimeout(() => {
         this.unSetTab();
@@ -639,7 +643,8 @@ export default class WindowManager {
   }
 
   resizeWebViews() {
-    const bounds = innerBounds(this.mainWindow, this.padding);
+    const padding = this.padding();
+    const bounds = innerBounds(this.mainWindow, padding);
     Object.values(this.allWebViews).forEach((tabView) => {
       this.resizeWebView(tabView, bounds);
     });
@@ -650,7 +655,7 @@ export default class WindowManager {
       tabView,
       this.tabPageView,
       bounds,
-      this.headerHeight,
+      this.headerHeight(),
       currentWindowSize(this.mainWindow)
     );
   }
@@ -715,8 +720,8 @@ export default class WindowManager {
     const oldTabView = this.allWebViews[this.activeTabId];
 
     // move title bar off screen
-    const hh = this.headerHeight;
-    const { padding } = this;
+    const hh = this.headerHeight();
+    const padding = this.padding();
     const windowSize = currentWindowSize(this.mainWindow);
     const titleBarBounds = {
       x: 0,
@@ -750,7 +755,7 @@ export default class WindowManager {
     this.tabPageView.webContents.focus();
     this.tabPageView.webContents.send('focus-search');
 
-    if (this.findActive) {
+    if (windowHasView(this.mainWindow, this.findView)) {
       this.closeFind();
     }
 
@@ -790,16 +795,16 @@ export default class WindowManager {
       throw new Error(`setTab: tab with id ${id} does not exist`);
     }
 
-    const hh = this.headerHeight;
+    const hh = this.headerHeight();
     const windowSize = currentWindowSize(this.mainWindow);
-    const { padding } = this;
-    const bounds = innerBounds(this.mainWindow, this.padding);
+    const padding = this.padding();
+    const bounds = innerBounds(this.mainWindow, padding);
 
     // add title bar view to main window
     if (!windowHasView(this.mainWindow, this.titleBarView)) {
       this.mainWindow.addBrowserView(this.titleBarView);
     }
-    resizeAsTitleBar(this.titleBarView, this.headerHeight, bounds);
+    resizeAsTitleBar(this.titleBarView, hh, bounds);
     this.mainWindow.setTopBrowserView(this.titleBarView);
 
     // this.resizeWebView(tabView, bounds);
@@ -912,7 +917,7 @@ export default class WindowManager {
 
   tabRefresh(id: number) {
     this.closeFind();
-    this.reloadTab(id);
+    reloadTab(this.allWebViews, id);
   }
 
   // history
@@ -956,7 +961,9 @@ export default class WindowManager {
       const savePath = path.join(app.getPath('userData'), 'history.json');
       const saveString = stringifyMap(this.historyMap);
       fs.writeFileSync(savePath, saveString);
-      this.saveTabs();
+      if (this.loadedOpenTabs) {
+        saveTabs(this.allWebViews);
+      }
     } catch {
       // console.log('saveHistory error');
       // console.log(e);
@@ -1178,7 +1185,7 @@ export default class WindowManager {
 
     this.mainWindow.webContents.send('set-padding', '');
 
-    const bounds = innerBounds(this.mainWindow, this.padding);
+    const bounds = innerBounds(this.mainWindow, this.padding());
     Object.values(this.allWebViews).forEach((tabView) => {
       tabView.windowFloating = this.windowFloating;
       // tabView.resize(padding);
@@ -1193,9 +1200,10 @@ export default class WindowManager {
       return;
     }
 
-    const hh = this.headerHeight;
+    const hh = this.headerHeight();
     const windowSize = currentWindowSize(this.mainWindow);
-    const bounds = innerBounds(this.mainWindow, this.padding);
+    const padding = this.padding();
+    const bounds = innerBounds(this.mainWindow, padding);
 
     resizeAsTitleBar(this.titleBarView, hh, bounds);
     resizeAsPeekView(this.urlPeekView, bounds);
@@ -1209,7 +1217,7 @@ export default class WindowManager {
     if (this.windowFloating) {
       this.hideWindow();
       // this.hideMainWindow();
-    } else if (this.webViewIsActive) {
+    } else if (this.webViewIsActive()) {
       if (this.historyModalActive) {
         this.tabPageView.webContents.send('close-history-modal');
       } else {
@@ -1217,7 +1225,7 @@ export default class WindowManager {
         // this.hideMainWindow();
       }
     } else if (windowHasView(this.mainWindow, this.titleBarView)) {
-      const findIsActive = this.findActive;
+      const findIsActive = windowHasView(this.mainWindow, this.findView);
       if (findIsActive && !mouseInBorder) {
         this.closeFind();
       } else {
@@ -1227,13 +1235,11 @@ export default class WindowManager {
   }
 
   focusSearch() {
-    if (this.webBrowserViewActive) {
+    if (this.webBrowserViewActive()) {
       this.titleBarView.webContents.focus();
       this.titleBarView.webContents.send('focus');
     }
   }
-
-  //
 
   private screenShotTab(
     tabId: number,
@@ -1261,12 +1267,8 @@ export default class WindowManager {
   }
 
   private get mouseInInner() {
-    const bounds = innerBounds(this.mainWindow, this.padding);
+    const bounds = innerBounds(this.mainWindow, this.padding());
     return pointInBounds(screen.getCursorScreenPoint(), bounds);
-  }
-
-  private reloadTab(id: number) {
-    this.allWebViews[id]?.view.webContents.reload();
   }
 
   private removeTab(id: number) {
@@ -1303,30 +1305,6 @@ export default class WindowManager {
     ]);
     tabView.scrollHeight = scrollHeight;
     this.loadUrlInTab(newTabId, url, true);
-  }
-
-  private saveTabs() {
-    if (!this.loadedOpenTabs) {
-      return;
-    }
-    try {
-      const savePath = path.join(app.getPath('userData'), 'openTabs.json');
-      const saveData = Object.values(this.allWebViews).map((tabView) => {
-        return {
-          url:
-            tabView.unloadedUrl === ''
-              ? tabView.view.webContents.getURL()
-              : tabView.unloadedUrl,
-          title: tabView.title,
-          favicon: tabView.favicon,
-          imgString: tabView.imgString,
-          scrollHeight: tabView.scrollHeight,
-        };
-      });
-      fs.writeFileSync(savePath, JSON.stringify(saveData));
-    } catch {
-      //
-    }
   }
 
   private loadHistory() {
@@ -1389,15 +1367,16 @@ export default class WindowManager {
       display.bounds.height + (process.platform === 'darwin' ? 0 : 1); // todo: on windows if you make it the same size as monitor, everything breaks!?!??!?!?
     this.updateMainWindowBounds();
 
-    const hh = this.headerHeight;
+    const hh = this.headerHeight();
     const windowSize = currentWindowSize(this.mainWindow);
-    const { padding } = this;
+    const padding = this.padding();
 
-    if (this.webViewIsActive) {
+    if (this.webViewIsActive()) {
       resizeAsTabPageView(this.tabPageView, windowSize);
     } else {
-      const bounds = innerBounds(this.mainWindow, this.padding);
-      resizeAsTitleBar(this.titleBarView, this.headerHeight, bounds);
+      const bounds = innerBounds(this.mainWindow, padding);
+
+      resizeAsTitleBar(this.titleBarView, hh, bounds);
       resizeAsPeekView(this.urlPeekView, bounds);
       resizeAsFindView(this.findView, hh, bounds);
       resizeAsOverlayView(this.overlayView, windowSize);
@@ -1426,19 +1405,15 @@ export default class WindowManager {
     this.handleResize();
   }
 
-  private get padding(): number {
-    return this.windowFloating ? 10 : this.browserPadding;
+  private padding(): number {
+    return this.windowFloating ? 10 : this.browserPadding();
   }
 
-  private get findActive(): boolean {
-    return windowHasView(this.mainWindow, this.findView);
-  }
-
-  private get webViewIsActive(): boolean {
+  private webViewIsActive(): boolean {
     return this.activeTabId === -1;
   }
 
-  private get headerHeight(): number {
+  private headerHeight(): number {
     return this.windowFloating ? 0 : headerHeight;
   }
 }
