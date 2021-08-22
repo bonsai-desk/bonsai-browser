@@ -184,6 +184,34 @@ function addListeners(wm: WindowManager) {
   });
 }
 
+const updateContents = (
+  webView: IWebView,
+  titleBarView: BrowserView,
+  tabPageView: BrowserView
+) => {
+  const url = webView.view.webContents.getURL();
+  const key = urlToMapKey(url);
+  if (webView.historyEntry === null || webView.historyEntry.key !== key) {
+    webView.historyEntry = {
+      url,
+      key,
+      title: '',
+      favicon: '',
+      openGraphData: { title: 'null', type: '', image: '', url: '' },
+    };
+  } else {
+    webView.historyEntry.url = url;
+  }
+
+  titleBarView.webContents.send('web-contents-update', [
+    webView.id,
+    webView.view.webContents.canGoBack(),
+    webView.view.webContents.canGoForward(),
+    url,
+  ]);
+  tabPageView.webContents.send('url-changed', [webView.id, url]);
+};
+
 export default class WindowManager {
   windowFloating = false;
 
@@ -265,7 +293,12 @@ export default class WindowManager {
 
   constructor(mainWindow: BrowserWindow, display: { activeDisplay: Display }) {
     this.mainWindow = mainWindow;
+
     WindowManager.display = display;
+
+    this.mainWindow.on('close', () => {
+      this.saveHistory();
+    });
 
     this.mainWindow.on('resize', this.handleResize);
     // this.mainWindow.webContents.openDevTools({ mode: 'detach' });
@@ -378,6 +411,44 @@ export default class WindowManager {
     }, 10);
 
     addListeners(this);
+
+    mainWindow.webContents.on('did-finish-load', () => {
+      const mousePoint = screen.getCursorScreenPoint();
+      display.activeDisplay = screen.getDisplayNearestPoint(mousePoint);
+      this.mainWindow.webContents.send(
+        'set-padding',
+        this.browserPadding.toString()
+      );
+      // mainWindow?.show();
+      // wm.unFloat(display.activeDisplay);
+      // setTimeout(() => {
+      //   wm.unSetTab();
+      // }, 10);
+    });
+
+    // todo this breaks macOS dock
+    mainWindow.on('blur', () => {
+      if (
+        !this.windowFloating &&
+        this.mainWindow.isVisible() &&
+        !this.isPinned
+      ) {
+        // wm.unFloat(display.activeDisplay);
+        // wm.mainWindow?.hide();
+        // wm.hideWindow();
+        // }
+      }
+    });
+
+    mainWindow.on('minimize', (e: Event) => {
+      if (mainWindow !== null) {
+        e.preventDefault();
+        this.hideWindow();
+      }
+    });
+
+    this.hideWindow();
+    this.handleResize();
   }
 
   createTabView(
@@ -428,41 +499,17 @@ export default class WindowManager {
       this.tabPageView.webContents.send('title-updated', [webView.id, title]);
     });
 
-    const updateContents = () => {
-      const url = webView.view.webContents.getURL();
-      const key = urlToMapKey(url);
-      if (webView.historyEntry === null || webView.historyEntry.key !== key) {
-        webView.historyEntry = {
-          url,
-          key,
-          title: '',
-          favicon: '',
-          openGraphData: { title: 'null', type: '', image: '', url: '' },
-        };
-      } else {
-        webView.historyEntry.url = url;
-      }
-
-      titleBarView.webContents.send('web-contents-update', [
-        webView.id,
-        webView.view.webContents.canGoBack(),
-        webView.view.webContents.canGoForward(),
-        url,
-      ]);
-      this.tabPageView.webContents.send('url-changed', [webView.id, url]);
-    };
-
     webView.view.webContents.on('did-navigate', () => {
       if (windowHasView(window, findView)) {
         window.removeBrowserView(findView);
       }
-      updateContents();
+      updateContents(webView, this.titleBarView, this.tabPageView);
     });
     webView.view.webContents.on('did-frame-navigate', () => {
-      updateContents();
+      updateContents(webView, this.titleBarView, this.tabPageView);
     });
     webView.view.webContents.on('did-navigate-in-page', () => {
-      updateContents();
+      updateContents(webView, this.titleBarView, this.tabPageView);
     });
     webView.view.webContents.on('page-favicon-updated', (_, favicons) => {
       if (favicons.length > 0) {
@@ -1182,7 +1229,6 @@ export default class WindowManager {
 
     const hh = this.headerHeight;
     const windowSize = currentWindowSize(this.mainWindow);
-    // const { padding } = this;
 
     resizeAsTitleBar(this.titleBarView, hh, this.innerBounds);
     resizeAsPeekView(this.urlPeekView, this.innerBounds);
@@ -1219,6 +1265,8 @@ export default class WindowManager {
       this.titleBarView.webContents.send('focus');
     }
   }
+
+  //
 
   private screenShotTab(
     tabId: number,
