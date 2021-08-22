@@ -20,15 +20,15 @@ export default function windowFixedUpdate(
   if (
     Math.round(wm.windowPosition[0]) ===
       Math.round(
-        WindowManager.display.activeDisplay.workAreaSize.width / 2.0 -
+        wm.display.activeDisplay.workAreaSize.width / 2.0 -
           floatingWidth / 2.0 +
-          WindowManager.display.activeDisplay.workArea.x
+          wm.display.activeDisplay.workArea.x
       ) &&
     Math.round(wm.windowPosition[1]) ===
       Math.round(
-        WindowManager.display.activeDisplay.workAreaSize.height / 2.0 -
+        wm.display.activeDisplay.workAreaSize.height / 2.0 -
           floatingHeight / 2.0 +
-          WindowManager.display.activeDisplay.workArea.y
+          wm.display.activeDisplay.workArea.y
       )
   ) {
     return;
@@ -36,11 +36,11 @@ export default function windowFixedUpdate(
 
   const up = wm.windowPosition[1];
   const down =
-    WindowManager.display.activeDisplay.workAreaSize.height -
+    wm.display.activeDisplay.workAreaSize.height -
     (wm.windowPosition[1] + wm.windowSize.height);
   const left = wm.windowPosition[0];
   const right =
-    WindowManager.display.activeDisplay.workAreaSize.width -
+    wm.display.activeDisplay.workAreaSize.width -
     (wm.windowPosition[0] + wm.windowSize.width);
 
   const distance = glMatrix.vec2.distance(
@@ -48,12 +48,12 @@ export default function windowFixedUpdate(
     wm.targetWindowPosition
   );
   const distanceScaled = Math.min(
-    distance / (WindowManager.display.activeDisplay.workAreaSize.width / 3),
+    distance / (wm.display.activeDisplay.workAreaSize.width / 3),
     1
   );
   const distanceScaledOpposite = 1 - distanceScaled;
   const moveTowardsThreshold =
-    WindowManager.display.activeDisplay.workAreaSize.height * 0.005;
+    wm.display.activeDisplay.workAreaSize.height * 0.005;
   const moveTowardsSpeedThreshold = 100;
   const windowSpeed = glMatrix.vec2.len(wm.windowVelocity);
   if (
@@ -88,13 +88,13 @@ export default function windowFixedUpdate(
     const maxSpring = 40000;
     const minEdgeDrag = 2;
 
-    const screenOffsetX = WindowManager.display.activeDisplay.workArea.x;
-    const screenOffsetY = WindowManager.display.activeDisplay.workArea.y;
+    const screenOffsetX = wm.display.activeDisplay.workArea.x;
+    const screenOffsetY = wm.display.activeDisplay.workArea.y;
 
     if (up < padding + screenOffsetY) {
       const dist =
         -(wm.windowPosition[1] - (padding + screenOffsetY)) /
-        WindowManager.display.activeDisplay.workAreaSize.height;
+        wm.display.activeDisplay.workAreaSize.height;
       wm.windowVelocity[1] +=
         deltaTime * Math.min(dist * springConstant, maxSpring);
       if (wm.windowVelocity[1] > 0) {
@@ -110,10 +110,10 @@ export default function windowFixedUpdate(
       const bottomY = wm.windowPosition[1] + wm.windowSize.height;
       const dist =
         -(
-          WindowManager.display.activeDisplay.workAreaSize.height -
+          wm.display.activeDisplay.workAreaSize.height -
           bottomY -
           (padding - screenOffsetY)
-        ) / WindowManager.display.activeDisplay.workAreaSize.height;
+        ) / wm.display.activeDisplay.workAreaSize.height;
       wm.windowVelocity[1] +=
         deltaTime * Math.min(-dist * springConstant, maxSpring);
       if (wm.windowVelocity[1] < 0) {
@@ -128,7 +128,7 @@ export default function windowFixedUpdate(
     if (left < padding + screenOffsetX) {
       const dist =
         -(wm.windowPosition[0] - (padding + screenOffsetX)) /
-        WindowManager.display.activeDisplay.workAreaSize.height;
+        wm.display.activeDisplay.workAreaSize.height;
       wm.windowVelocity[0] +=
         deltaTime * Math.min(dist * springConstant, maxSpring);
       if (wm.windowVelocity[0] > 0) {
@@ -144,10 +144,10 @@ export default function windowFixedUpdate(
       const rightX = wm.windowPosition[0] + wm.windowSize.width;
       const dist =
         -(
-          WindowManager.display.activeDisplay.workAreaSize.width -
+          wm.display.activeDisplay.workAreaSize.width -
           rightX -
           (padding - screenOffsetX)
-        ) / WindowManager.display.activeDisplay.workAreaSize.height;
+        ) / wm.display.activeDisplay.workAreaSize.height;
       wm.windowVelocity[0] +=
         deltaTime * Math.min(-dist * springConstant, maxSpring);
       if (wm.windowVelocity[0] < 0) {
