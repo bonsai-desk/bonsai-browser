@@ -33,14 +33,16 @@ import calculateWindowTarget from './calculate-window-target';
 import {
   currentWindowSize,
   handleFindText,
-  innerRectangle,
+  innerBounds,
   makeView,
   pointInBounds,
   resizeAsFindView,
   resizeAsOverlayView,
   resizeAsPeekView,
-  resizeAsTabView,
+  resizeAsTabPageView,
   resizeAsTitleBar,
+  resizeAsWebView,
+  updateContents,
   updateWebContents,
 } from './wm-utils';
 import { HistoryEntry, IWebView, OpenGraphInfo, TabInfo } from './interfaces';
@@ -49,7 +51,7 @@ const glMatrix = require('gl-matrix');
 
 const easeOut = BezierEasing(0, 0, 0.5, 1);
 
-function addListeners(wm: WindowManager) {
+export function addListeners(wm: WindowManager) {
   ipcMain.on('create-new-tab', () => {
     wm.createNewTab();
   });
@@ -184,35 +186,9 @@ function addListeners(wm: WindowManager) {
   });
 }
 
-const updateContents = (
-  webView: IWebView,
-  titleBarView: BrowserView,
-  tabPageView: BrowserView
-) => {
-  const url = webView.view.webContents.getURL();
-  const key = urlToMapKey(url);
-  if (webView.historyEntry === null || webView.historyEntry.key !== key) {
-    webView.historyEntry = {
-      url,
-      key,
-      title: '',
-      favicon: '',
-      openGraphData: { title: 'null', type: '', image: '', url: '' },
-    };
-  } else {
-    webView.historyEntry.url = url;
-  }
-
-  titleBarView.webContents.send('web-contents-update', [
-    webView.id,
-    webView.view.webContents.canGoBack(),
-    webView.view.webContents.canGoForward(),
-    url,
-  ]);
-  tabPageView.webContents.send('url-changed', [webView.id, url]);
-};
-
 export default class WindowManager {
+  static dragThresholdSquared = 5 * 5;
+
   windowFloating = false;
 
   allWebViews: Record<number, IWebView> = {};
@@ -226,12 +202,6 @@ export default class WindowManager {
   titleBarView: BrowserView;
 
   tabPageView: BrowserView;
-
-  private readonly urlPeekView: BrowserView;
-
-  private readonly findView: BrowserView;
-
-  private readonly overlayView: BrowserView;
 
   windowPosition = glMatrix.vec2.create();
 
@@ -255,11 +225,29 @@ export default class WindowManager {
 
   windowSize = { width: 0, height: 0 };
 
+  display: Display;
+
+  get webBrowserViewActive(): boolean {
+    return this.activeTabId !== -1;
+  }
+
+  get browserPadding(): number {
+    if (this.display !== null) {
+      const ratio = this.webViewIsActive ? 50 : 15;
+      return Math.floor(this.display.workAreaSize.height / ratio);
+    }
+    return 35;
+  }
+
+  private readonly urlPeekView: BrowserView;
+
+  private readonly findView: BrowserView;
+
+  private readonly overlayView: BrowserView;
+
   private findText = '';
 
   private lastFindTextSearch = '';
-
-  display: Display;
 
   private historyMap = new Map<string, HistoryEntry>();
 
@@ -274,20 +262,6 @@ export default class WindowManager {
   private validFloatingClick = false;
 
   private windowSpeeds: number[][] = [];
-
-  static dragThresholdSquared = 5 * 5;
-
-  get webBrowserViewActive(): boolean {
-    return this.activeTabId !== -1;
-  }
-
-  get browserPadding(): number {
-    if (this.display !== null) {
-      const ratio = this.webViewIsActive ? 50 : 15;
-      return Math.floor(this.display.workAreaSize.height / ratio);
-    }
-    return 35;
-  }
 
   constructor(mainWindow: BrowserWindow) {
     this.mainWindow = mainWindow;
@@ -319,7 +293,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -341,7 +315,7 @@ export default class WindowManager {
           this.updateMainWindowBounds();
         }
         if (!this.windowFloating) {
-          this.unFloat(this.display);
+          this.unFloat();
         }
         this.handleResize();
 
@@ -559,14 +533,14 @@ export default class WindowManager {
 
   hideWindow() {
     let opacity = 1.0;
-    const display = { activeDisplay: screen.getPrimaryDisplay() };
+    // const display = { activeDisplay: screen.getPrimaryDisplay() };
     this.mainWindow.setOpacity(opacity);
     const handle = setInterval(() => {
       opacity -= 0.1;
       if (opacity < 0.0) {
         opacity = 0.0;
         clearInterval(handle);
-        this.unFloat(display.activeDisplay);
+        this.unFloat();
         this.tabPageView.webContents.send('blur');
         this.mainWindow?.hide();
         if (
@@ -597,7 +571,7 @@ export default class WindowManager {
     });
     this.mainWindow.setOpacity(1.0);
     this.setPinned(false);
-    this.unFloat(display.activeDisplay);
+    this.unFloat();
     if (this.webViewIsActive) {
       // todo: search box does not get highlighted on macos unless we do this hack
       setTimeout(() => {
@@ -665,15 +639,20 @@ export default class WindowManager {
   }
 
   resizeWebViews() {
+    const bounds = innerBounds(this.mainWindow, this.padding);
     Object.values(this.allWebViews).forEach((tabView) => {
-      resizeAsTabView(
-        tabView,
-        this.tabPageView,
-        this.innerBounds,
-        this.headerHeight,
-        currentWindowSize(this.mainWindow)
-      );
+      this.resizeWebView(tabView, bounds);
     });
+  }
+
+  resizeWebView(tabView: IWebView, bounds: Electron.Rectangle) {
+    resizeAsWebView(
+      tabView,
+      this.tabPageView,
+      bounds,
+      this.headerHeight,
+      currentWindowSize(this.mainWindow)
+    );
   }
 
   // tabs
@@ -814,21 +793,16 @@ export default class WindowManager {
     const hh = this.headerHeight;
     const windowSize = currentWindowSize(this.mainWindow);
     const { padding } = this;
+    const bounds = innerBounds(this.mainWindow, this.padding);
 
     // add title bar view to main window
     if (!windowHasView(this.mainWindow, this.titleBarView)) {
       this.mainWindow.addBrowserView(this.titleBarView);
     }
-    resizeAsTitleBar(this.titleBarView, this.headerHeight, this.innerBounds);
+    resizeAsTitleBar(this.titleBarView, this.headerHeight, bounds);
     this.mainWindow.setTopBrowserView(this.titleBarView);
 
-    resizeAsTabView(
-      tabView,
-      this.tabPageView,
-      this.innerBounds,
-      this.headerHeight,
-      currentWindowSize(this.mainWindow)
-    );
+    // this.resizeWebView(tabView, bounds);
 
     // add the live page to the main window and focus it a little bit later
     this.mainWindow.addBrowserView(tabView.view);
@@ -861,8 +835,9 @@ export default class WindowManager {
     this.tabPageView.webContents.send('set-padding', padding.toString());
 
     // this.resize();
-    resizeAsPeekView(this.urlPeekView, this.innerBounds);
-    resizeAsFindView(this.findView, hh, this.innerBounds);
+
+    resizeAsPeekView(this.urlPeekView, bounds);
+    resizeAsFindView(this.findView, hh, bounds);
     resizeAsOverlayView(this.overlayView, windowSize);
     this.resizeWebViews();
   }
@@ -1144,7 +1119,7 @@ export default class WindowManager {
     this.windowSpeeds = [];
     this.movingWindow = false;
     if (this.validFloatingClick) {
-      this.unFloat(this.display);
+      this.unFloat();
     }
     this.validFloatingClick = false;
   }
@@ -1203,17 +1178,11 @@ export default class WindowManager {
 
     this.mainWindow.webContents.send('set-padding', '');
 
-    // const padding = this.browserPadding();
+    const bounds = innerBounds(this.mainWindow, this.padding);
     Object.values(this.allWebViews).forEach((tabView) => {
       tabView.windowFloating = this.windowFloating;
       // tabView.resize(padding);
-      resizeAsTabView(
-        tabView,
-        this.tabPageView,
-        this.innerBounds,
-        this.headerHeight,
-        currentWindowSize(this.mainWindow)
-      );
+      this.resizeWebView(tabView, bounds);
     });
 
     this.handleResize();
@@ -1226,12 +1195,13 @@ export default class WindowManager {
 
     const hh = this.headerHeight;
     const windowSize = currentWindowSize(this.mainWindow);
+    const bounds = innerBounds(this.mainWindow, this.padding);
 
-    resizeAsTitleBar(this.titleBarView, hh, this.innerBounds);
-    resizeAsPeekView(this.urlPeekView, this.innerBounds);
-    resizeAsFindView(this.findView, hh, this.innerBounds);
+    resizeAsTitleBar(this.titleBarView, hh, bounds);
+    resizeAsPeekView(this.urlPeekView, bounds);
+    resizeAsFindView(this.findView, hh, bounds);
     resizeAsOverlayView(this.overlayView, windowSize);
-    this.resizeTabPageView(windowSize);
+    resizeAsTabPageView(this.tabPageView, windowSize);
     this.resizeWebViews();
   }
 
@@ -1291,7 +1261,8 @@ export default class WindowManager {
   }
 
   private get mouseInInner() {
-    return pointInBounds(screen.getCursorScreenPoint(), this.innerBounds);
+    const bounds = innerBounds(this.mainWindow, this.padding);
+    return pointInBounds(screen.getCursorScreenPoint(), bounds);
   }
 
   private reloadTab(id: number) {
@@ -1408,7 +1379,9 @@ export default class WindowManager {
     }
   }
 
-  private unFloat(display: Display) {
+  private unFloat() {
+    const { display } = this;
+
     this.windowPosition[0] = display.bounds.x;
     this.windowPosition[1] = display.bounds.y;
     this.windowSize.width = display.workArea.width;
@@ -1421,11 +1394,12 @@ export default class WindowManager {
     const { padding } = this;
 
     if (this.webViewIsActive) {
-      this.resizeTabPageView(windowSize);
+      resizeAsTabPageView(this.tabPageView, windowSize);
     } else {
-      resizeAsTitleBar(this.titleBarView, this.headerHeight, this.innerBounds);
-      resizeAsPeekView(this.urlPeekView, this.innerBounds);
-      resizeAsFindView(this.findView, hh, this.innerBounds);
+      const bounds = innerBounds(this.mainWindow, this.padding);
+      resizeAsTitleBar(this.titleBarView, this.headerHeight, bounds);
+      resizeAsPeekView(this.urlPeekView, bounds);
+      resizeAsFindView(this.findView, hh, bounds);
       resizeAsOverlayView(this.overlayView, windowSize);
       this.resizeWebViews();
     }
@@ -1440,22 +1414,16 @@ export default class WindowManager {
       this.mainWindow?.removeBrowserView(this.overlayView);
     }
 
-    // const padding = this.browserPadding();
+    if (!windowHasView(this.mainWindow, this.titleBarView)) {
+      this.mainWindow.addBrowserView(this.titleBarView);
+    }
+
     this.mainWindow.webContents.send('set-padding', padding.toString());
 
     Object.values(this.allWebViews).forEach((tabView) => {
       tabView.windowFloating = this.windowFloating;
     });
     this.handleResize();
-  }
-
-  private resizeTabPageView(windowSize: number[]) {
-    this.tabPageView.setBounds({
-      x: 0,
-      y: 0,
-      width: windowSize[0],
-      height: windowSize[1],
-    });
   }
 
   private get padding(): number {
@@ -1472,13 +1440,5 @@ export default class WindowManager {
 
   private get headerHeight(): number {
     return this.windowFloating ? 0 : headerHeight;
-  }
-
-  private get innerBounds(): Electron.Rectangle {
-    return innerRectangle(
-      4 / 3,
-      currentWindowSize(this.mainWindow),
-      this.padding
-    );
   }
 }

@@ -4,8 +4,8 @@ import { clamp } from './utils';
 const glMatrix = require('gl-matrix');
 
 export default function windowFixedUpdate(
-  deltaTime: number,
   wm: WindowManager,
+  deltaTime: number,
   floatingWidth: number,
   floatingHeight: number
 ) {

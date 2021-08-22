@@ -27,7 +27,7 @@ import { windowHasView } from './utils';
 //   new AppUpdater();
 // }
 
-function buildMenu(wm: WindowManager) {
+function initMenu(wm: WindowManager) {
   const edit: MenuItemConstructorOptions = {
     label: 'Edit',
     submenu: [
@@ -118,7 +118,7 @@ function initFixedUpdate(wm: WindowManager) {
     const height80 = wm.display.workAreaSize.height * 0.7;
     const floatingWidth = Math.floor(height80 * 0.7);
     const floatingHeight = Math.floor(height80);
-    windowFixedUpdate(deltaTime, wm, floatingWidth, floatingHeight);
+    windowFixedUpdate(wm, deltaTime, floatingWidth, floatingHeight);
   };
 
   let startTime: number | null = null;
@@ -150,7 +150,7 @@ function initBoot(wm: WindowManager) {
   setTimeout(boot, 5000);
 }
 
-function initWindow() {
+function initWindow(): BrowserWindow {
   const mac = process.platform === 'darwin';
   const mainWindow: BrowserWindow | null = new BrowserWindow({
     frame: false,
@@ -187,6 +187,18 @@ function initShortcuts(wm: WindowManager) {
 }
 
 function initApp(wm: WindowManager) {
+  app.on('window-all-closed', () => {
+    // Respect the OSX convention of having the application in memory even
+    // after all windows have been closed
+    if (process.platform !== 'darwin') {
+      app.quit();
+    }
+  });
+
+  if (process.platform === 'darwin') {
+    app.dock.setIcon(ICON_PNG);
+  }
+
   app.on('activate', () => {
     wm.showWindow();
   });
@@ -255,14 +267,7 @@ export const createWindow = async () => {
     await installExtensions();
   }
 
-  let mainWindow: null | BrowserWindow = null;
-  mainWindow = initWindow();
-
-  if (process.platform === 'darwin') {
-    app.dock.setIcon(ICON_PNG);
-  }
-
-  const wm = new WindowManager(mainWindow);
+  const wm = new WindowManager(initWindow());
 
   initBoot(wm);
 
@@ -270,7 +275,7 @@ export const createWindow = async () => {
 
   initShortcuts(wm);
 
-  buildMenu(wm);
+  initMenu(wm);
 
   initApp(wm);
 };

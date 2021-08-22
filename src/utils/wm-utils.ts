@@ -1,5 +1,6 @@
 import { BrowserView, BrowserWindow } from 'electron';
 import { IWebView } from './interfaces';
+import { urlToMapKey } from './utils';
 
 function pointInBounds(
   mousePoint: Electron.Point,
@@ -111,7 +112,7 @@ export function resizeAsPeekView(
   });
 }
 
-export function resizeAsTabView(
+export function resizeAsWebView(
   tabView: IWebView,
   tabPage: BrowserView,
   bounds: Electron.Rectangle,
@@ -123,10 +124,12 @@ export function resizeAsTabView(
     screen: { width: windowSize[0], height: windowSize[1] },
     bounds,
   });
-  const hh = urlHeight;
-  bounds.y += hh;
-  bounds.height -= hh;
-  tabView.view.setBounds(bounds);
+  tabView.view.setBounds({
+    x: bounds.x,
+    y: bounds.y + urlHeight,
+    width: bounds.width,
+    height: bounds.height - urlHeight,
+  });
 }
 export function resizeAsFindView(
   view: BrowserView,
@@ -147,6 +150,19 @@ export function resizeAsFindView(
     height: findViewHeight,
   });
 }
+
+export function resizeAsTabPageView(
+  view: BrowserView,
+  windowSize: [number, number]
+) {
+  view.setBounds({
+    x: 0,
+    y: 0,
+    width: windowSize[0],
+    height: windowSize[1],
+  });
+}
+
 export function resizeAsOverlayView(view: BrowserView, windowSize: number[]) {
   view.setBounds({
     x: 0,
@@ -160,3 +176,38 @@ export function currentWindowSize(window: BrowserWindow): [number, number] {
   const [x, y] = window.getSize();
   return [x, y];
 }
+
+export function innerBounds(
+  mainWindow: BrowserWindow,
+  padding: number
+): Electron.Rectangle {
+  return innerRectangle(4 / 3, currentWindowSize(mainWindow), padding);
+}
+
+export const updateContents = (
+  webView: IWebView,
+  titleBarView: BrowserView,
+  tabPageView: BrowserView
+) => {
+  const url = webView.view.webContents.getURL();
+  const key = urlToMapKey(url);
+  if (webView.historyEntry === null || webView.historyEntry.key !== key) {
+    webView.historyEntry = {
+      url,
+      key,
+      title: '',
+      favicon: '',
+      openGraphData: { title: 'null', type: '', image: '', url: '' },
+    };
+  } else {
+    webView.historyEntry.url = url;
+  }
+
+  titleBarView.webContents.send('web-contents-update', [
+    webView.id,
+    webView.view.webContents.canGoBack(),
+    webView.view.webContents.canGoForward(),
+    url,
+  ]);
+  tabPageView.webContents.send('url-changed', [webView.id, url]);
+};
