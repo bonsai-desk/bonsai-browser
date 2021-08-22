@@ -259,7 +259,7 @@ export default class WindowManager {
 
   private lastFindTextSearch = '';
 
-  display: { activeDisplay: Display };
+  display: Display;
 
   private historyMap = new Map<string, HistoryEntry>();
 
@@ -284,15 +284,20 @@ export default class WindowManager {
   get browserPadding(): number {
     if (this.display !== null) {
       const ratio = this.webViewIsActive ? 50 : 15;
-      return Math.floor(this.display.activeDisplay.workAreaSize.height / ratio);
+      return Math.floor(this.display.workAreaSize.height / ratio);
     }
     return 35;
   }
 
-  constructor(mainWindow: BrowserWindow, display: { activeDisplay: Display }) {
+  constructor(mainWindow: BrowserWindow) {
     this.mainWindow = mainWindow;
 
-    this.display = display;
+    const displays = screen.getAllDisplays();
+    if (displays.length === 0) {
+      throw new Error('No displays!');
+    }
+
+    this.display = screen.getPrimaryDisplay();
 
     this.mainWindow.on('close', () => {
       this.saveHistory();
@@ -326,11 +331,9 @@ export default class WindowManager {
     });
 
     screen.on('display-metrics-changed', (_, changedDisplay) => {
-      if (changedDisplay.id === this.display.activeDisplay.id) {
-        this.display.activeDisplay = changedDisplay;
-
+      if (changedDisplay.id === this.display.id) {
         if (this.windowFloating) {
-          const height80 = this.display.activeDisplay.workAreaSize.height * 0.7;
+          const height80 = this.display.workAreaSize.height * 0.7;
           const floatingWidth = Math.floor(height80 * 0.7);
           const floatingHeight = Math.floor(height80);
           this.windowSize.width = floatingWidth;
@@ -338,7 +341,7 @@ export default class WindowManager {
           this.updateMainWindowBounds();
         }
         if (!this.windowFloating) {
-          this.unFloat(this.display.activeDisplay);
+          this.unFloat(this.display);
         }
         this.handleResize();
 
@@ -351,7 +354,7 @@ export default class WindowManager {
           0,
           this.windowSize,
           this.windowPosition,
-          this.display.activeDisplay
+          this.display
         );
         if (target[0]) {
           // eslint-disable-next-line prefer-destructuring
@@ -411,7 +414,7 @@ export default class WindowManager {
 
     mainWindow.webContents.on('did-finish-load', () => {
       const mousePoint = screen.getCursorScreenPoint();
-      display.activeDisplay = screen.getDisplayNearestPoint(mousePoint);
+      this.display = screen.getDisplayNearestPoint(mousePoint);
       this.mainWindow.webContents.send(
         'set-padding',
         this.browserPadding.toString()
@@ -1024,9 +1027,9 @@ export default class WindowManager {
     this.movingWindow = true;
 
     const mousePoint = screen.getCursorScreenPoint();
-    this.display.activeDisplay = screen.getDisplayNearestPoint(mousePoint);
+    this.display = screen.getDisplayNearestPoint(mousePoint);
 
-    const height80 = this.display.activeDisplay.workAreaSize.height * 0.7;
+    const height80 = this.display.workAreaSize.height * 0.7;
     const floatingWidth = Math.floor(height80 * 0.7);
     const floatingHeight = Math.floor(height80);
     this.windowSize.width = floatingWidth;
@@ -1096,7 +1099,7 @@ export default class WindowManager {
         last[2],
         this.windowSize,
         this.windowPosition,
-        this.display.activeDisplay
+        this.display
       );
 
       if (firstTarget === null && valid) {
@@ -1141,7 +1144,7 @@ export default class WindowManager {
     this.windowSpeeds = [];
     this.movingWindow = false;
     if (this.validFloatingClick) {
-      this.unFloat(this.display.activeDisplay);
+      this.unFloat(this.display);
     }
     this.validFloatingClick = false;
   }
@@ -1171,7 +1174,7 @@ export default class WindowManager {
 
     this.windowFloating = true;
 
-    const display = this.display.activeDisplay;
+    const { display } = this;
     const height80 = display.workAreaSize.height * 0.7;
     const floatingWidth = Math.floor(height80 * 0.7);
     const floatingHeight = Math.floor(height80);

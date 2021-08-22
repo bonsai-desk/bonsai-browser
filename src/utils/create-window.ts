@@ -6,7 +6,6 @@ import {
   Menu,
   MenuItem,
   MenuItemConstructorOptions,
-  screen,
   Tray,
 } from 'electron';
 import WindowManager from './window-manager';
@@ -111,15 +110,12 @@ function buildMenu(wm: WindowManager) {
   Menu.setApplicationMenu(menu);
 }
 
-function initFixedUpdate(
-  wm: WindowManager,
-  display: { activeDisplay: Electron.Display }
-) {
+function initFixedUpdate(wm: WindowManager) {
   const fixedTimeStep = 0.01;
   let lastFixedUpdateTime = 0;
   const fixedUpdate = () => {
     const deltaTime = fixedTimeStep;
-    const height80 = display.activeDisplay.workAreaSize.height * 0.7;
+    const height80 = wm.display.workAreaSize.height * 0.7;
     const floatingWidth = Math.floor(height80 * 0.7);
     const floatingHeight = Math.floor(height80);
     windowFixedUpdate(deltaTime, wm, floatingWidth, floatingHeight);
@@ -266,17 +262,11 @@ export const createWindow = async () => {
     app.dock.setIcon(ICON_PNG);
   }
 
-  const displays = screen.getAllDisplays();
-  if (displays.length === 0) {
-    throw new Error('No displays!');
-  }
-  const display = { activeDisplay: screen.getPrimaryDisplay() };
-
-  const wm = new WindowManager(mainWindow, display);
+  const wm = new WindowManager(mainWindow);
 
   initBoot(wm);
 
-  initFixedUpdate(wm, display);
+  initFixedUpdate(wm);
 
   initShortcuts(wm);
 
