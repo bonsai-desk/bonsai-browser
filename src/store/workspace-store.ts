@@ -312,6 +312,7 @@ export const WorkspaceStore = types
     },
     centerCamera() {
       let edges = [0, 0, 0, 0];
+      let first = true;
       self.groups.forEach((group) => {
         const screenPos = self.worldToScreen(group.x, group.y);
         const size = group.size();
@@ -330,7 +331,8 @@ export const WorkspaceStore = types
           self.screenToWorld(corners[2][0], corners[2][1]),
           self.screenToWorld(corners[3][0], corners[3][1]),
         ];
-        if (edges === null) {
+        if (first) {
+          first = false;
           edges = [
             testPositions[0][1],
             testPositions[1][0],

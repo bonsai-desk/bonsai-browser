@@ -33,11 +33,11 @@ const MainItem = observer(
     targetPos[1] += groupY;
     const lerpValue = easeOut(item.animationLerp);
 
-    let zIndex = 0;
-    if (item.groupId === 'inbox') {
-      zIndex = 10000000 - 1;
-    } else if (item.beingDragged) {
+    let zIndex;
+    if (item.beingDragged) {
       zIndex = 10000000;
+    } else if (item.groupId === 'inbox') {
+      zIndex = 10000000 - 1;
     } else {
       zIndex = group.zIndex;
     }
