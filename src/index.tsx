@@ -15,7 +15,7 @@ import TabPageStore, {
 } from './store/tab-page-store';
 import Home from './pages/Home';
 import createWorkspaceStore from './store/workspace-store';
-// import { Node, Root } from './store/history-store';
+import { hookListeners, Root } from './store/history-store';
 
 if (document.getElementById('root')) {
   const rootStore = RootModel.create({
@@ -70,27 +70,33 @@ if (document.getElementById('overlay')) {
   render(<Overlay />, document.getElementById('overlay'));
 }
 
+// function snap(a: any) {
+//   console.dir(getSnapshot(a));
+// }
+
+// function snapArray(a: any[]) {
+//   console.log('...');
+//   a.forEach((x) => snap(x));
+//   console.log('...');
+// }
+
+// let count = 0;
+
+// function genNode(root: Instance<typeof Root>): INode {
+//   const data = { url: 'url', scroll: 0, date: '' };
+//   const a = Node.create({ id: count.toString(), data });
+//   root.setNode(a);
+//   count += 1;
+//   return a;
+// }
+
 if (document.getElementById('tab-page')) {
   const workspaceStore = createWorkspaceStore();
   const tabPageStore = new TabPageStore(workspaceStore);
 
-  // const data = { url: 'url', scroll: 0 };
-  //
-  // const root = Root.create({ nodes: {} });
-  //
-  // const a = Node.create({ id: '1', data });
-  // const b = Node.create({ id: '2', data });
-  // const c = Node.create({ id: '3', data });
-  //
-  // root.addNode(a);
-  // root.addNode(b);
-  // root.addNode(c);
-  //
-  // root.linkChild(a, b);
-  //
-  // console.log(JSON.stringify(root));
+  const root = Root.create({ nodes: {} });
 
-  // console.log(JSON.stringify(root.nextRef));
+  hookListeners(root);
 
   render(
     <>

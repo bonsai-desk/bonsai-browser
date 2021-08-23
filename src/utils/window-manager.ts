@@ -5,6 +5,7 @@ import {
   BrowserWindow,
   Display,
   globalShortcut,
+  HandlerDetails,
   ipcMain,
   NativeImage,
   screen,
@@ -47,7 +48,13 @@ import {
   updateContents,
   updateWebContents,
 } from './wm-utils';
-import { HistoryEntry, IWebView, OpenGraphInfo, TabInfo } from './interfaces';
+import {
+  HistoryEntry,
+  INavigateData,
+  IWebView,
+  OpenGraphInfo,
+  TabInfo,
+} from './interfaces';
 
 const glMatrix = require('gl-matrix');
 
@@ -186,6 +193,34 @@ export function addListeners(wm: WindowManager) {
       tabView.scrollHeight = height;
     }
   });
+}
+
+function handleDidNavigate(
+  view: IWebView,
+  data: INavigateData,
+  alertTargets: BrowserView[]
+) {
+  alertTargets.forEach((target) => {
+    target.webContents.send('did-navigate', { id: view.id, ...data });
+  });
+}
+
+interface IAction {
+  action: 'deny';
+}
+
+function genHandleWindowOpen(
+  view: IWebView,
+  callback: (url: string) => void,
+  alertTargets: BrowserView[]
+) {
+  return (details: HandlerDetails): IAction => {
+    callback(details.url);
+    alertTargets.forEach((target) => {
+      target.webContents.send('new-window', { id: view.id, ...details });
+    });
+    return { action: 'deny' };
+  };
 }
 
 export default class WindowManager {
@@ -462,11 +497,14 @@ export default class WindowManager {
     webView.view.setBackgroundColor('#FFFFFF');
     webView.id = webView.view.webContents.id;
 
-    webView.view.webContents.on('new-window', (event, url) => {
-      event.preventDefault();
+    const callback = (url: string) => {
       const newTabId = this.createNewTab();
       this.loadUrlInTab(newTabId, url);
-    });
+    };
+    const handleWindowOpen = genHandleWindowOpen(webView, callback, [
+      this.tabPageView,
+    ]);
+    webView.view.webContents.setWindowOpenHandler(handleWindowOpen);
     webView.view.webContents.on('page-title-updated', (_, title) => {
       if (webView.historyEntry?.title === '') {
         webView.historyEntry.title = title;
@@ -476,13 +514,18 @@ export default class WindowManager {
       titleBarView.webContents.send('title-updated', [webView.id, title]);
       this.tabPageView.webContents.send('title-updated', [webView.id, title]);
     });
-
-    webView.view.webContents.on('did-navigate', () => {
-      if (windowHasView(window, findView)) {
-        window.removeBrowserView(findView);
+    webView.view.webContents.on(
+      'did-navigate',
+      (_, url, httpResponseCode, httpStatusText) => {
+        if (windowHasView(window, findView)) {
+          window.removeBrowserView(findView);
+        }
+        updateContents(webView, this.titleBarView, this.tabPageView);
+        handleDidNavigate(webView, { url, httpResponseCode, httpStatusText }, [
+          this.tabPageView,
+        ]);
       }
-      updateContents(webView, this.titleBarView, this.tabPageView);
-    });
+    );
     webView.view.webContents.on('did-frame-navigate', () => {
       updateContents(webView, this.titleBarView, this.tabPageView);
     });

@@ -49,3 +49,9 @@ export interface TabInfo {
 
   scrollHeight: number;
 }
+
+export interface INavigateData {
+  url: string;
+  httpResponseCode: number;
+  httpStatusText: string;
+}
