@@ -1,4 +1,4 @@
-import { IAnyModelType, Instance, types } from 'mobx-state-tree';
+import { getSnapshot, IAnyModelType, Instance, types } from 'mobx-state-tree';
 import { ipcRenderer } from 'electron';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -66,6 +66,8 @@ export const HistoryStore = types
     },
   }));
 
+export type IHistory = Instance<typeof HistoryStore>;
+
 export function childLeaves(a: INode) {
   return a.children.filter((x) => x.children.length === 0);
 }
@@ -94,6 +96,16 @@ function genNode(url: string) {
   return Node.create({ id: uuidv4(), data });
 }
 
+export function goBack(history: IHistory, node: INode) {
+  console.log('go back ...');
+  console.dir(getSnapshot(node));
+  console.dir(getSnapshot(history));
+  ipcRenderer.send('go-back', {
+    senderId: history.active,
+    backTo: getSnapshot(node),
+  });
+}
+
 export function hookListeners(root: Instance<typeof HistoryStore>) {
   ipcRenderer.on('new-window', (_, data) => {
     const { senderId, receiverId, details } = data;
@@ -108,12 +120,18 @@ export function hookListeners(root: Instance<typeof HistoryStore>) {
   ipcRenderer.on('did-navigate', (_, { id, url }) => {
     const oldNode = root.heads.get(id);
     if (!(oldNode && oldNode.data.url === url)) {
-      const node = genNode(url);
-      root.setNode(node);
-      if (oldNode) {
-        root.linkChild(oldNode, node);
+      if (oldNode && oldNode.parent && oldNode.parent.data.url === url) {
+        console.log('nav to parent');
+        root.setHead(id, oldNode.parent);
+      } else {
+        console.log('normal nav');
+        const node = genNode(url);
+        root.setNode(node);
+        if (oldNode) {
+          root.linkChild(oldNode, node);
+        }
+        root.setHead(id, node);
       }
-      root.setHead(id, node);
     }
   });
   ipcRenderer.on('tab-was-set', (_, id) => {

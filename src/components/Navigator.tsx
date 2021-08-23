@@ -3,7 +3,7 @@ import styled, { css } from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import { useStore } from '../store/tab-page-store';
-import { INode } from '../store/history-store';
+import { goBack, INode } from '../store/history-store';
 
 const NavigatorParent = styled.div`
   width: 100%;
@@ -58,12 +58,38 @@ function asPx(a: number) {
   return `${a}px`;
 }
 
-const NavigatorItem = observer(({ node }: { node: INode }) => {
-  return <NavigatorItemParent>{node.data.url}</NavigatorItemParent>;
-});
+enum Direction {
+  Back,
+  Forward,
+}
+
+const NavigatorItem = observer(
+  ({ node, dir }: { node: INode; dir: Direction }) => {
+    const { historyStore } = useStore();
+    return (
+      <NavigatorItemParent
+        onClick={() => {
+          if (dir === Direction.Back) {
+            goBack(historyStore, node);
+          }
+        }}
+      >
+        {node.data.url}
+      </NavigatorItemParent>
+    );
+  }
+);
 
 const Panel = observer(
-  ({ items, dim }: { items: INode[]; dim: Dimensions }) => {
+  ({
+    items,
+    dim,
+    dir,
+  }: {
+    items: INode[];
+    dim: Dimensions;
+    dir: Direction;
+  }) => {
     const { width, height, margin } = dim;
     return (
       <NavigatorPanel
@@ -72,7 +98,7 @@ const Panel = observer(
         margin={asPx(margin)}
       >
         {items.map((item) => (
-          <NavigatorItem key={item.id} node={item} />
+          <NavigatorItem key={item.id} node={item} dir={dir} />
         ))}
       </NavigatorPanel>
     );
@@ -99,8 +125,16 @@ const Navigator = observer(() => {
         }
       }}
     >
-      <Panel items={leftItems} dim={{ width, height, margin }} />
-      <Panel items={rightItems} dim={{ width, height, margin }} />
+      <Panel
+        dir={Direction.Back}
+        items={leftItems}
+        dim={{ width, height, margin }}
+      />
+      <Panel
+        dir={Direction.Forward}
+        items={rightItems}
+        dim={{ width, height, margin }}
+      />
     </NavigatorParent>
   );
 });

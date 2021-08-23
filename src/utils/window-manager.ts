@@ -193,6 +193,21 @@ export function addListeners(wm: WindowManager) {
       tabView.scrollHeight = height;
     }
   });
+  ipcMain.on('go-back', (_, data) => {
+    console.log('go back ');
+    const { senderId } = data;
+    const webView = wm.allWebViews[senderId];
+    if (webView) {
+      if (webView.view.webContents.canGoBack()) {
+        console.log('can go back');
+        webView.view.webContents.goBack();
+      } else {
+        console.log('cant go back');
+      }
+    } else {
+      console.log('fail');
+    }
+  });
 }
 
 function handleDidNavigate(
