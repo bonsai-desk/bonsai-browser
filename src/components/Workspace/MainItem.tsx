@@ -42,6 +42,14 @@ const MainItem = observer(
       zIndex = group.zIndex;
     }
 
+    const [
+      worldContainerDragPosX,
+      worldContainerDragPosY,
+    ] = workspaceStore.worldToScreen(
+      item.containerDragPosX,
+      item.containerDragPosY
+    );
+
     return (
       <DraggableCore
         onMouseDown={(e) => {
@@ -63,15 +71,32 @@ const MainItem = observer(
               item.setBeingDragged(true);
               workspaceStore.setAnyDragging(true);
               item.setDragStartGroup(group.id);
-              item.setContainerDragPos(targetPos);
+              const worldTargetPos = workspaceStore.screenToWorld(
+                targetPos[0],
+                targetPos[1]
+              );
+              item.setContainerDragPos([worldTargetPos[0], worldTargetPos[1]]);
             }
           }
 
           if (item.beingDragged) {
+            const worldDelta = workspaceStore.screenVectorToWorldVector(
+              data.deltaX,
+              data.deltaY
+            );
             item.setContainerDragPos([
-              item.containerDragPosX + data.deltaX,
-              item.containerDragPosY + data.deltaY,
+              item.containerDragPosX + worldDelta[0],
+              item.containerDragPosY + worldDelta[1],
             ]);
+
+            const [
+              containerDragPosX,
+              containerDragPosY,
+            ] = workspaceStore.worldToScreen(
+              item.containerDragPosX,
+              item.containerDragPosY
+            );
+
             item.setOverTrash(overTrash([data.x, data.y], workspaceStore));
             workspaceStore.setAnyOverTrash(item.overTrash);
             if (item.overTrash) {
@@ -86,7 +111,7 @@ const MainItem = observer(
               getGroupBelowItem(
                 item,
                 group,
-                [item.containerDragPosX, item.containerDragPosY],
+                [containerDragPosX, containerDragPosY],
                 workspaceStore
               );
             }
@@ -101,19 +126,27 @@ const MainItem = observer(
             ipcRenderer.send('open-workspace-url', item.url);
           } else {
             if (!item.overTrash) {
+              const [
+                containerDragPosX,
+                containerDragPosY,
+              ] = workspaceStore.worldToScreen(
+                item.containerDragPosX,
+                item.containerDragPosY
+              );
+
               const groupBelow = getGroupBelowItem(
                 item,
                 group,
-                [item.containerDragPosX, item.containerDragPosY],
+                [containerDragPosX, containerDragPosY],
                 workspaceStore
               );
               if (groupBelow === null) {
                 const createdGroup = workspaceStore.createGroup('New Group');
                 newGroup = createdGroup;
                 const [worldX, worldY] = workspaceStore.screenToWorld(
-                  item.containerDragPosX -
+                  containerDragPosX -
                     (groupPadding + groupBorder) * workspaceStore.scale,
-                  item.containerDragPosY -
+                  containerDragPosY -
                     (groupPadding + groupTitleHeight + groupBorder) *
                       workspaceStore.scale
                 );
@@ -123,7 +156,11 @@ const MainItem = observer(
               }
             }
 
-            item.setContainerDragPos(targetPos);
+            const worldTargetPos = workspaceStore.screenToWorld(
+              targetPos[0],
+              targetPos[1]
+            );
+            item.setContainerDragPos([worldTargetPos[0], worldTargetPos[1]]);
 
             if (item.dragStartGroup !== '') {
               const startGroup = workspaceStore.groups.get(item.dragStartGroup);
@@ -152,10 +189,10 @@ const MainItem = observer(
             width: itemWidth,
             height: itemHeight,
             left: item.beingDragged
-              ? item.containerDragPosX
+              ? worldContainerDragPosX
               : lerp(item.animationStartX + groupX, targetPos[0], lerpValue),
             top: item.beingDragged
-              ? item.containerDragPosY
+              ? worldContainerDragPosY
               : lerp(item.animationStartY + groupY, targetPos[1], lerpValue),
             zIndex,
             transformOrigin: '0px 0px',

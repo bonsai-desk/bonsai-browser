@@ -129,17 +129,11 @@ const MainGroup = observer(
               group.setOverTrash(overTrash([data.x, data.y], workspaceStore));
               workspaceStore.setAnyOverTrash(group.overTrash);
 
-              const [worldLastX, worldLastY] = workspaceStore.screenToWorld(
-                data.lastX,
-                data.lastY
+              const worldDelta = workspaceStore.screenVectorToWorldVector(
+                data.deltaX,
+                data.deltaY
               );
-              const [worldX, worldY] = workspaceStore.screenToWorld(
-                data.x,
-                data.y
-              );
-              const deltaX = worldX - worldLastX;
-              const deltaY = worldY - worldLastY;
-              group.move(deltaX, deltaY);
+              group.move(worldDelta[0], worldDelta[1]);
             }
           }
         }}
