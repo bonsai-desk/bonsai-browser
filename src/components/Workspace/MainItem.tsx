@@ -33,6 +33,15 @@ const MainItem = observer(
     targetPos[1] += groupY;
     const lerpValue = easeOut(item.animationLerp);
 
+    let zIndex = 0;
+    if (item.groupId === 'inbox') {
+      zIndex = 10000000 - 1;
+    } else if (item.beingDragged) {
+      zIndex = 10000000;
+    } else {
+      zIndex = group.zIndex;
+    }
+
     return (
       <DraggableCore
         onMouseDown={(e) => {
@@ -148,9 +157,13 @@ const MainItem = observer(
             top: item.beingDragged
               ? item.containerDragPosY
               : lerp(item.animationStartY + groupY, targetPos[1], lerpValue),
-            zIndex: item.beingDragged ? 10000000 : group.zIndex,
+            zIndex,
             transformOrigin: '0px 0px',
-            transform: `scale(${workspaceStore.scale})`,
+            transform: `scale(${
+              group.id === 'inbox'
+                ? workspaceStore.inboxScale
+                : workspaceStore.scale
+            })`,
           }}
         >
           <ItemContainer

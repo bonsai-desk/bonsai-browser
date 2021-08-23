@@ -196,7 +196,11 @@ const MainGroup = observer(
         <Group
           style={{
             transformOrigin: '0px 0px',
-            transform: `scale(${workspaceStore.scale})`,
+            transform: `scale(${
+              group.id === 'inbox'
+                ? workspaceStore.inboxScale
+                : workspaceStore.scale
+            })`,
             width: lerp(
               group.animationStartWidth,
               targetGroupSize[0],
@@ -209,7 +213,7 @@ const MainGroup = observer(
             ),
             left: groupScreenX,
             top: groupScreenY,
-            zIndex: group.zIndex,
+            zIndex: group.id === 'inbox' ? 10000000 - 1 : group.zIndex,
             border: `${groupBorder}px solid black`,
             display:
               group.id === 'hidden' ||

@@ -51,7 +51,9 @@ export const Item = types
     placeholderPos(
       group: Instance<typeof ItemGroup>,
       scale: number
+      // workspaceStore: Instance<typeof WorkspaceStore>
     ): [number, number] {
+      // console.log(workspaceStore.scale);
       const x = self.indexInGroup % group.width;
       const y = Math.floor(self.indexInGroup / group.width);
       return [
@@ -281,11 +283,23 @@ export const WorkspaceStore = types
     anyDragging: false,
     anyOverTrash: false,
     snapshotPath: '',
-    tempMinCameraZoom: 0.035,
+    tempMinCameraZoom: minZoom,
   }))
   .views((self) => ({
     get scale() {
-      return (self.height / itemHeight / (1 / 0.75)) * self.cameraZoom;
+      return (
+        (self.height /
+          (itemHeight + groupTitleHeight + groupPadding * 2 + groupBorder * 2) /
+          (1 / 0.75)) *
+        self.cameraZoom
+      );
+    },
+    get inboxScale() {
+      return (
+        self.width /
+        (itemWidth + groupPadding * 2 + groupBorder * 2) /
+        (1 / (InboxColumnWidth / self.width))
+      );
     },
     get getMatrices() {
       const newMatrices = calculateMatrices(

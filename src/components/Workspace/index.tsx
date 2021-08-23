@@ -31,7 +31,7 @@ const InboxColumn = styled.div`
   left: 0;
   top: 0;
   height: 100%;
-  z-index: 10000000;
+  z-index: 9999999;
 `;
 export const CornerButton = styled.div`
   position: absolute;
