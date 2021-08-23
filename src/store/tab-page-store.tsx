@@ -9,6 +9,7 @@ import { Item, WorkspaceStore } from './workspace-store';
 import { Direction } from '../render-constants';
 import { clamp } from '../utils/utils';
 import { HistoryEntry } from '../utils/interfaces';
+import { HistoryStore } from './history-store';
 
 export enum View {
   None,
@@ -421,6 +422,7 @@ export default class TabPageStore {
 interface IContext {
   tabPageStore: TabPageStore;
   workspaceStore: Instance<typeof WorkspaceStore>;
+  historyStore: Instance<typeof HistoryStore>;
 }
 const TabPageContext = createContext<null | IContext>(null);
 export const { Provider } = TabPageContext;

@@ -211,13 +211,19 @@ interface IAction {
 
 function genHandleWindowOpen(
   view: IWebView,
-  callback: (url: string) => void,
+  callback: (url: string) => number,
   alertTargets: BrowserView[]
 ) {
   return (details: HandlerDetails): IAction => {
-    callback(details.url);
+    console.log('details ', details);
+    const newWindowId = callback(details.url);
+    console.log('new id ', newWindowId);
     alertTargets.forEach((target) => {
-      target.webContents.send('new-window', { id: view.id, ...details });
+      target.webContents.send('new-window', {
+        senderId: view.id,
+        receiverId: newWindowId,
+        details,
+      });
     });
     return { action: 'deny' };
   };
@@ -497,9 +503,10 @@ export default class WindowManager {
     webView.view.setBackgroundColor('#FFFFFF');
     webView.id = webView.view.webContents.id;
 
-    const callback = (url: string) => {
+    const callback = (url: string): number => {
       const newTabId = this.createNewTab();
       this.loadUrlInTab(newTabId, url);
+      return newTabId;
     };
     const handleWindowOpen = genHandleWindowOpen(webView, callback, [
       this.tabPageView,
@@ -526,6 +533,7 @@ export default class WindowManager {
         ]);
       }
     );
+    // todo incorporate these for SPA navigation events
     webView.view.webContents.on('did-frame-navigate', () => {
       updateContents(webView, this.titleBarView, this.tabPageView);
     });
@@ -861,6 +869,7 @@ export default class WindowManager {
     }, 100);
     this.activeTabId = id;
     this.titleBarView.webContents.send('tab-was-set', id);
+    this.tabPageView.webContents.send('tab-was-set', id);
 
     // load the url if it exists
     if (tabView.unloadedUrl !== '') {

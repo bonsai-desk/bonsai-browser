@@ -15,7 +15,7 @@ import TabPageStore, {
 } from './store/tab-page-store';
 import Home from './pages/Home';
 import createWorkspaceStore from './store/workspace-store';
-import { hookListeners, Root } from './store/history-store';
+import { hookListeners, HistoryStore } from './store/history-store';
 
 if (document.getElementById('root')) {
   const rootStore = RootModel.create({
@@ -94,13 +94,15 @@ if (document.getElementById('tab-page')) {
   const workspaceStore = createWorkspaceStore();
   const tabPageStore = new TabPageStore(workspaceStore);
 
-  const root = Root.create({ nodes: {} });
+  const historyStore = HistoryStore.create({ nodes: {}, active: '' });
 
-  hookListeners(root);
+  hookListeners(historyStore);
 
   render(
     <>
-      <TabPageStoreProvider value={{ tabPageStore, workspaceStore }}>
+      <TabPageStoreProvider
+        value={{ tabPageStore, workspaceStore, historyStore }}
+      >
         <Home />
       </TabPageStoreProvider>
     </>,

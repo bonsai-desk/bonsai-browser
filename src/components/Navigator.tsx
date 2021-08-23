@@ -3,6 +3,7 @@ import styled, { css } from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import { useStore } from '../store/tab-page-store';
+import { INode } from '../store/history-store';
 
 const NavigatorParent = styled.div`
   width: 100%;
@@ -39,23 +40,56 @@ const NavigatorPanel = styled.div`
   `}
 `;
 
-const NavigatorItem = styled.div`
+const NavigatorItemParent = styled.div`
+  color: white;
   width: 100%;
   padding-top: 56.25%;
   background-color: black;
   border-radius: 1rem;
 `;
 
+interface Dimensions {
+  width: number;
+  height: number;
+  margin: number;
+}
+
+function asPx(a: number) {
+  return `${a}px`;
+}
+
+const NavigatorItem = observer(({ node }: { node: INode }) => {
+  return <NavigatorItemParent>{node.data.url}</NavigatorItemParent>;
+});
+
+const Panel = observer(
+  ({ items, dim }: { items: INode[]; dim: Dimensions }) => {
+    const { width, height, margin } = dim;
+    return (
+      <NavigatorPanel
+        width={asPx(width)}
+        height={asPx(height)}
+        margin={asPx(margin)}
+      >
+        {items.map((item) => (
+          <NavigatorItem key={item.id} node={item} />
+        ))}
+      </NavigatorPanel>
+    );
+  }
+);
+
 const Navigator = observer(() => {
   const backRef = useRef(null);
-  const { tabPageStore } = useStore();
+  const { tabPageStore, historyStore } = useStore();
   const gutter =
     (tabPageStore.screen.width - tabPageStore.innerBounds.width) / 2;
   const margin = 20;
   const width = gutter - 2 * margin;
   const { height } = tabPageStore.innerBounds;
-  const leftItems = [1];
-  const rightItems = [...Array(10).keys()];
+  const head = historyStore.heads.get(historyStore.active);
+  const leftItems = head && head.parent ? [head.parent] : [];
+  const rightItems = head ? head.children.slice().reverse() : [];
   return (
     <NavigatorParent
       ref={backRef}
@@ -65,24 +99,8 @@ const Navigator = observer(() => {
         }
       }}
     >
-      <NavigatorPanel
-        width={`${width}px`}
-        height={`${height}px`}
-        margin={`${margin}px`}
-      >
-        {leftItems.map((key) => (
-          <NavigatorItem key={key} />
-        ))}
-      </NavigatorPanel>
-      <NavigatorPanel
-        width={`${width}px`}
-        height={`${height}px`}
-        margin={`${margin}px`}
-      >
-        {rightItems.map((key) => (
-          <NavigatorItem key={key} />
-        ))}
-      </NavigatorPanel>
+      <Panel items={leftItems} dim={{ width, height, margin }} />
+      <Panel items={rightItems} dim={{ width, height, margin }} />
     </NavigatorParent>
   );
 });
