@@ -527,9 +527,9 @@ export const WorkspaceStore = types
     },
     getGroupAtPoint(pos: number[]): Instance<typeof ItemGroup> | null {
       let returnGroup: Instance<typeof ItemGroup> | null = null;
-      if (this.inGroup(pos, self.inboxGroup)) {
-        return self.inboxGroup;
-      }
+      // if (this.inGroup(pos, self.inboxGroup)) {
+      //   return self.inboxGroup;
+      // }
       self.groups.forEach((group) => {
         if (this.inGroup(pos, group)) {
           if (returnGroup === null || group.zIndex > returnGroup.zIndex) {

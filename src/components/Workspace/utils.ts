@@ -25,13 +25,22 @@ export function getGroupBelowItem(
   item: Instance<typeof MobxItem>,
   currentGroup: Instance<typeof ItemGroup>,
   containerPos: number[],
+  mousePos: number[],
   workspaceStore: Instance<typeof WorkspaceStore>
 ): Instance<typeof ItemGroup> | null {
-  const centerPos = [
-    containerPos[0] + (itemWidth / 2) * workspaceStore.scale,
-    containerPos[1] + (itemHeight / 2) * workspaceStore.scale,
-  ];
-  const overGroup = workspaceStore.getGroupAtPoint(centerPos);
+  let testPos;
+  let overGroup;
+  if (workspaceStore.inGroup(mousePos, workspaceStore.inboxGroup)) {
+    testPos = mousePos;
+    overGroup = workspaceStore.inboxGroup;
+  } else {
+    testPos = [
+      containerPos[0] + (itemWidth / 2) * workspaceStore.scale,
+      containerPos[1] + (itemHeight / 2) * workspaceStore.scale,
+    ];
+    overGroup = workspaceStore.getGroupAtPoint(testPos);
+  }
+
   if (overGroup === null && currentGroup.id !== 'hidden') {
     workspaceStore.changeGroup(item, currentGroup, workspaceStore.hiddenGroup);
   }
@@ -40,7 +49,7 @@ export function getGroupBelowItem(
       workspaceStore.changeGroup(item, currentGroup, overGroup);
       workspaceStore.moveToFront(overGroup);
     }
-    workspaceStore.arrangeInGroup(item, centerPos, overGroup);
+    workspaceStore.arrangeInGroup(item, testPos, overGroup);
   }
 
   return overGroup;

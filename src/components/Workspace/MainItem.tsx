@@ -80,14 +80,23 @@ const MainItem = observer(
           }
 
           if (item.beingDragged) {
-            const worldDelta = workspaceStore.screenVectorToWorldVector(
-              data.deltaX,
-              data.deltaY
-            );
-            item.setContainerDragPos([
-              item.containerDragPosX + worldDelta[0],
-              item.containerDragPosY + worldDelta[1],
-            ]);
+            if (item.groupId === 'inbox') {
+              const worldPos = workspaceStore.screenToWorld(
+                data.x - (itemWidth / 2) * workspaceStore.inboxScale,
+                data.y - (itemHeight / 2) * workspaceStore.inboxScale
+              );
+
+              item.setContainerDragPos([worldPos[0], worldPos[1]]);
+            } else {
+              const worldDelta = workspaceStore.screenVectorToWorldVector(
+                data.deltaX,
+                data.deltaY
+              );
+              item.setContainerDragPos([
+                item.containerDragPosX + worldDelta[0],
+                item.containerDragPosY + worldDelta[1],
+              ]);
+            }
 
             const [
               containerDragPosX,
@@ -112,12 +121,13 @@ const MainItem = observer(
                 item,
                 group,
                 [containerDragPosX, containerDragPosY],
+                [data.x, data.y],
                 workspaceStore
               );
             }
           }
         }}
-        onStop={() => {
+        onStop={(_, data) => {
           let newGroup = group;
           if (!item.beingDragged) {
             runInAction(() => {
@@ -138,6 +148,7 @@ const MainItem = observer(
                 item,
                 group,
                 [containerDragPosX, containerDragPosY],
+                [data.x, data.y],
                 workspaceStore
               );
               if (groupBelow === null) {
@@ -201,6 +212,7 @@ const MainItem = observer(
                 ? workspaceStore.inboxScale
                 : workspaceStore.scale
             })`,
+            // transform: `scale(${workspaceStore.scale})`,
           }}
         >
           <ItemContainer
