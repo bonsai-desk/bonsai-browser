@@ -80,14 +80,7 @@ const MainItem = observer(
           }
 
           if (item.beingDragged) {
-            if (item.groupId === 'inbox') {
-              const worldPos = workspaceStore.screenToWorld(
-                data.x - (itemWidth / 2) * workspaceStore.inboxScale,
-                data.y - (itemHeight / 2) * workspaceStore.inboxScale
-              );
-
-              item.setContainerDragPos([worldPos[0], worldPos[1]]);
-            } else {
+            if (item.groupId !== 'inbox') {
               const worldDelta = workspaceStore.screenVectorToWorldVector(
                 data.deltaX,
                 data.deltaY
@@ -124,6 +117,14 @@ const MainItem = observer(
                 [data.x, data.y],
                 workspaceStore
               );
+            }
+
+            if (item.groupId === 'inbox') {
+              const worldPos = workspaceStore.screenToWorld(
+                data.x - (itemWidth / 2) * workspaceStore.inboxScale,
+                data.y - (itemHeight / 2) * workspaceStore.inboxScale
+              );
+              item.setContainerDragPos([worldPos[0], worldPos[1]]);
             }
           }
         }}

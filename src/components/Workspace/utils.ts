@@ -41,15 +41,31 @@ export function getGroupBelowItem(
     overGroup = workspaceStore.getGroupAtPoint(testPos);
   }
 
-  if (overGroup === null && currentGroup.id !== 'hidden') {
-    workspaceStore.changeGroup(item, currentGroup, workspaceStore.hiddenGroup);
-  }
-  if (overGroup !== null) {
+  let swappedFromInbox = false;
+  if (overGroup === null) {
+    if (currentGroup.id !== 'hidden') {
+      workspaceStore.changeGroup(
+        item,
+        currentGroup,
+        workspaceStore.hiddenGroup
+      );
+      swappedFromInbox = currentGroup.id === 'inbox';
+    }
+  } else {
     if (overGroup.id !== currentGroup.id) {
       workspaceStore.changeGroup(item, currentGroup, overGroup);
+      swappedFromInbox = currentGroup.id === 'inbox';
       workspaceStore.moveToFront(overGroup);
     }
     workspaceStore.arrangeInGroup(item, testPos, overGroup);
+  }
+
+  if (swappedFromInbox) {
+    const worldPos = workspaceStore.screenToWorld(
+      mousePos[0] - (itemWidth / 2) * workspaceStore.scale,
+      mousePos[1] - (itemHeight / 2) * workspaceStore.scale
+    );
+    item.setContainerDragPos([worldPos[0], worldPos[1]]);
   }
 
   return overGroup;
