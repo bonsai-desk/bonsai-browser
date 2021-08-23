@@ -209,11 +209,7 @@ const MainGroup = observer(
             top: groupScreenY,
             zIndex: group.id === 'inbox' ? 10000000 - 1 : group.zIndex,
             border: `${groupBorder}px solid black`,
-            display:
-              group.id === 'hidden' ||
-              (group.id === 'inbox' && group.itemArrangement.length === 0)
-                ? 'none'
-                : 'block',
+            display: group.id === 'hidden' ? 'none' : 'block',
             cursor: group.beingDragged ? 'grabbing' : 'auto',
             backgroundColor:
               group.id === 'inbox' ? '#4287f5' : 'rgb(255, 170, 166)',
