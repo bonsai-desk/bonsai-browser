@@ -27,7 +27,7 @@ const MainItem = observer(
     item: Instance<typeof MobxItem>;
   }) => {
     const { tabPageStore, workspaceStore } = useStore();
-    const targetPos = item.placeholderPos(group, workspaceStore.scale);
+    const targetPos = workspaceStore.placeholderPos(item, group);
     const [groupX, groupY] = workspaceStore.worldToScreen(group.x, group.y);
     targetPos[0] += groupX;
     targetPos[1] += groupY;

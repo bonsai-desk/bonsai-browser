@@ -47,25 +47,6 @@ export const Item = types
     dragMouseStartX: 0,
     dragMouseStartY: 0,
   }))
-  .views((self) => ({
-    placeholderPos(
-      group: Instance<typeof ItemGroup>,
-      scale: number
-      // workspaceStore: Instance<typeof WorkspaceStore>
-    ): [number, number] {
-      // console.log(workspaceStore.scale);
-      const x = self.indexInGroup % group.width;
-      const y = Math.floor(self.indexInGroup / group.width);
-      return [
-        (x * (itemWidth + itemSpacing) + groupPadding + groupBorder) * scale,
-        (y * (itemHeight + itemSpacing) +
-          groupTitleHeight +
-          groupPadding +
-          groupBorder) *
-          scale,
-      ];
-    },
-  }))
   .actions((self) => ({
     setContainerDragPos(dragPos: number[]) {
       self.containerDragPosX = dragPos[0];
@@ -83,31 +64,6 @@ export const Item = types
     setDragMouseStart(x: number, y: number) {
       self.dragMouseStartX = x;
       self.dragMouseStartY = y;
-    },
-    recordCurrentTargetAsAnimationStart(
-      group: Instance<typeof ItemGroup>,
-      scale: number
-    ) {
-      const currentPos = self.placeholderPos(group, scale);
-      self.animationStartX = currentPos[0];
-      self.animationStartY = currentPos[1];
-    },
-    setIndexInGroup(
-      indexInGroup: number,
-      group: Instance<typeof ItemGroup>,
-      scale: number
-    ) {
-      if (self.indexInGroup === indexInGroup) {
-        return;
-      }
-
-      this.recordCurrentTargetAsAnimationStart(group, scale);
-
-      if (!self.beingDragged) {
-        self.animationLerp = 0;
-      }
-
-      self.indexInGroup = indexInGroup;
     },
     setAnimationLerp(animationLerp: number) {
       self.animationLerp = animationLerp;
@@ -359,8 +315,9 @@ export const WorkspaceStore = types
       self.groups.forEach((group) => {
         const screenPos = self.worldToScreen(group.x, group.y);
         const size = group.size();
-        size[0] *= self.scale;
-        size[1] *= self.scale;
+        const scale = self.scale;
+        size[0] *= scale;
+        size[1] *= scale;
         const corners = [
           [screenPos[0], screenPos[1]],
           [screenPos[0] + size[0], screenPos[1]],
@@ -467,7 +424,7 @@ export const WorkspaceStore = types
     ) {
       const item = Item.create({ id: uuidv4(), url, title, image, favicon });
       self.items.put(item);
-      item.setIndexInGroup(group.itemArrangement.length, group, self.scale);
+      this.setIndexInGroup(group.itemArrangement.length, item, group);
       item.groupId = group.id;
       group.itemArrangement.push(item.id);
     },
@@ -481,7 +438,7 @@ export const WorkspaceStore = types
       for (let i = 0; i < group.itemArrangement.length; i += 1) {
         const nextItem = self.items.get(group.itemArrangement[i]);
         if (typeof nextItem !== 'undefined') {
-          nextItem.setIndexInGroup(i, group, self.scale);
+          this.setIndexInGroup(i, nextItem, group);
         }
       }
     },
@@ -503,11 +460,7 @@ export const WorkspaceStore = types
       oldGroup.itemArrangement.splice(item.indexInGroup, 1);
       this.updateItemIndexes(oldGroup);
 
-      item.setIndexInGroup(
-        newGroup.itemArrangement.length,
-        newGroup,
-        self.scale
-      );
+      this.setIndexInGroup(newGroup.itemArrangement.length, item, newGroup);
       item.groupId = newGroup.id;
       newGroup.itemArrangement.push(item.id);
     },
@@ -523,7 +476,7 @@ export const WorkspaceStore = types
       group.itemArrangement.forEach((itemId) => {
         const item = self.items.get(itemId);
         if (typeof item !== 'undefined') {
-          item.recordCurrentTargetAsAnimationStart(group, self.scale);
+          this.recordCurrentTargetAsAnimationStart(item, group);
           item.setAnimationLerp(0);
         }
       });
@@ -561,11 +514,13 @@ export const WorkspaceStore = types
 
       const [groupScreenX, groupScreenY] = self.worldToScreen(group.x, group.y);
 
+      const scale = group.id === 'inbox' ? self.inboxScale : self.scale;
+
       return (
         pos[0] >= groupScreenX &&
-        pos[0] <= groupScreenX + groupSize[0] * self.scale &&
+        pos[0] <= groupScreenX + groupSize[0] * scale &&
         pos[1] >= groupScreenY &&
-        pos[1] <= groupScreenY + groupSize[1] * self.scale
+        pos[1] <= groupScreenY + groupSize[1] * scale
       );
     },
     getGroupAtPoint(pos: number[]): Instance<typeof ItemGroup> | null {
@@ -588,13 +543,15 @@ export const WorkspaceStore = types
         return;
       }
 
+      const scale = group.id === 'inbox' ? self.inboxScale : self.scale;
+
       const [groupScreenX, groupScreenY] = self.worldToScreen(group.x, group.y);
 
       const relativePos = [pos[0] - groupScreenX, pos[1] - groupScreenY];
       const x = clamp(
         Math.floor(
-          (relativePos[0] - (groupPadding + groupBorder) * self.scale) /
-            (itemWidth * self.scale)
+          (relativePos[0] - (groupPadding + groupBorder) * scale) /
+            (itemWidth * scale)
         ),
         0,
         group.width - 1
@@ -602,8 +559,8 @@ export const WorkspaceStore = types
       const y = clamp(
         Math.floor(
           (relativePos[1] -
-            (groupPadding + groupTitleHeight + groupBorder) * self.scale) /
-            (itemHeight * self.scale)
+            (groupPadding + groupTitleHeight + groupBorder) * scale) /
+            (itemHeight * scale)
         ),
         0,
         group.height() - 1
@@ -630,18 +587,46 @@ export const WorkspaceStore = types
 
       destroy(group);
     },
-    print() {
-      console.log('---------------------------');
-      self.groups.forEach((group) => {
-        console.log(`---${group.title} ${group.zIndex}---`);
-        group.itemArrangement.forEach((itemId) => {
-          const item = self.items.get(itemId);
-          if (typeof item === 'undefined') {
-            throw new Error('item is undefined');
-          }
-          console.log(item.url);
-        });
-      });
+    placeholderPos(
+      item: Instance<typeof Item>,
+      group: Instance<typeof ItemGroup>
+    ): [number, number] {
+      const scale = group.id === 'inbox' ? self.inboxScale : self.scale;
+      const x = item.indexInGroup % group.width;
+      const y = Math.floor(item.indexInGroup / group.width);
+      return [
+        (x * (itemWidth + itemSpacing) + groupPadding + groupBorder) * scale,
+        (y * (itemHeight + itemSpacing) +
+          groupTitleHeight +
+          groupPadding +
+          groupBorder) *
+          scale,
+      ];
+    },
+    recordCurrentTargetAsAnimationStart(
+      item: Instance<typeof Item>,
+      group: Instance<typeof ItemGroup>
+    ) {
+      const currentPos = this.placeholderPos(item, group);
+      item.animationStartX = currentPos[0];
+      item.animationStartY = currentPos[1];
+    },
+    setIndexInGroup(
+      indexInGroup: number,
+      item: Instance<typeof Item>,
+      group: Instance<typeof ItemGroup>
+    ) {
+      if (item.indexInGroup === indexInGroup) {
+        return;
+      }
+
+      this.recordCurrentTargetAsAnimationStart(item, group);
+
+      if (!item.beingDragged) {
+        item.animationLerp = 0;
+      }
+
+      item.indexInGroup = indexInGroup;
     },
   }));
 
