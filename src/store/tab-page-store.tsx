@@ -6,8 +6,8 @@ import { Instance } from 'mobx-state-tree';
 import { TabPageColumn, TabPageTab } from '../interfaces/tab';
 import { HistoryEntry } from '../utils/tab-view';
 import { getRootDomain } from '../utils/data';
-import { WorkspaceStore } from './workspace-store';
 import { Direction } from '../render-constants';
+import { Workspace } from './workspace/workspace';
 
 export enum View {
   None,
@@ -358,7 +358,7 @@ export default class TabPageStore {
 
 interface IContext {
   tabPageStore: TabPageStore;
-  workspaceStore: Instance<typeof WorkspaceStore>;
+  workspaceStore: Instance<typeof Workspace>;
 }
 const TabPageContext = createContext<null | IContext>(null);
 export const { Provider } = TabPageContext;

@@ -12,7 +12,7 @@ import {
 import Favicon from '../Favicon';
 import RedX from '../RedX';
 import { getRootDomain } from '../../utils/data';
-import redX from '../../static/x-letter.svg';
+import redX from '../../../assets/x-letter.svg';
 
 const ColumnHeader = observer(({ column }: { column: TabPageColumn }) => {
   const { tabPageStore } = useStore();

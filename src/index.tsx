@@ -13,7 +13,7 @@ import {
   tabPageStore,
 } from './store/tab-page-store';
 import Home from './pages/Home';
-import createWorkspaceStore from './store/workspace-store';
+import createWorkspaceStore from './store/workspace';
 
 if (document.getElementById('root')) {
   const rootStore = RootModel.create({

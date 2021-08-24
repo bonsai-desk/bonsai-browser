@@ -4,19 +4,21 @@ import React from 'react';
 import { DraggableCore, DraggableData } from 'react-draggable';
 import { runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
-import {
-  groupBorder,
-  groupPadding,
-  groupTitleHeight,
-  Item as MobxItem,
-  ItemGroup,
-  itemHeight,
-  itemWidth,
-} from '../../store/workspace-store';
 import { useStore, View } from '../../store/tab-page-store';
 import { easeOut, getGroupBelowItem, overTrash } from './utils';
 import { lerp } from '../../utils/utils';
 import { ItemContainer, ItemImg, ItemTitle } from './style';
+import {
+  Item as MobxItem,
+  itemHeight,
+  itemWidth,
+} from '../../store/workspace/item';
+import {
+  groupBorder,
+  groupPadding,
+  groupTitleHeight,
+  ItemGroup,
+} from '../../store/workspace/item-group';
 
 const MainItem = observer(
   ({

@@ -3,13 +3,6 @@ import { Instance, isValidReference } from 'mobx-state-tree';
 import React, { useEffect, useRef } from 'react';
 import { runInAction } from 'mobx';
 import { DraggableCore, DraggableData } from 'react-draggable';
-import {
-  groupBorder,
-  groupPadding,
-  groupTitleHeight,
-  ItemGroup,
-  widthPixelsToInt,
-} from '../../store/workspace-store';
 import { useStore } from '../../store/tab-page-store';
 import { easeOut, overTrash } from './utils';
 import { lerp } from '../../utils/utils';
@@ -21,7 +14,14 @@ import {
   HeaderText,
 } from './style';
 import RedX from '../RedX';
-import redX from '../../static/x-letter.svg';
+import redX from '../../../assets/x-letter.svg';
+import {
+  groupBorder,
+  groupPadding,
+  groupTitleHeight,
+  ItemGroup,
+  widthPixelsToInt,
+} from '../../store/workspace/item-group';
 
 const MainGroup = observer(
   ({ group }: { group: Instance<typeof ItemGroup> }) => {
@@ -287,7 +287,7 @@ const MainGroup = observer(
               style={{
                 display: group.id === 'inbox' ? 'flex' : 'none',
                 right: 10,
-                top: 15,
+                top: 13,
               }}
               hoverColor="rgba(255, 0, 0, 1)"
               onClick={(e) => {

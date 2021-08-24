@@ -1,17 +1,16 @@
 import { Instance } from 'mobx-state-tree';
 import BezierEasing from 'bezier-easing';
 import {
-  InboxColumnWidth,
   Item as MobxItem,
-  ItemGroup,
   itemHeight,
   itemWidth,
-  WorkspaceStore,
-} from '../../store/workspace-store';
+} from '../../store/workspace/item';
+import { ItemGroup } from '../../store/workspace/item-group';
+import { InboxColumnWidth, Workspace } from '../../store/workspace/workspace';
 
 export function overTrash(
   testPos: number[],
-  workspaceStore: Instance<typeof WorkspaceStore>
+  workspaceStore: Instance<typeof Workspace>
 ): boolean {
   return (
     testPos[0] >= InboxColumnWidth &&
@@ -26,7 +25,7 @@ export function getGroupBelowItem(
   currentGroup: Instance<typeof ItemGroup>,
   containerPos: number[],
   mousePos: number[],
-  workspaceStore: Instance<typeof WorkspaceStore>
+  workspaceStore: Instance<typeof Workspace>
 ): Instance<typeof ItemGroup> | null {
   let testPos;
   let overGroup;

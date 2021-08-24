@@ -3,7 +3,7 @@ import React from 'react';
 import { ipcRenderer } from 'electron';
 import { useStore } from '../../store/tab-page-store';
 import { ITab, TabPageTab } from '../../interfaces/tab';
-import redX from '../../static/x-letter.svg';
+import redX from '../../../assets/x-letter.svg';
 import RedX from '../RedX';
 import {
   RedXParent,

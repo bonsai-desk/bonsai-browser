@@ -6,9 +6,10 @@ import { DraggableCore } from 'react-draggable';
 import MainItem from './MainItem';
 import MainGroup from './MainGroup';
 import { useStore } from '../../store/tab-page-store';
-import { InboxColumnWidth, ItemGroup } from '../../store/workspace-store';
 import trashIcon from '../../../assets/alternate-trash.svg';
 import centerIcon from '../../../assets/center-square.svg';
+import { ItemGroup } from '../../store/workspace/item-group';
+import { InboxColumnWidth } from '../../store/workspace/workspace';
 
 export { MainItem, MainGroup };
 
