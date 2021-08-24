@@ -268,7 +268,7 @@ export const WorkspaceStore = types
       );
       const [left, top] = transformPosition(
         0,
-        -self.inboxScrollY,
+        -this.inboxScrollY,
         newMatrices.screenToClip,
         newMatrices.clipToWorld
       );
@@ -292,7 +292,11 @@ export const WorkspaceStore = types
   }))
   .actions((self) => ({
     setInboxScrollY(inboxScrollY: number) {
-      self.inboxScrollY = inboxScrollY;
+      const maxY = Math.max(
+        self.inboxGroup.size()[1] * self.inboxScale - self.height,
+        0
+      );
+      self.inboxScrollY = clamp(inboxScrollY, 0, maxY);
     },
     moveGroupsToPosition(x: number, y: number) {
       self.groups.forEach((group) => {
@@ -468,6 +472,14 @@ export const WorkspaceStore = types
       this.setIndexInGroup(newGroup.itemArrangement.length, item, newGroup);
       item.groupId = newGroup.id;
       newGroup.itemArrangement.push(item.id);
+
+      if (oldGroup.id === 'inbox') {
+        const maxY = Math.max(
+          self.inboxGroup.size()[1] * self.inboxScale - self.height,
+          0
+        );
+        self.inboxScrollY = clamp(self.inboxScrollY, 0, maxY);
+      }
     },
     setGroupWidth(
       width: number,

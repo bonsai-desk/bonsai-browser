@@ -136,9 +136,8 @@ const Workspace = observer(() => {
 
             if (offsetX < InboxColumnWidth) {
               workspaceStore.setInboxScrollY(
-                Math.max(workspaceStore.inboxScrollY + e.deltaY, 0)
+                workspaceStore.inboxScrollY + e.deltaY
               );
-              console.log(workspaceStore.inboxScrollY);
             } else {
               const lastMouseWorldPos = workspaceStore.screenToWorld(
                 offsetX,
