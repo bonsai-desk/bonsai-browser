@@ -456,6 +456,10 @@ export const WorkspaceStore = types
       oldGroup: Instance<typeof ItemGroup>,
       newGroup: Instance<typeof ItemGroup>
     ) {
+      if (oldGroup.id === 'inbox' && self.groups.keys().next().done) {
+        this.centerCamera();
+      }
+
       oldGroup.setAnimationLerp(0);
       const oldGroupSize = oldGroup.size();
       oldGroup.animationStartWidth = oldGroupSize[0];
