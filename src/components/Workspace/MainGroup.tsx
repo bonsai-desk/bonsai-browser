@@ -281,6 +281,27 @@ const MainGroup = observer(
                 }
               }}
             />
+            <button
+              type="button"
+              style={{
+                display: group.id === 'inbox' ? 'block' : 'none',
+                position: 'absolute',
+                top: 0,
+                right: 0,
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+
+                workspaceStore.inboxGroup.itemArrangement.forEach((itemId) => {
+                  const item = workspaceStore.items.get(itemId);
+                  if (typeof item !== 'undefined') {
+                    workspaceStore.deleteItem(item, workspaceStore.inboxGroup);
+                  }
+                });
+              }}
+            >
+              X
+            </button>
           </GroupHeader>
           <GroupResize
             style={{
