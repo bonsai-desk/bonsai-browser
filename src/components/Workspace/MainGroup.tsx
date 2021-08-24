@@ -20,6 +20,8 @@ import {
   HeaderInput,
   HeaderText,
 } from './style';
+import RedX from '../RedX';
+import redX from '../../static/x-letter.svg';
 
 const MainGroup = observer(
   ({ group }: { group: Instance<typeof ItemGroup> }) => {
@@ -281,14 +283,12 @@ const MainGroup = observer(
                 }
               }}
             />
-            <button
-              type="button"
+            <RedX
               style={{
-                display: group.id === 'inbox' ? 'block' : 'none',
-                position: 'absolute',
-                top: 0,
-                right: 0,
+                right: 10,
+                top: 15,
               }}
+              hoverColor="rgba(255, 0, 0, 1)"
               onClick={(e) => {
                 e.stopPropagation();
 
@@ -300,8 +300,8 @@ const MainGroup = observer(
                 });
               }}
             >
-              X
-            </button>
+              <img src={redX} alt="x" width="20px" />
+            </RedX>
           </GroupHeader>
           <GroupResize
             style={{
