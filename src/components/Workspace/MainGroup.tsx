@@ -232,7 +232,12 @@ const MainGroup = observer(
           <GroupHeader
             style={{
               height: groupTitleHeight + groupPadding,
-              cursor: group.beingDragged ? 'grabbing' : 'pointer',
+              cursor: (() => {
+                if (group.id === 'inbox') {
+                  return 'auto';
+                }
+                return group.beingDragged ? 'grabbing' : 'pointer';
+              })(),
             }}
           >
             <HeaderText
@@ -277,7 +282,11 @@ const MainGroup = observer(
               }}
             />
           </GroupHeader>
-          <GroupResize />
+          <GroupResize
+            style={{
+              display: group.id === 'inbox' ? 'none' : 'block',
+            }}
+          />
         </Group>
       </DraggableCore>
     );
