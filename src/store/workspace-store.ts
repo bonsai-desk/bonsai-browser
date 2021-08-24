@@ -712,7 +712,7 @@ function createWorkspaceStore() {
   let startTime = -1;
   const loop = (milliseconds: number) => {
     const currentTime = milliseconds / 1000;
-    if (startTime === -1) {
+    if (startTime < 0) {
       startTime = currentTime;
     }
     const time = currentTime - startTime;
@@ -736,6 +736,15 @@ function createWorkspaceStore() {
     }
     workspaceStore.items.forEach((item) => {
       animateItem(item);
+      if (item.groupId === 'hidden') {
+        if (!item.beingDragged) {
+          workspaceStore.changeGroup(
+            item,
+            workspaceStore.hiddenGroup,
+            workspaceStore.inboxGroup
+          );
+        }
+      }
     });
     function animateGroup(group: Instance<typeof ItemGroup>) {
       if (group.animationLerp !== 1) {
