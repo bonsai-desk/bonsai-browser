@@ -59,6 +59,12 @@ const MainGroup = observer(
       group.y
     );
 
+    const groupHeight = lerp(
+      group.animationStartHeight,
+      targetGroupSize[1],
+      lerpValue
+    );
+
     return (
       <DraggableCore
         onMouseDown={(e) => {
@@ -200,11 +206,10 @@ const MainGroup = observer(
               targetGroupSize[0],
               lerpValue
             ),
-            height: lerp(
-              group.animationStartHeight,
-              targetGroupSize[1],
-              lerpValue
-            ),
+            height:
+              group.id === 'inbox'
+                ? Math.max(groupHeight, workspaceStore.height)
+                : groupHeight,
             left: groupScreenX,
             top: groupScreenY,
             zIndex: group.id === 'inbox' ? 10000000 - 1 : group.zIndex,

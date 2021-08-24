@@ -268,7 +268,7 @@ export const WorkspaceStore = types
       );
       const [left, top] = transformPosition(
         0,
-        -this.inboxScrollY,
+        -self.inboxScrollY,
         newMatrices.screenToClip,
         newMatrices.clipToWorld
       );
