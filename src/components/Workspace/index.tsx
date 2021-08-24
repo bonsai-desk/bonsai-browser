@@ -26,7 +26,7 @@ export const WorkspaceContentBackground = styled.div`
   overflow: hidden;
 `;
 const InboxColumn = styled.div`
-  background-color: gray;
+  background-color: #4287f5;
   position: absolute;
   left: 0;
   top: 0;
@@ -134,24 +134,31 @@ const Workspace = observer(() => {
             const offsetX = e.pageX - workspaceStore.x;
             const offsetY = e.pageY - workspaceStore.y;
 
-            const lastMouseWorldPos = workspaceStore.screenToWorld(
-              offsetX,
-              offsetY
-            );
+            if (offsetX < InboxColumnWidth) {
+              workspaceStore.setInboxScrollY(
+                Math.max(workspaceStore.inboxScrollY + e.deltaY, 0)
+              );
+              console.log(workspaceStore.inboxScrollY);
+            } else {
+              const lastMouseWorldPos = workspaceStore.screenToWorld(
+                offsetX,
+                offsetY
+              );
 
-            workspaceStore.setCameraZoom(
-              workspaceStore.cameraZoom +
-                workspaceStore.cameraZoom * (-e.deltaY / 1000) * 2
-            );
+              workspaceStore.setCameraZoom(
+                workspaceStore.cameraZoom +
+                  workspaceStore.cameraZoom * (-e.deltaY / 1000) * 2
+              );
 
-            const mouseWorldPos = workspaceStore.screenToWorld(
-              offsetX,
-              offsetY
-            );
-            const mouseWorldDeltaX = lastMouseWorldPos[0] - mouseWorldPos[0];
-            const mouseWorldDeltaY = lastMouseWorldPos[1] - mouseWorldPos[1];
+              const mouseWorldPos = workspaceStore.screenToWorld(
+                offsetX,
+                offsetY
+              );
+              const mouseWorldDeltaX = lastMouseWorldPos[0] - mouseWorldPos[0];
+              const mouseWorldDeltaY = lastMouseWorldPos[1] - mouseWorldPos[1];
 
-            workspaceStore.moveCamera(mouseWorldDeltaX, mouseWorldDeltaY);
+              workspaceStore.moveCamera(mouseWorldDeltaX, mouseWorldDeltaY);
+            }
           }}
         >
           <InboxColumn style={{ width: InboxColumnWidth }} />

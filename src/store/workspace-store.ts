@@ -240,6 +240,7 @@ export const WorkspaceStore = types
     anyOverTrash: false,
     snapshotPath: '',
     tempMinCameraZoom: minZoom,
+    inboxScrollY: 0,
   }))
   .views((self) => ({
     get scale() {
@@ -267,7 +268,7 @@ export const WorkspaceStore = types
       );
       const [left, top] = transformPosition(
         0,
-        0,
+        -self.inboxScrollY,
         newMatrices.screenToClip,
         newMatrices.clipToWorld
       );
@@ -290,6 +291,9 @@ export const WorkspaceStore = types
     },
   }))
   .actions((self) => ({
+    setInboxScrollY(inboxScrollY: number) {
+      self.inboxScrollY = inboxScrollY;
+    },
     moveGroupsToPosition(x: number, y: number) {
       self.groups.forEach((group) => {
         group.setPos(x, y);
@@ -300,7 +304,6 @@ export const WorkspaceStore = types
       if (zoom > self.tempMinCameraZoom) {
         self.tempMinCameraZoom = Math.min(zoom, minZoom);
       }
-      // console.log(`zoom: ${self.cameraZoom}`);
     },
     moveCamera(x: number, y: number) {
       self.cameraX += x;
@@ -527,9 +530,6 @@ export const WorkspaceStore = types
     },
     getGroupAtPoint(pos: number[]): Instance<typeof ItemGroup> | null {
       let returnGroup: Instance<typeof ItemGroup> | null = null;
-      // if (this.inGroup(pos, self.inboxGroup)) {
-      //   return self.inboxGroup;
-      // }
       self.groups.forEach((group) => {
         if (this.inGroup(pos, group)) {
           if (returnGroup === null || group.zIndex > returnGroup.zIndex) {
@@ -544,7 +544,7 @@ export const WorkspaceStore = types
       pos: number[],
       group: Instance<typeof ItemGroup>
     ) {
-      if (!this.inGroup(pos, group)) {
+      if (group.id !== 'inbox' && !this.inGroup(pos, group)) {
         return;
       }
 

@@ -108,6 +108,13 @@ const MainItem = observer(
                   group,
                   workspaceStore.hiddenGroup
                 );
+                if (group.id === 'inbox') {
+                  const worldPos = workspaceStore.screenToWorld(
+                    data.x - (itemWidth / 2) * workspaceStore.scale,
+                    data.y - (itemHeight / 2) * workspaceStore.scale
+                  );
+                  item.setContainerDragPos([worldPos[0], worldPos[1]]);
+                }
               }
             } else {
               getGroupBelowItem(
@@ -213,7 +220,6 @@ const MainItem = observer(
                 ? workspaceStore.inboxScale
                 : workspaceStore.scale
             })`,
-            // transform: `scale(${workspaceStore.scale})`,
           }}
         >
           <ItemContainer

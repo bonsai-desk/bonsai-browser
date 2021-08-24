@@ -30,7 +30,7 @@ export function getGroupBelowItem(
 ): Instance<typeof ItemGroup> | null {
   let testPos;
   let overGroup;
-  if (workspaceStore.inGroup(mousePos, workspaceStore.inboxGroup)) {
+  if (mousePos[0] < InboxColumnWidth) {
     testPos = mousePos;
     overGroup = workspaceStore.inboxGroup;
   } else {

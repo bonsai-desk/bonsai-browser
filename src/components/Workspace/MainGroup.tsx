@@ -208,11 +208,14 @@ const MainGroup = observer(
             left: groupScreenX,
             top: groupScreenY,
             zIndex: group.id === 'inbox' ? 10000000 - 1 : group.zIndex,
-            border: `${groupBorder}px solid black`,
+            border:
+              group.id === 'inbox'
+                ? `${groupBorder}px solid transparent`
+                : `${groupBorder}px solid black`,
             display: group.id === 'hidden' ? 'none' : 'block',
             cursor: group.beingDragged ? 'grabbing' : 'auto',
             backgroundColor:
-              group.id === 'inbox' ? '#4287f5' : 'rgb(255, 170, 166)',
+              group.id === 'inbox' ? 'transparent' : 'rgb(255, 170, 166)',
           }}
           onMouseOver={() => {
             group.setHovering(true);
@@ -233,7 +236,7 @@ const MainGroup = observer(
                   tabPageStore.editingGroupId === group.id ? 'none' : 'block',
               }}
             >
-              {group.title}
+              {group.id === 'inbox' ? 'Unsorted' : group.title}
             </HeaderText>
             <HeaderInput
               ref={groupTitleBoxRef}
