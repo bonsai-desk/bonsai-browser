@@ -285,6 +285,7 @@ const MainGroup = observer(
             />
             <RedX
               style={{
+                display: group.id === 'inbox' ? 'flex' : 'none',
                 right: 10,
                 top: 15,
               }}
