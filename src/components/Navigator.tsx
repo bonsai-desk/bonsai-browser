@@ -3,7 +3,7 @@ import styled, { css } from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import { useStore } from '../store/tab-page-store';
-import { goBack, INode } from '../store/history-store';
+import { goBack, goForward, INode } from '../store/history-store';
 
 const NavigatorParent = styled.div`
   width: 100%;
@@ -71,6 +71,9 @@ const NavigatorItem = observer(
         onClick={() => {
           if (dir === Direction.Back) {
             goBack(historyStore, node);
+          }
+          if (dir === Direction.Forward) {
+            goForward(historyStore, node);
           }
         }}
       >

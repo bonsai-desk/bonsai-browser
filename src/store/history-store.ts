@@ -96,14 +96,47 @@ function genNode(url: string) {
   return Node.create({ id: uuidv4(), data });
 }
 
-export function goBack(history: IHistory, node: INode) {
-  console.log('go back ...');
-  console.dir(getSnapshot(node));
-  console.dir(getSnapshot(history));
-  ipcRenderer.send('go-back', {
-    senderId: history.active,
-    backTo: getSnapshot(node),
+function headKeyWhereNode(
+  history: IHistory,
+  destinationNode: INode
+): number | undefined {
+  const match: number[] = [];
+  history.heads.forEach((node, key) => {
+    if (node.id === destinationNode.id) {
+      match.push(parseInt(key, 10));
+    }
   });
+  if (match.length > 0) {
+    return match[0];
+  }
+  return undefined;
+}
+
+export function goBack(history: IHistory, node: INode) {
+  console.log('=== go back ===');
+  const key = headKeyWhereNode(history, node);
+  if (key) {
+    console.log('set view to head ', key);
+    ipcRenderer.send('set-tab', key);
+  } else {
+    ipcRenderer.send('go-back', {
+      senderId: history.active,
+      backTo: getSnapshot(node),
+    });
+  }
+}
+
+export function goForward(history: IHistory, destinationNode: INode) {
+  console.log('=== go forward ===');
+  const key = headKeyWhereNode(history, destinationNode);
+  if (key) {
+    console.log('set view to head ', key);
+    ipcRenderer.send('set-tab', key);
+  }
+}
+
+function parentIsUrl(oldNode: INode | undefined, url: string) {
+  return oldNode && oldNode.parent && oldNode.parent.data.url === url;
 }
 
 export function hookListeners(root: Instance<typeof HistoryStore>) {
@@ -118,11 +151,13 @@ export function hookListeners(root: Instance<typeof HistoryStore>) {
     root.setHead(receiverId, receiverNode);
   });
   ipcRenderer.on('did-navigate', (_, { id, url }) => {
+    console.log('=== did-navigate ===');
+    console.dir(getSnapshot(root));
     const oldNode = root.heads.get(id);
     if (!(oldNode && oldNode.data.url === url)) {
-      if (oldNode && oldNode.parent && oldNode.parent.data.url === url) {
+      if (parentIsUrl(oldNode, url)) {
         console.log('nav to parent');
-        root.setHead(id, oldNode.parent);
+        root.setHead(id, oldNode?.parent);
       } else {
         console.log('normal nav');
         const node = genNode(url);
