@@ -7,6 +7,7 @@ import {
   globalShortcut,
   HandlerDetails,
   ipcMain,
+  IpcMainEvent,
   NativeImage,
   screen,
 } from 'electron';
@@ -14,6 +15,7 @@ import BezierEasing from 'bezier-easing';
 import fs from 'fs';
 import Fuse from 'fuse.js';
 import path from 'path';
+import { Instance } from 'mobx-state-tree';
 import { headerHeight } from './tab-view';
 import {
   FIND_HTML,
@@ -55,10 +57,70 @@ import {
   OpenGraphInfo,
   TabInfo,
 } from './interfaces';
+import { HistoryData, INode } from '../store/history-store';
 
 const glMatrix = require('gl-matrix');
 
 const easeOut = BezierEasing(0, 0, 0.5, 1);
+
+const DEBUG = true;
+
+function log(str: string) {
+  if (DEBUG) {
+    console.log(str);
+  }
+}
+
+function handleWillNavigate(
+  view: IWebView,
+  url: string,
+  alertTargets: BrowserView[]
+) {
+  log(`${view.id} handle navigate to ${url}`);
+  view.forwardUrl = undefined;
+  view.forwardUrls = [];
+  alertTargets.forEach((target) => {
+    target.webContents.send('will-navigate', { id: view.id, url });
+  });
+}
+
+function handleDidNavigate(
+  view: IWebView,
+  data: INavigateData,
+  alertTargets: BrowserView[]
+) {
+  alertTargets.forEach((target) => {
+    target.webContents.send('did-navigate', { id: view.id, ...data });
+  });
+}
+
+function goBack(webView: IWebView, alertTargets: BrowserView[]) {
+  webView.forwardUrl = webView.view.webContents.getURL();
+  webView.forwardUrls.push(webView.view.webContents.getURL());
+  webView.view.webContents.goBack();
+  alertTargets.forEach((target) => {
+    target.webContents.send('go-back', { id: webView.id });
+  });
+}
+
+function handleGoForward(
+  webView: IWebView,
+  url: string,
+  alertTargets: BrowserView[]
+) {
+  log(`${webView.id} request go forward to (${url}) [${webView.forwardUrls}]`);
+  const forwardUrl = webView.forwardUrls[webView.forwardUrls.length - 1];
+  if (forwardUrl === url) {
+    webView.forwardUrls.pop();
+    log(`${webView.id} match forward history match ${url}`);
+    webView.view.webContents.goForward();
+    alertTargets.forEach((target) => {
+      target.webContents.send('go-forward', { id: webView.id, url });
+    });
+  } else {
+    log(`${webView.id} could not go forward!`);
+  }
+}
 
 export function addListeners(wm: WindowManager) {
   ipcMain.on('create-new-tab', () => {
@@ -194,29 +256,28 @@ export function addListeners(wm: WindowManager) {
     }
   });
   ipcMain.on('go-back', (_, data) => {
-    console.log('go back ');
     const { senderId } = data;
+    log(`${senderId} request go back`);
     const webView = wm.allWebViews[senderId];
     if (webView) {
       if (webView.view.webContents.canGoBack()) {
-        console.log('can go back');
-        webView.view.webContents.goBack();
+        log(`${senderId} can go back`);
+        goBack(webView, [wm.tabPageView]);
       } else {
-        console.log('cant go back');
+        log(`${senderId} can NOT go back`);
       }
     } else {
-      console.log('fail');
+      log(`Failed to find webView for ${senderId}`);
     }
   });
-}
-
-function handleDidNavigate(
-  view: IWebView,
-  data: INavigateData,
-  alertTargets: BrowserView[]
-) {
-  alertTargets.forEach((target) => {
-    target.webContents.send('did-navigate', { id: view.id, ...data });
+  ipcMain.on('go-forward', (_, eventData) => {
+    const { senderId, forwardTo } = eventData;
+    const { data: historyData }: INode = forwardTo;
+    const { url }: Instance<typeof HistoryData> = historyData;
+    const webView = wm.allWebViews[senderId];
+    if (webView) {
+      handleGoForward(webView, url, [wm.tabPageView]);
+    }
   });
 }
 
@@ -230,9 +291,7 @@ function genHandleWindowOpen(
   alertTargets: BrowserView[]
 ) {
   return (details: HandlerDetails): IAction => {
-    console.log('details ', details);
     const newWindowId = callback(details.url);
-    console.log('new id ', newWindowId);
     alertTargets.forEach((target) => {
       target.webContents.send('new-window', {
         senderId: view.id,
@@ -513,6 +572,8 @@ export default class WindowManager {
       unloadedUrl: '',
       imgString: '',
       scrollHeight: 0,
+      forwardUrl: undefined,
+      forwardUrls: [],
     };
 
     webView.view.setBackgroundColor('#FFFFFF');
@@ -536,12 +597,17 @@ export default class WindowManager {
       titleBarView.webContents.send('title-updated', [webView.id, title]);
       this.tabPageView.webContents.send('title-updated', [webView.id, title]);
     });
+    webView.view.webContents.on('will-navigate', (_, url) => {
+      handleWillNavigate(webView, url, [this.tabPageView]);
+    });
     webView.view.webContents.on(
       'did-navigate',
-      (_, url, httpResponseCode, httpStatusText) => {
+      (event, url, httpResponseCode, httpStatusText) => {
         if (windowHasView(window, findView)) {
           window.removeBrowserView(findView);
         }
+        const { sender } = event as IpcMainEvent;
+        log(`${sender.id} did navigate to ${sender.getURL()}`);
         updateContents(webView, this.titleBarView, this.tabPageView);
         handleDidNavigate(webView, { url, httpResponseCode, httpStatusText }, [
           this.tabPageView,
@@ -552,8 +618,10 @@ export default class WindowManager {
     webView.view.webContents.on('did-frame-navigate', () => {
       updateContents(webView, this.titleBarView, this.tabPageView);
     });
-    webView.view.webContents.on('did-navigate-in-page', () => {
+    webView.view.webContents.on('did-navigate-in-page', (_, url) => {
+      log(`${webView.id} did navigate IN PAGE to ${url}`);
       updateContents(webView, this.titleBarView, this.tabPageView);
+      handleWillNavigate(webView, url, [this.tabPageView]);
     });
     webView.view.webContents.on('page-favicon-updated', (_, favicons) => {
       if (favicons.length > 0) {
@@ -595,6 +663,17 @@ export default class WindowManager {
         result.matches,
       ]);
     });
+    webView.view.webContents.on('will-redirect', (_, url, isInPlace) => {
+      console.log('will redirect');
+      console.log(url, isInPlace);
+    });
+    webView.view.webContents.on(
+      'did-redirect-navigation',
+      (_, url, isInPlace) => {
+        console.log('did redirect');
+        console.log(url, isInPlace);
+      }
+    );
 
     return webView;
   }
@@ -966,7 +1045,7 @@ export default class WindowManager {
     }
     if (this.allWebViews[id].view.webContents.canGoBack()) {
       this.closeFind();
-      this.allWebViews[id].view.webContents.goBack();
+      goBack(this.allWebViews[id], [this.tabPageView]);
     }
     updateWebContents(this.titleBarView, id, this.allWebViews[id].view);
   }

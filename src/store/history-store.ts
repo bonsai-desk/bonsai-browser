@@ -2,6 +2,14 @@ import { getSnapshot, IAnyModelType, Instance, types } from 'mobx-state-tree';
 import { ipcRenderer } from 'electron';
 import { v4 as uuidv4 } from 'uuid';
 
+const DEBUG = true;
+
+function log(str: string) {
+  if (DEBUG) {
+    console.log(str);
+  }
+}
+
 export const HistoryData = types.model({
   url: types.string,
   scroll: 0,
@@ -45,12 +53,14 @@ export const HistoryStore = types
       self.nodes.set(node.id, node);
     },
     setHead(webViewId: string, node: INode) {
+      log(`${webViewId} set head ${node.data.url}`);
       self.heads.set(webViewId, node);
     },
     removeHead(webViewId: string) {
       self.heads.delete(webViewId);
     },
     linkChild(parent: INode, child: INode) {
+      log(`link (${parent.data.url}) to (${child.data.url})`);
       parent.addChild(child);
       child.setParent(parent);
     },
@@ -62,6 +72,7 @@ export const HistoryStore = types
       self.nodes.delete(a.id);
     },
     setActive(webViewId: string) {
+      log(`swap active webView from (${self.active}) to (${webViewId})`);
       self.active = webViewId;
     },
   }));
@@ -112,13 +123,18 @@ function headKeyWhereNode(
   return undefined;
 }
 
+function setTab(webViewId: number) {
+  // log(`swap active head from ${history.active} to ${webViewId}`);
+  ipcRenderer.send('set-tab', webViewId);
+}
+
 export function goBack(history: IHistory, node: INode) {
-  console.log('=== go back ===');
+  log('=== go back ===');
   const key = headKeyWhereNode(history, node);
   if (key) {
-    console.log('set view to head ', key);
-    ipcRenderer.send('set-tab', key);
+    setTab(key);
   } else {
+    log('dispatch go back to main');
     ipcRenderer.send('go-back', {
       senderId: history.active,
       backTo: getSnapshot(node),
@@ -127,11 +143,16 @@ export function goBack(history: IHistory, node: INode) {
 }
 
 export function goForward(history: IHistory, destinationNode: INode) {
-  console.log('=== go forward ===');
+  log('=== go forward ===');
   const key = headKeyWhereNode(history, destinationNode);
   if (key) {
-    console.log('set view to head ', key);
-    ipcRenderer.send('set-tab', key);
+    setTab(key);
+  } else {
+    log(`${history.active} dispatch go forward to ${destinationNode.id}`);
+    ipcRenderer.send('go-forward', {
+      senderId: history.active,
+      forwardTo: getSnapshot(destinationNode),
+    });
   }
 }
 
@@ -143,6 +164,8 @@ export function hookListeners(root: Instance<typeof HistoryStore>) {
   ipcRenderer.on('new-window', (_, data) => {
     const { senderId, receiverId, details } = data;
     const receiverNode = genNode(details.url);
+    log('=== new window ===');
+    log(`${senderId} spawn ${receiverId}`);
     root.setNode(receiverNode);
     const senderNode = root.heads.get(senderId);
     if (senderNode) {
@@ -151,15 +174,28 @@ export function hookListeners(root: Instance<typeof HistoryStore>) {
     root.setHead(receiverId, receiverNode);
   });
   ipcRenderer.on('did-navigate', (_, { id, url }) => {
-    console.log('=== did-navigate ===');
-    console.dir(getSnapshot(root));
+    log(`${id} did navigate ${url}`);
+    const rootNode = root.heads.get(id);
+    if (!rootNode) {
+      log(`${id} did create root for ${url}`);
+      const node = genNode(url);
+      root.setNode(node);
+      root.setHead(id, node);
+    }
+  });
+  ipcRenderer.on('tab-was-set', (_, id) => {
+    root.setActive(id.toString());
+  });
+  ipcRenderer.on('will-navigate', (_, { id, url }) => {
+    log('=== will-navigate ===');
+    log(`${id} will navigate ${url}`);
     const oldNode = root.heads.get(id);
     if (!(oldNode && oldNode.data.url === url)) {
       if (parentIsUrl(oldNode, url)) {
-        console.log('nav to parent');
+        log('nav to parent');
         root.setHead(id, oldNode?.parent);
       } else {
-        console.log('normal nav');
+        log(`${id} did create node for ${url}`);
         const node = genNode(url);
         root.setNode(node);
         if (oldNode) {
@@ -169,7 +205,23 @@ export function hookListeners(root: Instance<typeof HistoryStore>) {
       }
     }
   });
-  ipcRenderer.on('tab-was-set', (_, id) => {
-    root.setActive(id.toString());
+  ipcRenderer.on('go-back', (_, { id }) => {
+    log(`${id} did go back`);
+    const oldNode = root.heads.get(id);
+    if (oldNode && oldNode.parent) {
+      root.setHead(id, oldNode.parent);
+    }
+  });
+  ipcRenderer.on('go-forward', (_, { id, url }) => {
+    log(`${id} did go forward to ${url}`);
+    const oldNode = root.heads.get(id);
+    if (oldNode) {
+      const forwards = oldNode.children.filter(
+        (child) => child.data.url === url
+      );
+      if (forwards.length > 0) {
+        root.setHead(id, forwards[0]);
+      }
+    }
   });
 }

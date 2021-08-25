@@ -3,7 +3,6 @@ import { observer } from 'mobx-react-lite';
 import styled, { css } from 'styled-components';
 import { ipcRenderer } from 'electron';
 import { useStore } from '../utils/data';
-import backIcon from '../../assets/arrow-back.svg';
 import refreshIcon from '../../assets/refresh.svg';
 import copyIcon from '../../assets/copy.svg';
 
@@ -56,12 +55,6 @@ const RoundButtonIcon = styled.img`
   width: 20px;
 `;
 
-const RoundButtonIconFlipped = styled.img`
-  -webkit-user-drag: none;
-  width: 20px;
-  transform: rotate(180deg);
-`;
-
 const URLBox = styled.input`
   flex-grow: 1;
   margin-left: 10px;
@@ -79,15 +72,6 @@ const TitleBar = observer(() => {
 
   const [hasRunOnce, setHasRunOnce] = useState(false);
   const [urlFocus, setUrlFocus] = useState(false);
-
-  let canGoBack = false;
-  let canGoForward = false;
-
-  if (tabStore.activeTabId !== -1) {
-    ({ canGoBack, canGoForward } = tabStore.tabs[
-      tabStore.getTabIndex(tabStore.activeTabId)
-    ]);
-  }
 
   useEffect(() => {
     if (hasRunOnce) {
@@ -110,22 +94,6 @@ const TitleBar = observer(() => {
   return (
     <TitleBarFull>
       <TitleBarBottom>
-        <RoundButton
-          color={canGoBack ? '#949494' : '#e3e3e3'}
-          onClick={() => {
-            ipcRenderer.send('tab-back', tabStore.activeTabId);
-          }}
-        >
-          <RoundButtonIcon src={backIcon} />
-        </RoundButton>
-        <RoundButton
-          color={canGoForward ? '#949494' : '#e3e3e3'}
-          onClick={() => {
-            ipcRenderer.send('tab-forward', tabStore.activeTabId);
-          }}
-        >
-          <RoundButtonIconFlipped src={backIcon} />
-        </RoundButton>
         <RoundButton
           color="#949494"
           onClick={() => {

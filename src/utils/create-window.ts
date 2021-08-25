@@ -176,7 +176,10 @@ function initWindow(): BrowserWindow {
 }
 
 function initShortcuts(wm: WindowManager) {
-  const shortCut = 'Alt+Space';
+  let shortCut = 'Alt+Space';
+  if (process.env.NODE_ENV === 'development') {
+    shortCut = 'Shift+Alt+Space';
+  }
   globalShortcut.register(shortCut, () => {
     if (!wm.mainWindow?.isVisible()) {
       wm.showWindow();

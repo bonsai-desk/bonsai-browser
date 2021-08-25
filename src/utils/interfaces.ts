@@ -36,6 +36,10 @@ export interface IWebView {
   favicon: string;
 
   scrollHeight: number;
+
+  forwardUrl: string | undefined;
+
+  forwardUrls: string[];
 }
 
 export interface TabInfo {
