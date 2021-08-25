@@ -60,8 +60,8 @@ export const HistoryStore = types
       log(`${webViewId} set head ${node.data.url}`);
       self.heads.set(webViewId, node);
     },
-    removeHead(webViewId: string) {
-      self.heads.delete(webViewId);
+    removeHead(webViewId: string): boolean {
+      return self.heads.delete(webViewId);
     },
     linkChild(parent: INode, child: INode) {
       log(`link (${parent.data.url}) to (${child.data.url})`);
@@ -235,6 +235,12 @@ export function hookListeners(h: Instance<typeof HistoryStore>) {
       if (forwards.length > 0) {
         h.setHead(id, forwards[0]);
       }
+    }
+  });
+  ipcRenderer.on('tab-removed', (_, id) => {
+    log(`try remove head ${id}`);
+    if (h.removeHead(id)) {
+      log(`removed head ${id}`);
     }
   });
 }
