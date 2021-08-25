@@ -40,6 +40,8 @@ export interface IWebView {
   forwardUrl: string | undefined;
 
   forwardUrls: string[];
+
+  gestureAfterDOMLoad: boolean;
 }
 
 export interface TabInfo {

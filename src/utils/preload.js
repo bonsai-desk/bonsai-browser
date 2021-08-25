@@ -28,8 +28,32 @@ function getOpenGraphData() {
 
 window.addEventListener('DOMContentLoaded', () => {
   ipcRenderer.send('meta-info', getMeta());
-  // ipcRenderer.send('open-graph-data', getOpenGraphData());
 });
+
+window.addEventListener('DOMContentLoaded', () => {
+  ipcRenderer.send('dom-content-loaded');
+});
+
+function genTriggers() {
+  const things = [
+    'change',
+    'click',
+    'contextmenu',
+    'dblclick',
+    'mouseup',
+    'pointerup',
+    'reset',
+    'submit',
+    'touchend',
+  ];
+  things.forEach((thing) => {
+    window.addEventListener(thing, () => {
+      ipcRenderer.send('gesture', thing);
+    });
+  });
+}
+
+genTriggers();
 
 ipcRenderer.on('get-scroll-height', (_, id) => {
   ipcRenderer.send('scroll-height', [id, window.pageYOffset]);

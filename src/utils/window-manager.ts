@@ -71,12 +71,23 @@ function log(str: string) {
   }
 }
 
+function handleInPageNavigateWithoutGesture(
+  view: IWebView,
+  url: string,
+  alertTargets: BrowserView[]
+) {
+  log(`${view.id} will-navigate-no-gesture ${url}`);
+  alertTargets.forEach((target) => {
+    target.webContents.send('will-navigate-no-gesture', { id: view.id, url });
+  });
+}
+
 function handleWillNavigate(
   view: IWebView,
   url: string,
   alertTargets: BrowserView[]
 ) {
-  log(`${view.id} handle navigate to ${url}`);
+  log(`${view.id} will-navigate ${url}`);
   view.forwardUrl = undefined;
   view.forwardUrls = [];
   alertTargets.forEach((target) => {
@@ -278,6 +289,14 @@ export function addListeners(wm: WindowManager) {
     if (webView) {
       handleGoForward(webView, url, [wm.tabPageView]);
     }
+  });
+  ipcMain.on('gesture', (event, data) => {
+    console.log(`\n${event.sender.id} GESTURE ${data}`);
+    wm.setGesture(event.sender.id, true);
+  });
+  ipcMain.on('dom-content-loaded', (event) => {
+    console.log(`\n${event.sender.id} DOM LOADED`);
+    wm.setGesture(event.sender.id, false);
   });
 }
 
@@ -574,7 +593,10 @@ export default class WindowManager {
       scrollHeight: 0,
       forwardUrl: undefined,
       forwardUrls: [],
+      gestureAfterDOMLoad: false,
     };
+
+    // webView.view.webContents.openDevTools({ mode: 'detach' });
 
     webView.view.setBackgroundColor('#FFFFFF');
     webView.id = webView.view.webContents.id;
@@ -607,7 +629,7 @@ export default class WindowManager {
           window.removeBrowserView(findView);
         }
         const { sender } = event as IpcMainEvent;
-        log(`${sender.id} did navigate to ${sender.getURL()}`);
+        log(`${sender.id} did-navigate to ${sender.getURL()}`);
         updateContents(webView, this.titleBarView, this.tabPageView);
         handleDidNavigate(webView, { url, httpResponseCode, httpStatusText }, [
           this.tabPageView,
@@ -618,30 +640,24 @@ export default class WindowManager {
     webView.view.webContents.on('did-frame-navigate', () => {
       updateContents(webView, this.titleBarView, this.tabPageView);
     });
-    webView.view.webContents.on('did-navigate-in-page', (_, url) => {
-      log(`${webView.id} did navigate IN PAGE to ${url}`);
-      updateContents(webView, this.titleBarView, this.tabPageView);
-      handleWillNavigate(webView, url, [this.tabPageView]);
-    });
-    webView.view.webContents.on('page-favicon-updated', (_, favicons) => {
-      if (favicons.length > 0) {
-        if (webView.historyEntry?.favicon === '') {
-          // eslint-disable-next-line prefer-destructuring
-          webView.historyEntry.favicon = favicons[0];
-          this.addHistoryEntry(webView.historyEntry);
+    webView.view.webContents.on(
+      'did-navigate-in-page',
+      (_, url, isMainFrame) => {
+        if (isMainFrame) {
+          log(`${webView.id} did-navigate-in-page main-frame to ${url}`);
+          updateContents(webView, this.titleBarView, this.tabPageView);
+          if (webView.gestureAfterDOMLoad) {
+            handleWillNavigate(webView, url, [this.tabPageView]);
+          } else {
+            handleInPageNavigateWithoutGesture(webView, url, [
+              this.tabPageView,
+            ]);
+          }
+        } else {
+          log(`${webView.id} did-navigate-in-page sub-frame`);
         }
-        // eslint-disable-next-line prefer-destructuring
-        webView.favicon = favicons[0];
-        titleBarView.webContents.send('favicon-updated', [
-          webView.id,
-          favicons[0],
-        ]);
-        this.tabPageView.webContents.send('favicon-updated', [
-          webView.id,
-          favicons[0],
-        ]);
       }
-    });
+    );
     webView.view.webContents.on('update-target-url', (_, url) => {
       if (url === '') {
         if (windowHasView(window, urlPeekView)) {
@@ -663,10 +679,26 @@ export default class WindowManager {
         result.matches,
       ]);
     });
-    webView.view.webContents.on('will-redirect', (_, url, isInPlace) => {
-      console.log('will redirect');
-      console.log(url, isInPlace);
-    });
+    webView.view.webContents.on(
+      'did-start-navigation',
+      (_, url, isInPlace, isMainFrame) => {
+        if (isMainFrame) {
+          log(
+            `\n${webView.id} did-start-navigation (in-place ${isInPlace}) to ${url}`
+          );
+        }
+      }
+    );
+    webView.view.webContents.on(
+      'will-redirect',
+      (event, url, isInPlace, isMainFrame) => {
+        if (isMainFrame) {
+          log(`${webView.id} will-redirect (in-place ${isInPlace}) to ${url}`);
+          event.preventDefault();
+          webView.view.webContents.loadURL(url);
+        }
+      }
+    );
     webView.view.webContents.on(
       'did-redirect-navigation',
       (_, url, isInPlace) => {
@@ -674,6 +706,25 @@ export default class WindowManager {
         console.log(url, isInPlace);
       }
     );
+    webView.view.webContents.on('page-favicon-updated', (_, favicons) => {
+      if (favicons.length > 0) {
+        if (webView.historyEntry?.favicon === '') {
+          // eslint-disable-next-line prefer-destructuring
+          webView.historyEntry.favicon = favicons[0];
+          this.addHistoryEntry(webView.historyEntry);
+        }
+        // eslint-disable-next-line prefer-destructuring
+        webView.favicon = favicons[0];
+        titleBarView.webContents.send('favicon-updated', [
+          webView.id,
+          favicons[0],
+        ]);
+        this.tabPageView.webContents.send('favicon-updated', [
+          webView.id,
+          favicons[0],
+        ]);
+      }
+    });
 
     return webView;
   }
@@ -1384,6 +1435,13 @@ export default class WindowManager {
     if (this.webBrowserViewActive()) {
       this.titleBarView.webContents.focus();
       this.titleBarView.webContents.send('focus');
+    }
+  }
+
+  setGesture(webViewId: number, gesture: boolean) {
+    const view = this.allWebViews[webViewId];
+    if (view) {
+      view.gestureAfterDOMLoad = gesture;
     }
   }
 

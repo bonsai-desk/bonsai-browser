@@ -113,9 +113,12 @@ export function allDescendentLeaves(a: INode): INode[] {
   return acc;
 }
 
+function getDate(): string {
+  return (Date.now() / 1000).toString();
+}
+
 function genNode(url: string) {
-  const date = Date.now() / 1000;
-  const data = HistoryData.create({ url, scroll: 0, date: date.toString() });
+  const data = HistoryData.create({ url, scroll: 0, date: getDate() });
   return Node.create({ id: uuidv4(), data });
 }
 
@@ -216,6 +219,16 @@ export function hookListeners(h: Instance<typeof HistoryStore>) {
         }
         h.setHead(id, node);
       }
+    }
+  });
+  ipcRenderer.on('will-navigate-no-gesture', (_, { id, url }) => {
+    log(`${id} will-navigate-no-gesture ${url}`);
+    const node = h.heads.get(id);
+    if (node) {
+      const data = HistoryData.create({ url, scroll: 0, date: getDate() });
+      node.setData(data);
+    } else {
+      log('FAIL');
     }
   });
   ipcRenderer.on('go-back', (_, { id }) => {
