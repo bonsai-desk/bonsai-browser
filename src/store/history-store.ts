@@ -86,6 +86,11 @@ export const HistoryStore = types
 
 export type IHistory = Instance<typeof HistoryStore>;
 
+export function headsOnNode(root: IHistory, node: INode): [string, INode][] {
+  const entries = Array.from(root.heads.entries());
+  return entries.filter(([_, head]) => head.id === node.id);
+}
+
 function childLeaves(a: INode) {
   return a.children.filter((x) => x.children.length === 0);
 }

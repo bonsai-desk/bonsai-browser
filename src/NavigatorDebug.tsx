@@ -1,11 +1,28 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import { useStore } from './store/tab-page-store';
-import { INode } from './store/history-store';
+import { headsOnNode, INode } from './store/history-store';
 
 const DebugNode = observer(({ node }: { node: INode }) => {
+  const { historyStore } = useStore();
+  const heads = headsOnNode(historyStore, node);
+  const Heads = () => {
+    if (heads.length === 0) {
+      return <span>{'[] '}</span>;
+    }
+    return (
+      <span>
+        [
+        {heads.map(([key, _]) => (
+          <span key={key}>{key}</span>
+        ))}
+        {'] '}
+      </span>
+    );
+  };
   return (
     <li>
+      <Heads />
       {node.data.url}
       <ul>
         {Array.from(node.children.values()).map((child) => (
