@@ -95,6 +95,15 @@ function initMenu(wm: WindowManager) {
         },
       },
       {
+        label: 'Debug',
+        accelerator: 'CmdOrCtrl+D',
+        click: () => {
+          if (windowHasView(wm.mainWindow, wm.tabPageView)) {
+            wm.tabPageView.webContents.send('toggle-debug-modal');
+          }
+        },
+      },
+      {
         label: 'Undo Removed Tabs',
         accelerator: 'CmdOrCtrl+Shift+T',
         click: () => {

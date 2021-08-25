@@ -18,6 +18,7 @@ export enum View {
   FuzzySearch,
   History,
   Navigator,
+  NavigatorDebug,
 }
 
 export default class TabPageStore {
@@ -367,6 +368,15 @@ export default class TabPageStore {
       runInAction(() => {
         if (this.View !== View.History) {
           this.View = View.History;
+        } else {
+          this.View = View.Tabs;
+        }
+      });
+    });
+    ipcRenderer.on('toggle-debug-modal', () => {
+      runInAction(() => {
+        if (this.View !== View.NavigatorDebug) {
+          this.View = View.NavigatorDebug;
         } else {
           this.View = View.Tabs;
         }

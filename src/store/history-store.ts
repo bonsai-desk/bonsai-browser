@@ -6,6 +6,7 @@ const DEBUG = true;
 
 function log(str: string) {
   if (DEBUG) {
+    // eslint-disable-next-line no-console
     console.log(str);
   }
 }
@@ -15,6 +16,8 @@ export const HistoryData = types.model({
   scroll: 0,
   date: types.string,
 });
+
+export type IHistoryData = Instance<typeof HistoryData>;
 
 export const Node = types
   .model({
@@ -29,7 +32,7 @@ export const Node = types
     setParent(a: Instance<typeof self> | null) {
       self.parent = a;
     },
-    setData(a: Instance<typeof HistoryData>) {
+    setData(a: IHistoryData) {
       self.data = a;
     },
     addChild(a: Instance<typeof self>) {
@@ -47,6 +50,7 @@ export const HistoryStore = types
     nodes: types.map(Node), // Node Id => Node
     heads: types.map(types.reference(Node)), // WebView Id => Node
     active: types.string, // WebView Id
+    roots: types.array(types.reference(Node)),
   })
   .actions((self) => ({
     setNode(node: INode) {
@@ -75,15 +79,18 @@ export const HistoryStore = types
       log(`swap active webView from (${self.active}) to (${webViewId})`);
       self.active = webViewId;
     },
+    addRoot(a: INode) {
+      self.roots.push(a);
+    },
   }));
 
 export type IHistory = Instance<typeof HistoryStore>;
 
-export function childLeaves(a: INode) {
+function childLeaves(a: INode) {
   return a.children.filter((x) => x.children.length === 0);
 }
 
-export function childParents(a: INode) {
+function childParents(a: INode) {
   return a.children.filter((x) => x.children.length > 0);
 }
 
@@ -160,67 +167,68 @@ function parentIsUrl(oldNode: INode | undefined, url: string) {
   return oldNode && oldNode.parent && oldNode.parent.data.url === url;
 }
 
-export function hookListeners(root: Instance<typeof HistoryStore>) {
+export function hookListeners(h: Instance<typeof HistoryStore>) {
   ipcRenderer.on('new-window', (_, data) => {
     const { senderId, receiverId, details } = data;
     const receiverNode = genNode(details.url);
     log('=== new window ===');
     log(`${senderId} spawn ${receiverId}`);
-    root.setNode(receiverNode);
-    const senderNode = root.heads.get(senderId);
+    h.setNode(receiverNode);
+    const senderNode = h.heads.get(senderId);
     if (senderNode) {
-      root.linkChild(senderNode, receiverNode);
+      h.linkChild(senderNode, receiverNode);
     }
-    root.setHead(receiverId, receiverNode);
+    h.setHead(receiverId, receiverNode);
   });
   ipcRenderer.on('did-navigate', (_, { id, url }) => {
     log(`${id} did navigate ${url}`);
-    const rootNode = root.heads.get(id);
+    const rootNode = h.heads.get(id);
     if (!rootNode) {
       log(`${id} did create root for ${url}`);
       const node = genNode(url);
-      root.setNode(node);
-      root.setHead(id, node);
+      h.setNode(node);
+      h.setHead(id, node);
+      h.addRoot(node);
     }
   });
   ipcRenderer.on('tab-was-set', (_, id) => {
-    root.setActive(id.toString());
+    h.setActive(id.toString());
   });
   ipcRenderer.on('will-navigate', (_, { id, url }) => {
     log('=== will-navigate ===');
     log(`${id} will navigate ${url}`);
-    const oldNode = root.heads.get(id);
+    const oldNode = h.heads.get(id);
     if (!(oldNode && oldNode.data.url === url)) {
       if (parentIsUrl(oldNode, url)) {
         log('nav to parent');
-        root.setHead(id, oldNode?.parent);
+        h.setHead(id, oldNode?.parent);
       } else {
         log(`${id} did create node for ${url}`);
         const node = genNode(url);
-        root.setNode(node);
+        h.setNode(node);
         if (oldNode) {
-          root.linkChild(oldNode, node);
+          h.linkChild(oldNode, node);
         }
-        root.setHead(id, node);
+        h.setHead(id, node);
       }
     }
   });
   ipcRenderer.on('go-back', (_, { id }) => {
     log(`${id} did go back`);
-    const oldNode = root.heads.get(id);
+    const oldNode = h.heads.get(id);
     if (oldNode && oldNode.parent) {
-      root.setHead(id, oldNode.parent);
+      h.setHead(id, oldNode.parent);
     }
   });
   ipcRenderer.on('go-forward', (_, { id, url }) => {
     log(`${id} did go forward to ${url}`);
-    const oldNode = root.heads.get(id);
+    const oldNode = h.heads.get(id);
     if (oldNode) {
       const forwards = oldNode.children.filter(
         (child) => child.data.url === url
       );
       if (forwards.length > 0) {
-        root.setHead(id, forwards[0]);
+        h.setHead(id, forwards[0]);
       }
     }
   });
