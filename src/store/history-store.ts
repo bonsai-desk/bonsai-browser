@@ -171,6 +171,16 @@ export function goForward(history: IHistory, destinationNode: INode) {
   }
 }
 
+function handleGoForward(h: IHistory, webViewId: string, url: string) {
+  const oldNode = h.heads.get(webViewId);
+  if (oldNode) {
+    const forwards = oldNode.children.filter((child) => child.data.url === url);
+    if (forwards.length > 0) {
+      h.setHead(webViewId, forwards[0]);
+    }
+  }
+}
+
 function parentIsUrl(oldNode: INode | undefined, url: string) {
   return oldNode && oldNode.parent && oldNode.parent.data.url === url;
 }
@@ -240,15 +250,11 @@ export function hookListeners(h: Instance<typeof HistoryStore>) {
   });
   ipcRenderer.on('go-forward', (_, { id, url }) => {
     log(`${id} did go forward to ${url}`);
-    const oldNode = h.heads.get(id);
-    if (oldNode) {
-      const forwards = oldNode.children.filter(
-        (child) => child.data.url === url
-      );
-      if (forwards.length > 0) {
-        h.setHead(id, forwards[0]);
-      }
-    }
+    handleGoForward(h, id, url);
+  });
+  ipcRenderer.on('go-pseudo-forward', (_, { id, url }) => {
+    log(`${id} go-pseudo-forward ${url}`);
+    handleGoForward(h, id, url);
   });
   ipcRenderer.on('tab-removed', (_, id) => {
     log(`try remove head ${id}`);

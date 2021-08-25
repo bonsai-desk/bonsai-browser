@@ -14,7 +14,7 @@ import Footer from '../components/Footer';
 import Container from '../components/Container';
 import Workspace from '../components/Workspace';
 import Navigator from '../components/Navigator';
-import NavigatorDebug from '../NavigatorDebug';
+import NavigatorDebug from '../components/NavigatorDebug';
 import {
   HistoryModal,
   HistoryModalBackground,

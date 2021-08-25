@@ -1,7 +1,7 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { useStore } from './store/tab-page-store';
-import { headsOnNode, INode } from './store/history-store';
+import { useStore } from '../store/tab-page-store';
+import { headsOnNode, INode } from '../store/history-store';
 
 const DebugNode = observer(({ node }: { node: INode }) => {
   const { historyStore } = useStore();

@@ -129,7 +129,11 @@ function handleGoForward(
       target.webContents.send('go-forward', { id: webView.id, url });
     });
   } else {
-    log(`${webView.id} could not go forward!`);
+    log(`${webView.id} go-pseudo-forward ${url}`);
+    alertTargets.forEach((target) => {
+      target.webContents.send('go-pseudo-forward', { id: webView.id, url });
+    });
+    webView.view.webContents.loadURL(url);
   }
 }
 
