@@ -281,7 +281,8 @@ export function hookListeners(h: Instance<typeof HistoryStore>) {
   });
   ipcRenderer.on('will-navigate-no-gesture', (_, { id, url }) => {
     const node = h.heads.get(id);
-    if (node) {
+    const urlIsNew = node?.data.url !== url;
+    if (node && url && urlIsNew) {
       const twins = childrenWithUrl(node.parent, url);
       if (twins.length > 0) {
         const twin = twins[0];
