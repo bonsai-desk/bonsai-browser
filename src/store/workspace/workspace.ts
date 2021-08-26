@@ -66,14 +66,6 @@ export const Workspace = types
         self.cameraX,
         self.cameraY
       );
-      const [left, top] = transformPosition(
-        0,
-        -self.inboxScrollY,
-        newMatrices.screenToClip,
-        newMatrices.clipToWorld
-      );
-      self.inboxGroup.setPos(left, top);
-      self.hiddenGroup.setPos(left, top);
       return newMatrices;
     },
     worldToScreen(x: number, y: number): [number, number] {
@@ -91,6 +83,11 @@ export const Workspace = types
     },
   }))
   .actions((self) => ({
+    repositionInbox() {
+      const worldPos = self.screenToWorld(0, 0);
+      self.inboxGroup.setPos(worldPos[0], worldPos[1]);
+      self.hiddenGroup.setPos(worldPos[0], worldPos[1]);
+    },
     setInboxScrollY(inboxScrollY: number) {
       const maxY = Math.max(
         self.inboxGroup.size()[1] * self.inboxScale - self.height,
@@ -108,16 +105,22 @@ export const Workspace = types
       if (zoom > self.tempMinCameraZoom) {
         self.tempMinCameraZoom = Math.min(zoom, minZoom);
       }
+      this.repositionInbox();
+      // console.log(self.cameraZoom);
     },
     moveCamera(x: number, y: number) {
       self.cameraX += x;
       self.cameraY += y;
+      this.repositionInbox();
     },
     setCameraPosition(x: number, y: number) {
       self.cameraX = x;
       self.cameraY = y;
+      this.repositionInbox();
     },
     centerCamera() {
+      self.tempMinCameraZoom = minZoom;
+      self.cameraZoom = defaultZoom;
       let edges = [0, 0, 0, 0];
       let first = true;
       self.groups.forEach((group) => {
@@ -194,6 +197,7 @@ export const Workspace = types
       self.y = y;
       self.width = width;
       self.height = height;
+      this.repositionInbox();
     },
     setAnyDragging(anyDragging: boolean) {
       self.anyDragging = anyDragging;

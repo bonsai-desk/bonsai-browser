@@ -12,6 +12,7 @@ import {
   InboxColumnWidth,
   Workspace as MobxWorkspace,
 } from '../../store/workspace/workspace';
+import { useStore } from '../../store/tab-page-store';
 
 export { MainItem, MainGroup };
 
@@ -69,6 +70,7 @@ export const CornerButtonIcon = styled.img`
 `;
 const Workspace = observer(
   ({ workspace }: { workspace: Instance<typeof MobxWorkspace> }) => {
+    const { workspaceStore } = useStore();
     const backgroundRef = useRef<HTMLDivElement>(null);
 
     const groups = Array.from(workspace.groups.values()).map(
@@ -107,14 +109,18 @@ const Workspace = observer(
       setHasRunOnce(true);
       if (backgroundRef.current !== null) {
         const rect = backgroundRef.current.getBoundingClientRect();
-        workspace.setRect(rect.x, rect.y, rect.width, rect.height);
+        workspaceStore.workspaces.forEach((w) => {
+          w.setRect(rect.x, rect.y, rect.width, rect.height);
+        });
       }
       window.addEventListener(
         'resize',
         () => {
           if (backgroundRef.current !== null) {
             const rect = backgroundRef.current.getBoundingClientRect();
-            workspace.setRect(rect.x, rect.y, rect.width, rect.height);
+            workspaceStore.workspaces.forEach((w) => {
+              w.setRect(rect.x, rect.y, rect.width, rect.height);
+            });
           }
         },
         false

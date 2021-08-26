@@ -26,7 +26,7 @@ const MainContent = observer(() => {
 
   if (tabPageStore.View === View.WorkSpace) {
     const workspace = workspaceStore.workspaces.get(
-      tabPageStore.activeWorkspaceId
+      workspaceStore.activeWorkspaceId
     );
     if (typeof workspace !== 'undefined') {
       return <Workspace workspace={workspace} />;

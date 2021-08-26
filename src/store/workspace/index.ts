@@ -4,7 +4,6 @@
 import { applySnapshot, getSnapshot, Instance } from 'mobx-state-tree';
 import { ipcRenderer } from 'electron';
 import fs from 'fs';
-import { v4 as uuidv4 } from 'uuid';
 import { Item } from './item';
 import { ItemGroup } from './item-group';
 import WorkspaceStore from './workspace-store';
@@ -13,9 +12,13 @@ const animationTime = 0.15;
 
 function saveSnapshot(workspaceStore: Instance<typeof WorkspaceStore>) {
   if (workspaceStore.snapshotPath !== '') {
-    const snapshot = getSnapshot(workspaceStore);
-    const snapshotString = JSON.stringify(snapshot);
-    fs.writeFileSync(workspaceStore.snapshotPath, snapshotString);
+    try {
+      const snapshot = getSnapshot(workspaceStore);
+      const snapshotString = JSON.stringify(snapshot);
+      fs.writeFileSync(workspaceStore.snapshotPath, snapshotString);
+    } catch {
+      //
+    }
   }
 }
 
@@ -90,7 +93,6 @@ function update(
 
 function createWorkspaceStore(): Instance<typeof WorkspaceStore> {
   const workspaceStore = WorkspaceStore.create({
-    id: uuidv4(),
     workspaces: {},
   });
 
