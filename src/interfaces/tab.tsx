@@ -1,4 +1,4 @@
-import { OpenGraphInfo } from '../utils/tab-view';
+import { OpenGraphInfo } from '../utils/interfaces';
 
 export interface TabPageTab {
   id: number;
@@ -20,6 +20,7 @@ export interface ITab {
   tab: TabPageTab;
   hover: boolean;
   selected: boolean;
+  callback?: () => void;
 }
 
 export interface TabPageColumn {

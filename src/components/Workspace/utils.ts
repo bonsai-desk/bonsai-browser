@@ -2,19 +2,19 @@ import { Instance } from 'mobx-state-tree';
 import BezierEasing from 'bezier-easing';
 import {
   Item as MobxItem,
-  ItemGroup,
   itemHeight,
   itemWidth,
-  WorkspaceStore,
-} from '../../store/workspace-store';
+} from '../../store/workspace/item';
+import { ItemGroup } from '../../store/workspace/item-group';
+import { InboxColumnWidth, Workspace } from '../../store/workspace/workspace';
 
 export function overTrash(
   testPos: number[],
-  workspaceStore: Instance<typeof WorkspaceStore>
+  workspaceStore: Instance<typeof Workspace>
 ): boolean {
   return (
-    testPos[0] >= 0 &&
-    testPos[0] <= 100 &&
+    testPos[0] >= InboxColumnWidth &&
+    testPos[0] <= InboxColumnWidth + 100 &&
     testPos[1] >= workspaceStore.height - 100 &&
     testPos[1] <= workspaceStore.height
   );
@@ -24,22 +24,47 @@ export function getGroupBelowItem(
   item: Instance<typeof MobxItem>,
   currentGroup: Instance<typeof ItemGroup>,
   containerPos: number[],
-  workspaceStore: Instance<typeof WorkspaceStore>
+  mousePos: number[],
+  workspaceStore: Instance<typeof Workspace>
 ): Instance<typeof ItemGroup> | null {
-  const centerPos = [
-    containerPos[0] + (itemWidth / 2) * workspaceStore.scale,
-    containerPos[1] + (itemHeight / 2) * workspaceStore.scale,
-  ];
-  const overGroup = workspaceStore.getGroupAtPoint(centerPos);
-  if (overGroup === null && currentGroup.id !== 'hidden') {
-    workspaceStore.changeGroup(item, currentGroup, workspaceStore.hiddenGroup);
+  let testPos;
+  let overGroup;
+  if (mousePos[0] < InboxColumnWidth) {
+    testPos = mousePos;
+    overGroup = workspaceStore.inboxGroup;
+  } else {
+    testPos = [
+      containerPos[0] + (itemWidth / 2) * workspaceStore.scale,
+      containerPos[1] + (itemHeight / 2) * workspaceStore.scale,
+    ];
+    overGroup = workspaceStore.getGroupAtPoint(testPos);
   }
-  if (overGroup !== null) {
+
+  let swappedFromInbox = false;
+  if (overGroup === null) {
+    if (currentGroup.id !== 'hidden') {
+      workspaceStore.changeGroup(
+        item,
+        currentGroup,
+        workspaceStore.hiddenGroup
+      );
+      swappedFromInbox = currentGroup.id === 'inbox';
+    }
+  } else {
     if (overGroup.id !== currentGroup.id) {
       workspaceStore.changeGroup(item, currentGroup, overGroup);
+      swappedFromInbox = currentGroup.id === 'inbox';
       workspaceStore.moveToFront(overGroup);
     }
-    workspaceStore.arrangeInGroup(item, centerPos, overGroup);
+    workspaceStore.arrangeInGroup(item, testPos, overGroup);
+  }
+
+  if (swappedFromInbox) {
+    const worldPos = workspaceStore.screenToWorld(
+      mousePos[0] - (itemWidth / 2) * workspaceStore.scale,
+      mousePos[1] - (itemHeight / 2) * workspaceStore.scale
+    );
+    item.setContainerDragPos([worldPos[0], worldPos[1]]);
   }
 
   return overGroup;

@@ -3,13 +3,6 @@ import { Instance, isValidReference } from 'mobx-state-tree';
 import React, { useEffect, useRef } from 'react';
 import { runInAction } from 'mobx';
 import { DraggableCore, DraggableData } from 'react-draggable';
-import {
-  groupBorder,
-  groupPadding,
-  groupTitleHeight,
-  ItemGroup,
-  widthPixelsToInt,
-} from '../../store/workspace-store';
 import { useStore } from '../../store/tab-page-store';
 import { easeOut, overTrash } from './utils';
 import { lerp } from '../../utils/utils';
@@ -20,6 +13,15 @@ import {
   HeaderInput,
   HeaderText,
 } from './style';
+import RedX from '../RedX';
+import redX from '../../../assets/x-letter.svg';
+import {
+  groupBorder,
+  groupPadding,
+  groupTitleHeight,
+  ItemGroup,
+  widthPixelsToInt,
+} from '../../store/workspace/item-group';
 
 const MainGroup = observer(
   ({ group }: { group: Instance<typeof ItemGroup> }) => {
@@ -57,6 +59,12 @@ const MainGroup = observer(
     const [groupScreenX, groupScreenY] = workspaceStore.worldToScreen(
       group.x,
       group.y
+    );
+
+    const groupHeight = lerp(
+      group.animationStartHeight,
+      targetGroupSize[1],
+      lerpValue
     );
 
     return (
@@ -129,17 +137,11 @@ const MainGroup = observer(
               group.setOverTrash(overTrash([data.x, data.y], workspaceStore));
               workspaceStore.setAnyOverTrash(group.overTrash);
 
-              const [worldLastX, worldLastY] = workspaceStore.screenToWorld(
-                data.lastX,
-                data.lastY
+              const worldDelta = workspaceStore.screenVectorToWorldVector(
+                data.deltaX,
+                data.deltaY
               );
-              const [worldX, worldY] = workspaceStore.screenToWorld(
-                data.x,
-                data.y
-              );
-              const deltaX = worldX - worldLastX;
-              const deltaY = worldY - worldLastY;
-              group.move(deltaX, deltaY);
+              group.move(worldDelta[0], worldDelta[1]);
             }
           }
         }}
@@ -196,29 +198,31 @@ const MainGroup = observer(
         <Group
           style={{
             transformOrigin: '0px 0px',
-            transform: `scale(${workspaceStore.scale})`,
+            transform: `scale(${
+              group.id === 'inbox'
+                ? workspaceStore.inboxScale
+                : workspaceStore.scale
+            })`,
             width: lerp(
               group.animationStartWidth,
               targetGroupSize[0],
               lerpValue
             ),
-            height: lerp(
-              group.animationStartHeight,
-              targetGroupSize[1],
-              lerpValue
-            ),
+            height:
+              group.id === 'inbox'
+                ? Math.max(groupHeight, workspaceStore.height)
+                : groupHeight,
             left: groupScreenX,
             top: groupScreenY,
-            zIndex: group.zIndex,
-            border: `${groupBorder}px solid black`,
-            display:
-              group.id === 'hidden' ||
-              (group.id === 'inbox' && group.itemArrangement.length === 0)
-                ? 'none'
-                : 'block',
+            zIndex: group.id === 'inbox' ? 10000000 - 1 : group.zIndex,
+            border:
+              group.id === 'inbox'
+                ? `${groupBorder}px solid transparent`
+                : `${groupBorder}px solid black`,
+            display: group.id === 'hidden' ? 'none' : 'block',
             cursor: group.beingDragged ? 'grabbing' : 'auto',
             backgroundColor:
-              group.id === 'inbox' ? '#4287f5' : 'rgb(255, 170, 166)',
+              group.id === 'inbox' ? 'transparent' : 'rgb(255, 170, 166)',
           }}
           onMouseOver={() => {
             group.setHovering(true);
@@ -230,7 +234,12 @@ const MainGroup = observer(
           <GroupHeader
             style={{
               height: groupTitleHeight + groupPadding,
-              cursor: group.beingDragged ? 'grabbing' : 'pointer',
+              cursor: (() => {
+                if (group.id === 'inbox') {
+                  return 'auto';
+                }
+                return group.beingDragged ? 'grabbing' : 'pointer';
+              })(),
             }}
           >
             <HeaderText
@@ -239,7 +248,7 @@ const MainGroup = observer(
                   tabPageStore.editingGroupId === group.id ? 'none' : 'block',
               }}
             >
-              {group.title}
+              {group.id === 'inbox' ? 'Unsorted' : group.title}
             </HeaderText>
             <HeaderInput
               ref={groupTitleBoxRef}
@@ -274,8 +283,32 @@ const MainGroup = observer(
                 }
               }}
             />
+            <RedX
+              style={{
+                display: group.id === 'inbox' ? 'flex' : 'none',
+                right: 10,
+                top: 13,
+              }}
+              hoverColor="rgba(255, 0, 0, 1)"
+              onClick={(e) => {
+                e.stopPropagation();
+
+                workspaceStore.inboxGroup.itemArrangement.forEach((itemId) => {
+                  const item = workspaceStore.items.get(itemId);
+                  if (typeof item !== 'undefined') {
+                    workspaceStore.deleteItem(item, workspaceStore.inboxGroup);
+                  }
+                });
+              }}
+            >
+              <img src={redX} alt="x" width="20px" />
+            </RedX>
           </GroupHeader>
-          <GroupResize />
+          <GroupResize
+            style={{
+              display: group.id === 'inbox' ? 'none' : 'block',
+            }}
+          />
         </Group>
       </DraggableCore>
     );

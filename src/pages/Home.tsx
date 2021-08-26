@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
-import '../tabPage.css';
+import { runInAction } from 'mobx';
 import { useStore, View } from '../store/tab-page-store';
 import URLBox from '../components/URLBox';
 import PinButton from '../components/PinButton';
@@ -13,21 +13,19 @@ import Columns from '../components/Columns';
 import Footer from '../components/Footer';
 import Container from '../components/Container';
 import Workspace from '../components/Workspace';
+import Navigator from '../components/Navigator';
+import NavigatorDebug from '../components/NavigatorDebug';
+import {
+  HistoryModal,
+  HistoryModalBackground,
+  HistoryModalParent,
+} from '../components/History/style';
 
 const MainContent = observer(() => {
   const { tabPageStore } = useStore();
 
   if (tabPageStore.View === View.WorkSpace) {
-    return (
-      <>
-        <ClickerParent
-          onClick={() => {
-            tabPageStore.View = View.Tabs;
-          }}
-        />
-        <Workspace />
-      </>
-    );
+    return <Workspace />;
   }
   return tabPageStore.View === View.Tabs ? <Columns /> : <FuzzyTabs />;
 });
@@ -45,12 +43,53 @@ const Content = observer(() => {
     );
   }
 
+  if (tabPageStore.View === View.Navigator) {
+    return <Navigator />;
+  }
+
   return (
     <Container>
       <URLBox />
       <MainContent />
       <Footer />
     </Container>
+  );
+});
+
+const Debug = observer(() => {
+  const { tabPageStore } = useStore();
+
+  const historyBoxRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    tabPageStore.historyBoxRef = historyBoxRef;
+  }, [tabPageStore]);
+
+  useEffect(() => {
+    const historyActive = tabPageStore.View === View.History;
+    ipcRenderer.send('history-modal-active-update', historyActive);
+    if (historyActive) {
+      ipcRenderer.send('history-search', tabPageStore.historyText);
+    }
+  }, [tabPageStore.View, tabPageStore.historyText]);
+
+  if (tabPageStore.View !== View.NavigatorDebug) {
+    return <div />;
+  }
+
+  return (
+    <HistoryModalParent active={tabPageStore.View === View.NavigatorDebug}>
+      <HistoryModalBackground
+        onClick={() => {
+          runInAction(() => {
+            tabPageStore.View = View.Tabs;
+          });
+        }}
+      />
+      <HistoryModal>
+        <NavigatorDebug />
+      </HistoryModal>
+    </HistoryModalParent>
   );
 });
 
@@ -78,9 +117,18 @@ const Home = observer(() => {
   }, [hasRunOnce, tabPageStore]);
 
   return (
-    <Background>
+    <Background
+      onClick={(e) => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        if (e.target.id === 'header' || e.target.id === 'footer') {
+          tabPageStore.View = View.Tabs;
+        }
+      }}
+    >
       <Content />
       <History />
+      <Debug />
       <PinButton />
     </Background>
   );

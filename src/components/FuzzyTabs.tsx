@@ -1,8 +1,12 @@
 import { observer } from 'mobx-react-lite';
 import React from 'react';
 import styled from 'styled-components';
+import { Instance } from 'mobx-state-tree';
+import { ipcRenderer } from 'electron';
 import { useStore } from '../store/tab-page-store';
 import Tab from './Tab';
+import { Item } from '../store/workspace/item';
+import { TabPageTab } from '../interfaces/tab';
 
 const FuzzyTabsParent = styled.div`
   flex-grow: 1;
@@ -25,13 +29,25 @@ const FuzzyTitle = styled.h1`
   justify-content: center;
 `;
 
+export function itemToTabPageTab(item: Instance<typeof Item>): TabPageTab {
+  return {
+    id: parseInt(item.id, 10),
+    lastAccessTime: -1, // todo
+    url: item.url,
+    title: item.title,
+    image: item.image,
+    favicon: item.favicon,
+    openGraphInfo: null,
+  };
+}
+
 const FuzzyTabs = observer(() => {
   const { tabPageStore } = useStore();
   return (
     <FuzzyTabsParent>
       <ColumnParent>
         <FuzzyTitle>Open</FuzzyTitle>
-        {tabPageStore.filteredTabs.map((result, idx) => {
+        {tabPageStore.filteredOpenTabs.map((result, idx) => {
           const { item } = result;
           return (
             <Tab
@@ -48,16 +64,19 @@ const FuzzyTabs = observer(() => {
       </ColumnParent>
       <ColumnParent>
         <FuzzyTitle>Workspace</FuzzyTitle>
-        {tabPageStore.filteredTabs.slice(0, 2).map((result, idx) => {
+        {tabPageStore.filteredWorkspaceTabs.map((result, idx) => {
           const { item } = result;
           return (
             <Tab
               key={item.id}
-              tab={item}
+              tab={itemToTabPageTab(item)}
               selected={
                 idx === tabPageStore.fuzzySelectionIndex[0] &&
                 tabPageStore.fuzzySelectionIndex[1] === 1
               }
+              callback={() => {
+                ipcRenderer.send('open-workspace-url', item.url);
+              }}
               hover
             />
           );

@@ -1,5 +1,4 @@
-// eslint-disable-next-line import/no-cycle
-import WindowManager from './window-manager';
+import { Display } from 'electron';
 
 const glMatrix = require('gl-matrix');
 
@@ -11,7 +10,8 @@ export default function calculateWindowTarget(
   lastX: number,
   lastY: number,
   windowSize: { width: number; height: number },
-  windowPosition: number[]
+  windowPosition: number[],
+  activeDisplay: Display
   // valid, hasVelocity, target vec2s
 ): [boolean, boolean, number[], number[]] {
   const deltaTime = currentTime - lastTime;
@@ -32,30 +32,22 @@ export default function calculateWindowTarget(
   const targets = [
     glMatrix.vec2.fromValues(padding, padding),
     glMatrix.vec2.fromValues(
-      WindowManager.display.activeDisplay.workAreaSize.width -
-        windowSize.width -
-        padding,
+      activeDisplay.workAreaSize.width - windowSize.width - padding,
       padding
     ),
     glMatrix.vec2.fromValues(
-      WindowManager.display.activeDisplay.workAreaSize.width -
-        windowSize.width -
-        padding,
-      WindowManager.display.activeDisplay.workAreaSize.height -
-        windowSize.height -
-        padding
+      activeDisplay.workAreaSize.width - windowSize.width - padding,
+      activeDisplay.workAreaSize.height - windowSize.height - padding
     ),
     glMatrix.vec2.fromValues(
       padding,
-      WindowManager.display.activeDisplay.workAreaSize.height -
-        windowSize.height -
-        padding
+      activeDisplay.workAreaSize.height - windowSize.height - padding
     ),
   ];
 
   targets.forEach((target) => {
-    target[0] += WindowManager.display.activeDisplay.workArea.x;
-    target[1] += WindowManager.display.activeDisplay.workArea.y;
+    target[0] += activeDisplay.workArea.x;
+    target[1] += activeDisplay.workArea.y;
   });
 
   const toTargets = [
