@@ -25,10 +25,11 @@ const MainContent = observer(() => {
   const { tabPageStore, workspaceStore } = useStore();
 
   if (tabPageStore.View === View.WorkSpace) {
-    // todo: specific workspace
-    const workspace = workspaceStore.workspaces.values().next();
-    if (!workspace.done) {
-      return <Workspace workspace={workspace.value} />;
+    const workspace = workspaceStore.workspaces.get(
+      tabPageStore.activeWorkspaceId
+    );
+    if (typeof workspace !== 'undefined') {
+      return <Workspace workspace={workspace} />;
     }
     return null;
   }
