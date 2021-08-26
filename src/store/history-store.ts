@@ -285,12 +285,19 @@ export function hookListeners(h: Instance<typeof HistoryStore>) {
       const twins = childrenWithUrl(node.parent, url);
       if (twins.length > 0) {
         const twin = twins[0];
-        log(
-          `${id} remove ${showNode(node)} and set head for twin ${showNode(
-            twin
-          )} at ${url}`
-        );
-        h.setHead(id, twin);
+        const heads = headsOnNode(h, twin);
+        if (heads.length > 0) {
+          const headId = heads[0][0];
+          log(`${headId} is active on ${showNode(twin)} so will remove ${id}`);
+          ipcRenderer.send('remove-tab', id);
+        } else {
+          log(
+            `${id} remove ${showNode(node)} and set head for twin ${showNode(
+              twin
+            )} at ${url}`
+          );
+          h.setHead(id, twin);
+        }
         h.removeNode(node);
       } else {
         log(
