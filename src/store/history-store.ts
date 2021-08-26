@@ -230,15 +230,24 @@ export function hookListeners(h: Instance<typeof HistoryStore>) {
   });
   ipcRenderer.on('new-window', (_, data) => {
     const { senderId, receiverId, url } = data;
-    const receiverNode = genNode(url);
     log('=== new window ===');
-    log(`${senderId} spawn ${receiverId}`);
-    h.setNode(receiverNode);
-    const senderNode = h.heads.get(senderId);
-    if (senderNode) {
-      h.linkChild(senderNode, receiverNode);
+    log(`${senderId} spawn ${receiverId} for ${url}`);
+    const oldNode = h.heads.get(senderId);
+    const twins = childrenWithUrl(oldNode, url);
+    if (twins.length > 0) {
+      const twin = twins[0];
+      log(`${senderId} has child ${showNode(twin)} for ${url}`);
+      h.setHead(receiverId, twin);
+    } else {
+      const receiverNode = genNode(url);
+      log(`${receiverId} create node ${showNode(receiverNode)} for ${url}`);
+      h.setNode(receiverNode);
+      const senderNode = h.heads.get(senderId);
+      if (senderNode) {
+        h.linkChild(senderNode, receiverNode);
+      }
+      h.setHead(receiverId, receiverNode);
     }
-    h.setHead(receiverId, receiverNode);
   });
   ipcRenderer.on('tab-was-set', (_, id) => {
     const idStr = id.toString();
