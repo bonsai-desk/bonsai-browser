@@ -50,7 +50,7 @@ const URLBox = observer(() => {
     tabPageStore.urlBoxRef = urlBoxRef;
   });
   return (
-    <URLBoxParent>
+    <URLBoxParent id="header">
       <Input
         onMouseOver={() => {
           runInAction(() => {

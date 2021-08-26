@@ -5,7 +5,7 @@ import { Instance } from 'mobx-state-tree';
 import { ipcRenderer } from 'electron';
 import { useStore } from '../store/tab-page-store';
 import Tab from './Tab';
-import { Item } from '../store/workspace-store';
+import { Item } from '../store/workspace/item';
 import { TabPageTab } from '../interfaces/tab';
 
 const FuzzyTabsParent = styled.div`

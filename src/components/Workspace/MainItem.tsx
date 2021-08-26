@@ -4,19 +4,21 @@ import React from 'react';
 import { DraggableCore, DraggableData } from 'react-draggable';
 import { runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
-import {
-  groupBorder,
-  groupPadding,
-  groupTitleHeight,
-  Item as MobxItem,
-  ItemGroup,
-  itemHeight,
-  itemWidth,
-} from '../../store/workspace-store';
 import { useStore, View } from '../../store/tab-page-store';
 import { easeOut, getGroupBelowItem, overTrash } from './utils';
 import { lerp } from '../../utils/utils';
 import { ItemContainer, ItemImg, ItemTitle } from './style';
+import {
+  Item as MobxItem,
+  itemHeight,
+  itemWidth,
+} from '../../store/workspace/item';
+import {
+  groupBorder,
+  groupPadding,
+  groupTitleHeight,
+  ItemGroup,
+} from '../../store/workspace/item-group';
 
 const MainItem = observer(
   ({
@@ -27,11 +29,28 @@ const MainItem = observer(
     item: Instance<typeof MobxItem>;
   }) => {
     const { tabPageStore, workspaceStore } = useStore();
-    const targetPos = item.placeholderPos(group, workspaceStore.scale);
+    const targetPos = workspaceStore.placeholderPos(item, group);
     const [groupX, groupY] = workspaceStore.worldToScreen(group.x, group.y);
     targetPos[0] += groupX;
     targetPos[1] += groupY;
     const lerpValue = easeOut(item.animationLerp);
+
+    let zIndex;
+    if (item.beingDragged) {
+      zIndex = 10000000;
+    } else if (item.groupId === 'inbox') {
+      zIndex = 10000000 - 1;
+    } else {
+      zIndex = group.zIndex;
+    }
+
+    const [
+      worldContainerDragPosX,
+      worldContainerDragPosY,
+    ] = workspaceStore.worldToScreen(
+      item.containerDragPosX,
+      item.containerDragPosY
+    );
 
     return (
       <DraggableCore
@@ -54,15 +73,34 @@ const MainItem = observer(
               item.setBeingDragged(true);
               workspaceStore.setAnyDragging(true);
               item.setDragStartGroup(group.id);
-              item.setContainerDragPos(targetPos);
+              const worldTargetPos = workspaceStore.screenToWorld(
+                targetPos[0],
+                targetPos[1]
+              );
+              item.setContainerDragPos([worldTargetPos[0], worldTargetPos[1]]);
             }
           }
 
           if (item.beingDragged) {
-            item.setContainerDragPos([
-              item.containerDragPosX + data.deltaX,
-              item.containerDragPosY + data.deltaY,
-            ]);
+            if (item.groupId !== 'inbox') {
+              const worldDelta = workspaceStore.screenVectorToWorldVector(
+                data.deltaX,
+                data.deltaY
+              );
+              item.setContainerDragPos([
+                item.containerDragPosX + worldDelta[0],
+                item.containerDragPosY + worldDelta[1],
+              ]);
+            }
+
+            const [
+              containerDragPosX,
+              containerDragPosY,
+            ] = workspaceStore.worldToScreen(
+              item.containerDragPosX,
+              item.containerDragPosY
+            );
+
             item.setOverTrash(overTrash([data.x, data.y], workspaceStore));
             workspaceStore.setAnyOverTrash(item.overTrash);
             if (item.overTrash) {
@@ -72,18 +110,34 @@ const MainItem = observer(
                   group,
                   workspaceStore.hiddenGroup
                 );
+                if (group.id === 'inbox') {
+                  const worldPos = workspaceStore.screenToWorld(
+                    data.x - (itemWidth / 2) * workspaceStore.scale,
+                    data.y - (itemHeight / 2) * workspaceStore.scale
+                  );
+                  item.setContainerDragPos([worldPos[0], worldPos[1]]);
+                }
               }
             } else {
               getGroupBelowItem(
                 item,
                 group,
-                [item.containerDragPosX, item.containerDragPosY],
+                [containerDragPosX, containerDragPosY],
+                [data.x, data.y],
                 workspaceStore
               );
             }
+
+            if (item.groupId === 'inbox') {
+              const worldPos = workspaceStore.screenToWorld(
+                data.x - (itemWidth / 2) * workspaceStore.inboxScale,
+                data.y - (itemHeight / 2) * workspaceStore.inboxScale
+              );
+              item.setContainerDragPos([worldPos[0], worldPos[1]]);
+            }
           }
         }}
-        onStop={() => {
+        onStop={(_, data) => {
           let newGroup = group;
           if (!item.beingDragged) {
             runInAction(() => {
@@ -92,19 +146,28 @@ const MainItem = observer(
             ipcRenderer.send('open-workspace-url', item.url);
           } else {
             if (!item.overTrash) {
+              const [
+                containerDragPosX,
+                containerDragPosY,
+              ] = workspaceStore.worldToScreen(
+                item.containerDragPosX,
+                item.containerDragPosY
+              );
+
               const groupBelow = getGroupBelowItem(
                 item,
                 group,
-                [item.containerDragPosX, item.containerDragPosY],
+                [containerDragPosX, containerDragPosY],
+                [data.x, data.y],
                 workspaceStore
               );
               if (groupBelow === null) {
                 const createdGroup = workspaceStore.createGroup('New Group');
                 newGroup = createdGroup;
                 const [worldX, worldY] = workspaceStore.screenToWorld(
-                  item.containerDragPosX -
+                  containerDragPosX -
                     (groupPadding + groupBorder) * workspaceStore.scale,
-                  item.containerDragPosY -
+                  containerDragPosY -
                     (groupPadding + groupTitleHeight + groupBorder) *
                       workspaceStore.scale
                 );
@@ -114,7 +177,11 @@ const MainItem = observer(
               }
             }
 
-            item.setContainerDragPos(targetPos);
+            const worldTargetPos = workspaceStore.screenToWorld(
+              targetPos[0],
+              targetPos[1]
+            );
+            item.setContainerDragPos([worldTargetPos[0], worldTargetPos[1]]);
 
             if (item.dragStartGroup !== '') {
               const startGroup = workspaceStore.groups.get(item.dragStartGroup);
@@ -143,14 +210,18 @@ const MainItem = observer(
             width: itemWidth,
             height: itemHeight,
             left: item.beingDragged
-              ? item.containerDragPosX
+              ? worldContainerDragPosX
               : lerp(item.animationStartX + groupX, targetPos[0], lerpValue),
             top: item.beingDragged
-              ? item.containerDragPosY
+              ? worldContainerDragPosY
               : lerp(item.animationStartY + groupY, targetPos[1], lerpValue),
-            zIndex: item.beingDragged ? 10000000 : group.zIndex,
+            zIndex,
             transformOrigin: '0px 0px',
-            transform: `scale(${workspaceStore.scale})`,
+            transform: `scale(${
+              group.id === 'inbox'
+                ? workspaceStore.inboxScale
+                : workspaceStore.scale
+            })`,
           }}
         >
           <ItemContainer

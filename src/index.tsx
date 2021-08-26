@@ -14,7 +14,7 @@ import TabPageStore, {
   Provider as TabPageStoreProvider,
 } from './store/tab-page-store';
 import Home from './pages/Home';
-import createWorkspaceStore from './store/workspace-store';
+import createWorkspaceStore from './store/workspace';
 import { hookListeners, HistoryStore } from './store/history-store';
 
 if (document.getElementById('root')) {

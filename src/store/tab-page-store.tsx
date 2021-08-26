@@ -5,11 +5,12 @@ import Fuse from 'fuse.js';
 import { Instance } from 'mobx-state-tree';
 import { TabPageColumn, TabPageTab } from '../interfaces/tab';
 import { getRootDomain } from '../utils/data';
-import { Item, WorkspaceStore } from './workspace-store';
+import { Item } from './workspace/item';
 import { Direction } from '../render-constants';
 import { clamp } from '../utils/utils';
 import { HistoryEntry } from '../utils/interfaces';
 import { HistoryStore } from './history-store';
+import { Workspace } from './workspace/workspace';
 
 export enum View {
   None,
@@ -66,7 +67,7 @@ export default class TabPageStore {
 
   innerBounds: { x: number; y: number; width: number; height: number };
 
-  private workspaceStore: Instance<typeof WorkspaceStore>;
+  private workspaceStore: Instance<typeof Workspace>;
 
   fuzzySelectedTab(): [boolean, TabPageTab | Instance<typeof Item>] | null {
     if (this.fuzzySelectionIndex[1] === 0) {
@@ -269,7 +270,7 @@ export default class TabPageStore {
     this.historyText = newValue;
   }
 
-  constructor(workSpaceStore: Instance<typeof WorkspaceStore>) {
+  constructor(workSpaceStore: Instance<typeof Workspace>) {
     this.screen = { width: 200, height: 200 };
     this.innerBounds = { x: 0, y: 0, width: 100, height: 100 };
     this.workspaceStore = workSpaceStore;
@@ -431,8 +432,8 @@ export default class TabPageStore {
 
 interface IContext {
   tabPageStore: TabPageStore;
-  workspaceStore: Instance<typeof WorkspaceStore>;
   historyStore: Instance<typeof HistoryStore>;
+  workspaceStore: Instance<typeof Workspace>;
 }
 const TabPageContext = createContext<null | IContext>(null);
 export const { Provider } = TabPageContext;
