@@ -94,9 +94,15 @@ export const HistoryStore = types
 
 export type IHistory = Instance<typeof HistoryStore>;
 
-export function headsOnNode(root: IHistory, node: INode): [string, INode][] {
-  const entries = Array.from(root.heads.entries());
-  return entries.filter(([_, head]) => head.id === node.id);
+export function headsOnNode(
+  root: IHistory,
+  node: INode | undefined
+): [string, INode][] {
+  if (node) {
+    const entries = Array.from(root.heads.entries());
+    return entries.filter(([_, head]) => head.id === node.id);
+  }
+  return [];
 }
 
 function childLeaves(a: INode) {
@@ -203,9 +209,28 @@ function childrenWithUrl(node: INode | undefined, url: string): INode[] {
 }
 
 export function hookListeners(h: Instance<typeof HistoryStore>) {
+  ipcRenderer.on('new-window-intercept', (_, data) => {
+    const { senderId, details } = data;
+    log('=== new window intercept ===');
+    const { url } = details;
+    const oldNode = h.heads.get(senderId);
+    const matchNode = childrenWithUrl(oldNode, url);
+    const heads = headsOnNode(h, matchNode[0]);
+    if (heads.length > 0) {
+      const [headId, node] = heads[0];
+      log(
+        `${senderId} child ${showNode(
+          node
+        )} with active webView ${headId} matches ${url}`
+      );
+    } else {
+      log(`${senderId} dispatch spawn window for ${url}`);
+      ipcRenderer.send('request-new-window', { senderId, url });
+    }
+  });
   ipcRenderer.on('new-window', (_, data) => {
-    const { senderId, receiverId, details } = data;
-    const receiverNode = genNode(details.url);
+    const { senderId, receiverId, url } = data;
+    const receiverNode = genNode(url);
     log('=== new window ===');
     log(`${senderId} spawn ${receiverId}`);
     h.setNode(receiverNode);
