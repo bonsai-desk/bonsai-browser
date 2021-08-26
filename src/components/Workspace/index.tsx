@@ -5,11 +5,13 @@ import { Instance } from 'mobx-state-tree';
 import { DraggableCore } from 'react-draggable';
 import MainItem from './MainItem';
 import MainGroup from './MainGroup';
-import { useStore } from '../../store/tab-page-store';
 import trashIcon from '../../../assets/alternate-trash.svg';
 import centerIcon from '../../../assets/center-square.svg';
 import { ItemGroup } from '../../store/workspace/item-group';
-import { InboxColumnWidth } from '../../store/workspace/workspace';
+import {
+  InboxColumnWidth,
+  Workspace as MobxWorkspace,
+} from '../../store/workspace/workspace';
 
 export { MainItem, MainGroup };
 
@@ -65,137 +67,142 @@ export const CornerButtonIcon = styled.img`
   user-select: none;
   -webkit-user-drag: none;
 `;
-const Workspace = observer(() => {
-  const backgroundRef = useRef<HTMLDivElement>(null);
-  const { workspaceStore } = useStore();
+const Workspace = observer(
+  ({ workspace }: { workspace: Instance<typeof MobxWorkspace> }) => {
+    const backgroundRef = useRef<HTMLDivElement>(null);
 
-  const groups = Array.from(workspaceStore.groups.values()).map(
-    (group: Instance<typeof ItemGroup>) => {
-      return <MainGroup key={group.id} group={group} />;
-    }
-  );
-
-  const items = Array.from(workspaceStore.items.values()).map((item) => {
-    let group;
-    if (item.groupId === 'hidden') {
-      group = workspaceStore.hiddenGroup;
-    } else if (item.groupId === 'inbox') {
-      group = workspaceStore.inboxGroup;
-    } else {
-      group = workspaceStore.groups.get(item.groupId);
-    }
-    if (typeof group === 'undefined') {
-      throw new Error(`could not find group with id ${item.groupId}`);
-    }
-    return <MainItem key={item.id} item={item} group={group} />;
-  });
-
-  const [hasRunOnce, setHasRunOnce] = useState(false);
-  useEffect(() => {
-    if (hasRunOnce) {
-      return;
-    }
-    setHasRunOnce(true);
-    if (backgroundRef.current !== null) {
-      const rect = backgroundRef.current.getBoundingClientRect();
-      workspaceStore.setRect(rect.x, rect.y, rect.width, rect.height);
-    }
-    window.addEventListener(
-      'resize',
-      () => {
-        if (backgroundRef.current !== null) {
-          const rect = backgroundRef.current.getBoundingClientRect();
-          workspaceStore.setRect(rect.x, rect.y, rect.width, rect.height);
-        }
-      },
-      false
+    const groups = Array.from(workspace.groups.values()).map(
+      (group: Instance<typeof ItemGroup>) => {
+        return <MainGroup key={group.id} workspace={workspace} group={group} />;
+      }
     );
-  }, [hasRunOnce, workspaceStore]);
 
-  return (
-    <Background>
-      <DraggableCore
-        onMouseDown={(e) => {
-          e.stopPropagation();
-        }}
-        onDrag={(_, data) => {
-          const [worldLastX, worldLastY] = workspaceStore.screenToWorld(
-            data.lastX,
-            data.lastY
-          );
-          const [worldX, worldY] = workspaceStore.screenToWorld(data.x, data.y);
-          const deltaX = worldX - worldLastX;
-          const deltaY = worldY - worldLastY;
-          workspaceStore.moveCamera(-deltaX, -deltaY);
-        }}
-      >
-        <WorkspaceContentBackground
-          ref={backgroundRef}
-          onWheel={(e) => {
-            const offsetX = e.pageX - workspaceStore.x;
-            const offsetY = e.pageY - workspaceStore.y;
+    const items = Array.from(workspace.items.values()).map((item) => {
+      let group;
+      if (item.groupId === 'hidden') {
+        group = workspace.hiddenGroup;
+      } else if (item.groupId === 'inbox') {
+        group = workspace.inboxGroup;
+      } else {
+        group = workspace.groups.get(item.groupId);
+      }
+      if (typeof group === 'undefined') {
+        throw new Error(`could not find group with id ${item.groupId}`);
+      }
+      return (
+        <MainItem
+          key={item.id}
+          workspace={workspace}
+          item={item}
+          group={group}
+        />
+      );
+    });
 
-            if (offsetX < InboxColumnWidth) {
-              workspaceStore.setInboxScrollY(
-                workspaceStore.inboxScrollY + e.deltaY
-              );
-            } else {
-              const lastMouseWorldPos = workspaceStore.screenToWorld(
-                offsetX,
-                offsetY
-              );
+    const [hasRunOnce, setHasRunOnce] = useState(false);
+    useEffect(() => {
+      if (hasRunOnce) {
+        return;
+      }
+      setHasRunOnce(true);
+      if (backgroundRef.current !== null) {
+        const rect = backgroundRef.current.getBoundingClientRect();
+        workspace.setRect(rect.x, rect.y, rect.width, rect.height);
+      }
+      window.addEventListener(
+        'resize',
+        () => {
+          if (backgroundRef.current !== null) {
+            const rect = backgroundRef.current.getBoundingClientRect();
+            workspace.setRect(rect.x, rect.y, rect.width, rect.height);
+          }
+        },
+        false
+      );
+    }, [hasRunOnce, workspace]);
 
-              workspaceStore.setCameraZoom(
-                workspaceStore.cameraZoom +
-                  workspaceStore.cameraZoom * (-e.deltaY / 1000) * 2
-              );
-
-              const mouseWorldPos = workspaceStore.screenToWorld(
-                offsetX,
-                offsetY
-              );
-              const mouseWorldDeltaX = lastMouseWorldPos[0] - mouseWorldPos[0];
-              const mouseWorldDeltaY = lastMouseWorldPos[1] - mouseWorldPos[1];
-
-              workspaceStore.moveCamera(mouseWorldDeltaX, mouseWorldDeltaY);
-            }
+    return (
+      <Background>
+        <DraggableCore
+          onMouseDown={(e) => {
+            e.stopPropagation();
+          }}
+          onDrag={(_, data) => {
+            const [worldLastX, worldLastY] = workspace.screenToWorld(
+              data.lastX,
+              data.lastY
+            );
+            const [worldX, worldY] = workspace.screenToWorld(data.x, data.y);
+            const deltaX = worldX - worldLastX;
+            const deltaY = worldY - worldLastY;
+            workspace.moveCamera(-deltaX, -deltaY);
           }}
         >
-          <InboxColumn style={{ width: InboxColumnWidth }} />
-          <div>{groups}</div>
-          <MainGroup group={workspaceStore.inboxGroup} />
-          <div>{items}</div>
-          <CornerButton
-            style={{
-              left: InboxColumnWidth,
-              bottom: 0,
-              borderRadius: '0 20px 0 0',
-              display: workspaceStore.anyDragging ? 'flex' : 'none',
-              backgroundColor: workspaceStore.anyOverTrash
-                ? 'red'
-                : 'rgba(0, 0, 0, 0.7)',
+          <WorkspaceContentBackground
+            ref={backgroundRef}
+            onWheel={(e) => {
+              const offsetX = e.pageX - workspace.x;
+              const offsetY = e.pageY - workspace.y;
+
+              if (offsetX < InboxColumnWidth) {
+                workspace.setInboxScrollY(workspace.inboxScrollY + e.deltaY);
+              } else {
+                const lastMouseWorldPos = workspace.screenToWorld(
+                  offsetX,
+                  offsetY
+                );
+
+                workspace.setCameraZoom(
+                  workspace.cameraZoom +
+                    workspace.cameraZoom * (-e.deltaY / 1000) * 2
+                );
+
+                const mouseWorldPos = workspace.screenToWorld(offsetX, offsetY);
+                const mouseWorldDeltaX =
+                  lastMouseWorldPos[0] - mouseWorldPos[0];
+                const mouseWorldDeltaY =
+                  lastMouseWorldPos[1] - mouseWorldPos[1];
+
+                workspace.moveCamera(mouseWorldDeltaX, mouseWorldDeltaY);
+              }
             }}
           >
-            <CornerButtonIcon src={trashIcon} />
-          </CornerButton>
-          <CenterButton
-            style={{
-              right: 0,
-              bottom: 0,
-              borderRadius: '20px 0 0 0',
-            }}
-            onMouseDown={(e) => {
-              e.stopPropagation();
-            }}
-            onClick={() => {
-              workspaceStore.centerCamera();
-            }}
-          >
-            <CornerButtonIcon src={centerIcon} />
-          </CenterButton>
-        </WorkspaceContentBackground>
-      </DraggableCore>
-    </Background>
-  );
-});
+            <InboxColumn style={{ width: InboxColumnWidth }} />
+            <div>{groups}</div>
+            <MainGroup workspace={workspace} group={workspace.inboxGroup} />
+            <div>{items}</div>
+            <CornerButton
+              style={{
+                left: InboxColumnWidth,
+                bottom: 0,
+                borderRadius: '0 20px 0 0',
+                display: workspace.anyDragging ? 'flex' : 'none',
+                backgroundColor: workspace.anyOverTrash
+                  ? 'red'
+                  : 'rgba(0, 0, 0, 0.7)',
+              }}
+            >
+              <CornerButtonIcon src={trashIcon} />
+            </CornerButton>
+            <CenterButton
+              style={{
+                right: 0,
+                bottom: 0,
+                borderRadius: '20px 0 0 0',
+              }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+              }}
+              onClick={() => {
+                workspace.centerCamera();
+              }}
+            >
+              <CornerButtonIcon src={centerIcon} />
+            </CenterButton>
+          </WorkspaceContentBackground>
+        </DraggableCore>
+      </Background>
+    );
+  }
+);
 export default Workspace;

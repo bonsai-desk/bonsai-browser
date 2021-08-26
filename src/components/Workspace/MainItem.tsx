@@ -19,18 +19,21 @@ import {
   groupTitleHeight,
   ItemGroup,
 } from '../../store/workspace/item-group';
+import { Workspace } from '../../store/workspace/workspace';
 
 const MainItem = observer(
   ({
+    workspace,
     group,
     item,
   }: {
+    workspace: Instance<typeof Workspace>;
     group: Instance<typeof ItemGroup>;
     item: Instance<typeof MobxItem>;
   }) => {
-    const { tabPageStore, workspaceStore } = useStore();
-    const targetPos = workspaceStore.placeholderPos(item, group);
-    const [groupX, groupY] = workspaceStore.worldToScreen(group.x, group.y);
+    const { tabPageStore } = useStore();
+    const targetPos = workspace.placeholderPos(item, group);
+    const [groupX, groupY] = workspace.worldToScreen(group.x, group.y);
     targetPos[0] += groupX;
     targetPos[1] += groupY;
     const lerpValue = easeOut(item.animationLerp);
@@ -47,10 +50,7 @@ const MainItem = observer(
     const [
       worldContainerDragPosX,
       worldContainerDragPosY,
-    ] = workspaceStore.worldToScreen(
-      item.containerDragPosX,
-      item.containerDragPosY
-    );
+    ] = workspace.worldToScreen(item.containerDragPosX, item.containerDragPosY);
 
     return (
       <DraggableCore
@@ -61,7 +61,7 @@ const MainItem = observer(
         }}
         onStart={(_, data: DraggableData) => {
           item.setDragMouseStart(data.x, data.y);
-          workspaceStore.moveToFront(group);
+          workspace.moveToFront(group);
           group.setHovering(false);
         }}
         onDrag={(_, data: DraggableData) => {
@@ -71,9 +71,9 @@ const MainItem = observer(
             const distSquared = xDif * xDif + yDif * yDif;
             if (distSquared > 5 * 5) {
               item.setBeingDragged(true);
-              workspaceStore.setAnyDragging(true);
+              workspace.setAnyDragging(true);
               item.setDragStartGroup(group.id);
-              const worldTargetPos = workspaceStore.screenToWorld(
+              const worldTargetPos = workspace.screenToWorld(
                 targetPos[0],
                 targetPos[1]
               );
@@ -83,7 +83,7 @@ const MainItem = observer(
 
           if (item.beingDragged) {
             if (item.groupId !== 'inbox') {
-              const worldDelta = workspaceStore.screenVectorToWorldVector(
+              const worldDelta = workspace.screenVectorToWorldVector(
                 data.deltaX,
                 data.deltaY
               );
@@ -96,24 +96,20 @@ const MainItem = observer(
             const [
               containerDragPosX,
               containerDragPosY,
-            ] = workspaceStore.worldToScreen(
+            ] = workspace.worldToScreen(
               item.containerDragPosX,
               item.containerDragPosY
             );
 
-            item.setOverTrash(overTrash([data.x, data.y], workspaceStore));
-            workspaceStore.setAnyOverTrash(item.overTrash);
+            item.setOverTrash(overTrash([data.x, data.y], workspace));
+            workspace.setAnyOverTrash(item.overTrash);
             if (item.overTrash) {
               if (group.id !== 'hidden') {
-                workspaceStore.changeGroup(
-                  item,
-                  group,
-                  workspaceStore.hiddenGroup
-                );
+                workspace.changeGroup(item, group, workspace.hiddenGroup);
                 if (group.id === 'inbox') {
-                  const worldPos = workspaceStore.screenToWorld(
-                    data.x - (itemWidth / 2) * workspaceStore.scale,
-                    data.y - (itemHeight / 2) * workspaceStore.scale
+                  const worldPos = workspace.screenToWorld(
+                    data.x - (itemWidth / 2) * workspace.scale,
+                    data.y - (itemHeight / 2) * workspace.scale
                   );
                   item.setContainerDragPos([worldPos[0], worldPos[1]]);
                 }
@@ -124,14 +120,14 @@ const MainItem = observer(
                 group,
                 [containerDragPosX, containerDragPosY],
                 [data.x, data.y],
-                workspaceStore
+                workspace
               );
             }
 
             if (item.groupId === 'inbox') {
-              const worldPos = workspaceStore.screenToWorld(
-                data.x - (itemWidth / 2) * workspaceStore.inboxScale,
-                data.y - (itemHeight / 2) * workspaceStore.inboxScale
+              const worldPos = workspace.screenToWorld(
+                data.x - (itemWidth / 2) * workspace.inboxScale,
+                data.y - (itemHeight / 2) * workspace.inboxScale
               );
               item.setContainerDragPos([worldPos[0], worldPos[1]]);
             }
@@ -149,7 +145,7 @@ const MainItem = observer(
               const [
                 containerDragPosX,
                 containerDragPosY,
-              ] = workspaceStore.worldToScreen(
+              ] = workspace.worldToScreen(
                 item.containerDragPosX,
                 item.containerDragPosY
               );
@@ -159,48 +155,48 @@ const MainItem = observer(
                 group,
                 [containerDragPosX, containerDragPosY],
                 [data.x, data.y],
-                workspaceStore
+                workspace
               );
               if (groupBelow === null) {
-                const createdGroup = workspaceStore.createGroup('New Group');
+                const createdGroup = workspace.createGroup('New Group');
                 newGroup = createdGroup;
-                const [worldX, worldY] = workspaceStore.screenToWorld(
+                const [worldX, worldY] = workspace.screenToWorld(
                   containerDragPosX -
-                    (groupPadding + groupBorder) * workspaceStore.scale,
+                    (groupPadding + groupBorder) * workspace.scale,
                   containerDragPosY -
                     (groupPadding + groupTitleHeight + groupBorder) *
-                      workspaceStore.scale
+                      workspace.scale
                 );
                 createdGroup.move(worldX, worldY);
-                workspaceStore.changeGroup(item, group, createdGroup);
+                workspace.changeGroup(item, group, createdGroup);
                 createdGroup.setShouldEditTitle(true);
               }
             }
 
-            const worldTargetPos = workspaceStore.screenToWorld(
+            const worldTargetPos = workspace.screenToWorld(
               targetPos[0],
               targetPos[1]
             );
             item.setContainerDragPos([worldTargetPos[0], worldTargetPos[1]]);
 
             if (item.dragStartGroup !== '') {
-              const startGroup = workspaceStore.groups.get(item.dragStartGroup);
+              const startGroup = workspace.groups.get(item.dragStartGroup);
               if (
                 typeof startGroup !== 'undefined' &&
                 startGroup.itemArrangement.length === 0
               ) {
-                workspaceStore.deleteGroup(startGroup);
+                workspace.deleteGroup(startGroup);
               }
             }
             item.setDragStartGroup('');
             item.setBeingDragged(false);
 
             if (item.overTrash) {
-              workspaceStore.deleteItem(item, group);
+              workspace.deleteItem(item, group);
             }
           }
-          workspaceStore.setAnyDragging(false);
-          workspaceStore.setAnyOverTrash(false);
+          workspace.setAnyDragging(false);
+          workspace.setAnyOverTrash(false);
           newGroup.setHovering(true);
         }}
       >
@@ -218,16 +214,14 @@ const MainItem = observer(
             zIndex,
             transformOrigin: '0px 0px',
             transform: `scale(${
-              group.id === 'inbox'
-                ? workspaceStore.inboxScale
-                : workspaceStore.scale
+              group.id === 'inbox' ? workspace.inboxScale : workspace.scale
             })`,
           }}
         >
           <ItemContainer
             showTitle={
               group.hovering &&
-              !workspaceStore.anyDragging &&
+              !workspace.anyDragging &&
               !group.resizing &&
               tabPageStore.editingGroupId !== group.id
             }

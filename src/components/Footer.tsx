@@ -33,26 +33,70 @@ const FooterButtonParent = styled.button`
   width: 100px;
   height: 75px;
   border-radius: 1rem;
+  margin: 0 2px 0 2px;
 
   :hover {
-    background-color: lightgray;
+    filter: brightness(0.7);
   }
 `;
+
+const WorkspaceButtons = observer(() => {
+  const { tabPageStore, workspaceStore } = useStore();
+
+  const buttons = Array.from(workspaceStore.workspaces.values()).map(
+    (workspace) => {
+      return (
+        <FooterButtonParent
+          key={workspace.id}
+          style={{
+            backgroundColor:
+              tabPageStore.View === View.WorkSpace &&
+              workspace.id === tabPageStore.activeWorkspaceId
+                ? '#ffaf54'
+                : 'white',
+          }}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+          }}
+          onClick={() => {
+            runInAction(() => {
+              if (
+                tabPageStore.View === View.WorkSpace &&
+                tabPageStore.activeWorkspaceId === workspace.id
+              ) {
+                tabPageStore.View = View.Tabs;
+              } else {
+                tabPageStore.activeWorkspaceId = workspace.id;
+                tabPageStore.View = View.WorkSpace;
+              }
+            });
+          }}
+        >
+          {workspace.name}
+        </FooterButtonParent>
+      );
+    }
+  );
+
+  return <>{buttons}</>;
+});
+
 const Footer = observer(() => {
   const { tabPageStore } = useStore();
   return (
     <FooterParent id="footer">
-      <FooterButtonParent
-        onClick={() => {
-          runInAction(() => {
-            if (tabPageStore.View === View.Tabs) {
-              tabPageStore.View = View.WorkSpace;
-            } else if (tabPageStore.View === View.WorkSpace) {
-              tabPageStore.View = View.Tabs;
-            }
-          });
-        }}
-      />
+      {/* <FooterButtonParent */}
+      {/*  onClick={() => { */}
+      {/*    runInAction(() => { */}
+      {/*      if (tabPageStore.View === View.Tabs) { */}
+      {/*        tabPageStore.View = View.WorkSpace; */}
+      {/*      } else if (tabPageStore.View === View.WorkSpace) { */}
+      {/*        tabPageStore.View = View.Tabs; */}
+      {/*      } */}
+      {/*    }); */}
+      {/*  }} */}
+      {/* /> */}
+      <WorkspaceButtons />
       <HistoryButton />
       <NavButtonParent
         onClick={() => {

@@ -10,7 +10,7 @@ import { Direction } from '../render-constants';
 import { clamp } from '../utils/utils';
 import { HistoryEntry } from '../utils/interfaces';
 import { HistoryStore } from './history-store';
-import { Workspace } from './workspace/workspace';
+import WorkspaceStore from './workspace/workspace-store';
 
 export enum View {
   None,
@@ -24,6 +24,8 @@ export enum View {
 
 export default class TabPageStore {
   private view: View = View.Tabs;
+
+  activeWorkspaceId = '';
 
   public get View() {
     return this.view;
@@ -67,7 +69,7 @@ export default class TabPageStore {
 
   innerBounds: { x: number; y: number; width: number; height: number };
 
-  private workspaceStore: Instance<typeof Workspace>;
+  private workspaceStore: Instance<typeof WorkspaceStore>;
 
   fuzzySelectedTab(): [boolean, TabPageTab | Instance<typeof Item>] | null {
     if (this.fuzzySelectionIndex[1] === 0) {
@@ -245,7 +247,12 @@ export default class TabPageStore {
     });
     this.filteredOpenTabs = openTabFuse.search(pattern);
 
-    const workspaceItems = Array.from(this.workspaceStore.items.values());
+    const workspaceItems: Instance<typeof Item>[] = [];
+    this.workspaceStore.workspaces.forEach((workspace) => {
+      workspace.items.forEach((item) => {
+        workspaceItems.push(item);
+      });
+    });
     const workspaceTabFuse = new Fuse<Instance<typeof Item>>(workspaceItems, {
       keys: ['title'],
     });
@@ -270,10 +277,10 @@ export default class TabPageStore {
     this.historyText = newValue;
   }
 
-  constructor(workSpaceStore: Instance<typeof Workspace>) {
+  constructor(workspaceStore: Instance<typeof WorkspaceStore>) {
     this.screen = { width: 200, height: 200 };
     this.innerBounds = { x: 0, y: 0, width: 100, height: 100 };
-    this.workspaceStore = workSpaceStore;
+    this.workspaceStore = workspaceStore;
     makeAutoObservable(this);
 
     this.filteredOpenTabs = [];
@@ -433,7 +440,7 @@ export default class TabPageStore {
 interface IContext {
   tabPageStore: TabPageStore;
   historyStore: Instance<typeof HistoryStore>;
-  workspaceStore: Instance<typeof Workspace>;
+  workspaceStore: Instance<typeof WorkspaceStore>;
 }
 const TabPageContext = createContext<null | IContext>(null);
 export const { Provider } = TabPageContext;

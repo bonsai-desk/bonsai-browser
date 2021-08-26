@@ -22,10 +22,17 @@ import {
   ItemGroup,
   widthPixelsToInt,
 } from '../../store/workspace/item-group';
+import { Workspace } from '../../store/workspace/workspace';
 
 const MainGroup = observer(
-  ({ group }: { group: Instance<typeof ItemGroup> }) => {
-    const { tabPageStore, workspaceStore } = useStore();
+  ({
+    workspace,
+    group,
+  }: {
+    workspace: Instance<typeof Workspace>;
+    group: Instance<typeof ItemGroup>;
+  }) => {
+    const { tabPageStore } = useStore();
 
     const targetGroupSize = group.size();
     const lerpValue = easeOut(group.animationLerp);
@@ -56,7 +63,7 @@ const MainGroup = observer(
       }
     }, [group, group.shouldEditTitle, tabPageStore]);
 
-    const [groupScreenX, groupScreenY] = workspaceStore.worldToScreen(
+    const [groupScreenX, groupScreenY] = workspace.worldToScreen(
       group.x,
       group.y
     );
@@ -77,28 +84,27 @@ const MainGroup = observer(
             return;
           }
 
-          workspaceStore.moveToFront(group);
+          workspace.moveToFront(group);
           group.setDragMouseStart(data.x, data.y);
 
-          const [screenGroupX, screenGroupY] = workspaceStore.worldToScreen(
+          const [screenGroupX, screenGroupY] = workspace.worldToScreen(
             group.x,
             group.y
           );
 
           if (
             data.x >
-            screenGroupX + (group.size()[0] - 10) * workspaceStore.scale
+            screenGroupX + (group.size()[0] - 10) * workspace.scale
           ) {
             group.setTempResizeWidth(group.width);
             group.setResizing(true);
           } else if (
             data.y >=
             screenGroupY +
-              (groupTitleHeight + groupPadding + groupBorder) *
-                workspaceStore.scale
+              (groupTitleHeight + groupPadding + groupBorder) * workspace.scale
           ) {
             group.setBeingDragged(true);
-            workspaceStore.setAnyDragging(true);
+            workspace.setAnyDragging(true);
           }
         }}
         onDrag={(_, data: DraggableData) => {
@@ -106,19 +112,13 @@ const MainGroup = observer(
             return;
           }
 
-          const screenGroupX = workspaceStore.worldToScreen(
-            group.x,
-            group.y
-          )[0];
+          const screenGroupX = workspace.worldToScreen(group.x, group.y)[0];
 
           if (group.resizing) {
             group.setTempResizeWidth(
-              widthPixelsToInt((data.x - screenGroupX) / workspaceStore.scale)
+              widthPixelsToInt((data.x - screenGroupX) / workspace.scale)
             );
-            workspaceStore.setGroupWidth(
-              Math.floor(group.tempResizeWidth),
-              group
-            );
+            workspace.setGroupWidth(Math.floor(group.tempResizeWidth), group);
           } else {
             if (
               !group.beingDragged &&
@@ -129,15 +129,15 @@ const MainGroup = observer(
               const distSquared = xDif * xDif + yDif * yDif;
               if (distSquared > 5 * 5) {
                 group.setBeingDragged(true);
-                workspaceStore.setAnyDragging(true);
+                workspace.setAnyDragging(true);
               }
             }
 
             if (group.beingDragged) {
-              group.setOverTrash(overTrash([data.x, data.y], workspaceStore));
-              workspaceStore.setAnyOverTrash(group.overTrash);
+              group.setOverTrash(overTrash([data.x, data.y], workspace));
+              workspace.setAnyOverTrash(group.overTrash);
 
-              const worldDelta = workspaceStore.screenVectorToWorldVector(
+              const worldDelta = workspace.screenVectorToWorldVector(
                 data.deltaX,
                 data.deltaY
               );
@@ -150,10 +150,7 @@ const MainGroup = observer(
             return;
           }
 
-          const screenGroupX = workspaceStore.worldToScreen(
-            group.x,
-            group.y
-          )[0];
+          const screenGroupX = workspace.worldToScreen(group.x, group.y)[0];
 
           if (
             !group.beingDragged &&
@@ -172,9 +169,9 @@ const MainGroup = observer(
           if (group.resizing) {
             const roundFunc = group.height() === 1 ? Math.round : Math.floor;
             group.setTempResizeWidth(
-              widthPixelsToInt((data.x - screenGroupX) / workspaceStore.scale)
+              widthPixelsToInt((data.x - screenGroupX) / workspace.scale)
             );
-            workspaceStore.setGroupWidth(
+            workspace.setGroupWidth(
               roundFunc(group.tempResizeWidth),
               group,
               true
@@ -183,25 +180,23 @@ const MainGroup = observer(
           }
 
           if (group.overTrash) {
-            workspaceStore.deleteGroup(group);
-            workspaceStore.setAnyDragging(false);
-            workspaceStore.setAnyOverTrash(false);
+            workspace.deleteGroup(group);
+            workspace.setAnyDragging(false);
+            workspace.setAnyOverTrash(false);
             return;
           }
 
           group.setBeingDragged(false);
           group.setOverTrash(false);
-          workspaceStore.setAnyDragging(false);
-          workspaceStore.setAnyOverTrash(false);
+          workspace.setAnyDragging(false);
+          workspace.setAnyOverTrash(false);
         }}
       >
         <Group
           style={{
             transformOrigin: '0px 0px',
             transform: `scale(${
-              group.id === 'inbox'
-                ? workspaceStore.inboxScale
-                : workspaceStore.scale
+              group.id === 'inbox' ? workspace.inboxScale : workspace.scale
             })`,
             width: lerp(
               group.animationStartWidth,
@@ -210,7 +205,7 @@ const MainGroup = observer(
             ),
             height:
               group.id === 'inbox'
-                ? Math.max(groupHeight, workspaceStore.height)
+                ? Math.max(groupHeight, workspace.height)
                 : groupHeight,
             left: groupScreenX,
             top: groupScreenY,
@@ -293,10 +288,10 @@ const MainGroup = observer(
               onClick={(e) => {
                 e.stopPropagation();
 
-                workspaceStore.inboxGroup.itemArrangement.forEach((itemId) => {
-                  const item = workspaceStore.items.get(itemId);
+                workspace.inboxGroup.itemArrangement.forEach((itemId) => {
+                  const item = workspace.items.get(itemId);
                   if (typeof item !== 'undefined') {
-                    workspaceStore.deleteItem(item, workspaceStore.inboxGroup);
+                    workspace.deleteItem(item, workspace.inboxGroup);
                   }
                 });
               }}
