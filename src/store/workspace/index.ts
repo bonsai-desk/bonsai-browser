@@ -4,70 +4,112 @@
 import { applySnapshot, getSnapshot, Instance } from 'mobx-state-tree';
 import { ipcRenderer } from 'electron';
 import fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
 import { Item } from './item';
 import { ItemGroup } from './item-group';
-import { Workspace } from './workspace';
+import WorkspaceStore from './workspace-store';
 
-function createWorkspaceStore() {
-  const animationTime = 0.15;
-  const workspaceStore = Workspace.create({
-    hiddenGroup: ItemGroup.create({
-      id: 'hidden',
-      title: 'hidden',
-      itemArrangement: [],
-      zIndex: 0,
-    }),
-    inboxGroup: ItemGroup.create({
-      id: 'inbox',
-      title: 'inbox',
-      itemArrangement: [],
-      zIndex: 0,
-    }),
-    groups: {},
-    items: {},
+const animationTime = 0.15;
+
+function saveSnapshot(workspaceStore: Instance<typeof WorkspaceStore>) {
+  if (workspaceStore.snapshotPath !== '') {
+    const snapshot = getSnapshot(workspaceStore);
+    const snapshotString = JSON.stringify(snapshot);
+    fs.writeFileSync(workspaceStore.snapshotPath, snapshotString);
+  }
+}
+
+function loadSnapshot(workspaceStore: Instance<typeof WorkspaceStore>) {
+  if (workspaceStore.snapshotPath !== '') {
+    try {
+      const workspaceJson = fs.readFileSync(
+        workspaceStore.snapshotPath,
+        'utf8'
+      );
+      if (workspaceJson !== '') {
+        const workspaceSnapshot = JSON.parse(workspaceJson);
+        applySnapshot(workspaceStore, workspaceSnapshot);
+      }
+    } catch {
+      //
+    }
+  }
+}
+
+function animateItem(item: Instance<typeof Item>, deltaTime: number) {
+  if (item.animationLerp !== 1) {
+    item.setAnimationLerp(item.animationLerp + deltaTime * (1 / animationTime));
+    if (item.animationLerp > 1) {
+      item.setAnimationLerp(1);
+    }
+  }
+}
+
+function animateGroup(group: Instance<typeof ItemGroup>, deltaTime: number) {
+  if (group.animationLerp !== 1) {
+    group.setAnimationLerp(
+      group.animationLerp + deltaTime * (1 / animationTime)
+    );
+    if (group.animationLerp > 1) {
+      group.setAnimationLerp(1);
+    }
+  }
+}
+
+let lastSnapshotTime = 0;
+function update(
+  time: number,
+  deltaTime: number,
+  workspaceStore: Instance<typeof WorkspaceStore>
+) {
+  if (time - lastSnapshotTime > 5) {
+    lastSnapshotTime = time;
+    saveSnapshot(workspaceStore);
+  }
+
+  workspaceStore.workspaces.forEach((workspace) => {
+    workspace.items.forEach((item) => {
+      animateItem(item, deltaTime);
+      if (item.groupId === 'hidden') {
+        if (!item.beingDragged) {
+          workspace.changeGroup(
+            item,
+            workspace.hiddenGroup,
+            workspace.inboxGroup
+          );
+        }
+      }
+    });
+    workspace.groups.forEach((group) => {
+      animateGroup(group, deltaTime);
+    });
+    animateGroup(workspace.hiddenGroup, deltaTime);
+    animateGroup(workspace.inboxGroup, deltaTime);
+  });
+}
+
+function createWorkspaceStore(): Instance<typeof WorkspaceStore> {
+  const workspaceStore = WorkspaceStore.create({
+    id: uuidv4(),
+    workspaces: {},
   });
 
-  function saveSnapshot() {
-    if (workspaceStore.snapshotPath !== '') {
-      const snapshot = getSnapshot(workspaceStore);
-      const snapshotString = JSON.stringify(snapshot);
-      fs.writeFileSync(workspaceStore.snapshotPath, snapshotString);
-    }
-  }
-
-  function loadSnapshot() {
-    if (workspaceStore.snapshotPath !== '') {
-      try {
-        const workspaceJson = fs.readFileSync(
-          workspaceStore.snapshotPath,
-          'utf8'
-        );
-        if (workspaceJson !== '') {
-          const workspaceSnapshot = JSON.parse(workspaceJson);
-          applySnapshot(workspaceStore, workspaceSnapshot);
-        }
-      } catch {
-        //
-      }
-    }
-  }
+  workspaceStore.createWorkspace('default');
 
   ipcRenderer.send('request-snapshot-path');
 
   ipcRenderer.on('set-snapshot-path', (_, snapshotPath) => {
     workspaceStore.setSnapshotPath(snapshotPath);
-    loadSnapshot();
+    loadSnapshot(workspaceStore);
   });
 
   ipcRenderer.on('save-snapshot', () => {
-    saveSnapshot();
+    saveSnapshot(workspaceStore);
   });
-
-  let lastSnapshotTime = 0;
 
   let lastTime = 0;
   let startTime = -1;
-  const loop = (milliseconds: number) => {
+  const animationLoop = (milliseconds: number) => {
     const currentTime = milliseconds / 1000;
     if (startTime < 0) {
       startTime = currentTime;
@@ -76,51 +118,11 @@ function createWorkspaceStore() {
     const deltaTime = time - lastTime;
     lastTime = time;
 
-    if (time - lastSnapshotTime > 5) {
-      lastSnapshotTime = time;
-      saveSnapshot();
-    }
+    update(time, deltaTime, workspaceStore);
 
-    function animateItem(item: Instance<typeof Item>) {
-      if (item.animationLerp !== 1) {
-        item.setAnimationLerp(
-          item.animationLerp + deltaTime * (1 / animationTime)
-        );
-        if (item.animationLerp > 1) {
-          item.setAnimationLerp(1);
-        }
-      }
-    }
-    workspaceStore.items.forEach((item) => {
-      animateItem(item);
-      if (item.groupId === 'hidden') {
-        if (!item.beingDragged) {
-          workspaceStore.changeGroup(
-            item,
-            workspaceStore.hiddenGroup,
-            workspaceStore.inboxGroup
-          );
-        }
-      }
-    });
-    function animateGroup(group: Instance<typeof ItemGroup>) {
-      if (group.animationLerp !== 1) {
-        group.setAnimationLerp(
-          group.animationLerp + deltaTime * (1 / animationTime)
-        );
-        if (group.animationLerp > 1) {
-          group.setAnimationLerp(1);
-        }
-      }
-    }
-    workspaceStore.groups.forEach((group) => {
-      animateGroup(group);
-    });
-    animateGroup(workspaceStore.hiddenGroup);
-    animateGroup(workspaceStore.inboxGroup);
-    requestAnimationFrame(loop);
+    requestAnimationFrame(animationLoop);
   };
-  requestAnimationFrame(loop);
+  requestAnimationFrame(animationLoop);
 
   return workspaceStore;
 }

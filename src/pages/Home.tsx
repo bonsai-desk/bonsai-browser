@@ -22,10 +22,15 @@ import {
 } from '../components/History/style';
 
 const MainContent = observer(() => {
-  const { tabPageStore } = useStore();
+  const { tabPageStore, workspaceStore } = useStore();
 
   if (tabPageStore.View === View.WorkSpace) {
-    return <Workspace />;
+    // todo: specific workspace
+    const workspace = workspaceStore.workspaces.values().next();
+    if (!workspace.done) {
+      return <Workspace workspace={workspace.value} />;
+    }
+    return null;
   }
   return tabPageStore.View === View.Tabs ? <Columns /> : <FuzzyTabs />;
 });
