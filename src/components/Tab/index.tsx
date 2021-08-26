@@ -52,13 +52,18 @@ const TabImage = observer(
             hoverColor="#3572AC"
             onClick={(e) => {
               e.stopPropagation();
-              workspaceStore.createItem(
-                tab.url,
-                tab.title,
-                tab.image,
-                tab.favicon,
-                workspaceStore.inboxGroup
-              );
+
+              // todo: specific workspace
+              const workspace = workspaceStore.workspaces.values().next();
+              if (!workspace.done) {
+                workspace.value.createItem(
+                  tab.url,
+                  tab.title,
+                  tab.image,
+                  tab.favicon,
+                  workspace.value.inboxGroup
+                );
+              }
             }}
           >
             <div>Add to workspace</div>

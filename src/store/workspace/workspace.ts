@@ -22,6 +22,8 @@ const defaultZoom = 0.25;
 
 export const Workspace = types
   .model({
+    id: types.identifier,
+    name: '',
     hiddenGroup: ItemGroup,
     inboxGroup: ItemGroup,
     groups: types.map(ItemGroup),
@@ -37,7 +39,6 @@ export const Workspace = types
     height: 1,
     anyDragging: false,
     anyOverTrash: false,
-    snapshotPath: '',
     tempMinCameraZoom: minZoom,
     inboxScrollY: 0,
   }))
@@ -187,9 +188,6 @@ export const Workspace = types
           self.screenVectorToWorldVector(300, 0)[0] / 2,
         (edges[0] + edges[2]) / 2
       );
-    },
-    setSnapshotPath(snapshotPath: string) {
-      self.snapshotPath = snapshotPath;
     },
     setRect(x: number, y: number, width: number, height: number) {
       self.x = x;
