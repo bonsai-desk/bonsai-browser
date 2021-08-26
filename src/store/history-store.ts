@@ -45,6 +45,10 @@ export const Node = types
 
 export type INode = Instance<typeof Node>;
 
+function showNode(node: INode) {
+  return `[${node.id.slice(0, 4)}]`;
+}
+
 export const HistoryStore = types
   .model({
     nodes: types.map(Node), // Node Id => Node
@@ -57,14 +61,18 @@ export const HistoryStore = types
       self.nodes.set(node.id, node);
     },
     setHead(webViewId: string, node: INode) {
-      log(`${webViewId} set head ${node.data.url}`);
+      log(`${webViewId} set head ${showNode(node)} ${node.data.url}`);
       self.heads.set(webViewId, node);
     },
     removeHead(webViewId: string): boolean {
       return self.heads.delete(webViewId);
     },
     linkChild(parent: INode, child: INode) {
-      log(`link (${parent.data.url}) to (${child.data.url})`);
+      log(
+        `link ${showNode(parent)}(${parent.data.url}) to ${showNode(child)}(${
+          child.data.url
+        })`
+      );
       parent.addChild(child);
       child.setParent(parent);
     },
@@ -139,7 +147,7 @@ function headKeyWhereNode(
 }
 
 function setTab(webViewId: number) {
-  // log(`swap active head from ${history.active} to ${webViewId}`);
+  log(`dispatch set-tab to ${webViewId}`);
   ipcRenderer.send('set-tab', webViewId);
 }
 
@@ -149,7 +157,7 @@ export function goBack(history: IHistory, node: INode) {
   if (key) {
     setTab(key);
   } else {
-    log('dispatch go back to main');
+    log('dispatch go-back to main');
     ipcRenderer.send('go-back', {
       senderId: history.active,
       backTo: getSnapshot(node),
@@ -163,7 +171,9 @@ export function goForward(history: IHistory, destinationNode: INode) {
   if (key) {
     setTab(key);
   } else {
-    log(`${history.active} dispatch go forward to ${destinationNode.id}`);
+    log(
+      `${history.active} dispatch go forward to ${showNode(destinationNode)}`
+    );
     ipcRenderer.send('go-forward', {
       senderId: history.active,
       forwardTo: getSnapshot(destinationNode),
@@ -185,6 +195,13 @@ function parentIsUrl(oldNode: INode | undefined, url: string) {
   return oldNode && oldNode.parent && oldNode.parent.data.url === url;
 }
 
+function childrenWithUrl(node: INode | undefined, url: string): INode[] {
+  if (node) {
+    return node.children.filter((child) => child.data.url === url);
+  }
+  return [];
+}
+
 export function hookListeners(h: Instance<typeof HistoryStore>) {
   ipcRenderer.on('new-window', (_, data) => {
     const { senderId, receiverId, details } = data;
@@ -198,53 +215,78 @@ export function hookListeners(h: Instance<typeof HistoryStore>) {
     }
     h.setHead(receiverId, receiverNode);
   });
-  ipcRenderer.on('did-navigate', (_, { id, url }) => {
-    log(`${id} did navigate ${url}`);
-    const rootNode = h.heads.get(id);
-    if (!rootNode) {
-      log(`${id} did create root for ${url}`);
-      const node = genNode(url);
-      h.setNode(node);
-      h.setHead(id, node);
-      h.addRoot(node);
-    }
-  });
   ipcRenderer.on('tab-was-set', (_, id) => {
-    h.setActive(id.toString());
+    const idStr = id.toString();
+    if (h.active !== idStr) {
+      h.setActive(id.toString());
+    }
   });
   ipcRenderer.on('will-navigate', (_, { id, url }) => {
     log('=== will-navigate ===');
-    log(`${id} will navigate ${url}`);
     const oldNode = h.heads.get(id);
     if (!(oldNode && oldNode.data.url === url)) {
       if (parentIsUrl(oldNode, url)) {
         log('nav to parent');
         h.setHead(id, oldNode?.parent);
       } else {
-        log(`${id} did create node for ${url}`);
-        const node = genNode(url);
-        h.setNode(node);
-        h.setHead(id, node);
-        if (oldNode) {
-          h.linkChild(oldNode, node);
+        const twins = childrenWithUrl(oldNode, url);
+        if (twins.length > 0) {
+          log(`${id} did set to existing child ${url}`);
+          h.setHead(id, twins[0]);
+        } else {
+          const node = genNode(url);
+          log(`${id} did create node ${showNode(node)} for ${url}`);
+          h.setNode(node);
+          if (oldNode) {
+            h.linkChild(oldNode, node);
+          }
+          h.setHead(id, node);
         }
       }
     }
   });
   ipcRenderer.on('will-navigate-no-gesture', (_, { id, url }) => {
-    log(`${id} will-navigate-no-gesture ${url}`);
     const node = h.heads.get(id);
     if (node) {
-      const data = HistoryData.create({ url, scroll: 0, date: getDate() });
-      node.setData(data);
+      const twins = childrenWithUrl(node.parent, url);
+      if (twins.length > 0) {
+        const twin = twins[0];
+        log(
+          `${id} remove ${showNode(node)} and set head for twin ${showNode(
+            twin
+          )} at ${url}`
+        );
+        h.setHead(id, twin);
+        h.removeNode(node);
+      } else {
+        log(
+          `${id} will-navigate-no-gesture swap data for ${showNode(
+            node
+          )} ${url}`
+        );
+        const data = HistoryData.create({ url, scroll: 0, date: getDate() });
+        node.setData(data);
+      }
     } else {
       log('FAIL');
     }
   });
+  ipcRenderer.on('did-navigate', (_, { id, url }) => {
+    // log(`${id} did navigate ${url}`);
+    const rootNode = h.heads.get(id);
+    if (!rootNode) {
+      const node = genNode(url);
+      log(`${id} did create root ${showNode(node)} for ${url}`);
+      h.setNode(node);
+      h.setHead(id, node);
+      h.addRoot(node);
+    }
+  });
   ipcRenderer.on('go-back', (_, { id }) => {
-    log(`${id} did go back`);
+    // log(`${id} did go back`);
     const oldNode = h.heads.get(id);
     if (oldNode && oldNode.parent) {
+      log(`${id} receive go-back`);
       h.setHead(id, oldNode.parent);
     }
   });

@@ -271,15 +271,18 @@ export function addListeners(wm: WindowManager) {
     }
   });
   ipcMain.on('go-back', (_, data) => {
-    const { senderId } = data;
+    const { senderId, backTo }: { senderId: string; backTo: INode } = data;
     log(`${senderId} request go back`);
-    const webView = wm.allWebViews[senderId];
+    const webView = wm.allWebViews[parseInt(senderId, 10)];
     if (webView) {
       if (webView.view.webContents.canGoBack()) {
         log(`${senderId} can go back`);
         goBack(webView, [wm.tabPageView]);
       } else {
-        log(`${senderId} can NOT go back`);
+        const { url } = backTo.data;
+        log(`${senderId} load url ${url}`);
+        handleWillNavigate(webView, url, [wm.tabPageView]);
+        webView.view.webContents.loadURL(url);
       }
     } else {
       log(`Failed to find webView for ${senderId}`);
