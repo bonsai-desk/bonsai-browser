@@ -3,6 +3,7 @@ import { ipcRenderer } from 'electron';
 import TabObject from '../interfaces/tabObject';
 
 export default class TabStore {
+  // todo make this a map
   tabs: TabObject[] = [];
 
   activeTabId = -1;

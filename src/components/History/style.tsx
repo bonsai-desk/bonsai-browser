@@ -48,6 +48,7 @@ export const HistoryModal = styled.div`
   border: 2px solid white;
   box-shadow: 0 0 5px 0 rgba(0, 0, 0, 1);
   padding: 20px;
+  overflow: scroll;
 `;
 export const HistoryResultsParent = styled.div`
   //background-color: blue;

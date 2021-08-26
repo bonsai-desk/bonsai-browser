@@ -69,7 +69,7 @@ const TabImage = observer(
   }
 );
 
-const Tab = observer(({ tab, hover, selected = false }: ITab) => {
+const Tab = observer(({ tab, hover, selected = false, callback }: ITab) => {
   const { tabPageStore } = useStore();
   const title =
     tab.openGraphInfo !== null &&
@@ -81,16 +81,23 @@ const Tab = observer(({ tab, hover, selected = false }: ITab) => {
     tab.openGraphInfo !== null && tab.openGraphInfo.image !== ''
       ? tab.openGraphInfo.image
       : tab.image;
+
+  const hovering = hover || tabPageStore.hoveringUrlInput;
+
   return (
     <TabParent
       onClick={() => {
-        ipcRenderer.send('set-tab', tab.id);
-        tabPageStore.setUrlText('');
+        if (callback) {
+          callback();
+        } else {
+          ipcRenderer.send('set-tab', tab.id);
+          tabPageStore.setUrlText('');
+        }
       }}
     >
       <TabImage
         selected={selected}
-        hover={hover}
+        hover={hovering}
         title={title}
         imgUrl={imgUrl}
         tab={tab}

@@ -19,4 +19,5 @@ const HistoryButton = observer(() => {
     </HistoryButtonParent>
   );
 });
+
 export default HistoryButton;

@@ -1,51 +1,27 @@
 import React from 'react';
 import { render } from 'react-dom';
+// import { v4 as uuidv4 } from 'uuid';
+// import { getSnapshot, Instance } from 'mobx-state-tree';
 import App from './pages/App';
 import DebugApp from './pages/DebugApp';
 import UrlPeek from './pages/UrlPeek';
 import Find from './pages/Find';
-import { Provider, RootModel } from './utils/data';
+import { Provider } from './utils/data';
 import './index.css';
 import Overlay from './pages/Overlay';
 import TabStore from './store/tabs';
-import {
+import TabPageStore, {
   Provider as TabPageStoreProvider,
-  tabPageStore,
 } from './store/tab-page-store';
 import Home from './pages/Home';
 import createWorkspaceStore from './store/workspace';
+import { hookListeners, HistoryStore } from './store/history-store';
 
 if (document.getElementById('root')) {
-  const rootStore = RootModel.create({
-    users: {
-      '1': {
-        id: '1',
-        name: 'mweststreate',
-      },
-      '2': {
-        id: '2',
-        name: 'Bobbeh',
-      },
-      '3': {
-        id: '3',
-        name: 'Susan',
-      },
-    },
-    todos: {
-      '1': {
-        name: 'eat a cake',
-        done: true,
-      },
-      '2': {
-        name: 'oof',
-        done: false,
-      },
-    },
-  });
   const tabStore = new TabStore();
 
   render(
-    <Provider value={{ rootStore, tabStore }}>
+    <Provider value={{ tabStore }}>
       <App />
     </Provider>,
     document.getElementById('root')
@@ -70,9 +46,16 @@ if (document.getElementById('overlay')) {
 
 if (document.getElementById('tab-page')) {
   const workspaceStore = createWorkspaceStore();
+  const tabPageStore = new TabPageStore(workspaceStore);
+  const historyStore = HistoryStore.create({ nodes: {}, active: '' });
+
+  hookListeners(historyStore);
+
   render(
     <>
-      <TabPageStoreProvider value={{ tabPageStore, workspaceStore }}>
+      <TabPageStoreProvider
+        value={{ tabPageStore, workspaceStore, historyStore }}
+      >
         <Home />
       </TabPageStoreProvider>
     </>,
