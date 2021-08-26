@@ -82,6 +82,10 @@ const Debug = observer(() => {
     }
   }, [tabPageStore.View, tabPageStore.historyText]);
 
+  if (tabPageStore.View !== View.NavigatorDebug) {
+    return <div />;
+  }
+
   return (
     <HistoryModalParent active={tabPageStore.View === View.NavigatorDebug}>
       <HistoryModalBackground

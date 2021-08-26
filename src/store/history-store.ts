@@ -224,10 +224,10 @@ export function hookListeners(h: Instance<typeof HistoryStore>) {
         log(`${id} did create node for ${url}`);
         const node = genNode(url);
         h.setNode(node);
+        h.setHead(id, node);
         if (oldNode) {
           h.linkChild(oldNode, node);
         }
-        h.setHead(id, node);
       }
     }
   });
