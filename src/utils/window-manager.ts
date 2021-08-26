@@ -933,13 +933,19 @@ export default class WindowManager {
 
     // move webview off screen (to be removed after screenshot)
     if (typeof oldTabView !== 'undefined') {
+      const oldBounds = oldTabView.view.getBounds();
       const webViewBounds = {
-        x: 0,
-        y: windowSize[1] + 1,
-        width: windowSize[0] - padding * 2,
-        height: Math.max(windowSize[1] - hh, 0) - padding * 2,
+        x: oldBounds.x,
+        y: oldBounds.y + windowSize[1] + 1,
+        width: oldBounds.width,
+        height: oldBounds.height,
       };
-      oldTabView.view.setBounds(webViewBounds);
+      // todo on non-macOS this breaks the screenshot functionality and has somthing to do with resizing the webview
+      // by the url bar offset height
+      // go look at git TAG: bad-image-fix
+      if (process.platform === 'darwin') {
+        oldTabView.view.setBounds(webViewBounds);
+      }
     }
 
     // remove webview callback

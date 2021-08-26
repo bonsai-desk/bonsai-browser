@@ -33,6 +33,7 @@ const FooterButtonParent = styled.button`
   width: 100px;
   height: 75px;
   border-radius: 1rem;
+  margin: 0 2px 0 2px;
 
   :hover {
     filter: brightness(0.7);
