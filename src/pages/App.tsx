@@ -10,12 +10,12 @@ const TitleBarFull = styled.div`
   width: 100vw;
   height: 100vh;
   font-family: sans-serif;
-  background-color: blue;
 `;
 
 const TitleBarBottom = styled.div`
   width: calc(100% - 4px - 5px);
   height: 36px;
+  border-radius: 10px 10px 0 0;
   background-color: white;
   border-bottom: 1px solid #dee1e6;
   display: flex;

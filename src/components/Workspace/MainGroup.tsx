@@ -296,7 +296,7 @@ const MainGroup = observer(
                 });
               }}
             >
-              <img src={redX} alt="x" width="20px" />
+              <img draggable={false} src={redX} alt="x" width="20px" />
             </RedX>
           </GroupHeader>
           <GroupResize

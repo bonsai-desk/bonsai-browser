@@ -4,6 +4,10 @@ import { v4 as uuidv4 } from 'uuid';
 
 const DEBUG = true;
 
+function showNode(node: INode) {
+  return `[${node.id.slice(0, 4)}]`;
+}
+
 function log(str: string) {
   if (DEBUG) {
     // eslint-disable-next-line no-console
@@ -13,6 +17,7 @@ function log(str: string) {
 
 export const HistoryData = types.model({
   url: types.string,
+  title: types.maybe(types.string),
   scroll: 0,
   date: types.string,
 });
@@ -28,8 +33,14 @@ export const Node = types
       types.reference(types.late((): IAnyModelType => Node))
     ),
   })
+  .views((self) => ({
+    showNode() {
+      return `[${self.id.slice(0, 4)}]`;
+    },
+  }))
   .actions((self) => ({
     setParent(a: Instance<typeof self> | null) {
+      log(`${self.showNode()} set parent ${a ? a.showNode() : 'null'}`);
       self.parent = a;
     },
     setData(a: IHistoryData) {
@@ -39,6 +50,7 @@ export const Node = types
       self.children.push(a);
     },
     removeChild(a: Instance<typeof self>): boolean {
+      log(`${self.showNode()} remove child ${a.showNode()}`);
       return self.children.remove(a);
     },
   }));
@@ -57,18 +69,23 @@ export const HistoryStore = types
       self.nodes.set(node.id, node);
     },
     setHead(webViewId: string, node: INode) {
-      log(`${webViewId} set head ${node.data.url}`);
+      log(`${webViewId} set head ${showNode(node)} ${node.data.url}`);
       self.heads.set(webViewId, node);
     },
     removeHead(webViewId: string): boolean {
       return self.heads.delete(webViewId);
     },
     linkChild(parent: INode, child: INode) {
-      log(`link (${parent.data.url}) to (${child.data.url})`);
+      log(
+        `link ${showNode(parent)}(${parent.data.url}) to ${showNode(child)}(${
+          child.data.url
+        })`
+      );
       parent.addChild(child);
       child.setParent(parent);
     },
     removeNode(a: INode) {
+      log(`delete node ${showNode(a)}`);
       a.parent?.removeChild(a);
       a.children.forEach((child: INode) => {
         child.setParent(null);
@@ -76,8 +93,10 @@ export const HistoryStore = types
       self.nodes.delete(a.id);
     },
     setActive(webViewId: string) {
-      log(`swap active webView from (${self.active}) to (${webViewId})`);
-      self.active = webViewId;
+      if (webViewId !== self.active) {
+        log(`swap active webView from (${self.active}) to (${webViewId})`);
+        self.active = webViewId;
+      }
     },
     addRoot(a: INode) {
       self.roots.push(a);
@@ -86,9 +105,15 @@ export const HistoryStore = types
 
 export type IHistory = Instance<typeof HistoryStore>;
 
-export function headsOnNode(root: IHistory, node: INode): [string, INode][] {
-  const entries = Array.from(root.heads.entries());
-  return entries.filter(([_, head]) => head.id === node.id);
+export function headsOnNode(
+  root: IHistory,
+  node: INode | undefined
+): [string, INode][] {
+  if (node) {
+    const entries = Array.from(root.heads.entries());
+    return entries.filter(([_, head]) => head.id === node.id);
+  }
+  return [];
 }
 
 function childLeaves(a: INode) {
@@ -139,7 +164,7 @@ function headKeyWhereNode(
 }
 
 function setTab(webViewId: number) {
-  // log(`swap active head from ${history.active} to ${webViewId}`);
+  log(`dispatch set-tab to ${webViewId}`);
   ipcRenderer.send('set-tab', webViewId);
 }
 
@@ -149,7 +174,7 @@ export function goBack(history: IHistory, node: INode) {
   if (key) {
     setTab(key);
   } else {
-    log('dispatch go back to main');
+    log('dispatch go-back to main');
     ipcRenderer.send('go-back', {
       senderId: history.active,
       backTo: getSnapshot(node),
@@ -163,7 +188,9 @@ export function goForward(history: IHistory, destinationNode: INode) {
   if (key) {
     setTab(key);
   } else {
-    log(`${history.active} dispatch go forward to ${destinationNode.id}`);
+    log(
+      `${history.active} dispatch go forward to ${showNode(destinationNode)}`
+    );
     ipcRenderer.send('go-forward', {
       senderId: history.active,
       forwardTo: getSnapshot(destinationNode),
@@ -185,66 +212,143 @@ function parentIsUrl(oldNode: INode | undefined, url: string) {
   return oldNode && oldNode.parent && oldNode.parent.data.url === url;
 }
 
+function childrenWithUrl(node: INode | undefined, url: string): INode[] {
+  if (node) {
+    return node.children.filter((child) => child.data.url === url);
+  }
+  return [];
+}
+
 export function hookListeners(h: Instance<typeof HistoryStore>) {
-  ipcRenderer.on('new-window', (_, data) => {
-    const { senderId, receiverId, details } = data;
-    const receiverNode = genNode(details.url);
-    log('=== new window ===');
-    log(`${senderId} spawn ${receiverId}`);
-    h.setNode(receiverNode);
-    const senderNode = h.heads.get(senderId);
-    if (senderNode) {
-      h.linkChild(senderNode, receiverNode);
+  ipcRenderer.on('new-window-intercept', (_, data) => {
+    const { senderId, details } = data;
+    log('=== new window intercept ===');
+    const { url } = details;
+    const oldNode = h.heads.get(senderId);
+    const matchNode = childrenWithUrl(oldNode, url);
+    const heads = headsOnNode(h, matchNode[0]);
+    if (heads.length > 0) {
+      const [headId, node] = heads[0];
+      log(
+        `${senderId} child ${showNode(
+          node
+        )} with active webView ${headId} matches ${url}`
+      );
+    } else {
+      log(`${senderId} dispatch spawn window for ${url}`);
+      ipcRenderer.send('request-new-window', { senderId, url });
     }
-    h.setHead(receiverId, receiverNode);
   });
-  ipcRenderer.on('did-navigate', (_, { id, url }) => {
-    log(`${id} did navigate ${url}`);
-    const rootNode = h.heads.get(id);
-    if (!rootNode) {
-      log(`${id} did create root for ${url}`);
-      const node = genNode(url);
-      h.setNode(node);
-      h.setHead(id, node);
-      h.addRoot(node);
+  ipcRenderer.on('new-window', (_, data) => {
+    const { senderId, receiverId, url } = data;
+    log('=== new window ===');
+    log(`${senderId} spawn ${receiverId} for ${url}`);
+    const oldNode = h.heads.get(senderId);
+    const twins = childrenWithUrl(oldNode, url);
+    if (twins.length > 0) {
+      const twin = twins[0];
+      log(`${senderId} has child ${showNode(twin)} for ${url}`);
+      h.setHead(receiverId, twin);
+    } else {
+      const receiverNode = genNode(url);
+      log(`${receiverId} create node ${showNode(receiverNode)} for ${url}`);
+      h.setNode(receiverNode);
+      const senderNode = h.heads.get(senderId);
+      if (senderNode) {
+        h.linkChild(senderNode, receiverNode);
+      }
+      h.setHead(receiverId, receiverNode);
     }
   });
   ipcRenderer.on('tab-was-set', (_, id) => {
-    h.setActive(id.toString());
+    const idStr = id.toString();
+    if (h.active !== idStr) {
+      h.setActive(id.toString());
+    }
   });
   ipcRenderer.on('will-navigate', (_, { id, url }) => {
     log('=== will-navigate ===');
-    log(`${id} will navigate ${url}`);
     const oldNode = h.heads.get(id);
     if (!(oldNode && oldNode.data.url === url)) {
       if (parentIsUrl(oldNode, url)) {
         log('nav to parent');
         h.setHead(id, oldNode?.parent);
       } else {
-        log(`${id} did create node for ${url}`);
-        const node = genNode(url);
-        h.setNode(node);
-        h.setHead(id, node);
-        if (oldNode) {
-          h.linkChild(oldNode, node);
+        const twins = childrenWithUrl(oldNode, url);
+        if (twins.length > 0) {
+          log(`${id} did set to existing child ${url}`);
+          h.setHead(id, twins[0]);
+        } else {
+          const node = genNode(url);
+          log(`${id} did create node ${showNode(node)} for ${url}`);
+          h.setNode(node);
+          if (oldNode) {
+            h.linkChild(oldNode, node);
+          }
+          h.setHead(id, node);
         }
       }
     }
   });
   ipcRenderer.on('will-navigate-no-gesture', (_, { id, url }) => {
-    log(`${id} will-navigate-no-gesture ${url}`);
+    // todo: this works but could be cleaned up if more logic needs to be added
     const node = h.heads.get(id);
-    if (node) {
-      const data = HistoryData.create({ url, scroll: 0, date: getDate() });
-      node.setData(data);
+    const urlIsNew = node?.data.url !== url;
+    if (node && url && urlIsNew) {
+      const twins = childrenWithUrl(node.parent, url);
+      if (twins.length > 0) {
+        const twin = twins[0];
+        const heads = headsOnNode(h, twin);
+        if (heads.length > 0) {
+          const headId = heads[0][0];
+          if (h.active === id.toString()) {
+            h.setActive(headId);
+            setTab(parseInt(headId, 10));
+            ipcRenderer.send('remove-tab', id);
+          } else {
+            log(
+              `${headId} is active on ${showNode(twin)} so will remove ${id}`
+            );
+            ipcRenderer.send('remove-tab', id);
+          }
+        } else {
+          log(
+            `${id} remove ${showNode(node)} and set head for twin ${showNode(
+              twin
+            )} at ${url}`
+          );
+          h.setHead(id, twin);
+        }
+        h.removeNode(node);
+      } else {
+        log(
+          `${id} will-navigate-no-gesture swap data for ${showNode(
+            node
+          )} ${url}`
+        );
+        const data = HistoryData.create({ url, scroll: 0, date: getDate() });
+        node.setData(data);
+      }
     } else {
       log('FAIL');
     }
   });
+  ipcRenderer.on('did-navigate', (_, { id, url }) => {
+    // log(`${id} did navigate ${url}`);
+    const rootNode = h.heads.get(id);
+    if (!rootNode) {
+      const node = genNode(url);
+      log(`${id} did create root ${showNode(node)} for ${url}`);
+      h.setNode(node);
+      h.setHead(id, node);
+      h.addRoot(node);
+    }
+  });
   ipcRenderer.on('go-back', (_, { id }) => {
-    log(`${id} did go back`);
+    // log(`${id} did go back`);
     const oldNode = h.heads.get(id);
     if (oldNode && oldNode.parent) {
+      log(`${id} receive go-back`);
       h.setHead(id, oldNode.parent);
     }
   });
@@ -260,6 +364,13 @@ export function hookListeners(h: Instance<typeof HistoryStore>) {
     log(`try remove head ${id}`);
     if (h.removeHead(id)) {
       log(`removed head ${id}`);
+    }
+  });
+  ipcRenderer.on('title-updated', (_, [id, title]) => {
+    log(`${id} update title to ${title}`);
+    const node = h.heads.get(id);
+    if (node) {
+      node.setData({ ...node.data, title });
     }
   });
 }

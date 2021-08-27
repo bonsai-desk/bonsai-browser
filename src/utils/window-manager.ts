@@ -137,6 +137,23 @@ function handleGoForward(
   }
 }
 
+function openWindow(
+  wm: WindowManager,
+  view: IWebView,
+  url: string,
+  alertTargets: BrowserView[]
+) {
+  const newWindowId = wm.createNewTab();
+  wm.loadUrlInTab(newWindowId, url);
+  alertTargets.forEach((target) => {
+    target.webContents.send('new-window', {
+      senderId: view.id,
+      receiverId: newWindowId,
+      url,
+    });
+  });
+}
+
 export function addListeners(wm: WindowManager) {
   ipcMain.on('create-new-tab', () => {
     wm.createNewTab();
@@ -271,15 +288,18 @@ export function addListeners(wm: WindowManager) {
     }
   });
   ipcMain.on('go-back', (_, data) => {
-    const { senderId } = data;
+    const { senderId, backTo }: { senderId: string; backTo: INode } = data;
     log(`${senderId} request go back`);
-    const webView = wm.allWebViews[senderId];
+    const webView = wm.allWebViews[parseInt(senderId, 10)];
     if (webView) {
       if (webView.view.webContents.canGoBack()) {
         log(`${senderId} can go back`);
         goBack(webView, [wm.tabPageView]);
       } else {
-        log(`${senderId} can NOT go back`);
+        const { url } = backTo.data;
+        log(`${senderId} load url ${url}`);
+        handleWillNavigate(webView, url, [wm.tabPageView]);
+        webView.view.webContents.loadURL(url);
       }
     } else {
       log(`Failed to find webView for ${senderId}`);
@@ -295,12 +315,19 @@ export function addListeners(wm: WindowManager) {
     }
   });
   ipcMain.on('gesture', (event, data) => {
-    console.log(`\n${event.sender.id} GESTURE ${data}`);
+    log(`\n${event.sender.id} GESTURE ${data}`);
     wm.setGesture(event.sender.id, true);
   });
   ipcMain.on('dom-content-loaded', (event) => {
-    console.log(`\n${event.sender.id} DOM LOADED`);
+    log(`\n${event.sender.id} DOM LOADED`);
     wm.setGesture(event.sender.id, false);
+  });
+  ipcMain.on('request-new-window', (_, { senderId, url }) => {
+    log(`${senderId} request-new-window for ${url}`);
+    const webView = wm.allWebViews[senderId];
+    if (webView && url) {
+      openWindow(wm, webView, url, [wm.tabPageView]);
+    }
   });
 }
 
@@ -308,17 +335,11 @@ interface IAction {
   action: 'deny';
 }
 
-function genHandleWindowOpen(
-  view: IWebView,
-  callback: (url: string) => number,
-  alertTargets: BrowserView[]
-) {
+function genHandleWindowOpen(view: IWebView, alertTargets: BrowserView[]) {
   return (details: HandlerDetails): IAction => {
-    const newWindowId = callback(details.url);
     alertTargets.forEach((target) => {
-      target.webContents.send('new-window', {
+      target.webContents.send('new-window-intercept', {
         senderId: view.id,
-        receiverId: newWindowId,
         details,
       });
     });
@@ -605,14 +626,7 @@ export default class WindowManager {
     webView.view.setBackgroundColor('#FFFFFF');
     webView.id = webView.view.webContents.id;
 
-    const callback = (url: string): number => {
-      const newTabId = this.createNewTab();
-      this.loadUrlInTab(newTabId, url);
-      return newTabId;
-    };
-    const handleWindowOpen = genHandleWindowOpen(webView, callback, [
-      this.tabPageView,
-    ]);
+    const handleWindowOpen = genHandleWindowOpen(webView, [this.tabPageView]);
     webView.view.webContents.setWindowOpenHandler(handleWindowOpen);
     webView.view.webContents.on('page-title-updated', (_, title) => {
       if (webView.historyEntry?.title === '') {
@@ -751,6 +765,9 @@ export default class WindowManager {
           process.platform === 'darwin' &&
           process.env.NODE_ENV !== 'development'
         ) {
+          // dont hide the app in development otherwise the devtool windows dissapear
+          // we want to hide in production so the previous window gets focus when bonsai
+          // gets closed
           app.hide();
         }
       }

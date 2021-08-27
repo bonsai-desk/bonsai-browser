@@ -59,4 +59,6 @@ const WorkspaceStore = types
     },
   }));
 
+export type IWorkSpaceStore = Instance<typeof WorkspaceStore>;
+
 export default WorkspaceStore;

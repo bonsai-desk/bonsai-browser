@@ -13,17 +13,18 @@ const DebugNode = observer(({ node }: { node: INode }) => {
     return (
       <span>
         [
-        {heads.map(([key, _]) => (
-          <span key={key}>{key}</span>
-        ))}
+        {heads.map(([key, _]) => {
+          return <span key={key}>{key}</span>;
+        })}
         {'] '}
       </span>
     );
   };
+  const title = node.data.title ? node.data.title : node.data.url;
   return (
     <li>
       <Heads />
-      {node.data.url}
+      {title}
       <ul>
         {Array.from(node.children.values()).map((child) => (
           <DebugNode key={node.id} node={child} />

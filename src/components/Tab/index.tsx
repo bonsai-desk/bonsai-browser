@@ -42,7 +42,7 @@ const TabImage = observer(
               ipcRenderer.send('remove-tab', tab.id);
             }}
           >
-            <img src={redX} alt="x" width="20px" />
+            <img draggable={false} src={redX} alt="x" width="20px" />
           </RedX>
           <RedX
             style={{
