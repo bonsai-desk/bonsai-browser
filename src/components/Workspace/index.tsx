@@ -173,7 +173,12 @@ const Workspace = observer(
               }
             }}
           >
-            <InboxColumn style={{ width: InboxColumnWidth }} />
+            <InboxColumn
+              style={{ width: InboxColumnWidth }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+              }}
+            />
             <div>{groups}</div>
             <MainGroup workspace={workspace} group={workspace.inboxGroup} />
             <div>{items}</div>
