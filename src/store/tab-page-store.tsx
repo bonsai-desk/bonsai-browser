@@ -25,14 +25,15 @@ export enum View {
 export default class TabPageStore {
   private view: View = View.Tabs;
 
-  activeWorkspaceId = '';
-
   public get View() {
     return this.view;
   }
 
   public set View(view: View) {
     this.view = view;
+    if (view !== View.FuzzySearch) {
+      this.urlText = '';
+    }
   }
 
   hoveringUrlInput = false;
@@ -62,6 +63,8 @@ export default class TabPageStore {
   activeGroupBoxRef: RefObject<HTMLInputElement> | null = null;
 
   editingGroupId = '';
+
+  activeWorkspaceNameRef: RefObject<HTMLInputElement> | null = null;
 
   fuzzySelectionIndex: [number, number] = [0, 0];
 
@@ -214,6 +217,10 @@ export default class TabPageStore {
   }
 
   setFocus() {
+    if (this.activeWorkspaceNameRef !== null) {
+      this.activeWorkspaceNameRef.current?.focus();
+      return;
+    }
     if (this.activeGroupBoxRef !== null) {
       this.activeGroupBoxRef.current?.focus();
       return;

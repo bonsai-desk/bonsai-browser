@@ -43,7 +43,7 @@ const ColumnHeader = observer(({ column }: { column: TabPageColumn }) => {
             });
           }}
         >
-          <img src={redX} alt="x" width="20px" />
+          <img draggable={false} src={redX} alt="x" width="20px" />
         </RedX>
       </HeaderOverlay>
     </ColumnHeaderParent>

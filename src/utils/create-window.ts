@@ -174,6 +174,8 @@ function initWindow(): BrowserWindow {
     vibrancy: mac ? 'fullscreen-ui' : undefined, // menu, popover, hud, fullscreen-ui
     roundedCorners: false,
     visualEffectState: mac ? 'active' : undefined,
+    // fullscreen: true,
+    // simpleFullscreen: true,
     webPreferences: {
       nodeIntegration: false,
       devTools: false,
@@ -187,7 +189,7 @@ function initWindow(): BrowserWindow {
 function initShortcuts(wm: WindowManager) {
   let shortCut = 'Alt+Space';
   if (process.env.NODE_ENV === 'development') {
-    shortCut = 'CmdOrCtrl+Alt+Space';
+    shortCut = 'Ctrl+Alt+Space';
   }
   globalShortcut.register(shortCut, () => {
     if (!wm.mainWindow?.isVisible()) {

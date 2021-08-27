@@ -1,18 +1,22 @@
 /* eslint no-console: off */
 /* eslint prefer-destructuring: off */
 
-import { types } from 'mobx-state-tree';
+import { Instance, types } from 'mobx-state-tree';
 import { v4 as uuidv4 } from 'uuid';
 import { Workspace } from './workspace';
 import { ItemGroup } from './item-group';
+import { TabPageTab } from '../../interfaces/tab';
 
 const WorkspaceStore = types
   .model({
-    id: types.identifier,
     workspaces: types.map(Workspace),
   })
   .volatile(() => ({
     snapshotPath: '',
+    chooseWorkspaceX: 0,
+    chooseWorkspaceY: 0,
+    activeWorkspaceId: '',
+    selectedTab: { url: '', title: '', image: '', favicon: '' },
   }))
   .actions((self) => ({
     createWorkspace(name: string) {
@@ -39,6 +43,18 @@ const WorkspaceStore = types
     setSnapshotPath(snapshotPath: string) {
       self.snapshotPath = snapshotPath;
     },
+    setChooseWorkspacePos(x: number, y: number) {
+      self.chooseWorkspaceX = x;
+      self.chooseWorkspaceY = y;
+    },
+    setActiveWorkspaceId(activeWorkspaceId: string) {
+      self.activeWorkspaceId = activeWorkspaceId;
+    },
+    setSelectedTab(selectedTab: TabPageTab) {
+      self.selectedTab = selectedTab;
+    },
   }));
+
+export type IWorkSpaceStore = Instance<typeof WorkspaceStore>;
 
 export default WorkspaceStore;

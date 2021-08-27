@@ -1,18 +1,16 @@
 import { mat4, vec3, vec4 } from 'gl-matrix';
 
-const noAllocPos = vec4.create();
-const noAllocPos3 = vec3.create();
-const WorldToClip = mat4.create();
-const ClipToWorld = mat4.create();
-const ScreenToClip = mat4.create();
-const ClipToScreen = mat4.create();
-
 export function calculateMatrices(
   width: number,
   height: number,
   cameraZoom: number,
   cameraX: number,
-  cameraY: number
+  cameraY: number,
+  noAllocPos3: vec3,
+  WorldToClip: mat4,
+  ClipToWorld: mat4,
+  ScreenToClip: mat4,
+  ClipToScreen: mat4
 ) {
   const aspectRatio = width / height;
   mat4.ortho(
@@ -44,7 +42,8 @@ export function transformPosition(
   x: number,
   y: number,
   m1: mat4,
-  m2: mat4
+  m2: mat4,
+  noAllocPos: vec4
 ): [number, number] {
   noAllocPos[0] = x;
   noAllocPos[1] = y;

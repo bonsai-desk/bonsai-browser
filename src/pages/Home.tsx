@@ -1,10 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import { runInAction } from 'mobx';
+import styled from 'styled-components';
 import { useStore, View } from '../store/tab-page-store';
 import URLBox from '../components/URLBox';
-import PinButton from '../components/PinButton';
+// import PinButton from '../components/PinButton';
 import FuzzyTabs from '../components/FuzzyTabs';
 import ClickerParent from '../components/Clicker';
 import Background from '../components/Background';
@@ -25,13 +26,21 @@ const MainContent = observer(() => {
   const { tabPageStore, workspaceStore } = useStore();
 
   if (tabPageStore.View === View.WorkSpace) {
-    const workspace = workspaceStore.workspaces.get(
-      tabPageStore.activeWorkspaceId
+    let workspace = workspaceStore.workspaces.get(
+      workspaceStore.activeWorkspaceId
     );
+    if (typeof workspace === 'undefined') {
+      workspaceStore.workspaces.forEach((w) => {
+        if (typeof workspace === 'undefined') {
+          workspaceStore.setActiveWorkspaceId(w.id);
+          workspace = w;
+        }
+      });
+    }
     if (typeof workspace !== 'undefined') {
       return <Workspace workspace={workspace} />;
     }
-    return null;
+    tabPageStore.setUrlText('');
   }
   return tabPageStore.View === View.Tabs ? <Columns /> : <FuzzyTabs />;
 });
@@ -99,8 +108,50 @@ const Debug = observer(() => {
   );
 });
 
+const Canvas = styled.canvas`
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+`;
+
+function paintVignette(canvas: HTMLCanvasElement | null) {
+  if (canvas) {
+    const context = canvas.getContext('2d');
+    if (context) {
+      const width = window.innerWidth;
+      canvas.width = width;
+      const height = window.innerHeight;
+      canvas.height = height;
+
+      const x = 0;
+      const y = 0;
+
+      context.strokeStyle = '#d2eefc';
+      context.beginPath();
+      context.moveTo(x, y);
+      context.lineTo(x + width, y);
+      context.lineTo(x + width, y + height);
+      context.lineTo(x, y + height);
+      context.lineTo(x, y);
+      context.closePath();
+
+      context.filter = 'blur(100px)';
+      context.lineWidth = 500;
+      context.stroke();
+    }
+  }
+}
+
 const Home = observer(() => {
   const { tabPageStore } = useStore();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    paintVignette(canvasRef.current);
+  }, []);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -112,15 +163,6 @@ const Home = observer(() => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [tabPageStore]);
-
-  const [hasRunOnce, setHasRunOnce] = useState(false);
-
-  useEffect(() => {
-    if (hasRunOnce) {
-      return;
-    }
-    setHasRunOnce(true);
-  }, [hasRunOnce, tabPageStore]);
 
   return (
     <Background
@@ -135,7 +177,8 @@ const Home = observer(() => {
       <Content />
       <History />
       <Debug />
-      <PinButton />
+      {/* <PinButton /> */}
+      <Canvas ref={canvasRef} />
     </Background>
   );
 });

@@ -3,6 +3,7 @@ import { observer } from 'mobx-react-lite';
 import React, { useEffect, useRef, useState } from 'react';
 import { Instance } from 'mobx-state-tree';
 import { DraggableCore } from 'react-draggable';
+import { runInAction } from 'mobx';
 import MainItem from './MainItem';
 import MainGroup from './MainGroup';
 import trashIcon from '../../../assets/alternate-trash.svg';
@@ -12,6 +13,8 @@ import {
   InboxColumnWidth,
   Workspace as MobxWorkspace,
 } from '../../store/workspace/workspace';
+import { useStore } from '../../store/tab-page-store';
+import { HeaderInput, HeaderText } from './style';
 
 export { MainItem, MainGroup };
 
@@ -61,15 +64,20 @@ export const CenterButton = styled.div`
 `;
 export const CornerButtonIcon = styled.img`
   width: 75px;
+  margin-bottom: 5px;
 
   -webkit-user-select: none;
   -moz-user-select: none;
   user-select: none;
   -webkit-user-drag: none;
 `;
+
 const Workspace = observer(
   ({ workspace }: { workspace: Instance<typeof MobxWorkspace> }) => {
+    const { workspaceStore, tabPageStore } = useStore();
     const backgroundRef = useRef<HTMLDivElement>(null);
+
+    const workspaceNameRef = useRef<HTMLInputElement>(null);
 
     const groups = Array.from(workspace.groups.values()).map(
       (group: Instance<typeof ItemGroup>) => {
@@ -107,19 +115,23 @@ const Workspace = observer(
       setHasRunOnce(true);
       if (backgroundRef.current !== null) {
         const rect = backgroundRef.current.getBoundingClientRect();
-        workspace.setRect(rect.x, rect.y, rect.width, rect.height);
+        workspaceStore.workspaces.forEach((w) => {
+          w.setRect(rect.x, rect.y, rect.width, rect.height);
+        });
       }
       window.addEventListener(
         'resize',
         () => {
           if (backgroundRef.current !== null) {
             const rect = backgroundRef.current.getBoundingClientRect();
-            workspace.setRect(rect.x, rect.y, rect.width, rect.height);
+            workspaceStore.workspaces.forEach((w) => {
+              w.setRect(rect.x, rect.y, rect.width, rect.height);
+            });
           }
         },
         false
       );
-    }, [hasRunOnce, workspace]);
+    }, [hasRunOnce, workspace, workspaceStore.workspaces]);
 
     return (
       <Background>
@@ -167,15 +179,20 @@ const Workspace = observer(
               }
             }}
           >
-            <InboxColumn style={{ width: InboxColumnWidth }} />
+            <InboxColumn
+              style={{ width: InboxColumnWidth }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+              }}
+            />
             <div>{groups}</div>
             <MainGroup workspace={workspace} group={workspace.inboxGroup} />
             <div>{items}</div>
             <CornerButton
               style={{
-                left: InboxColumnWidth,
-                bottom: 0,
-                borderRadius: '0 20px 0 0',
+                left: workspace.width / 2 - 50,
+                top: 0,
+                borderRadius: '0 0 20px 20px',
                 display: workspace.anyDragging ? 'flex' : 'none',
                 backgroundColor: workspace.anyOverTrash
                   ? 'red'
@@ -199,6 +216,74 @@ const Workspace = observer(
             >
               <CornerButtonIcon src={centerIcon} />
             </CenterButton>
+            <HeaderText
+              style={{
+                display:
+                  tabPageStore.activeWorkspaceNameRef === null
+                    ? 'block'
+                    : 'none',
+                color: 'rgb(50, 50, 50)',
+                left: InboxColumnWidth,
+                cursor: 'pointer',
+                width: 'auto',
+                paddingRight: '12px',
+                fontSize: '50px',
+              }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+              }}
+              onClick={() => {
+                runInAction(() => {
+                  tabPageStore.activeWorkspaceNameRef = workspaceNameRef;
+                });
+                if (workspaceNameRef.current !== null) {
+                  workspaceNameRef.current.value = workspace.name;
+                }
+                setTimeout(() => {
+                  workspaceNameRef.current?.select();
+                }, 10);
+              }}
+            >
+              {workspace.name}
+            </HeaderText>
+            <HeaderInput
+              ref={workspaceNameRef}
+              type="text"
+              spellCheck="false"
+              style={{
+                display:
+                  tabPageStore.activeWorkspaceNameRef === null
+                    ? 'none'
+                    : 'block',
+                width: workspace.width - InboxColumnWidth,
+                color: 'rgb(50, 50, 50)',
+                left: InboxColumnWidth,
+                top: 3,
+                fontSize: '50px',
+              }}
+              onMouseDown={(e) => {
+                if (e.button !== 1) {
+                  e.stopPropagation();
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  if (workspaceNameRef.current !== null) {
+                    workspaceNameRef.current.blur();
+                  }
+                }
+              }}
+              onBlur={(e) => {
+                runInAction(() => {
+                  tabPageStore.activeWorkspaceNameRef = null;
+                });
+                if (e.currentTarget.value !== '') {
+                  workspace.setName(e.currentTarget.value);
+                }
+              }}
+            />
           </WorkspaceContentBackground>
         </DraggableCore>
       </Background>

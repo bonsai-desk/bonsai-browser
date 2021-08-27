@@ -34,6 +34,7 @@ const FooterButtonParent = styled.button`
   height: 75px;
   border-radius: 1rem;
   margin: 0 2px 0 2px;
+  overflow: hidden;
 
   :hover {
     filter: brightness(0.7);
@@ -51,7 +52,7 @@ const WorkspaceButtons = observer(() => {
           style={{
             backgroundColor:
               tabPageStore.View === View.WorkSpace &&
-              workspace.id === tabPageStore.activeWorkspaceId
+              workspace.id === workspaceStore.activeWorkspaceId
                 ? '#ffaf54'
                 : 'white',
           }}
@@ -62,11 +63,11 @@ const WorkspaceButtons = observer(() => {
             runInAction(() => {
               if (
                 tabPageStore.View === View.WorkSpace &&
-                tabPageStore.activeWorkspaceId === workspace.id
+                workspaceStore.activeWorkspaceId === workspace.id
               ) {
                 tabPageStore.View = View.Tabs;
               } else {
-                tabPageStore.activeWorkspaceId = workspace.id;
+                workspaceStore.setActiveWorkspaceId(workspace.id);
                 tabPageStore.View = View.WorkSpace;
               }
             });
