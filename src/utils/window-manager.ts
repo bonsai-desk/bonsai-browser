@@ -454,7 +454,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -761,10 +761,7 @@ export default class WindowManager {
         this.unFloat();
         this.tabPageView.webContents.send('blur');
         this.mainWindow?.hide();
-        if (
-          process.platform === 'darwin' &&
-          process.env.NODE_ENV !== 'development'
-        ) {
+        if (process.platform === 'darwin') {
           app.hide();
         }
       }
