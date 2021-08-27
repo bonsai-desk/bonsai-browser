@@ -25,8 +25,6 @@ export enum View {
 export default class TabPageStore {
   private view: View = View.Tabs;
 
-  activeWorkspaceId = '';
-
   public get View() {
     return this.view;
   }

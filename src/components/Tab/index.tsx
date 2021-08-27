@@ -4,6 +4,7 @@ import { ipcRenderer } from 'electron';
 import { useStore } from '../../store/tab-page-store';
 import { ITab, TabPageTab } from '../../interfaces/tab';
 import redX from '../../../assets/x-letter.svg';
+import hamburgerIcon from '../../../assets/hamburger-menu.svg';
 import RedX from '../RedX';
 import {
   RedXParent,
@@ -47,26 +48,16 @@ const TabImage = observer(
             style={{
               left: 10,
               bottom: 10,
-              width: 105,
             }}
             hoverColor="#3572AC"
             onClick={(e) => {
               e.stopPropagation();
 
-              // todo: specific workspace
-              const workspace = workspaceStore.workspaces.values().next();
-              if (!workspace.done) {
-                workspace.value.createItem(
-                  tab.url,
-                  tab.title,
-                  tab.image,
-                  tab.favicon,
-                  workspace.value.inboxGroup
-                );
-              }
+              workspaceStore.setChooseWorkspacePos(e.pageX, e.pageY);
+              workspaceStore.setSelectedTab(tab);
             }}
           >
-            <div>Add to workspace</div>
+            <img src={hamburgerIcon} alt="-" width="20px" />
           </RedX>
         </RedXParent>
       </TabImageParent>

@@ -51,7 +51,7 @@ const WorkspaceButtons = observer(() => {
           style={{
             backgroundColor:
               tabPageStore.View === View.WorkSpace &&
-              workspace.id === tabPageStore.activeWorkspaceId
+              workspace.id === workspaceStore.activeWorkspaceId
                 ? '#ffaf54'
                 : 'white',
           }}
@@ -62,11 +62,11 @@ const WorkspaceButtons = observer(() => {
             runInAction(() => {
               if (
                 tabPageStore.View === View.WorkSpace &&
-                tabPageStore.activeWorkspaceId === workspace.id
+                workspaceStore.activeWorkspaceId === workspace.id
               ) {
                 tabPageStore.View = View.Tabs;
               } else {
-                tabPageStore.activeWorkspaceId = workspace.id;
+                workspaceStore.setActiveWorkspaceId(workspace.id);
                 tabPageStore.View = View.WorkSpace;
               }
             });
