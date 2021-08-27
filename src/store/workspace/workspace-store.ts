@@ -1,7 +1,7 @@
 /* eslint no-console: off */
 /* eslint prefer-destructuring: off */
 
-import { types } from 'mobx-state-tree';
+import { Instance, types } from 'mobx-state-tree';
 import { v4 as uuidv4 } from 'uuid';
 import { Workspace } from './workspace';
 import { ItemGroup } from './item-group';
@@ -54,5 +54,7 @@ const WorkspaceStore = types
       self.selectedTab = selectedTab;
     },
   }));
+
+export type IWorkSpaceStore = Instance<typeof WorkspaceStore>;
 
 export default WorkspaceStore;

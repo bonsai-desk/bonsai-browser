@@ -4,6 +4,7 @@ import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import { useStore } from '../store/tab-page-store';
 import { goBack, goForward, INode } from '../store/history-store';
+import { IWorkSpaceStore } from '../store/workspace/workspace-store';
 
 const NavigatorParent = styled.div`
   width: 100%;
@@ -90,15 +91,27 @@ const NavigatorItem = observer(
   }
 );
 
+const WorkspaceItem = observer(({ data }: { data: IItemPath }) => {
+  return (
+    <NavigatorItemParent
+      onClick={() => {
+        console.log('woo');
+      }}
+    >{`${data.workspaceName} / ${data.groupName}`}</NavigatorItemParent>
+  );
+});
+
 const Panel = observer(
   ({
     items,
     dim,
     dir,
+    children,
   }: {
     items: INode[];
     dim: Dimensions;
     dir: Direction;
+    children?: JSX.Element | JSX.Element[];
   }) => {
     const { width, height, margin } = dim;
     return (
@@ -110,14 +123,56 @@ const Panel = observer(
         {items.map((item) => (
           <NavigatorItem key={item.id} node={item} dir={dir} />
         ))}
+        {children}
       </NavigatorPanel>
     );
   }
 );
 
+interface IItemPath {
+  workspaceId: string;
+  groupId: string;
+  itemId: string;
+  workspaceName: string;
+  groupName: string;
+}
+
+function nodeInWorkspaces(
+  node: INode | undefined,
+  workspaceStore: IWorkSpaceStore
+): IItemPath[] {
+  if (node) {
+    const matches: IItemPath[] = [];
+    Array.from(workspaceStore.workspaces.values()).forEach((workspace) => {
+      Array.from(workspace.items.values()).forEach((item) => {
+        const baseUrl = item.url.split('#')[0];
+        const nodeBaseUrl = node.data.url.split('#')[0];
+        const match = baseUrl === nodeBaseUrl;
+        if (match) {
+          const workspaceId = workspace.id;
+          const { groupId } = item;
+          const group = workspace.groups.get(groupId);
+          const itemId = item.id;
+          const workspaceName = workspace.name;
+          const groupName = group ? group.title : 'Untitled';
+          matches.push({
+            workspaceId,
+            groupId,
+            itemId,
+            workspaceName,
+            groupName,
+          });
+        }
+      });
+    });
+    return matches;
+  }
+  return [];
+}
+
 const Navigator = observer(() => {
   const backRef = useRef(null);
-  const { tabPageStore, historyStore } = useStore();
+  const { workspaceStore, tabPageStore, historyStore } = useStore();
   const gutter =
     (tabPageStore.screen.width - tabPageStore.innerBounds.width) / 2;
   const margin = 20;
@@ -126,6 +181,7 @@ const Navigator = observer(() => {
   const head = historyStore.heads.get(historyStore.active);
   const leftItems = head && head.parent ? [head.parent] : [];
   const rightItems = head ? head.children.slice().reverse() : [];
+  const matches = nodeInWorkspaces(head, workspaceStore);
   return (
     <NavigatorParent
       ref={backRef}
@@ -139,7 +195,11 @@ const Navigator = observer(() => {
         dir={Direction.Back}
         items={leftItems}
         dim={{ width, height, margin }}
-      />
+      >
+        {matches.map((match) => (
+          <WorkspaceItem key={match.itemId} data={match} />
+        ))}
+      </Panel>
       <Panel
         dir={Direction.Forward}
         items={rightItems}
