@@ -7,19 +7,12 @@ const Background = styled.div`
   margin: 0;
   padding: 0;
   ${() => {
-    if (myPlatform === Platform.Mac) {
+    if (myPlatform !== Platform.Mac) {
       return css`
-        @media (prefers-color-scheme: dark) {
-          background-color: rgba(0, 0, 0, 0);
-        }
-        @media (prefers-color-scheme: light) {
-          background-color: rgba(0, 0, 0, 0);
-        }
+        background-color: rgba(0, 0, 0, 0.7);
       `;
     }
-    return css`
-      background-color: rgba(0, 0, 0, 0.7);
-    `;
+    return '';
   }}}
 `;
 

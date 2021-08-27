@@ -290,6 +290,7 @@ export function hookListeners(h: Instance<typeof HistoryStore>) {
     }
   });
   ipcRenderer.on('will-navigate-no-gesture', (_, { id, url }) => {
+    // todo: this works but could be cleaned up if more logic needs to be added
     const node = h.heads.get(id);
     const urlIsNew = node?.data.url !== url;
     if (node && url && urlIsNew) {

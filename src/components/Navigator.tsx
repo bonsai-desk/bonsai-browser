@@ -8,7 +8,6 @@ import { goBack, goForward, INode } from '../store/history-store';
 const NavigatorParent = styled.div`
   width: 100%;
   height: 100%;
-  background: rgba(255, 0, 0, 0.25);
   display: flex;
   flex-wrap: wrap;
   align-content: center;
@@ -16,7 +15,7 @@ const NavigatorParent = styled.div`
 `;
 
 const NavigatorPanel = styled.div`
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.25);
   border-radius: 1rem;
   overflow: scroll;
   ::-webkit-scrollbar {

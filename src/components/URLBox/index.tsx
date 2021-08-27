@@ -1,8 +1,7 @@
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 import React, { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { runInAction } from 'mobx';
-import { myPlatform, Platform } from '../../render-constants';
 import { useStore } from '../../store/tab-page-store';
 
 const URLBoxParent = styled.div`
@@ -12,20 +11,7 @@ const URLBoxParent = styled.div`
 `;
 
 const Input = styled.input`
-  @media (prefers-color-scheme: dark) {
-    background-color: rgba(255, 255, 255, 0.25);
-  }
-  @media (prefers-color-scheme: light) {
-    background-color: rgba(0, 0, 0, 0.25);
-  }
-  ${() => {
-    if (myPlatform === Platform.Windows) {
-      return css`
-        background-color: rgba(255, 255, 255, 0.25);
-      `;
-    }
-    return '';
-  }}
+  background-color: rgba(255, 255, 255, 0.25);
   font-size: 1.25rem;
   font-weight: normal;
   border-radius: 10px;
