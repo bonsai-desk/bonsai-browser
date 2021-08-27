@@ -97,8 +97,6 @@ function createWorkspaceStore(): Instance<typeof WorkspaceStore> {
   });
 
   workspaceStore.createWorkspace('default');
-  workspaceStore.createWorkspace('default 2');
-  workspaceStore.createWorkspace('default 3');
 
   ipcRenderer.send('request-snapshot-path');
 

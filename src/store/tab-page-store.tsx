@@ -31,6 +31,14 @@ export default class TabPageStore {
 
   public set View(view: View) {
     this.view = view;
+    if (this.activeGroupBoxRef !== null) {
+      this.activeGroupBoxRef.current?.blur();
+      this.activeGroupBoxRef = null;
+    }
+    if (this.activeWorkspaceNameRef !== null) {
+      this.activeWorkspaceNameRef.current?.blur();
+      this.activeWorkspaceNameRef = null;
+    }
     if (view !== View.FuzzySearch) {
       this.urlText = '';
     }
