@@ -15,8 +15,8 @@ const NavigatorParent = styled.div`
 `;
 
 const NavigatorPanel = styled.div`
-  background: rgba(255, 255, 255, 0.25);
-  border-radius: 1rem;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 0.5rem;
   overflow: scroll;
   ::-webkit-scrollbar {
     display: none;
@@ -40,11 +40,18 @@ const NavigatorPanel = styled.div`
 `;
 
 const NavigatorItemParent = styled.div`
+  user-select: none;
+  cursor: default;
+  font-size: 0.75rem;
   color: white;
-  width: 100%;
-  padding-top: 56.25%;
-  background-color: black;
-  border-radius: 1rem;
+  width: calc(100% - 0.5rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  //padding-top: 56.25%;
+  background-color: rgba(100, 100, 100, 1);
+  padding: 0.5rem 0 0.5rem 0.5rem;
+  border-radius: 0.5rem;
 `;
 
 interface Dimensions {
@@ -65,6 +72,7 @@ enum Direction {
 const NavigatorItem = observer(
   ({ node, dir }: { node: INode; dir: Direction }) => {
     const { historyStore } = useStore();
+    const title = node.data.title ? node.data.title : node.data.url;
     return (
       <NavigatorItemParent
         onClick={() => {
@@ -76,7 +84,7 @@ const NavigatorItem = observer(
           }
         }}
       >
-        {node.data.url}
+        {title}
       </NavigatorItemParent>
     );
   }

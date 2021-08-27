@@ -17,6 +17,7 @@ function log(str: string) {
 
 export const HistoryData = types.model({
   url: types.string,
+  title: types.maybe(types.string),
   scroll: 0,
   date: types.string,
 });
@@ -363,6 +364,13 @@ export function hookListeners(h: Instance<typeof HistoryStore>) {
     log(`try remove head ${id}`);
     if (h.removeHead(id)) {
       log(`removed head ${id}`);
+    }
+  });
+  ipcRenderer.on('title-updated', (_, [id, title]) => {
+    log(`${id} update title to ${title}`);
+    const node = h.heads.get(id);
+    if (node) {
+      node.setData({ ...node.data, title });
     }
   });
 }

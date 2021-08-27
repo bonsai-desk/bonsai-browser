@@ -121,6 +121,7 @@ function paintVignette(canvas: HTMLCanvasElement | null) {
       const x = 0;
       const y = 0;
 
+      context.strokeStyle = '#d2eefc';
       context.beginPath();
       context.moveTo(x, y);
       context.lineTo(x + width, y);

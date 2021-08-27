@@ -6,6 +6,7 @@ const Background = styled.div`
   height: 100vh;
   margin: 0;
   overflow: hidden;
+  //background-color: #d2eefc;
   ${() => {
     if (myPlatform !== Platform.Mac) {
       return css`

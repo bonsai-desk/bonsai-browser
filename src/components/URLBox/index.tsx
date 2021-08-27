@@ -13,16 +13,17 @@ const URLBoxParent = styled.div`
 
 const Input = styled.input`
   background-color: rgba(255, 255, 255, 0.25);
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: normal;
-  border-radius: 10px;
+  border-radius: 0.2rem;
   outline: none;
   border: none;
-  padding: 0.75rem 1.25rem 0.75rem 1.25rem;
-  width: 30rem;
+  padding: 0.5rem 1.25rem 0.5rem 1.25rem;
+  width: 20rem;
   color: white;
   ::placeholder {
     color: #d4d4d4;
+    text-align: center;
   }
 `;
 
