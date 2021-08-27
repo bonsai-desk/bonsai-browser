@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import styled, { css } from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
-import { useStore } from '../store/tab-page-store';
+import { useStore, View } from '../store/tab-page-store';
 import { goBack, goForward, INode } from '../store/history-store';
 import { IWorkSpaceStore } from '../store/workspace/workspace-store';
 
@@ -92,10 +92,14 @@ const NavigatorItem = observer(
 );
 
 const WorkspaceItem = observer(({ data }: { data: IItemPath }) => {
+  const { tabPageStore, workspaceStore } = useStore();
   return (
     <NavigatorItemParent
       onClick={() => {
         console.log('woo');
+        workspaceStore.setActiveWorkspaceId(data.workspaceId);
+        tabPageStore.View = View.WorkSpace;
+        ipcRenderer.send('click-main');
       }}
     >{`${data.workspaceName} / ${data.groupName}`}</NavigatorItemParent>
   );
