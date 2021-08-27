@@ -100,6 +100,9 @@ export const Workspace = types
     };
   })
   .actions((self) => ({
+    setName(name: string) {
+      self.name = name;
+    },
     repositionInbox() {
       const worldPos = self.screenToWorld(0, 0);
       self.inboxGroup.setPos(worldPos[0], worldPos[1]);

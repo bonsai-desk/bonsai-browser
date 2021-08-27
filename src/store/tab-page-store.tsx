@@ -31,6 +31,9 @@ export default class TabPageStore {
 
   public set View(view: View) {
     this.view = view;
+    if (view !== View.FuzzySearch) {
+      this.urlText = '';
+    }
   }
 
   hoveringUrlInput = false;
@@ -60,6 +63,8 @@ export default class TabPageStore {
   activeGroupBoxRef: RefObject<HTMLInputElement> | null = null;
 
   editingGroupId = '';
+
+  activeWorkspaceNameRef: RefObject<HTMLInputElement> | null = null;
 
   fuzzySelectionIndex: [number, number] = [0, 0];
 
@@ -212,6 +217,10 @@ export default class TabPageStore {
   }
 
   setFocus() {
+    if (this.activeWorkspaceNameRef !== null) {
+      this.activeWorkspaceNameRef.current?.focus();
+      return;
+    }
     if (this.activeGroupBoxRef !== null) {
       this.activeGroupBoxRef.current?.focus();
       return;
