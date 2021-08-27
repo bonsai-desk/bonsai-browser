@@ -136,7 +136,6 @@ export const Workspace = types
       this.repositionInbox();
     },
     centerCamera() {
-      console.log('center');
       self.tempMinCameraZoom = minZoom;
       self.cameraZoom = defaultZoom;
       let edges = [0, 0, 0, 0];

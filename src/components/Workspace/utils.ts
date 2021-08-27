@@ -10,13 +10,13 @@ import { InboxColumnWidth, Workspace } from '../../store/workspace/workspace';
 
 export function overTrash(
   testPos: number[],
-  workspaceStore: Instance<typeof Workspace>
+  workspace: Instance<typeof Workspace>
 ): boolean {
   return (
-    testPos[0] >= InboxColumnWidth &&
-    testPos[0] <= InboxColumnWidth + 100 &&
-    testPos[1] >= workspaceStore.height - 100 &&
-    testPos[1] <= workspaceStore.height
+    testPos[0] >= workspace.width / 2 - 50 &&
+    testPos[0] <= workspace.width / 2 + 50 &&
+    testPos[1] >= 0 &&
+    testPos[1] <= 100
   );
 }
 

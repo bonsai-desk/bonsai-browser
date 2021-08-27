@@ -62,6 +62,7 @@ export const CenterButton = styled.div`
 `;
 export const CornerButtonIcon = styled.img`
   width: 75px;
+  margin-bottom: 5px;
 
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -184,9 +185,9 @@ const Workspace = observer(
             <div>{items}</div>
             <CornerButton
               style={{
-                left: InboxColumnWidth,
-                bottom: 0,
-                borderRadius: '0 20px 0 0',
+                left: workspace.width / 2 - 50,
+                top: 0,
+                borderRadius: '0 0 20px 20px',
                 display: workspace.anyDragging ? 'flex' : 'none',
                 backgroundColor: workspace.anyOverTrash
                   ? 'red'
