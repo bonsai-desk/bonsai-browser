@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import { runInAction } from 'mobx';
@@ -120,15 +120,6 @@ const Home = observer(() => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [tabPageStore]);
-
-  const [hasRunOnce, setHasRunOnce] = useState(false);
-
-  useEffect(() => {
-    if (hasRunOnce) {
-      return;
-    }
-    setHasRunOnce(true);
-  }, [hasRunOnce, tabPageStore]);
 
   return (
     <Background
