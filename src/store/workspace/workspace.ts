@@ -146,6 +146,29 @@ export const Workspace = types
       self.cameraY = y;
       this.repositionInbox();
     },
+    centerCameraOnItem(itemId: string) {
+      const item = self.items.get(itemId);
+      if (typeof item === 'undefined') {
+        return;
+      }
+      if (item.groupId === 'hidden' || item.groupId === 'inbox') {
+        return;
+      }
+
+      const group = self.groups.get(item.groupId);
+      if (typeof group === 'undefined') {
+        return;
+      }
+
+      this.setCameraZoom(maxZoom);
+
+      const screenPos = this.placeholderPos(item, group);
+      const offset = self.screenVectorToWorldVector(
+        screenPos[0] + (itemWidth / 2) * self.scale,
+        screenPos[1] + (itemHeight / 2) * self.scale
+      );
+      this.setCameraPosition(group.x + offset[0], group.y + offset[1]);
+    },
     centerCamera() {
       self.tempMinCameraZoom = minZoom;
       self.cameraZoom = defaultZoom;

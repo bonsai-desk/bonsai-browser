@@ -329,8 +329,6 @@ export function hookListeners(h: Instance<typeof HistoryStore>) {
         const data = HistoryData.create({ url, scroll: 0, date: getDate() });
         node.setData(data);
       }
-    } else {
-      log('FAIL');
     }
   });
   ipcRenderer.on('did-navigate', (_, { id, url }) => {
