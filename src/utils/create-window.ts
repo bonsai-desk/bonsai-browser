@@ -182,7 +182,7 @@ function initWindow(): BrowserWindow {
       contextIsolation: true, // todo: do we need this? security concern?
     },
   });
-  mainWindow.setAlwaysOnTop(true, 'main-menu');
+  mainWindow.setAlwaysOnTop(true, 'status');
   return mainWindow;
 }
 

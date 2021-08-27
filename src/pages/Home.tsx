@@ -5,7 +5,7 @@ import { runInAction } from 'mobx';
 import styled from 'styled-components';
 import { useStore, View } from '../store/tab-page-store';
 import URLBox from '../components/URLBox';
-import PinButton from '../components/PinButton';
+// import PinButton from '../components/PinButton';
 import FuzzyTabs from '../components/FuzzyTabs';
 import ClickerParent from '../components/Clicker';
 import Background from '../components/Background';
@@ -177,7 +177,7 @@ const Home = observer(() => {
       <Content />
       <History />
       <Debug />
-      <PinButton />
+      {/* <PinButton /> */}
       <Canvas ref={canvasRef} />
     </Background>
   );

@@ -8,6 +8,7 @@ const URLBoxParent = styled.div`
   display: flex;
   justify-content: center;
   width: 100%;
+  margin-bottom: 10px;
 `;
 
 const Input = styled.input`
@@ -18,7 +19,6 @@ const Input = styled.input`
   outline: none;
   border: none;
   padding: 0.75rem 1.25rem 0.75rem 1.25rem;
-  margin: 10px;
   width: 30rem;
   color: white;
   ::placeholder {
