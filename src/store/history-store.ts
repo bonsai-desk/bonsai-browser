@@ -4,6 +4,10 @@ import { v4 as uuidv4 } from 'uuid';
 
 const DEBUG = true;
 
+function showNode(node: INode) {
+  return `[${node.id.slice(0, 4)}]`;
+}
+
 function log(str: string) {
   if (DEBUG) {
     // eslint-disable-next-line no-console
@@ -28,8 +32,14 @@ export const Node = types
       types.reference(types.late((): IAnyModelType => Node))
     ),
   })
+  .views((self) => ({
+    showNode() {
+      return `[${self.id.slice(0, 4)}]`;
+    },
+  }))
   .actions((self) => ({
     setParent(a: Instance<typeof self> | null) {
+      log(`${self.showNode()} set parent ${a ? a.showNode() : 'null'}`);
       self.parent = a;
     },
     setData(a: IHistoryData) {
@@ -39,15 +49,12 @@ export const Node = types
       self.children.push(a);
     },
     removeChild(a: Instance<typeof self>): boolean {
+      log(`${self.showNode()} remove child ${a.showNode()}`);
       return self.children.remove(a);
     },
   }));
 
 export type INode = Instance<typeof Node>;
-
-function showNode(node: INode) {
-  return `[${node.id.slice(0, 4)}]`;
-}
 
 export const HistoryStore = types
   .model({
@@ -77,6 +84,7 @@ export const HistoryStore = types
       child.setParent(parent);
     },
     removeNode(a: INode) {
+      log(`delete node ${showNode(a)}`);
       a.parent?.removeChild(a);
       a.children.forEach((child: INode) => {
         child.setParent(null);
@@ -84,8 +92,10 @@ export const HistoryStore = types
       self.nodes.delete(a.id);
     },
     setActive(webViewId: string) {
-      log(`swap active webView from (${self.active}) to (${webViewId})`);
-      self.active = webViewId;
+      if (webViewId !== self.active) {
+        log(`swap active webView from (${self.active}) to (${webViewId})`);
+        self.active = webViewId;
+      }
     },
     addRoot(a: INode) {
       self.roots.push(a);
@@ -289,8 +299,16 @@ export function hookListeners(h: Instance<typeof HistoryStore>) {
         const heads = headsOnNode(h, twin);
         if (heads.length > 0) {
           const headId = heads[0][0];
-          log(`${headId} is active on ${showNode(twin)} so will remove ${id}`);
-          ipcRenderer.send('remove-tab', id);
+          if (h.active === id.toString()) {
+            h.setActive(headId);
+            setTab(parseInt(headId, 10));
+            ipcRenderer.send('remove-tab', id);
+          } else {
+            log(
+              `${headId} is active on ${showNode(twin)} so will remove ${id}`
+            );
+            ipcRenderer.send('remove-tab', id);
+          }
         } else {
           log(
             `${id} remove ${showNode(node)} and set head for twin ${showNode(

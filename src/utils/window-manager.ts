@@ -315,11 +315,11 @@ export function addListeners(wm: WindowManager) {
     }
   });
   ipcMain.on('gesture', (event, data) => {
-    console.log(`\n${event.sender.id} GESTURE ${data}`);
+    log(`\n${event.sender.id} GESTURE ${data}`);
     wm.setGesture(event.sender.id, true);
   });
   ipcMain.on('dom-content-loaded', (event) => {
-    console.log(`\n${event.sender.id} DOM LOADED`);
+    log(`\n${event.sender.id} DOM LOADED`);
     wm.setGesture(event.sender.id, false);
   });
   ipcMain.on('request-new-window', (_, { senderId, url }) => {
