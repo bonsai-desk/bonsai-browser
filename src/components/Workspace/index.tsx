@@ -7,13 +7,14 @@ import { runInAction } from 'mobx';
 import MainItem from './MainItem';
 import MainGroup from './MainGroup';
 import trashIcon from '../../../assets/alternate-trash.svg';
-import centerIcon from '../../../assets/center-square.svg';
+// import centerIcon from '../../../assets/center-square.svg';
+import hamburgerIcon from '../../../assets/hamburger-menu.svg';
 import { ItemGroup } from '../../store/workspace/item-group';
 import {
   InboxColumnWidth,
   Workspace as MobxWorkspace,
 } from '../../store/workspace/workspace';
-import { useStore } from '../../store/tab-page-store';
+import { useStore, View } from '../../store/tab-page-store';
 import { HeaderInput, HeaderText } from './style';
 
 export { MainItem, MainGroup };
@@ -39,7 +40,7 @@ const InboxColumn = styled.div`
   height: 100%;
   z-index: 9999999;
 `;
-export const CornerButton = styled.div`
+export const TrashButton = styled.div`
   position: absolute;
   width: 100px;
   height: 100px;
@@ -48,7 +49,7 @@ export const CornerButton = styled.div`
   align-items: center;
   z-index: 10000001;
 `;
-export const CenterButton = styled.div`
+export const SideButton = styled.div`
   position: absolute;
   width: 100px;
   height: 100px;
@@ -70,6 +71,30 @@ export const CornerButtonIcon = styled.img`
   -moz-user-select: none;
   user-select: none;
   -webkit-user-drag: none;
+`;
+const HamburgerBackground = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 10000002;
+`;
+const HamburgerMenu = styled.div`
+  position: absolute;
+  top: 0;
+  right: 100px;
+  width: 300px;
+  background-color: red;
+  z-index: 10000003;
+`;
+const HamburgerOption = styled.div`
+  background-color: lightblue;
+  height: 50px;
+
+  :hover {
+    filter: brightness(0.8);
+  }
 `;
 
 const Workspace = observer(
@@ -133,6 +158,21 @@ const Workspace = observer(
       );
     }, [hasRunOnce, workspace, workspaceStore.workspaces]);
 
+    useEffect(() => {
+      if (workspace.shouldEditName) {
+        workspace.setShouldEditName(false);
+        runInAction(() => {
+          tabPageStore.activeWorkspaceNameRef = workspaceNameRef;
+        });
+        if (workspaceNameRef.current !== null) {
+          workspaceNameRef.current.value = workspace.name;
+        }
+        setTimeout(() => {
+          workspaceNameRef.current?.select();
+        }, 10);
+      }
+    }, [tabPageStore, workspace]);
+
     return (
       <Background>
         <DraggableCore
@@ -188,7 +228,7 @@ const Workspace = observer(
             <div>{groups}</div>
             <MainGroup workspace={workspace} group={workspace.inboxGroup} />
             <div>{items}</div>
-            <CornerButton
+            <TrashButton
               style={{
                 left: workspace.width / 2 - 50,
                 top: 0,
@@ -200,22 +240,55 @@ const Workspace = observer(
               }}
             >
               <CornerButtonIcon src={trashIcon} />
-            </CornerButton>
-            <CenterButton
+            </TrashButton>
+            <SideButton
               style={{
                 right: 0,
-                bottom: 0,
-                borderRadius: '20px 0 0 0',
+                top: 0,
+                borderRadius: '0 0 0 20px',
               }}
               onMouseDown={(e) => {
                 e.stopPropagation();
               }}
               onClick={() => {
-                workspace.centerCamera();
+                workspace.setHamburgerOpen(true);
               }}
             >
-              <CornerButtonIcon src={centerIcon} />
-            </CenterButton>
+              <CornerButtonIcon src={hamburgerIcon} />
+            </SideButton>
+            <HamburgerBackground
+              style={{
+                display: workspace.hamburgerOpen ? 'block' : 'none',
+              }}
+              onClick={() => {
+                workspace.setHamburgerOpen(false);
+              }}
+            />
+            <HamburgerMenu
+              style={{
+                display: workspace.hamburgerOpen ? 'block' : 'none',
+              }}
+            >
+              <HamburgerOption
+                onClick={() => {
+                  workspace.centerCamera();
+                  workspace.setHamburgerOpen(false);
+                }}
+              >
+                Center Camera
+              </HamburgerOption>
+              <HamburgerOption
+                onClick={() => {
+                  workspace.setHamburgerOpen(false);
+                  runInAction(() => {
+                    tabPageStore.View = View.Tabs;
+                  });
+                  workspaceStore.deleteWorkspace(workspace);
+                }}
+              >
+                Delete Workspace
+              </HamburgerOption>
+            </HamburgerMenu>
             <HeaderText
               style={{
                 display:

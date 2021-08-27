@@ -79,7 +79,26 @@ const WorkspaceButtons = observer(() => {
     }
   );
 
-  return <>{buttons}</>;
+  return (
+    <>
+      {buttons}
+      <FooterButtonParent
+        onMouseDown={(e) => {
+          e.stopPropagation();
+        }}
+        onClick={() => {
+          const workspace = workspaceStore.createWorkspace('new workspace');
+          workspace.setShouldEditName(true);
+          workspaceStore.setActiveWorkspaceId(workspace.id);
+          runInAction(() => {
+            tabPageStore.View = View.WorkSpace;
+          });
+        }}
+      >
+        +
+      </FooterButtonParent>
+    </>
+  );
 });
 
 const Footer = observer(() => {

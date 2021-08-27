@@ -42,6 +42,8 @@ export const Workspace = types
     anyOverTrash: false,
     tempMinCameraZoom: minZoom,
     inboxScrollY: 0,
+    hamburgerOpen: false,
+    shouldEditName: false,
   }))
   .views((self) => {
     const noAllocPos = vec4.create();
@@ -100,6 +102,12 @@ export const Workspace = types
     };
   })
   .actions((self) => ({
+    setShouldEditName(shouldEditName: boolean) {
+      self.shouldEditName = shouldEditName;
+    },
+    setHamburgerOpen(hamburgerOpen: boolean) {
+      self.hamburgerOpen = hamburgerOpen;
+    },
     setName(name: string) {
       self.name = name;
     },
