@@ -1,10 +1,11 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import styled, { css } from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import { useStore, View } from '../store/tab-page-store';
 import { goBack, goForward, INode } from '../store/history-store';
 import { IWorkSpaceStore } from '../store/workspace/workspace-store';
+import { IWorkspace } from '../store/workspace/workspace';
 
 const NavigatorParent = styled.div`
   width: 100%;
@@ -38,6 +39,22 @@ const NavigatorPanel = styled.div`
     margin: 0 ${margin} 0 ${margin};
     width: ${width};
   `}
+`;
+
+const AddToWorkspaceParent = styled.div`
+  user-select: none;
+  cursor: default;
+  font-size: 0.75rem;
+  color: white;
+  width: calc(100% - 0.5rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  //padding-top: 56.25%;
+  background-color: rgba(100, 100, 100, 1);
+  padding: 0.5rem 0 0.5rem 0.5rem;
+  border-radius: 0.5rem;
 `;
 
 const NavigatorItemParent = styled.div`
@@ -96,7 +113,6 @@ const WorkspaceItem = observer(({ data }: { data: IItemPath }) => {
   return (
     <NavigatorItemParent
       onClick={() => {
-        console.log('woo');
         workspaceStore.setActiveWorkspaceId(data.workspaceId);
         tabPageStore.View = View.WorkSpace;
         ipcRenderer.send('click-main');
@@ -158,7 +174,7 @@ function nodeInWorkspaces(
           const group = workspace.groups.get(groupId);
           const itemId = item.id;
           const workspaceName = workspace.name;
-          const groupName = group ? group.title : 'Untitled';
+          const groupName = group ? group.title : 'Inbox';
           matches.push({
             workspaceId,
             groupId,
@@ -173,6 +189,66 @@ function nodeInWorkspaces(
   }
   return [];
 }
+
+const AddToWorkspaceButtonParent = styled.div``;
+
+const AddToWorkspaceButton = observer(
+  ({
+    ws,
+    callback,
+  }: {
+    ws: IWorkspace;
+    callback: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
+  }) => {
+    return (
+      <AddToWorkspaceButtonParent onClick={callback}>
+        {ws.name}
+      </AddToWorkspaceButtonParent>
+    );
+  }
+);
+
+const AddToWorkspace = observer(({ node }: { node: INode }) => {
+  const [open, setOpen] = useState(false);
+  const { workspaceStore } = useStore();
+  const ws = Array.from(workspaceStore.workspaces.values());
+  return (
+    <AddToWorkspaceParent
+      onClick={() => {
+        setOpen(!open);
+      }}
+    >
+      <>
+        +
+        {open
+          ? ws.map((workspace) => {
+              const callback = (
+                e: React.MouseEvent<HTMLDivElement, MouseEvent>
+              ) => {
+                e.stopPropagation();
+                const title = node.data.title ? node.data.title : 'Untitled';
+                workspace.createItem(
+                  node.data.url,
+                  title,
+                  '',
+                  '',
+                  workspace.inboxGroup
+                );
+                setOpen(false);
+              };
+              return (
+                <AddToWorkspaceButton
+                  key={workspace.id}
+                  ws={workspace}
+                  callback={callback}
+                />
+              );
+            })
+          : ''}
+      </>
+    </AddToWorkspaceParent>
+  );
+});
 
 const Navigator = observer(() => {
   const backRef = useRef(null);
@@ -200,9 +276,12 @@ const Navigator = observer(() => {
         items={leftItems}
         dim={{ width, height, margin }}
       >
-        {matches.map((match) => (
-          <WorkspaceItem key={match.itemId} data={match} />
-        ))}
+        <>
+          {matches.map((match) => (
+            <WorkspaceItem key={match.itemId} data={match} />
+          ))}
+          {head ? <AddToWorkspace node={head} /> : ''}
+        </>
       </Panel>
       <Panel
         dir={Direction.Forward}

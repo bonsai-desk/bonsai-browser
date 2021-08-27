@@ -12,7 +12,7 @@ const URLBoxParent = styled.div`
 `;
 
 const Input = styled.input`
-  background-color: rgba(255, 255, 255, 0.25);
+  background-color: rgba(0, 0, 0, 0.25);
   font-size: 1rem;
   font-weight: normal;
   border-radius: 0.2rem;
@@ -22,7 +22,7 @@ const Input = styled.input`
   width: 20rem;
   color: white;
   ::placeholder {
-    color: #d4d4d4;
+    color: rgba(255, 255, 255, 0.8);
     text-align: center;
   }
 `;
