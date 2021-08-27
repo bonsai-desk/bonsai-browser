@@ -174,13 +174,15 @@ function initWindow(): BrowserWindow {
     vibrancy: mac ? 'fullscreen-ui' : undefined, // menu, popover, hud, fullscreen-ui
     roundedCorners: false,
     visualEffectState: mac ? 'active' : undefined,
+    fullscreen: true,
+    simpleFullscreen: true,
     webPreferences: {
       nodeIntegration: false,
       devTools: false,
       contextIsolation: true, // todo: do we need this? security concern?
     },
   });
-  mainWindow.setAlwaysOnTop(true, 'status');
+  mainWindow.setAlwaysOnTop(true, 'main-menu');
   return mainWindow;
 }
 
