@@ -26,13 +26,21 @@ const MainContent = observer(() => {
   const { tabPageStore, workspaceStore } = useStore();
 
   if (tabPageStore.View === View.WorkSpace) {
-    const workspace = workspaceStore.workspaces.get(
+    let workspace = workspaceStore.workspaces.get(
       workspaceStore.activeWorkspaceId
     );
+    if (typeof workspace === 'undefined') {
+      workspaceStore.workspaces.forEach((w) => {
+        if (typeof workspace === 'undefined') {
+          workspaceStore.setActiveWorkspaceId(w.id);
+          workspace = w;
+        }
+      });
+    }
     if (typeof workspace !== 'undefined') {
       return <Workspace workspace={workspace} />;
     }
-    return null;
+    tabPageStore.setUrlText('');
   }
   return tabPageStore.View === View.Tabs ? <Columns /> : <FuzzyTabs />;
 });

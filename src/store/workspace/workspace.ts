@@ -3,6 +3,7 @@
 
 import { destroy, Instance, types } from 'mobx-state-tree';
 import { v4 as uuidv4 } from 'uuid';
+import { mat4, vec3, vec4 } from 'gl-matrix';
 import {
   groupBorder,
   groupPadding,
@@ -42,46 +43,62 @@ export const Workspace = types
     tempMinCameraZoom: minZoom,
     inboxScrollY: 0,
   }))
-  .views((self) => ({
-    get scale() {
-      return (
-        (self.height /
-          (itemHeight + groupTitleHeight + groupPadding * 2 + groupBorder * 2) /
-          (1 / 0.75)) *
-        self.cameraZoom
-      );
-    },
-    get inboxScale() {
-      return (
-        self.width /
-        (itemWidth + groupPadding * 2 + groupBorder * 2) /
-        (1 / (InboxColumnWidth / self.width))
-      );
-    },
-    get getMatrices() {
-      const newMatrices = calculateMatrices(
-        self.width,
-        self.height,
-        self.cameraZoom,
-        self.cameraX,
-        self.cameraY
-      );
-      return newMatrices;
-    },
-    worldToScreen(x: number, y: number): [number, number] {
-      const { worldToClip, clipToScreen } = this.getMatrices;
-      return transformPosition(x, y, worldToClip, clipToScreen);
-    },
-    screenToWorld(x: number, y: number): [number, number] {
-      const { screenToClip, clipToWorld } = this.getMatrices;
-      return transformPosition(x, y, screenToClip, clipToWorld);
-    },
-    screenVectorToWorldVector(x: number, y: number): [number, number] {
-      const world0 = this.screenToWorld(0, 0);
-      const worldV = this.screenToWorld(x, y);
-      return [worldV[0] - world0[0], worldV[1] - world0[1]];
-    },
-  }))
+  .views((self) => {
+    const noAllocPos = vec4.create();
+    const noAllocPos3 = vec3.create();
+    const WorldToClip = mat4.create();
+    const ClipToWorld = mat4.create();
+    const ScreenToClip = mat4.create();
+    const ClipToScreen = mat4.create();
+
+    return {
+      get scale() {
+        return (
+          (self.height /
+            (itemHeight +
+              groupTitleHeight +
+              groupPadding * 2 +
+              groupBorder * 2) /
+            (1 / 0.75)) *
+          self.cameraZoom
+        );
+      },
+      get inboxScale() {
+        return (
+          self.width /
+          (itemWidth + groupPadding * 2 + groupBorder * 2) /
+          (1 / (InboxColumnWidth / self.width))
+        );
+      },
+      get getMatrices() {
+        return calculateMatrices(
+          self.width,
+          self.height,
+          self.cameraZoom,
+          self.cameraX,
+          self.cameraY,
+          noAllocPos3,
+          WorldToClip,
+          ClipToWorld,
+          ScreenToClip,
+          ClipToScreen
+        );
+      },
+      worldToScreen(x: number, y: number): [number, number] {
+        const { worldToClip, clipToScreen } = this.getMatrices;
+        return transformPosition(x, y, worldToClip, clipToScreen, noAllocPos);
+      },
+      screenToWorld(x: number, y: number): [number, number] {
+        const { screenToClip, clipToWorld } = this.getMatrices;
+        return transformPosition(x, y, screenToClip, clipToWorld, noAllocPos);
+      },
+      screenVectorToWorldVector(x: number, y: number): [number, number] {
+        const world0 = this.screenToWorld(0, 0);
+        const worldV = this.screenToWorld(x, y);
+        return [worldV[0] - world0[0], worldV[1] - world0[1]];
+      },
+    };
+  })
   .actions((self) => ({
     repositionInbox() {
       const worldPos = self.screenToWorld(0, 0);
@@ -106,7 +123,7 @@ export const Workspace = types
         self.tempMinCameraZoom = Math.min(zoom, minZoom);
       }
       this.repositionInbox();
-      // console.log(self.cameraZoom);
+      // console.log(`set camera zoom ${self.cameraZoom}`);
     },
     moveCamera(x: number, y: number) {
       self.cameraX += x;
