@@ -217,10 +217,25 @@ const AddToWorkspace = observer(({ node }: { node: INode }) => {
   const [open, setOpen] = useState(false);
   const { workspaceStore, tabPageStore, historyStore } = useStore();
   const ws = Array.from(workspaceStore.workspaces.values());
+
+  let webViewId: string | null = null;
+  const heads = headsOnNode(historyStore, node);
+  if (heads.length > 0) {
+    // eslint-disable-next-line prefer-destructuring
+    webViewId = heads[0][0];
+  }
+
   return (
     <AddToWorkspaceParent
       onClick={() => {
-        setOpen(!open);
+        if (!open) {
+          if (webViewId) {
+            ipcRenderer.send('request-screenshot', { webViewId });
+          }
+          setOpen(true);
+        } else {
+          setOpen(false);
+        }
       }}
     >
       <>
@@ -232,11 +247,9 @@ const AddToWorkspace = observer(({ node }: { node: INode }) => {
               ) => {
                 e.stopPropagation();
                 const title = node.data.title ? node.data.title : 'Untitled';
-                const heads = headsOnNode(historyStore, node);
                 let favicon = '';
                 let image = '';
-                if (heads.length > 0) {
-                  const webViewId = heads[0][0];
+                if (webViewId) {
                   const tab = tabPageStore.openTabs[webViewId];
                   if (tab) {
                     favicon = tab.favicon;
