@@ -2,10 +2,11 @@ import React, { useRef, useState } from 'react';
 import styled, { css } from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
+import { Instance } from 'mobx-state-tree';
 import { useStore, View } from '../store/tab-page-store';
 import { goBack, goForward, INode } from '../store/history-store';
 import { IWorkSpaceStore } from '../store/workspace/workspace-store';
-import { IWorkspace } from '../store/workspace/workspace';
+import { Workspace } from '../store/workspace/workspace';
 
 const NavigatorParent = styled.div`
   width: 100%;
@@ -115,6 +116,10 @@ const WorkspaceItem = observer(({ data }: { data: IItemPath }) => {
       onClick={() => {
         workspaceStore.setActiveWorkspaceId(data.workspaceId);
         tabPageStore.View = View.WorkSpace;
+        const workspace = workspaceStore.workspaces.get(data.workspaceId);
+        if (typeof workspace !== 'undefined') {
+          workspace.centerCameraOnItem(data.itemId);
+        }
         ipcRenderer.send('click-main');
       }}
     >{`${data.workspaceName} / ${data.groupName}`}</NavigatorItemParent>
@@ -197,7 +202,7 @@ const AddToWorkspaceButton = observer(
     ws,
     callback,
   }: {
-    ws: IWorkspace;
+    ws: Instance<typeof Workspace>;
     callback: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
   }) => {
     return (

@@ -1,7 +1,7 @@
 /* eslint no-console: off */
 /* eslint prefer-destructuring: off */
 
-import { Instance, types } from 'mobx-state-tree';
+import { destroy, Instance, types } from 'mobx-state-tree';
 import { v4 as uuidv4 } from 'uuid';
 import { Workspace } from './workspace';
 import { ItemGroup } from './item-group';
@@ -19,7 +19,7 @@ const WorkspaceStore = types
     selectedTab: { url: '', title: '', image: '', favicon: '' },
   }))
   .actions((self) => ({
-    createWorkspace(name: string) {
+    createWorkspace(name: string): Instance<typeof Workspace> {
       const workspace = Workspace.create({
         id: uuidv4(),
         name,
@@ -39,6 +39,7 @@ const WorkspaceStore = types
         items: {},
       });
       self.workspaces.put(workspace);
+      return workspace;
     },
     setSnapshotPath(snapshotPath: string) {
       self.snapshotPath = snapshotPath;
@@ -52,6 +53,9 @@ const WorkspaceStore = types
     },
     setSelectedTab(selectedTab: TabPageTab) {
       self.selectedTab = selectedTab;
+    },
+    deleteWorkspace(workspace: Instance<typeof Workspace>) {
+      destroy(workspace);
     },
   }));
 

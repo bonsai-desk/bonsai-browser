@@ -243,7 +243,7 @@ const MainGroup = observer(
                   tabPageStore.editingGroupId === group.id ? 'none' : 'block',
               }}
             >
-              {group.id === 'inbox' ? 'Unsorted' : group.title}
+              {group.id === 'inbox' ? 'Inbox' : group.title}
             </HeaderText>
             <HeaderInput
               ref={groupTitleBoxRef}
