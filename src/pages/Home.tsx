@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import { runInAction } from 'mobx';
@@ -117,40 +117,39 @@ const Canvas = styled.canvas`
   height: 100vh;
 `;
 
-function paintVignette(canvas: HTMLCanvasElement | null) {
-  if (canvas) {
-    const context = canvas.getContext('2d');
-    if (context) {
-      const width = window.innerWidth;
-      canvas.width = width;
-      const height = window.innerHeight;
-      canvas.height = height;
+function paintVignette(canvas: HTMLCanvasElement) {
+  const context = canvas.getContext('2d');
+  if (context) {
+    const width = window.innerWidth;
+    canvas.width = width;
+    const height = window.innerHeight;
+    canvas.height = height;
 
-      const x = 0;
-      const y = 0;
+    const x = 0;
+    const y = 0;
 
-      context.strokeStyle = '#d2eefc';
-      context.beginPath();
-      context.moveTo(x, y);
-      context.lineTo(x + width, y);
-      context.lineTo(x + width, y + height);
-      context.lineTo(x, y + height);
-      context.lineTo(x, y);
-      context.closePath();
+    context.strokeStyle = '#d2eefc';
+    context.beginPath();
+    context.moveTo(x, y);
+    context.lineTo(x + width, y);
+    context.lineTo(x + width, y + height);
+    context.lineTo(x, y + height);
+    context.lineTo(x, y);
+    context.closePath();
 
-      context.filter = 'blur(100px)';
-      context.lineWidth = 500;
-      context.stroke();
-    }
+    context.filter = 'blur(100px)';
+    context.lineWidth = 500;
+    context.stroke();
   }
 }
 
 const Home = observer(() => {
   const { tabPageStore } = useStore();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  useEffect(() => {
-    paintVignette(canvasRef.current);
+  const canvasRef = useCallback((node: HTMLCanvasElement) => {
+    if (node !== null) {
+      paintVignette(node);
+    }
   }, []);
 
   useEffect(() => {
