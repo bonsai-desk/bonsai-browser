@@ -22,8 +22,6 @@ export interface IWebView {
 
   view: BrowserView;
 
-  windowFloating: boolean;
-
   historyEntry: HistoryEntry | null;
 
   unloadedUrl: string;
