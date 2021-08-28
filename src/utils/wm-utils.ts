@@ -1,4 +1,4 @@
-import { app, BrowserView, BrowserWindow } from 'electron';
+import { app, BrowserView, BrowserWindow, Display } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { IWebView } from './interfaces';
@@ -237,4 +237,14 @@ export function saveTabs(allWebViews: Record<number, IWebView>) {
   } catch {
     //
   }
+}
+
+export function floatingSize(display: Display) {
+  // return [1500, 1000];
+  // return [500, 800];
+
+  const height80 = display.workAreaSize.height * 0.7;
+  const floatingWidth = Math.floor(height80 * 0.7);
+  const floatingHeight = Math.floor(height80);
+  return [floatingWidth, floatingHeight];
 }

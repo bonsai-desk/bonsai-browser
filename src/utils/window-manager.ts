@@ -35,6 +35,7 @@ import {
 import calculateWindowTarget from './calculate-window-target';
 import {
   currentWindowSize,
+  floatingSize,
   handleFindText,
   innerBounds,
   makeView,
@@ -468,9 +469,7 @@ export default class WindowManager {
     screen.on('display-metrics-changed', (_, changedDisplay) => {
       if (changedDisplay.id === this.display.id) {
         if (this.windowFloating) {
-          const height80 = this.display.workAreaSize.height * 0.7;
-          const floatingWidth = Math.floor(height80 * 0.7);
-          const floatingHeight = Math.floor(height80);
+          const [floatingWidth, floatingHeight] = floatingSize(this.display);
           this.windowSize.width = floatingWidth;
           this.windowSize.height = floatingHeight;
           this.updateMainWindowBounds();
@@ -570,10 +569,7 @@ export default class WindowManager {
         this.mainWindow.isVisible() &&
         !this.isPinned
       ) {
-        // wm.unFloat(display.activeDisplay);
-        // wm.mainWindow?.hide();
-        // wm.hideWindow();
-        // }
+        this.hideWindow();
       }
     });
 
@@ -1235,9 +1231,7 @@ export default class WindowManager {
     const mousePoint = screen.getCursorScreenPoint();
     this.display = screen.getDisplayNearestPoint(mousePoint);
 
-    const height80 = this.display.workAreaSize.height * 0.7;
-    const floatingWidth = Math.floor(height80 * 0.7);
-    const floatingHeight = Math.floor(height80);
+    const [floatingWidth, floatingHeight] = floatingSize(this.display);
     this.windowSize.width = floatingWidth;
     this.windowSize.height = floatingHeight;
     this.updateMainWindowBounds();
@@ -1380,10 +1374,7 @@ export default class WindowManager {
 
     this.windowFloating = true;
 
-    const { display } = this;
-    const height80 = display.workAreaSize.height * 0.7;
-    const floatingWidth = Math.floor(height80 * 0.7);
-    const floatingHeight = Math.floor(height80);
+    const [floatingWidth, floatingHeight] = floatingSize(this.display);
 
     // snap to corner mode
     if (!windowHasView(this.mainWindow, this.overlayView)) {
@@ -1394,13 +1385,13 @@ export default class WindowManager {
       this.mainWindow?.removeBrowserView(this.titleBarView);
     }
     this.windowPosition[0] =
-      display.workAreaSize.width / 2.0 -
+      this.display.workAreaSize.width / 2.0 -
       floatingWidth / 2.0 +
-      display.workArea.x;
+      this.display.workArea.x;
     this.windowPosition[1] =
-      display.workAreaSize.height / 2.0 -
+      this.display.workAreaSize.height / 2.0 -
       floatingHeight / 2.0 +
-      display.workArea.y;
+      this.display.workArea.y;
     this.windowSize.width = floatingWidth;
     this.windowSize.height = floatingHeight;
     this.windowVelocity[0] = 0;
