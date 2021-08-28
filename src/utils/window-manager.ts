@@ -64,7 +64,7 @@ const glMatrix = require('gl-matrix');
 
 const easeOut = BezierEasing(0, 0, 0.5, 1);
 
-const DEBUG = true;
+const DEBUG = false;
 
 function log(str: string) {
   if (DEBUG) {
@@ -145,7 +145,47 @@ function openWindow(
   alertTargets: BrowserView[]
 ) {
   const newWindowId = wm.createNewTab();
-  wm.loadUrlInTab(newWindowId, url);
+
+  const newWebView = wm.allWebViews[newWindowId];
+  if (newWebView) {
+    const padding = wm.padding();
+    const bounds = innerBounds(wm.mainWindow, padding);
+    const windowSize = currentWindowSize(wm.mainWindow);
+    const hiddenBounds = {
+      x: bounds.x,
+      y: bounds.y + windowSize[1] + 1,
+      width: bounds.width,
+      height: bounds.height,
+    };
+    // wm.resizeWebView(newWebView, hiddenBounds);
+
+    log(`og bounds are ${JSON.stringify(newWebView.view.getBounds())}`);
+    newWebView.view.setBounds(hiddenBounds);
+    log(`set bounds as ${JSON.stringify(hiddenBounds)}`);
+    log(`bounds are now ${JSON.stringify(newWebView.view.getBounds())}`);
+    if (!windowHasView(wm.mainWindow, newWebView.view)) {
+      wm.mainWindow.addBrowserView(newWebView.view);
+    }
+  }
+
+  const loadedUrlCallback = () => {
+    log(
+      `url loaded and bounds are ${JSON.stringify(newWebView.view.getBounds())}`
+    );
+    if (windowHasView(wm.mainWindow, newWebView.view)) {
+      const screenshotCallback = () => {
+        wm.mainWindow.removeBrowserView(newWebView.view);
+        log(
+          `remove ${view.id} after loaded ${url} with bounds ${JSON.stringify(
+            newWebView.view.getBounds()
+          )}`
+        );
+      };
+      wm.screenShotTab(newWebView.id, newWebView, screenshotCallback);
+    }
+  };
+
+  wm.loadUrlInTab(newWindowId, url, false, 0, loadedUrlCallback);
   alertTargets.forEach((target) => {
     target.webContents.send('new-window', {
       senderId: view.id,
@@ -978,18 +1018,28 @@ export default class WindowManager {
     // this.resize();
   }
 
-  setTab(id: number) {
+  setTab(id: number, shouldScreenshot = true) {
     if (id === -1) {
       throw new Error('Use unSetTab instead of setTab(-1)!');
     }
     const oldTabView = this.allWebViews[this.activeTabId];
 
-    this.activeTabId = id;
+    const cleanupBrowser = () => {
+      // if old tab does not exist remove it
+      if (typeof oldTabView !== 'undefined') {
+        this.mainWindow.removeBrowserView(oldTabView.view);
+      }
+    };
 
-    // if old tab does not exist remove it
-    if (typeof oldTabView !== 'undefined') {
-      this.mainWindow.removeBrowserView(oldTabView.view);
+    if (shouldScreenshot && oldTabView) {
+      const cachedId = this.activeTabId;
+      console.log(cachedId);
+      this.screenShotTab(cachedId, oldTabView, cleanupBrowser);
+    } else {
+      cleanupBrowser();
     }
+
+    this.activeTabId = id;
 
     // tell main window that it is active and get the tabview reference
     this.mainWindow.webContents.send('set-active', true);
@@ -1056,7 +1106,8 @@ export default class WindowManager {
     id: number,
     url: string,
     dontActuallyLoadUrl = false,
-    scrollHeight = 0
+    scrollHeight = 0,
+    callback?: () => void
   ) {
     if (id === -1 || url === '') {
       return;
@@ -1079,11 +1130,14 @@ export default class WindowManager {
 
     (async () => {
       if (!dontActuallyLoadUrl) {
-        await tabView.view.webContents.loadURL(fullUrl).catch(() => {
-          // failed to load url
-          // todo: handle this
-          console.log(`error loading url: ${fullUrl}`);
-        });
+        await tabView.view.webContents
+          .loadURL(fullUrl)
+          .then(callback)
+          .catch(() => {
+            // failed to load url
+            // todo: handle this
+            console.log(`error loading url: ${fullUrl}`);
+          });
         tabView.view.webContents.send('scroll-to', scrollHeight);
       } else {
         tabView.unloadedUrl = fullUrl;
@@ -1483,11 +1537,8 @@ export default class WindowManager {
     }
   }
 
-  private screenShotTab(
-    tabId: number,
-    tabView: IWebView,
-    callback?: () => void
-  ) {
+  // todo remove the tabid params since its in webview
+  screenShotTab(tabId: number, tabView: IWebView, callback?: () => void) {
     tabView.view.webContents.send('get-scroll-height', tabId);
     const handleImage = (image: NativeImage) => {
       const jpgBuf = image.toJPEG(50);
@@ -1647,7 +1698,7 @@ export default class WindowManager {
     this.handleResize();
   }
 
-  private padding(): number {
+  padding(): number {
     return this.windowFloating ? 10 : this.browserPadding();
   }
 
