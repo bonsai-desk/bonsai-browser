@@ -819,8 +819,9 @@ export default class WindowManager {
 
   showWindow() {
     const mousePoint = screen.getCursorScreenPoint();
-    const display = { activeDisplay: screen.getPrimaryDisplay() };
-    display.activeDisplay = screen.getDisplayNearestPoint(mousePoint);
+    // const display = { activeDisplay: screen.getPrimaryDisplay() };
+    // display.activeDisplay = screen.getDisplayNearestPoint(mousePoint);
+    this.display = screen.getDisplayNearestPoint(mousePoint);
 
     this.mainWindow.setVisibleOnAllWorkspaces(true, {
       visibleOnFullScreen: true,
