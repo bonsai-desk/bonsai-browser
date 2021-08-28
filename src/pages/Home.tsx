@@ -1,11 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import { runInAction } from 'mobx';
 import styled from 'styled-components';
 import { useStore, View } from '../store/tab-page-store';
 import URLBox from '../components/URLBox';
-// import PinButton from '../components/PinButton';
 import FuzzyTabs from '../components/FuzzyTabs';
 import ClickerParent from '../components/Clicker';
 import Background from '../components/Background';

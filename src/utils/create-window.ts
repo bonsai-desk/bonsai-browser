@@ -12,6 +12,7 @@ import WindowManager from './window-manager';
 import { ICON_PNG, ICON_SMALL_PNG } from '../constants';
 import windowFixedUpdate from './calculate-window-physics';
 import { windowHasView } from './utils';
+import { floatingSize } from './wm-utils';
 
 // class AppUpdater {
 //   constructor() {
@@ -124,9 +125,7 @@ function initFixedUpdate(wm: WindowManager) {
   let lastFixedUpdateTime = 0;
   const fixedUpdate = () => {
     const deltaTime = fixedTimeStep;
-    const height80 = wm.display.workAreaSize.height * 0.7;
-    const floatingWidth = Math.floor(height80 * 0.7);
-    const floatingHeight = Math.floor(height80);
+    const [floatingWidth, floatingHeight] = floatingSize(wm.display);
     windowFixedUpdate(wm, deltaTime, floatingWidth, floatingHeight);
   };
 

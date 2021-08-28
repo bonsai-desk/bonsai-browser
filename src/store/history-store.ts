@@ -2,11 +2,7 @@ import { getSnapshot, IAnyModelType, Instance, types } from 'mobx-state-tree';
 import { ipcRenderer } from 'electron';
 import { v4 as uuidv4 } from 'uuid';
 
-const DEBUG = true;
-
-function showNode(node: INode) {
-  return `[${node.id.slice(0, 4)}]`;
-}
+const DEBUG = false;
 
 function log(str: string) {
   if (DEBUG) {
@@ -69,7 +65,7 @@ export const HistoryStore = types
       self.nodes.set(node.id, node);
     },
     setHead(webViewId: string, node: INode) {
-      log(`${webViewId} set head ${showNode(node)} ${node.data.url}`);
+      log(`${webViewId} set head ${node.showNode()} ${node.data.url}`);
       self.heads.set(webViewId, node);
     },
     removeHead(webViewId: string): boolean {
@@ -77,7 +73,7 @@ export const HistoryStore = types
     },
     linkChild(parent: INode, child: INode) {
       log(
-        `link ${showNode(parent)}(${parent.data.url}) to ${showNode(child)}(${
+        `link ${parent.showNode()}(${parent.data.url}) to ${child.showNode()}(${
           child.data.url
         })`
       );
@@ -85,7 +81,7 @@ export const HistoryStore = types
       child.setParent(parent);
     },
     removeNode(a: INode) {
-      log(`delete node ${showNode(a)}`);
+      log(`delete node ${a.showNode()}`);
       a.parent?.removeChild(a);
       a.children.forEach((child: INode) => {
         child.setParent(null);
@@ -111,7 +107,10 @@ export function headsOnNode(
 ): [string, INode][] {
   if (node) {
     const entries = Array.from(root.heads.entries());
-    return entries.filter(([_, head]) => head.id === node.id);
+    return entries.filter((entry) => {
+      const head = entry[1];
+      return head.id === node.id;
+    });
   }
   return [];
 }
@@ -189,7 +188,7 @@ export function goForward(history: IHistory, destinationNode: INode) {
     setTab(key);
   } else {
     log(
-      `${history.active} dispatch go forward to ${showNode(destinationNode)}`
+      `${history.active} dispatch go forward to ${destinationNode.showNode()}`
     );
     ipcRenderer.send('go-forward', {
       senderId: history.active,
@@ -230,9 +229,7 @@ export function hookListeners(h: Instance<typeof HistoryStore>) {
     if (heads.length > 0) {
       const [headId, node] = heads[0];
       log(
-        `${senderId} child ${showNode(
-          node
-        )} with active webView ${headId} matches ${url}`
+        `${senderId} child ${node.showNode()} with active webView ${headId} matches ${url}`
       );
     } else {
       log(`${senderId} dispatch spawn window for ${url}`);
@@ -247,11 +244,11 @@ export function hookListeners(h: Instance<typeof HistoryStore>) {
     const twins = childrenWithUrl(oldNode, url);
     if (twins.length > 0) {
       const twin = twins[0];
-      log(`${senderId} has child ${showNode(twin)} for ${url}`);
+      log(`${senderId} has child ${twin.showNode()} for ${url}`);
       h.setHead(receiverId, twin);
     } else {
       const receiverNode = genNode(url);
-      log(`${receiverId} create node ${showNode(receiverNode)} for ${url}`);
+      log(`${receiverId} create node ${receiverNode.showNode()} for ${url}`);
       h.setNode(receiverNode);
       const senderNode = h.heads.get(senderId);
       if (senderNode) {
@@ -280,7 +277,7 @@ export function hookListeners(h: Instance<typeof HistoryStore>) {
           h.setHead(id, twins[0]);
         } else {
           const node = genNode(url);
-          log(`${id} did create node ${showNode(node)} for ${url}`);
+          log(`${id} did create node ${node.showNode()} for ${url}`);
           h.setNode(node);
           if (oldNode) {
             h.linkChild(oldNode, node);
@@ -307,24 +304,20 @@ export function hookListeners(h: Instance<typeof HistoryStore>) {
             ipcRenderer.send('remove-tab', id);
           } else {
             log(
-              `${headId} is active on ${showNode(twin)} so will remove ${id}`
+              `${headId} is active on ${twin.showNode()} so will remove ${id}`
             );
             ipcRenderer.send('remove-tab', id);
           }
         } else {
           log(
-            `${id} remove ${showNode(node)} and set head for twin ${showNode(
-              twin
-            )} at ${url}`
+            `${id} remove ${node.showNode()} and set head for twin ${twin.showNode()} at ${url}`
           );
           h.setHead(id, twin);
         }
         h.removeNode(node);
       } else {
         log(
-          `${id} will-navigate-no-gesture swap data for ${showNode(
-            node
-          )} ${url}`
+          `${id} will-navigate-no-gesture swap data for ${node.showNode()} ${url}`
         );
         const data = HistoryData.create({ url, scroll: 0, date: getDate() });
         node.setData(data);
@@ -336,7 +329,7 @@ export function hookListeners(h: Instance<typeof HistoryStore>) {
     const rootNode = h.heads.get(id);
     if (!rootNode) {
       const node = genNode(url);
-      log(`${id} did create root ${showNode(node)} for ${url}`);
+      log(`${id} did create root ${node.showNode()} for ${url}`);
       h.setNode(node);
       h.setHead(id, node);
       h.addRoot(node);
