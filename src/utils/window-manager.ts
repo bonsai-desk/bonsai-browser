@@ -1033,7 +1033,6 @@ export default class WindowManager {
 
     if (shouldScreenshot && oldTabView) {
       const cachedId = this.activeTabId;
-      console.log(cachedId);
       this.screenShotTab(cachedId, oldTabView, cleanupBrowser);
     } else {
       cleanupBrowser();
