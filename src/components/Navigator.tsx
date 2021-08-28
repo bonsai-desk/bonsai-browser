@@ -4,7 +4,7 @@ import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import { Instance } from 'mobx-state-tree';
 import { useStore, View } from '../store/tab-page-store';
-import { goBack, goForward, INode } from '../store/history-store';
+import { goBack, goForward, headsOnNode, INode } from '../store/history-store';
 import { IWorkSpaceStore } from '../store/workspace/workspace-store';
 import { Workspace } from '../store/workspace/workspace';
 
@@ -215,12 +215,27 @@ const AddToWorkspaceButton = observer(
 
 const AddToWorkspace = observer(({ node }: { node: INode }) => {
   const [open, setOpen] = useState(false);
-  const { workspaceStore } = useStore();
+  const { workspaceStore, tabPageStore, historyStore } = useStore();
   const ws = Array.from(workspaceStore.workspaces.values());
+
+  let webViewId: string | null = null;
+  const heads = headsOnNode(historyStore, node);
+  if (heads.length > 0) {
+    // eslint-disable-next-line prefer-destructuring
+    webViewId = heads[0][0];
+  }
+
   return (
     <AddToWorkspaceParent
       onClick={() => {
-        setOpen(!open);
+        if (!open) {
+          if (webViewId) {
+            ipcRenderer.send('request-screenshot', { webViewId });
+          }
+          setOpen(true);
+        } else {
+          setOpen(false);
+        }
       }}
     >
       <>
@@ -232,11 +247,20 @@ const AddToWorkspace = observer(({ node }: { node: INode }) => {
               ) => {
                 e.stopPropagation();
                 const title = node.data.title ? node.data.title : 'Untitled';
+                let favicon = '';
+                let image = '';
+                if (webViewId) {
+                  const tab = tabPageStore.openTabs[webViewId];
+                  if (tab) {
+                    favicon = tab.favicon;
+                    image = tab.image;
+                  }
+                }
                 workspace.createItem(
                   node.data.url,
                   title,
-                  '',
-                  '',
+                  image,
+                  favicon,
                   workspace.inboxGroup
                 );
                 setOpen(false);

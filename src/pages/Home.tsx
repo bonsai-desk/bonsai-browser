@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import { runInAction } from 'mobx';
@@ -116,12 +116,44 @@ const Canvas = styled.canvas`
   height: 100vh;
 `;
 
-function paintVignette(canvas: HTMLCanvasElement) {
+function useWindowSize(
+  w: number,
+  h: number
+): { width: number; height: number } {
+  // Initialize state with undefined width/height so server and client renders match
+  // Learn more here: https://joshwcomeau.com/react/the-perils-of-rehydration/
+  const [windowSize, setWindowSize] = useState({
+    width: w,
+    height: h,
+  });
+  useEffect(() => {
+    // Handler to call on window resize
+    function handleResize() {
+      // Set window width/height to state
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    }
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+    // Call handler right away so state gets updated with initial window size
+    handleResize();
+    // Remove event listener on cleanup
+    return () => window.removeEventListener('resize', handleResize);
+  }, []); // Empty array ensures that effect is only run on mount
+  return windowSize;
+}
+
+function paintVignette(
+  ws: { width: number; height: number },
+  canvas: HTMLCanvasElement
+) {
   const context = canvas.getContext('2d');
   if (context) {
-    const width = window.innerWidth;
+    const { width } = ws;
     canvas.width = width;
-    const height = window.innerHeight;
+    const { height } = ws;
     canvas.height = height;
 
     const x = 0;
@@ -159,11 +191,16 @@ const FloatingShadow = styled.div`
 const Home = observer(() => {
   const { tabPageStore } = useStore();
 
-  const canvasRef = useCallback((node: HTMLCanvasElement) => {
-    if (node !== null) {
-      paintVignette(node);
-    }
-  }, []);
+  const ws = useWindowSize(window.innerWidth, window.innerHeight);
+
+  const canvasRef = useCallback(
+    (node: HTMLCanvasElement) => {
+      if (node !== null) {
+        paintVignette(ws, node);
+      }
+    },
+    [ws]
+  );
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
