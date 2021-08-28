@@ -219,18 +219,18 @@ const MainItem = observer(
           }}
         >
           <ItemContainer
-            showTitle={
-              group.hovering &&
-              !workspace.anyDragging &&
-              !group.resizing &&
-              tabPageStore.editingGroupId !== group.id
-            }
+            // showTitle={
+            //   group.hovering &&
+            //   !workspace.anyDragging &&
+            //   !group.resizing &&
+            //   tabPageStore.editingGroupId !== group.id
+            // }
+            showTitle
             style={{
               width: itemWidth,
               height: itemHeight,
               transform: item.beingDragged ? `rotate(5deg` : `none`,
               cursor: item.beingDragged ? 'grabbing' : 'default',
-              // opacity: item.overTrash ? 0.5 : 1,
               boxShadow: item.beingDragged
                 ? '0 0 5px 0 rgba(100, 100, 100, 0.5)'
                 : 'none',
