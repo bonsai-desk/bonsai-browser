@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { IWebView } from './interfaces';
 import { urlToMapKey } from './utils';
+import { floatingWindowEdgeMargin } from './calculate-window-target';
 
 function pointInBounds(
   mousePoint: Electron.Point,
@@ -240,8 +241,9 @@ export function saveTabs(allWebViews: Record<number, IWebView>) {
 }
 
 export function floatingSize(display: Display) {
-  const height80 = display.workAreaSize.height * 0.7;
-  const floatingWidth = Math.floor(height80 * 0.7);
-  const floatingHeight = Math.floor(height80);
+  const height =
+    (display.workAreaSize.height - floatingWindowEdgeMargin * 2) * 0.95;
+  const floatingWidth = Math.floor(height * 0.85);
+  const floatingHeight = Math.floor(height);
   return [floatingWidth, floatingHeight];
 }

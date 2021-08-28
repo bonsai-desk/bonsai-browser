@@ -82,6 +82,8 @@ export default class TabPageStore {
 
   private workspaceStore: Instance<typeof WorkspaceStore>;
 
+  windowFloating = false;
+
   fuzzySelectedTab(): [boolean, TabPageTab | Instance<typeof Item>] | null {
     if (this.fuzzySelectionIndex[1] === 0) {
       const tab = this.filteredOpenTabs[this.fuzzySelectionIndex[0]];
@@ -447,6 +449,11 @@ export default class TabPageStore {
     ipcRenderer.on('set-pinned', (_, newIsPinned) => {
       runInAction(() => {
         this.isPinned = newIsPinned;
+      });
+    });
+    ipcRenderer.on('set-window-floating', (_, windowFloating) => {
+      runInAction(() => {
+        this.windowFloating = windowFloating;
       });
     });
   }

@@ -142,6 +142,20 @@ function paintVignette(canvas: HTMLCanvasElement) {
   }
 }
 
+const FloatingShadow = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+
+  background-color: white;
+  box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.5);
+
+  width: calc(100% - 20px);
+  height: calc(100% - 20px);
+
+  margin: 10px;
+`;
+
 const Home = observer(() => {
   const { tabPageStore } = useStore();
 
@@ -161,6 +175,10 @@ const Home = observer(() => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [tabPageStore]);
+
+  if (tabPageStore.windowFloating) {
+    return <FloatingShadow />;
+  }
 
   return (
     <Background

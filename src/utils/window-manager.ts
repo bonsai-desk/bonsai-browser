@@ -393,6 +393,11 @@ export default class WindowManager {
 
   windowFloating = false;
 
+  setWindowFloating(windowFloating: boolean) {
+    this.windowFloating = windowFloating;
+    this.tabPageView.webContents.send('set-window-floating', windowFloating);
+  }
+
   allWebViews: Record<number, IWebView> = {};
 
   activeTabId = -1;
@@ -650,7 +655,6 @@ export default class WindowManager {
       historyEntry: null,
       title: '',
       favicon: '',
-      windowFloating: false,
       unloadedUrl: '',
       imgString: '',
       scrollHeight: 0,
@@ -1411,7 +1415,7 @@ export default class WindowManager {
       return;
     }
 
-    this.windowFloating = true;
+    this.setWindowFloating(true);
 
     const [floatingWidth, floatingHeight] = floatingSize(this.display);
 
@@ -1451,7 +1455,13 @@ export default class WindowManager {
 
   resizeWebViewForFloating(tabView: IWebView) {
     const [floatingWidth, floatingHeight] = floatingSize(this.display);
-    const bounds = { x: 0, y: 0, width: floatingWidth, height: floatingHeight };
+    const padding = 10;
+    const bounds = {
+      x: padding,
+      y: padding,
+      width: floatingWidth - padding * 2,
+      height: floatingHeight - padding * 2,
+    };
     tabView.view.setBounds(bounds);
   }
 
@@ -1680,7 +1690,7 @@ export default class WindowManager {
       return;
     }
 
-    this.windowFloating = false;
+    this.setWindowFloating(false);
 
     if (windowHasView(this.mainWindow, this.overlayView)) {
       this.mainWindow?.removeBrowserView(this.overlayView);
@@ -1692,9 +1702,6 @@ export default class WindowManager {
 
     this.mainWindow.webContents.send('set-padding', padding.toString());
 
-    Object.values(this.allWebViews).forEach((tabView) => {
-      tabView.windowFloating = this.windowFloating;
-    });
     this.handleResize();
   }
 
