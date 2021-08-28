@@ -370,6 +370,13 @@ export function addListeners(wm: WindowManager) {
       openWindow(wm, webView, url, [wm.tabPageView]);
     }
   });
+  ipcMain.on('request-screenshot', (_, { webViewId }) => {
+    const webView = wm.allWebViews[webViewId];
+    if (webView) {
+      log(`taking screenshot of ${webViewId} by request`);
+      wm.screenShotTab(webViewId, webView);
+    }
+  });
 }
 
 interface IAction {
@@ -1033,7 +1040,6 @@ export default class WindowManager {
 
     if (shouldScreenshot && oldTabView) {
       const cachedId = this.activeTabId;
-      console.log(cachedId);
       this.screenShotTab(cachedId, oldTabView, cleanupBrowser);
     } else {
       cleanupBrowser();
