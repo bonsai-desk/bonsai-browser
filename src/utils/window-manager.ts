@@ -63,7 +63,7 @@ const glMatrix = require('gl-matrix');
 
 const easeOut = BezierEasing(0, 0, 0.5, 1);
 
-const DEBUG = true;
+const DEBUG = false;
 
 function log(str: string) {
   if (DEBUG) {
@@ -454,7 +454,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -997,18 +997,28 @@ export default class WindowManager {
     // this.resize();
   }
 
-  setTab(id: number) {
+  setTab(id: number, shouldScreenshot = true) {
     if (id === -1) {
       throw new Error('Use unSetTab instead of setTab(-1)!');
     }
     const oldTabView = this.allWebViews[this.activeTabId];
 
-    this.activeTabId = id;
+    const cleanupBrowser = () => {
+      // if old tab does not exist remove it
+      if (typeof oldTabView !== 'undefined') {
+        this.mainWindow.removeBrowserView(oldTabView.view);
+      }
+    };
 
-    // if old tab does not exist remove it
-    if (typeof oldTabView !== 'undefined') {
-      this.mainWindow.removeBrowserView(oldTabView.view);
+    if (shouldScreenshot && oldTabView) {
+      const cachedId = this.activeTabId;
+      console.log(cachedId);
+      this.screenShotTab(cachedId, oldTabView, cleanupBrowser);
+    } else {
+      cleanupBrowser();
     }
+
+    this.activeTabId = id;
 
     // tell main window that it is active and get the tabview reference
     this.mainWindow.webContents.send('set-active', true);
