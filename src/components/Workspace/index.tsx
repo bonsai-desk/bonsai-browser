@@ -38,7 +38,7 @@ const InboxColumn = styled.div`
   left: 0;
   top: 0;
   height: 100%;
-  z-index: 9999999;
+  z-index: 999999;
 `;
 export const TrashButton = styled.div`
   position: absolute;
@@ -47,7 +47,7 @@ export const TrashButton = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 10000001;
+  z-index: 1000001;
 `;
 export const SideButton = styled.div`
   position: absolute;
@@ -56,7 +56,7 @@ export const SideButton = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 10000001;
+  z-index: 1000001;
   background-color: rgba(0, 0, 0, 0.7);
 
   :hover {
@@ -78,7 +78,7 @@ const HamburgerBackground = styled.div`
   left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: 10000002;
+  z-index: 1000002;
 `;
 const HamburgerMenu = styled.div`
   position: absolute;
@@ -86,7 +86,7 @@ const HamburgerMenu = styled.div`
   right: 100px;
   width: 300px;
   background-color: red;
-  z-index: 10000003;
+  z-index: 1000003;
 `;
 const HamburgerOption = styled.div`
   background-color: lightblue;
@@ -301,6 +301,7 @@ const Workspace = observer(
                 width: 'auto',
                 paddingRight: '12px',
                 fontSize: '50px',
+                zIndex: 1000000,
               }}
               onMouseDown={(e) => {
                 e.stopPropagation();
@@ -333,6 +334,7 @@ const Workspace = observer(
                 left: InboxColumnWidth,
                 top: 3,
                 fontSize: '50px',
+                zIndex: 1000000,
               }}
               onMouseDown={(e) => {
                 if (e.button !== 1) {
