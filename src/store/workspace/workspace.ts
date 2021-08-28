@@ -288,6 +288,11 @@ export const Workspace = types
       this.setIndexInGroup(group.itemArrangement.length, item, group);
       item.groupId = group.id;
       group.itemArrangement.push(item.id);
+
+      // move to top
+      group.itemArrangement.splice(item.indexInGroup, 1);
+      group.itemArrangement.splice(0, 0, item.id);
+      this.updateItemIndexes(group);
     },
     deleteItem(item: Instance<typeof Item>, group: Instance<typeof ItemGroup>) {
       group.itemArrangement.splice(item.indexInGroup, 1);
