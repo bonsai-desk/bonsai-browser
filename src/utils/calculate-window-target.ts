@@ -2,6 +2,8 @@ import { Display } from 'electron';
 
 const glMatrix = require('gl-matrix');
 
+export const floatingWindowEdgeMargin = 25;
+
 export default function calculateWindowTarget(
   currentTime: number,
   lastTime: number,
@@ -27,7 +29,7 @@ export default function calculateWindowTarget(
     glMatrix.vec2.scale(windowVelocity, windowVelocity, maxSpeed);
   }
 
-  const padding = 25;
+  const padding = floatingWindowEdgeMargin;
 
   const targets = [
     glMatrix.vec2.fromValues(padding, padding),
