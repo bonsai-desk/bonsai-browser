@@ -97,6 +97,10 @@ const HamburgerOption = styled.div`
   }
 `;
 
+// function MyParent({ children }: { children: React.ReactNode }) {
+//   return <div>{children}</div>;
+// }
+
 const Workspace = observer(
   ({ workspace }: { workspace: Instance<typeof MobxWorkspace> }) => {
     const { workspaceStore, tabPageStore } = useStore();
