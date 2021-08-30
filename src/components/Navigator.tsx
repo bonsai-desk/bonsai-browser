@@ -29,7 +29,7 @@ const NavigatorPanel = styled.div`
   ::-webkit-scrollbar {
     display: none;
   }
-  div + div {
+  #NavItem + #NavItem {
     margin-top: 10px;
   }
   ${({
@@ -90,31 +90,52 @@ const Title = styled.div`
   color: white;
 `;
 
+const NavigatorHover = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transition-duration: 0.25s;
+  background-color: rgba(0, 0, 0, 0.7);
+`;
+
 const NavigatorItemParent = styled.div`
+  height: 3rem;
+  position: relative;
+  background-size: cover; /* <------ */
+  background-repeat: no-repeat;
+  ${({ img }: { img: string }) => {
+    if (img) {
+      return css`
+        background-image: ${img};
+      `;
+    }
+    return '';
+  }}
   user-select: none;
   cursor: default;
   font-size: 0.6rem;
   color: white;
   width: 100%;
   //overflow: hidden;
-  transition-duration: 0.25s;
-  padding: 0.5rem 0 0.5rem 0;
-  background-color: rgba(0, 0, 0, 0.25);
-  :hover {
-    background-color: rgba(0, 0, 0, 0.5);
-  }
+  //padding: 0.5rem 0 0.5rem 0;
 `;
 
 const NavigatorItemText = styled.div`
-  margin: 0 0.5rem 0 0.5rem;
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  width: calc(100% - 1rem);
+  //margin: 0 0.5rem 0 0.5rem;
   height: 2rem;
   text-overflow: ellipsis;
   overflow: hidden;
-  // Addition lines for 2 line or multiline ellipsis
   display: -webkit-box !important;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   white-space: normal;
+  z-index: 10;
 `;
 
 interface Dimensions {
@@ -128,10 +149,19 @@ function asPx(a: number): string {
 }
 
 const NavigatorItem = observer(
-  ({ text, onClick }: { text: string; onClick: () => void }) => {
+  ({
+    img,
+    text,
+    onClick,
+  }: {
+    img: string;
+    text: string;
+    onClick: () => void;
+  }) => {
     return (
-      <NavigatorItemParent onClick={onClick}>
+      <NavigatorItemParent id="NavItem" img={img} onClick={onClick}>
         <NavigatorItemText>{text}</NavigatorItemText>
+        <NavigatorHover />
       </NavigatorItemParent>
     );
   }
@@ -139,10 +169,21 @@ const NavigatorItem = observer(
 
 const HistoryNavigatorItem = observer(
   ({ node, dir }: { node: INode; dir: Direction }) => {
-    const { historyStore } = useStore();
+    const { historyStore, tabPageStore } = useStore();
+    let img = '';
+    const heads = headsOnNode(historyStore, node);
+
+    if (heads.length > 0) {
+      const tab = tabPageStore.openTabs[heads[0][0]];
+      if (tab && tab.image) {
+        img = `url(${tab.image})`;
+      }
+    }
+
     const title = node.data.title ? node.data.title : node.data.url;
     return (
       <NavigatorItem
+        img={img}
         onClick={() => {
           if (dir === Direction.Back) {
             goBack(historyStore, node);
@@ -161,6 +202,7 @@ const WorkspaceItem = observer(({ data }: { data: IItemPath }) => {
   const { tabPageStore, workspaceStore } = useStore();
   return (
     <NavigatorItem
+      img=""
       onClick={() => {
         workspaceStore.setActiveWorkspaceId(data.workspaceId);
         tabPageStore.View = View.WorkSpace;
@@ -251,7 +293,9 @@ const AddToWorkspaceButton = observer(
     callback: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
   }) => {
     return (
-      <NavigatorItemParent onClick={callback}>{ws.name}</NavigatorItemParent>
+      <NavigatorItemParent img="" onClick={callback}>
+        {ws.name}
+      </NavigatorItemParent>
     );
   }
 );
@@ -354,7 +398,7 @@ const Navigator = observer(() => {
       >
         <>
           {leftItems.length === 0 ? (
-            <NavigatorItem onClick={() => {}} text="None" />
+            <NavigatorItem img="" onClick={() => {}} text="None" />
           ) : (
             ''
           )}
@@ -363,7 +407,7 @@ const Navigator = observer(() => {
             <WorkspaceItem key={match.itemId} data={match} />
           ))}
           {matches.length === 0 ? (
-            <NavigatorItem onClick={() => {}} text="None" />
+            <NavigatorItem img="" onClick={() => {}} text="None" />
           ) : (
             ''
           )}
