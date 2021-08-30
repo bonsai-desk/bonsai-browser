@@ -25,8 +25,8 @@ const TabImage = observer(
           <TabTitle>{title === '' ? 'New Tab' : title}</TabTitle>
           <RedX
             style={{
-              right: 10,
-              bottom: 10,
+              left: '0.5rem',
+              bottom: '0.5rem',
             }}
             hoverColor="rgba(255, 0, 0, 1)"
             onClick={(e) => {
@@ -38,8 +38,8 @@ const TabImage = observer(
           </RedX>
           <RedX
             style={{
-              right: 50,
-              bottom: 10,
+              right: '0.5rem',
+              bottom: '0.5rem',
             }}
             hoverColor="#3572AC"
             onClick={(e) => {

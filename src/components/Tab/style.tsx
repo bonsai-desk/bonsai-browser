@@ -9,7 +9,6 @@ export const TabParent = styled.div`
   text-overflow: ellipsis;
   margin-bottom: 1rem;
 `;
-
 export const TabImageParent = styled.div`
   width: 100%;
   padding-top: 56.25%;
