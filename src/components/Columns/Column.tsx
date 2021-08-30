@@ -11,7 +11,7 @@ export const ColumnsParent = styled.div`
   display: flex;
   align-items: flex-start;
   flex-grow: 1;
-  padding: 0 10px 0 10px;
+  margin: 0 10px 0 10px;
 `;
 
 export const Column = observer(({ column }: { column: TabPageColumn }) => {

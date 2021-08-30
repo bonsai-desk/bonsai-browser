@@ -1,4 +1,5 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
+import redX from '../../../assets/x-letter.svg';
 
 export const ColumnParent = styled.div`
   display: flex;
@@ -7,53 +8,76 @@ export const ColumnParent = styled.div`
   user-select: none;
   margin-right: 1rem;
   color: white;
-  //width: 12.5rem;
   width: 10rem;
 `;
-export const HeaderOverlay = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: 10px;
-  transition-duration: 0.25s;
-
-  :hover {
-    background-color: rgba(0, 0, 0, 0.6);
-  }
-`;
 export const ColumnHeaderParent = styled.div`
+  padding: 0.75rem 0 0.75rem 0;
   display: flex;
   align-items: center;
   width: 100%;
-  border-radius: 10px;
   height: 40px;
-  margin-bottom: 5px;
   transition-duration: 0.25s;
   position: relative;
   overflow: hidden;
-
-  :hover #RedX {
-    opacity: 100;
+  :hover {
+    #FaviconX {
+      opacity: 100;
+    }
   }
-
-  #RedX {
-    opacity: 0;
-  }
-`;
-export const HeaderSpacer = styled.div`
-  width: 10px;
-  height: 10px;
 `;
 export const HeaderTitle = styled.div`
   text-shadow: 0 0 5px #9c9c9c;
   font-weight: bold;
   font-size: 1.35rem;
-  margin-bottom: 10px;
   width: 174px;
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
-  margin-left: 5px;
+  height: 100%;
+  padding: 0 0 0 0.5rem;
+`;
+
+export const FaviconParent = styled.div`
+  margin: 0 0 0 0.5rem;
+  position: relative;
+  height: 1.5rem;
+  width: 1.5rem;
+  border-radius: 50%;
+  overflow: hidden;
+`;
+
+export const FaviconX = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: gray;
+  width: 100%;
+  height: 100%;
+  background-image: url(${redX});
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center;
+  opacity: 0;
+  transition-duration: 0.25s;
+  :hover {
+    transition-duration: 0s;
+    background-color: red;
+  }
+`;
+
+export const HeaderFavicon = styled.div`
+  width: 100%;
+  height: 100%;
+  background-color: white;
+  ${({ img }: { img: string }) => {
+    if (img) {
+      return css`
+        background-image: ${img};
+      `;
+    }
+    return '';
+  }}
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center;
 `;
