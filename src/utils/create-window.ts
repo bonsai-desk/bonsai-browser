@@ -8,6 +8,9 @@ import {
   MenuItemConstructorOptions,
   Tray,
 } from 'electron';
+import fs from 'fs';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 import WindowManager from './window-manager';
 import { ICON_PNG, ICON_SMALL_PNG, VIBRANCY } from '../constants';
 import windowFixedUpdate from './calculate-window-physics';
@@ -279,6 +282,27 @@ export const createWindow = async () => {
   ) {
     await installExtensions();
   }
+
+  let userId = '';
+  const idPath = path.join(app.getPath('userData'), 'da');
+  try {
+    console.log('Loading user id');
+    userId = fs.readFileSync(idPath, 'utf8');
+  } catch {
+    console.log('could not load user id');
+  }
+
+  if (userId === '') {
+    try {
+      console.log('creating new id');
+      userId = uuidv4();
+      fs.writeFileSync(idPath, userId);
+    } catch {
+      console.log('could not save id');
+    }
+  }
+
+  console.log(`User Id: ${userId}`);
 
   const wm = new WindowManager(initWindow());
 
