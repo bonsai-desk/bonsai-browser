@@ -30,6 +30,9 @@ export default class TabPageStore {
   }
 
   public set View(view: View) {
+    if (view === View.Tabs && this.view !== View.Tabs) {
+      this.hoveringUrlInput = true;
+    }
     this.view = view;
     if (this.activeGroupBoxRef !== null) {
       this.activeGroupBoxRef.current?.blur();
@@ -41,9 +44,6 @@ export default class TabPageStore {
     }
     if (view !== View.FuzzySearch) {
       this.urlText = '';
-    }
-    if (view === View.Tabs) {
-      this.hoveringUrlInput = true;
     }
   }
 

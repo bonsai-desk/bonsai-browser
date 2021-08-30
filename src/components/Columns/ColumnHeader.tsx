@@ -5,47 +5,42 @@ import { TabPageColumn } from '../../interfaces/tab';
 import { useStore } from '../../store/tab-page-store';
 import {
   ColumnHeaderParent,
-  HeaderOverlay,
-  HeaderSpacer,
+  FaviconParent,
+  FaviconX,
+  HeaderFavicon,
   HeaderTitle,
 } from './style';
-import Favicon from '../Favicon';
-import RedX from '../RedX';
 import { getRootDomain } from '../../utils/data';
-import redX from '../../../assets/x-letter.svg';
 
 const ColumnHeader = observer(({ column }: { column: TabPageColumn }) => {
   const { tabPageStore } = useStore();
   let columnFavicon = '';
   if (column.tabs.length > 0) {
     columnFavicon = column.tabs[0].favicon;
+    if (columnFavicon) {
+      columnFavicon = `url(${columnFavicon})`;
+    }
   }
   return (
     <ColumnHeaderParent>
-      <HeaderSpacer />
-      <Favicon src={columnFavicon} />
+      <div>
+        <FaviconParent>
+          <FaviconX
+            id="FaviconX"
+            onClick={(e) => {
+              e.stopPropagation();
+              Object.keys(tabPageStore.openTabs).forEach((key: string) => {
+                const tab = tabPageStore.openTabs[key];
+                if (getRootDomain(tab.url) === column.domain) {
+                  ipcRenderer.send('remove-tab', tab.id);
+                }
+              });
+            }}
+          />
+          <HeaderFavicon id="Favicon" img={columnFavicon} />
+        </FaviconParent>
+      </div>
       <HeaderTitle>{column.domain}</HeaderTitle>
-      <HeaderOverlay>
-        <RedX
-          id="RedX"
-          style={{
-            top: 7,
-            right: 10,
-          }}
-          hoverColor="rgba(255, 0, 0, 1)"
-          onClick={(e) => {
-            e.stopPropagation();
-            Object.keys(tabPageStore.openTabs).forEach((key: string) => {
-              const tab = tabPageStore.openTabs[key];
-              if (getRootDomain(tab.url) === column.domain) {
-                ipcRenderer.send('remove-tab', tab.id);
-              }
-            });
-          }}
-        >
-          <img draggable={false} src={redX} alt="x" width="20px" />
-        </RedX>
-      </HeaderOverlay>
     </ColumnHeaderParent>
   );
 });
