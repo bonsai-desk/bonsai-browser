@@ -7,7 +7,6 @@ import { runInAction } from 'mobx';
 import MainItem from './MainItem';
 import MainGroup from './MainGroup';
 import trashIcon from '../../../assets/alternate-trash.svg';
-// import centerIcon from '../../../assets/center-square.svg';
 import hamburgerIcon from '../../../assets/hamburger-menu.svg';
 import { ItemGroup } from '../../store/workspace/item-group';
 import {
@@ -16,6 +15,7 @@ import {
 } from '../../store/workspace/workspace';
 import { useStore, View } from '../../store/tab-page-store';
 import { HeaderInput, HeaderText } from './style';
+import ConfirmModal from '../Modal/Modal';
 
 export { MainItem, MainGroup };
 
@@ -97,16 +97,14 @@ const HamburgerOption = styled.div`
   }
 `;
 
-// function MyParent({ children }: { children: React.ReactNode }) {
-//   return <div>{children}</div>;
-// }
-
 const Workspace = observer(
   ({ workspace }: { workspace: Instance<typeof MobxWorkspace> }) => {
     const { workspaceStore, tabPageStore } = useStore();
     const backgroundRef = useRef<HTMLDivElement>(null);
 
     const workspaceNameRef = useRef<HTMLInputElement>(null);
+
+    const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
 
     const groups = Array.from(workspace.groups.values()).map(
       (group: Instance<typeof ItemGroup>) => {
@@ -255,7 +253,7 @@ const Workspace = observer(
                 e.stopPropagation();
               }}
               onClick={() => {
-                workspace.setHamburgerOpen(true);
+                workspace.setHamburgerOpen(!workspace.hamburgerOpen);
               }}
             >
               <CornerButtonIcon src={hamburgerIcon} />
@@ -264,7 +262,7 @@ const Workspace = observer(
               style={{
                 display: workspace.hamburgerOpen ? 'block' : 'none',
               }}
-              onClick={() => {
+              onMouseDown={() => {
                 workspace.setHamburgerOpen(false);
               }}
             />
@@ -283,15 +281,23 @@ const Workspace = observer(
               </HamburgerOption>
               <HamburgerOption
                 onClick={() => {
+                  setDeleteConfirmVisible(true);
+                }}
+              >
+                Delete Workspace
+              </HamburgerOption>
+              <ConfirmModal
+                title="Delete Workspace?"
+                confirm={() => {
                   workspace.setHamburgerOpen(false);
                   runInAction(() => {
                     tabPageStore.View = View.Tabs;
                   });
                   workspaceStore.deleteWorkspace(workspace);
                 }}
-              >
-                Delete Workspace
-              </HamburgerOption>
+                visible={deleteConfirmVisible}
+                setVisible={setDeleteConfirmVisible}
+              />
             </HamburgerMenu>
             <HeaderText
               style={{
