@@ -312,6 +312,8 @@ const Workspace = observer(
                 paddingRight: '12px',
                 fontSize: '50px',
                 zIndex: 10000000,
+                backgroundColor: 'white',
+                borderRadius: '0 1000000px 1000000px 0',
               }}
               onMouseDown={(e) => {
                 e.stopPropagation();
