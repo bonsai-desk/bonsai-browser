@@ -6,14 +6,7 @@ import { ITab, TabPageTab } from '../../interfaces/tab';
 import redX from '../../../assets/x-letter.svg';
 import hamburgerIcon from '../../../assets/hamburger-menu.svg';
 import RedX from '../RedX';
-import {
-  RedXParent,
-  TabImg,
-  TabImageDummy,
-  TabImageParent,
-  TabParent,
-  TabTitle,
-} from './style';
+import { RedXParent, TabImageParent, TabParent, TabTitle } from './style';
 
 interface ITabImage {
   hover: boolean;
@@ -27,14 +20,13 @@ const TabImage = observer(
   ({ selected, hover, imgUrl, tab, title }: ITabImage) => {
     const { workspaceStore } = useStore();
     return (
-      <TabImageParent selected={selected}>
-        {imgUrl ? <TabImg src={imgUrl} alt="tab_image" /> : <TabImageDummy />}
+      <TabImageParent img={`url(${imgUrl})`} selected={selected}>
         <RedXParent hover={hover}>
           <TabTitle>{title === '' ? 'New Tab' : title}</TabTitle>
           <RedX
             style={{
               right: 10,
-              top: 10,
+              bottom: 10,
             }}
             hoverColor="rgba(255, 0, 0, 1)"
             onClick={(e) => {
@@ -42,11 +34,11 @@ const TabImage = observer(
               ipcRenderer.send('remove-tab', tab.id);
             }}
           >
-            <img draggable={false} src={redX} alt="x" width="20px" />
+            <img draggable={false} src={redX} alt="x" width="30px" />
           </RedX>
           <RedX
             style={{
-              left: 10,
+              right: 50,
               bottom: 10,
             }}
             hoverColor="#3572AC"
@@ -57,7 +49,7 @@ const TabImage = observer(
               workspaceStore.setSelectedTab(tab);
             }}
           >
-            <img src={hamburgerIcon} alt="-" width="20px" />
+            <img src={hamburgerIcon} alt="-" width="15px" />
           </RedX>
         </RedXParent>
       </TabImageParent>

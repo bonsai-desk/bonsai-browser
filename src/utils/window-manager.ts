@@ -24,6 +24,7 @@ import {
   PRELOAD,
   TAB_PAGE,
   URL_PEEK_HTML,
+  VIBRANCY,
 } from '../constants';
 import {
   parseMap,
@@ -401,6 +402,13 @@ export default class WindowManager {
   windowFloating = false;
 
   setWindowFloating(windowFloating: boolean) {
+    if (process.platform === 'darwin') {
+      if (windowFloating) {
+        this.mainWindow.setVibrancy(null);
+      } else {
+        this.mainWindow.setVibrancy(VIBRANCY);
+      }
+    }
     this.windowFloating = windowFloating;
     this.tabPageView.webContents.send('set-window-floating', windowFloating);
   }
