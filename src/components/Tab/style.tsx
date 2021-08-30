@@ -7,14 +7,13 @@ export const TabParent = styled.div`
   flex-shrink: 0;
   word-wrap: break-word;
   text-overflow: ellipsis;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 `;
 export const TabImageParent = styled.div`
   width: 100%;
   padding-top: 56.25%;
   background-size: cover; /* <------ */
   background-repeat: no-repeat;
-  //background-position: center center;
   position: relative; /* If you want text inside of it */
   z-index: 0;
   border-radius: 10px;
@@ -48,7 +47,7 @@ export const TabImageParent = styled.div`
     `;
   }}
 `;
-export const RedXParent = styled.div`
+export const TitleParent = styled.div`
   font-size: 0.6rem;
   position: absolute;
   top: 0;
@@ -59,6 +58,21 @@ export const RedXParent = styled.div`
   transition-duration: 0.25s;
   opacity: ${({ hover }: { hover: boolean }) => (hover ? 100 : 0)};
   z-index: 10;
+`;
+export const RedXParent = styled.div`
+  font-size: 0.6rem;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transition-duration: 0.25s;
+  // opacity: ${({ hover }: { hover: boolean }) => (hover ? 100 : 0)};
+  opacity: 0;
+  z-index: 10;
+  :hover {
+    opacity: 100
+  }
 `;
 export const TabTitle = styled.div`
   width: calc(100% - 1rem);

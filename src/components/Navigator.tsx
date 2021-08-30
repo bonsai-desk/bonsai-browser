@@ -7,6 +7,12 @@ import { useStore, View } from '../store/tab-page-store';
 import { goBack, goForward, headsOnNode, INode } from '../store/history-store';
 import { IWorkSpaceStore } from '../store/workspace/workspace-store';
 import { Workspace } from '../store/workspace/workspace';
+import hamburger from '../../assets/plus.svg';
+
+enum Direction {
+  Back,
+  Forward,
+}
 
 const NavigatorParent = styled.div`
   width: 100%;
@@ -19,7 +25,6 @@ const NavigatorParent = styled.div`
 
 const NavigatorPanel = styled.div`
   background: rgba(0, 0, 0, 0.25);
-  border-radius: 0.5rem;
   overflow: scroll;
   ::-webkit-scrollbar {
     display: none;
@@ -30,16 +35,41 @@ const NavigatorPanel = styled.div`
   ${({
     width,
     height,
-    margin,
+    direction,
   }: {
     width: string;
     height: string;
-    margin: string;
-  }) => css`
-    height: ${height};
-    margin: 0 ${margin} 0 ${margin};
-    width: ${width};
-  `}
+    direction: Direction;
+  }) => {
+    const thing =
+      direction === Direction.Back ? '0 10px 10px 0' : '10px 0 0 10px';
+    const borRad = `border-radius: ${thing};`;
+    return css`
+      height: ${height};
+      width: ${width};
+      ${borRad}
+    `;
+  }}
+`;
+
+const ButtonParent = styled.div`
+  padding: 0.5rem;
+  margin: 0.5rem 0 0.5rem 0;
+  background-color: rgba(0, 0, 0, 0.25);
+  border-radius: 50%;
+  transition-duration: 0.25s;
+  :hover {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+`;
+
+const Hamburger = styled.div`
+  width: 1rem;
+  height: 1rem;
+  background-image: url(${hamburger});
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center;
 `;
 
 const AddToWorkspaceParent = styled.div`
@@ -47,30 +77,44 @@ const AddToWorkspaceParent = styled.div`
   cursor: default;
   font-size: 0.75rem;
   color: white;
-  width: calc(100% - 0.5rem);
-  overflow: hidden;
-  text-overflow: ellipsis;
+  width: 100%;
   white-space: nowrap;
   text-align: center;
-  //padding-top: 56.25%;
-  background-color: rgba(100, 100, 100, 1);
-  padding: 0.5rem 0 0.5rem 0.5rem;
-  border-radius: 0.5rem;
+`;
+
+const Title = styled.div`
+  margin: 1rem 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 1rem 0 0 0;
+  color: white;
 `;
 
 const NavigatorItemParent = styled.div`
   user-select: none;
   cursor: default;
-  font-size: 0.75rem;
+  font-size: 0.6rem;
   color: white;
-  width: calc(100% - 0.5rem);
-  overflow: hidden;
+  width: 100%;
+  //overflow: hidden;
+  transition-duration: 0.25s;
+  padding: 0.5rem 0 0.5rem 0;
+  background-color: rgba(0, 0, 0, 0.25);
+  :hover {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+`;
+
+const NavigatorItemText = styled.div`
+  margin: 0 0.5rem 0 0.5rem;
+  height: 2rem;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  //padding-top: 56.25%;
-  background-color: rgba(100, 100, 100, 1);
-  padding: 0.5rem 0 0.5rem 0.5rem;
-  border-radius: 0.5rem;
+  overflow: hidden;
+  // Addition lines for 2 line or multiline ellipsis
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  white-space: normal;
 `;
 
 interface Dimensions {
@@ -79,21 +123,26 @@ interface Dimensions {
   margin: number;
 }
 
-function asPx(a: number) {
+function asPx(a: number): string {
   return `${a}px`;
 }
 
-enum Direction {
-  Back,
-  Forward,
-}
-
 const NavigatorItem = observer(
+  ({ text, onClick }: { text: string; onClick: () => void }) => {
+    return (
+      <NavigatorItemParent onClick={onClick}>
+        <NavigatorItemText>{text}</NavigatorItemText>
+      </NavigatorItemParent>
+    );
+  }
+);
+
+const HistoryNavigatorItem = observer(
   ({ node, dir }: { node: INode; dir: Direction }) => {
     const { historyStore } = useStore();
     const title = node.data.title ? node.data.title : node.data.url;
     return (
-      <NavigatorItemParent
+      <NavigatorItem
         onClick={() => {
           if (dir === Direction.Back) {
             goBack(historyStore, node);
@@ -102,9 +151,8 @@ const NavigatorItem = observer(
             goForward(historyStore, node);
           }
         }}
-      >
-        {title}
-      </NavigatorItemParent>
+        text={title}
+      />
     );
   }
 );
@@ -112,7 +160,7 @@ const NavigatorItem = observer(
 const WorkspaceItem = observer(({ data }: { data: IItemPath }) => {
   const { tabPageStore, workspaceStore } = useStore();
   return (
-    <NavigatorItemParent
+    <NavigatorItem
       onClick={() => {
         workspaceStore.setActiveWorkspaceId(data.workspaceId);
         tabPageStore.View = View.WorkSpace;
@@ -122,7 +170,8 @@ const WorkspaceItem = observer(({ data }: { data: IItemPath }) => {
         }
         ipcRenderer.send('click-main');
       }}
-    >{`${data.workspaceName} / ${data.groupName}`}</NavigatorItemParent>
+      text={`${data.workspaceName} / ${data.groupName}`}
+    />
   );
 });
 
@@ -138,16 +187,14 @@ const Panel = observer(
     dir: Direction;
     children?: JSX.Element | JSX.Element[];
   }) => {
-    const { width, height, margin } = dim;
+    const { width, height } = dim;
+    const navigatorItems = items.map((item) => (
+      <HistoryNavigatorItem key={item.id} node={item} dir={dir} />
+    ));
     return (
-      <NavigatorPanel
-        width={asPx(width)}
-        height={asPx(height)}
-        margin={asPx(margin)}
-      >
-        {items.map((item) => (
-          <NavigatorItem key={item.id} node={item} dir={dir} />
-        ))}
+      <NavigatorPanel direction={dir} width={asPx(width)} height={asPx(height)}>
+        <Title>{dir === Direction.Back ? 'Back' : 'Forward'}</Title>
+        {navigatorItems}
         {children}
       </NavigatorPanel>
     );
@@ -195,8 +242,6 @@ function nodeInWorkspaces(
   return [];
 }
 
-const AddToWorkspaceButtonParent = styled.div``;
-
 const AddToWorkspaceButton = observer(
   ({
     ws,
@@ -206,9 +251,7 @@ const AddToWorkspaceButton = observer(
     callback: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
   }) => {
     return (
-      <AddToWorkspaceButtonParent onClick={callback}>
-        {ws.name}
-      </AddToWorkspaceButtonParent>
+      <NavigatorItemParent onClick={callback}>{ws.name}</NavigatorItemParent>
     );
   }
 );
@@ -239,7 +282,11 @@ const AddToWorkspace = observer(({ node }: { node: INode }) => {
       }}
     >
       <>
-        +
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <ButtonParent>
+            <Hamburger />
+          </ButtonParent>
+        </div>
         {open
           ? ws.map((workspace) => {
               const callback = (
@@ -285,7 +332,7 @@ const Navigator = observer(() => {
   const gutter =
     (tabPageStore.screen.width - tabPageStore.innerBounds.width) / 2;
   const margin = 20;
-  const width = gutter - 2 * margin;
+  const width = gutter - margin;
   const { height } = tabPageStore.innerBounds;
   const head = historyStore.heads.get(historyStore.active);
   const leftItems = head && head.parent ? [head.parent] : [];
@@ -306,9 +353,20 @@ const Navigator = observer(() => {
         dim={{ width, height, margin }}
       >
         <>
+          {leftItems.length === 0 ? (
+            <NavigatorItem onClick={() => {}} text="None" />
+          ) : (
+            ''
+          )}
+          <Title>Workspaces</Title>
           {matches.map((match) => (
             <WorkspaceItem key={match.itemId} data={match} />
           ))}
+          {matches.length === 0 ? (
+            <NavigatorItem onClick={() => {}} text="None" />
+          ) : (
+            ''
+          )}
           {head ? <AddToWorkspace node={head} /> : ''}
         </>
       </Panel>
