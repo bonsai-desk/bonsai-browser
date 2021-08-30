@@ -42,6 +42,9 @@ export default class TabPageStore {
     if (view !== View.FuzzySearch) {
       this.urlText = '';
     }
+    if (view === View.Tabs) {
+      this.hoveringUrlInput = true;
+    }
   }
 
   hoveringUrlInput = false;

@@ -8,7 +8,7 @@ const URLBoxParent = styled.div`
   display: flex;
   justify-content: center;
   width: 100%;
-  margin-bottom: 10px;
+  padding: 30px 0 10px 0;
 `;
 
 const Input = styled.input`
@@ -37,18 +37,20 @@ const URLBox = observer(() => {
     tabPageStore.urlBoxRef = urlBoxRef;
   });
   return (
-    <URLBoxParent id="header">
+    <URLBoxParent
+      id="header"
+      onMouseOver={() => {
+        runInAction(() => {
+          tabPageStore.hoveringUrlInput = true;
+        });
+      }}
+      onMouseLeave={() => {
+        runInAction(() => {
+          tabPageStore.hoveringUrlInput = false;
+        });
+      }}
+    >
       <Input
-        onMouseOver={() => {
-          runInAction(() => {
-            tabPageStore.hoveringUrlInput = true;
-          });
-        }}
-        onMouseLeave={() => {
-          runInAction(() => {
-            tabPageStore.hoveringUrlInput = false;
-          });
-        }}
         type="text"
         spellCheck={false}
         ref={urlBoxRef}
