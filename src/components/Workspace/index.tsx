@@ -7,7 +7,6 @@ import { runInAction } from 'mobx';
 import MainItem from './MainItem';
 import MainGroup from './MainGroup';
 import trashIcon from '../../../assets/alternate-trash.svg';
-// import centerIcon from '../../../assets/center-square.svg';
 import hamburgerIcon from '../../../assets/hamburger-menu.svg';
 import { ItemGroup } from '../../store/workspace/item-group';
 import {
@@ -16,6 +15,7 @@ import {
 } from '../../store/workspace/workspace';
 import { useStore, View } from '../../store/tab-page-store';
 import { HeaderInput, HeaderText } from './style';
+import ConfirmModal from '../Modal/Modal';
 
 export { MainItem, MainGroup };
 
@@ -38,7 +38,7 @@ const InboxColumn = styled.div`
   left: 0;
   top: 0;
   height: 100%;
-  z-index: 999999;
+  z-index: 9999999;
 `;
 export const TrashButton = styled.div`
   position: absolute;
@@ -47,7 +47,7 @@ export const TrashButton = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000001;
+  z-index: 10000001;
 `;
 export const SideButton = styled.div`
   position: absolute;
@@ -56,7 +56,7 @@ export const SideButton = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000001;
+  z-index: 10000001;
   background-color: rgba(0, 0, 0, 0.7);
 
   :hover {
@@ -86,7 +86,7 @@ const HamburgerMenu = styled.div`
   right: 100px;
   width: 300px;
   background-color: red;
-  z-index: 1000003;
+  z-index: 10000003;
 `;
 const HamburgerOption = styled.div`
   background-color: lightblue;
@@ -103,6 +103,8 @@ const Workspace = observer(
     const backgroundRef = useRef<HTMLDivElement>(null);
 
     const workspaceNameRef = useRef<HTMLInputElement>(null);
+
+    const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
 
     const groups = Array.from(workspace.groups.values()).map(
       (group: Instance<typeof ItemGroup>) => {
@@ -251,7 +253,7 @@ const Workspace = observer(
                 e.stopPropagation();
               }}
               onClick={() => {
-                workspace.setHamburgerOpen(true);
+                workspace.setHamburgerOpen(!workspace.hamburgerOpen);
               }}
             >
               <CornerButtonIcon src={hamburgerIcon} />
@@ -260,7 +262,7 @@ const Workspace = observer(
               style={{
                 display: workspace.hamburgerOpen ? 'block' : 'none',
               }}
-              onClick={() => {
+              onMouseDown={() => {
                 workspace.setHamburgerOpen(false);
               }}
             />
@@ -279,15 +281,23 @@ const Workspace = observer(
               </HamburgerOption>
               <HamburgerOption
                 onClick={() => {
+                  setDeleteConfirmVisible(true);
+                }}
+              >
+                Delete Workspace
+              </HamburgerOption>
+              <ConfirmModal
+                title="Delete Workspace?"
+                confirm={() => {
                   workspace.setHamburgerOpen(false);
                   runInAction(() => {
                     tabPageStore.View = View.Tabs;
                   });
                   workspaceStore.deleteWorkspace(workspace);
                 }}
-              >
-                Delete Workspace
-              </HamburgerOption>
+                visible={deleteConfirmVisible}
+                setVisible={setDeleteConfirmVisible}
+              />
             </HamburgerMenu>
             <HeaderText
               style={{
@@ -301,7 +311,9 @@ const Workspace = observer(
                 width: 'auto',
                 paddingRight: '12px',
                 fontSize: '50px',
-                zIndex: 1000000,
+                zIndex: 10000000,
+                backgroundColor: 'white',
+                borderRadius: '0 1000000px 1000000px 0',
               }}
               onMouseDown={(e) => {
                 e.stopPropagation();
@@ -334,7 +346,7 @@ const Workspace = observer(
                 left: InboxColumnWidth,
                 top: 3,
                 fontSize: '50px',
-                zIndex: 1000000,
+                zIndex: 10000000,
               }}
               onMouseDown={(e) => {
                 if (e.button !== 1) {

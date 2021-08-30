@@ -160,7 +160,7 @@ export const Workspace = types
         return;
       }
 
-      this.setCameraZoom(maxZoom);
+      this.setCameraZoom(maxZoom / 3);
 
       const screenPos = this.placeholderPos(item, group);
       const offset = self.screenVectorToWorldVector(
