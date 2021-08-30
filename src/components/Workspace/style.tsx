@@ -8,7 +8,7 @@ import styled, { css } from 'styled-components';
 
 export const ItemContainer = styled.div`
   background-color: white;
-  border-radius: 20px;
+  border-radius: 10px;
   color: rgb(50, 50, 50);
   position: absolute;
   transition: transform 0.05s ease-out, filter 0.25s;
