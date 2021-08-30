@@ -9,6 +9,8 @@ const getAssetPath = (...paths: string[]): string => {
   return path.join(RESOURCES_PATH, ...paths);
 };
 
+export const VIBRANCY = 'fullscreen-ui';
+
 export const URL_PEEK_HTML = `file://${__dirname}/url-peek.html`;
 
 export const INDEX_HTML = `file://${__dirname}/index.html`;

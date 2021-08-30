@@ -9,7 +9,7 @@ import {
   Tray,
 } from 'electron';
 import WindowManager from './window-manager';
-import { ICON_PNG, ICON_SMALL_PNG } from '../constants';
+import { ICON_PNG, ICON_SMALL_PNG, VIBRANCY } from '../constants';
 import windowFixedUpdate from './calculate-window-physics';
 import { windowHasView } from './utils';
 import { floatingSize } from './wm-utils';
@@ -170,7 +170,7 @@ function initWindow(): BrowserWindow {
     minHeight: 50,
     show: false,
     icon: ICON_SMALL_PNG,
-    vibrancy: mac ? 'fullscreen-ui' : undefined, // menu, popover, hud, fullscreen-ui
+    vibrancy: mac ? VIBRANCY : undefined, // menu, popover, hud, fullscreen-ui
     roundedCorners: false,
     visualEffectState: mac ? 'active' : undefined,
     // fullscreen: true,

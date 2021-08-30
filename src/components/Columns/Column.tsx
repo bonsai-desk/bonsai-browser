@@ -5,17 +5,20 @@ import { TabPageColumn } from '../../interfaces/tab';
 import { ColumnParent } from './style';
 import ColumnHeader from './ColumnHeader';
 import Tab from '../Tab';
+import { useStore } from '../../store/tab-page-store';
 
 export const ColumnsParent = styled.div`
   display: flex;
   align-items: flex-start;
   flex-grow: 1;
-  overflow: auto;
+  padding: 0 10px 0 10px;
 `;
 
 export const Column = observer(({ column }: { column: TabPageColumn }) => {
+  const { tabPageStore } = useStore();
   const [hovered, setHovered] = useState(false);
   function handleMouseOver() {
+    tabPageStore.hoveringUrlInput = false;
     setHovered(true);
   }
 
