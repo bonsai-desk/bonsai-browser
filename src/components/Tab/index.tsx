@@ -20,17 +20,25 @@ interface ITabImage {
   imgUrl: string;
   tab: TabPageTab;
   selected: boolean;
+  disableButtons?: boolean;
 }
 
 const TabImage = observer(
-  ({ selected, hover, imgUrl, tab, title }: ITabImage) => {
+  ({
+    selected,
+    hover,
+    imgUrl,
+    tab,
+    title,
+    disableButtons = false,
+  }: ITabImage) => {
     const { workspaceStore } = useStore();
     return (
       <TabImageParent img={`url(${imgUrl})`} selected={selected}>
         <TitleParent hover={hover}>
           <TabTitle>{title === '' ? 'New Tab' : title}</TabTitle>
         </TitleParent>
-        <RedXParent hover={hover}>
+        <RedXParent disableHover={disableButtons}>
           <RedX
             style={{
               left: '0.5rem',
@@ -65,42 +73,51 @@ const TabImage = observer(
   }
 );
 
-const Tab = observer(({ tab, hover, selected = false, callback }: ITab) => {
-  const { tabPageStore } = useStore();
-  const title =
-    tab.openGraphInfo !== null &&
-    tab.openGraphInfo.title !== '' &&
-    tab.openGraphInfo.title !== 'null'
-      ? tab.openGraphInfo.title
-      : tab.title;
-  const imgUrl =
-    tab.openGraphInfo !== null && tab.openGraphInfo.image !== ''
-      ? tab.openGraphInfo.image
-      : tab.image;
+const Tab = observer(
+  ({
+    tab,
+    hover,
+    selected = false,
+    callback,
+    disableButtons = false,
+  }: ITab) => {
+    const { tabPageStore } = useStore();
+    const title =
+      tab.openGraphInfo !== null &&
+      tab.openGraphInfo.title !== '' &&
+      tab.openGraphInfo.title !== 'null'
+        ? tab.openGraphInfo.title
+        : tab.title;
+    const imgUrl =
+      tab.openGraphInfo !== null && tab.openGraphInfo.image !== ''
+        ? tab.openGraphInfo.image
+        : tab.image;
 
-  const hovering = hover || tabPageStore.hoveringUrlInput;
+    const hovering = hover || tabPageStore.hoveringUrlInput;
 
-  return (
-    <TabParent
-      onClick={() => {
-        if (callback) {
-          callback();
-        } else {
-          ipcRenderer.send('set-tab', tab.id);
-          ipcRenderer.send('mixpanel-track', 'click home tab');
-          tabPageStore.setUrlText('');
-        }
-      }}
-    >
-      <TabImage
-        selected={selected}
-        hover={hovering}
-        title={title}
-        imgUrl={imgUrl}
-        tab={tab}
-      />
-    </TabParent>
-  );
-});
+    return (
+      <TabParent
+        onClick={() => {
+          if (callback) {
+            callback();
+          } else {
+            ipcRenderer.send('set-tab', tab.id);
+            ipcRenderer.send('mixpanel-track', 'click home tab');
+            tabPageStore.setUrlText('');
+          }
+        }}
+      >
+        <TabImage
+          disableButtons={disableButtons}
+          selected={selected}
+          hover={hovering}
+          title={title}
+          imgUrl={imgUrl}
+          tab={tab}
+        />
+      </TabParent>
+    );
+  }
+);
 
 export default Tab;

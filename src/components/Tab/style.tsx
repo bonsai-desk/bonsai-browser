@@ -67,12 +67,18 @@ export const RedXParent = styled.div`
   width: 100%;
   height: 100%;
   transition-duration: 0.25s;
-  // opacity: ${({ hover }: { hover: boolean }) => (hover ? 100 : 0)};
   opacity: 0;
+  ${({ disableHover = false }: { disableHover?: boolean }) => {
+    if (!disableHover) {
+      return css`
+        :hover {
+          opacity: 100;
+        }
+      `;
+    }
+    return '';
+  }};
   z-index: 10;
-  :hover {
-    opacity: 100
-  }
 `;
 export const TabTitle = styled.div`
   width: calc(100% - 1rem);
