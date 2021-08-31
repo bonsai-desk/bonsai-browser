@@ -26,6 +26,8 @@ const NavigatorParent = styled.div`
 const NavigatorPanel = styled.div`
   background: rgba(0, 0, 0, 0.25);
   overflow: scroll;
+  display: flex;
+  flex-direction: column;
   ::-webkit-scrollbar {
     display: none;
   }
@@ -91,17 +93,29 @@ const Title = styled.div`
 `;
 
 const NavigatorHover = styled.div`
+  ${({ active }: { active: boolean }) => {
+    if (active) {
+      return css`
+        background-color: rgba(0, 0, 0, 0.7);
+      `;
+    }
+    return css`
+      background-color: rgba(0, 0, 0, 0.25);
+    `;
+  }}
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   transition-duration: 0.25s;
-  background-color: rgba(0, 0, 0, 0.7);
 `;
 
 const NavigatorItemParent = styled.div`
-  height: 3rem;
+  width: 100%;
+  min-height: 3rem;
+  max-height: 10rem;
+  flex-grow: 1;
   position: relative;
   background-size: cover; /* <------ */
   background-repeat: no-repeat;
@@ -117,7 +131,6 @@ const NavigatorItemParent = styled.div`
   cursor: default;
   font-size: 0.6rem;
   color: white;
-  width: 100%;
   //overflow: hidden;
   //padding: 0.5rem 0 0.5rem 0;
 `;
@@ -153,15 +166,17 @@ const NavigatorItem = observer(
     img,
     text,
     onClick,
+    active = true,
   }: {
     img: string;
     text: string;
-    onClick: () => void;
+    onClick?: () => void;
+    active?: boolean;
   }) => {
     return (
       <NavigatorItemParent id="NavItem" img={img} onClick={onClick}>
         <NavigatorItemText>{text}</NavigatorItemText>
-        <NavigatorHover />
+        <NavigatorHover active={active} />
       </NavigatorItemParent>
     );
   }
@@ -398,7 +413,12 @@ const Navigator = observer(() => {
       >
         <>
           {leftItems.length === 0 ? (
-            <NavigatorItem img="" onClick={() => {}} text="None" />
+            <NavigatorItem
+              active={false}
+              img=""
+              onClick={() => {}}
+              text="None"
+            />
           ) : (
             ''
           )}
@@ -406,11 +426,6 @@ const Navigator = observer(() => {
           {matches.map((match) => (
             <WorkspaceItem key={match.itemId} data={match} />
           ))}
-          {matches.length === 0 ? (
-            <NavigatorItem img="" onClick={() => {}} text="None" />
-          ) : (
-            ''
-          )}
           {head ? <AddToWorkspace node={head} /> : ''}
         </>
       </Panel>
