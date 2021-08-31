@@ -1,4 +1,5 @@
 import { BrowserView, BrowserWindow } from 'electron';
+import { createCipheriv, createDecipheriv } from 'crypto';
 import { HistoryEntry } from './interfaces';
 
 export const windowHasView = (
@@ -104,4 +105,22 @@ export function clamp(value: number, min: number, max: number): number {
 
 export function lerp(v0: number, v1: number, t: number): number {
   return v0 * (1 - t) + v1 * t;
+}
+
+const key = Buffer.from(new Array(32).fill(0));
+const iv = Buffer.from(new Array(16).fill(0));
+
+export function encrypt(text: string) {
+  const cipher = createCipheriv('aes-256-cbc', key, iv);
+  let encrypted = cipher.update(text);
+  encrypted = Buffer.concat([encrypted, cipher.final()]);
+  return encrypted.toString('hex');
+}
+
+export function decrypt(text: string) {
+  const encryptedText = Buffer.from(text, 'hex');
+  const decipher = createDecipheriv('aes-256-cbc', key, iv);
+  let decrypted = decipher.update(encryptedText);
+  decrypted = Buffer.concat([decrypted, decipher.final()]);
+  return decrypted.toString();
 }
