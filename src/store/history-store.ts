@@ -264,6 +264,7 @@ export function hookListeners(h: Instance<typeof HistoryStore>) {
     }
   });
   ipcRenderer.on('will-navigate', (_, { id, url }) => {
+    ipcRenderer.send('mixpanel-track', 'history will navigate');
     log('=== will-navigate ===');
     const oldNode = h.heads.get(id);
     if (!(oldNode && oldNode.data.url === url)) {

@@ -79,6 +79,7 @@ const Tab = observer(({ tab, hover, selected = false, callback }: ITab) => {
           callback();
         } else {
           ipcRenderer.send('set-tab', tab.id);
+          ipcRenderer.send('mixpanel-track', 'click home tab');
           tabPageStore.setUrlText('');
         }
       }}

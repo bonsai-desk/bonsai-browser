@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Instance } from 'mobx-state-tree';
 import { DraggableCore } from 'react-draggable';
 import { runInAction } from 'mobx';
+import { ipcRenderer } from 'electron';
 import MainItem from './MainItem';
 import MainGroup from './MainGroup';
 import trashIcon from '../../../assets/alternate-trash.svg';
@@ -366,7 +367,11 @@ const Workspace = observer(
                 runInAction(() => {
                   tabPageStore.activeWorkspaceNameRef = null;
                 });
-                if (e.currentTarget.value !== '') {
+                if (
+                  e.currentTarget.value !== '' &&
+                  e.currentTarget.value !== workspace.name
+                ) {
+                  ipcRenderer.send('mixpanel-track', 'rename workspace');
                   workspace.setName(e.currentTarget.value);
                 }
               }}

@@ -97,9 +97,11 @@ const NavigatorItem = observer(
         onClick={() => {
           if (dir === Direction.Back) {
             goBack(historyStore, node);
+            ipcRenderer.send('mixpanel-track', 'click go back in navigator');
           }
           if (dir === Direction.Forward) {
             goForward(historyStore, node);
+            ipcRenderer.send('mixpanel-track', 'click go forward in navigator');
           }
         }}
       >
@@ -120,6 +122,10 @@ const WorkspaceItem = observer(({ data }: { data: IItemPath }) => {
         if (typeof workspace !== 'undefined') {
           workspace.centerCameraOnItem(data.itemId);
         }
+        ipcRenderer.send(
+          'mixpanel-track',
+          'click backlink to workspace in navigator'
+        );
         ipcRenderer.send('click-main');
       }}
     >{`${data.workspaceName} / ${data.groupName}`}</NavigatorItemParent>
@@ -263,6 +269,10 @@ const AddToWorkspace = observer(({ node }: { node: INode }) => {
                   favicon,
                   workspace.inboxGroup
                 );
+                ipcRenderer.send(
+                  'mixpanel-track',
+                  'create backlink to workspace from navigator'
+                );
                 setOpen(false);
               };
               return (
@@ -297,6 +307,10 @@ const Navigator = observer(() => {
       onClick={(e) => {
         if (backRef.current && e.target === backRef.current) {
           ipcRenderer.send('click-main');
+          ipcRenderer.send(
+            'mixpanel-track',
+            'go to home from navigator border click'
+          );
         }
       }}
     >

@@ -140,6 +140,7 @@ const MainItem = observer(
               tabPageStore.View = View.Tabs;
             });
             ipcRenderer.send('open-workspace-url', item.url);
+            ipcRenderer.send('mixpanel-track', 'click workspace tab');
           } else {
             if (!item.overTrash) {
               const [
@@ -170,6 +171,10 @@ const MainItem = observer(
                 createdGroup.move(worldX, worldY);
                 workspace.changeGroup(item, group, createdGroup);
                 createdGroup.setShouldEditTitle(true);
+                ipcRenderer.send(
+                  'mixpanel-track',
+                  'create workspace group by stop drag'
+                );
               }
             }
 
@@ -193,6 +198,10 @@ const MainItem = observer(
 
             if (item.overTrash) {
               workspace.deleteItem(item, group);
+              ipcRenderer.send(
+                'mixpanel-track',
+                'delete workspace item with trash'
+              );
             }
           }
           workspace.setAnyDragging(false);
