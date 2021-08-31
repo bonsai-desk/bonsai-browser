@@ -114,25 +114,24 @@ const NavigatorHover = styled.div`
 const NavigatorItemParent = styled.div`
   width: 100%;
   min-height: 3rem;
-  max-height: 10rem;
   flex-grow: 1;
   position: relative;
   background-size: cover; /* <------ */
   background-repeat: no-repeat;
-  ${({ img }: { img: string }) => {
+  ${({ img, maxHeight = '5rem' }: { img: string; maxHeight?: string }) => {
+    const maxHeightLine = `max-height: ${maxHeight};`;
     if (img) {
       return css`
         background-image: ${img};
+        ${maxHeightLine}
       `;
     }
-    return '';
+    return maxHeightLine;
   }}
   user-select: none;
   cursor: default;
   font-size: 0.6rem;
   color: white;
-  //overflow: hidden;
-  //padding: 0.5rem 0 0.5rem 0;
 `;
 
 const NavigatorItemText = styled.div`
@@ -166,15 +165,22 @@ const NavigatorItem = observer(
     img,
     text,
     onClick,
+    maxHeight,
     active = true,
   }: {
     img: string;
     text: string;
     onClick?: () => void;
     active?: boolean;
+    maxHeight?: string;
   }) => {
     return (
-      <NavigatorItemParent id="NavItem" img={img} onClick={onClick}>
+      <NavigatorItemParent
+        maxHeight={maxHeight}
+        id="NavItem"
+        img={img}
+        onClick={onClick}
+      >
         <NavigatorItemText>{text}</NavigatorItemText>
         <NavigatorHover active={active} />
       </NavigatorItemParent>
@@ -183,10 +189,20 @@ const NavigatorItem = observer(
 );
 
 const HistoryNavigatorItem = observer(
-  ({ node, dir }: { node: INode; dir: Direction }) => {
+  ({
+    node,
+    dir,
+    parentDim,
+  }: {
+    parentDim: Dimensions;
+    node: INode;
+    dir: Direction;
+  }) => {
     const { historyStore, tabPageStore } = useStore();
     let img = '';
     const heads = headsOnNode(historyStore, node);
+
+    const maxHeight = `${(9 / 16) * parentDim.width}px`;
 
     if (heads.length > 0) {
       const tab = tabPageStore.openTabs[heads[0][0]];
@@ -198,6 +214,7 @@ const HistoryNavigatorItem = observer(
     const title = node.data.title ? node.data.title : node.data.url;
     return (
       <NavigatorItem
+        maxHeight={maxHeight}
         img={img}
         onClick={() => {
           if (dir === Direction.Back) {
@@ -219,6 +236,7 @@ const WorkspaceItem = observer(({ data }: { data: IItemPath }) => {
   const { tabPageStore, workspaceStore } = useStore();
   return (
     <NavigatorItem
+      maxHeight="3rem"
       img=""
       onClick={() => {
         workspaceStore.setActiveWorkspaceId(data.workspaceId);
@@ -252,7 +270,12 @@ const Panel = observer(
   }) => {
     const { width, height } = dim;
     const navigatorItems = items.map((item) => (
-      <HistoryNavigatorItem key={item.id} node={item} dir={dir} />
+      <HistoryNavigatorItem
+        parentDim={dim}
+        key={item.id}
+        node={item}
+        dir={dir}
+      />
     ));
     return (
       <NavigatorPanel direction={dir} width={asPx(width)} height={asPx(height)}>
@@ -401,7 +424,8 @@ const Navigator = observer(() => {
   const gutter =
     (tabPageStore.screen.width - tabPageStore.innerBounds.width) / 2;
   const margin = 20;
-  const width = gutter - margin;
+  const tabWidth = gutter - margin;
+  // const tabMaxHeight = (9 / 16) * tabWidth;
   const { height } = tabPageStore.innerBounds;
   const head = historyStore.heads.get(historyStore.active);
   const leftItems = head && head.parent ? [head.parent] : [];
@@ -423,7 +447,7 @@ const Navigator = observer(() => {
       <Panel
         dir={Direction.Back}
         items={leftItems}
-        dim={{ width, height, margin }}
+        dim={{ width: tabWidth, height, margin }}
       >
         <>
           {leftItems.length === 0 ? (
@@ -432,6 +456,7 @@ const Navigator = observer(() => {
               img=""
               onClick={() => {}}
               text="None"
+              maxHeight="3rem"
             />
           ) : (
             ''
@@ -446,7 +471,7 @@ const Navigator = observer(() => {
       <Panel
         dir={Direction.Forward}
         items={rightItems}
-        dim={{ width, height, margin }}
+        dim={{ width: tabWidth, height, margin }}
       />
     </NavigatorParent>
   );
