@@ -14,11 +14,11 @@ class MixpanelManager {
 
     const token = app.isPackaged ? projectToken : projectDevToken;
     this.mixpanel = init(token);
-    this.track('start application');
+    this.track('boot app');
   }
 
-  track(event: string) {
-    this.mixpanel.track(event, { distinct_id: this.userId });
+  track(eventName: string) {
+    this.mixpanel.track(eventName, { distinct_id: this.userId });
   }
 }
 

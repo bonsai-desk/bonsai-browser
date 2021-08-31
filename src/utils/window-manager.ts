@@ -379,6 +379,9 @@ export function addListeners(wm: WindowManager) {
       wm.screenShotTab(webViewId, webView);
     }
   });
+  ipcMain.on('mixpanel-track', (_, eventName) => {
+    wm.mixpanelManager.track(eventName);
+  });
 }
 
 interface IAction {
@@ -594,6 +597,11 @@ export default class WindowManager {
       ) {
         escapeActive = true;
         globalShortcut.register('Escape', () => {
+          if (this.mouseInInner) {
+            this.mixpanelManager.track('escape while mouse in inner');
+          } else {
+            this.mixpanelManager.track('escape while mouse not in inner');
+          }
           this.toggle(!this.mouseInInner);
         });
       } else if (
@@ -1406,6 +1414,9 @@ export default class WindowManager {
     this.windowSpeeds = [];
     this.movingWindow = false;
     if (this.validFloatingClick) {
+      if (this.windowFloating) {
+        this.mixpanelManager.track('unfloat window by clicking');
+      }
       this.unFloat();
     }
     this.validFloatingClick = false;

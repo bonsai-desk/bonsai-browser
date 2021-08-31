@@ -110,12 +110,18 @@ export default class TabPageStore {
           if (data) {
             const [open, tab] = data;
             if (open) {
+              ipcRenderer.send('mixpanel-track', 'fuzzy enter set tab');
               ipcRenderer.send('set-tab', tab.id);
             } else {
+              ipcRenderer.send(
+                'mixpanel-track',
+                'fuzzy enter open workspace tab'
+              );
               ipcRenderer.send('open-workspace-url', tab.url);
             }
           } else {
             ipcRenderer.send('search-url', this.urlText);
+            ipcRenderer.send('mixpanel-track', 'search url from home');
           }
           this.setUrlText('');
         }
@@ -133,8 +139,16 @@ export default class TabPageStore {
         break;
       case 'Tab':
         if (this.View === View.Tabs) {
+          ipcRenderer.send(
+            'mixpanel-track',
+            'toggle on workspace with tab key'
+          );
           this.View = View.WorkSpace;
         } else if (this.View === View.WorkSpace) {
+          ipcRenderer.send(
+            'mixpanel-track',
+            'toggle off workspace with tab key'
+          );
           this.View = View.Tabs;
         }
         break;

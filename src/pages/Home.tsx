@@ -220,9 +220,18 @@ const Home = observer(() => {
   return (
     <Background
       onClick={(e) => {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        if (e.target.id === 'header' || e.target.id === 'footer') {
+        if (
+          tabPageStore.View !== View.Tabs &&
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          (e.target.id === 'header' || e.target.id === 'footer')
+        ) {
+          if (tabPageStore.View === View.WorkSpace) {
+            ipcRenderer.send(
+              'mixpanel-track',
+              'toggle off workspace with background click'
+            );
+          }
           tabPageStore.View = View.Tabs;
         }
       }}

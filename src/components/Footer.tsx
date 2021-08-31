@@ -2,6 +2,7 @@ import styled from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import { runInAction } from 'mobx';
 import React from 'react';
+import { ipcRenderer } from 'electron';
 import { useStore, View } from '../store/tab-page-store';
 import HistoryButton from './HistoryButton';
 
@@ -65,8 +66,16 @@ const WorkspaceButtons = observer(() => {
                 tabPageStore.View === View.WorkSpace &&
                 workspaceStore.activeWorkspaceId === workspace.id
               ) {
+                ipcRenderer.send(
+                  'mixpanel-track',
+                  'toggle off workspace with button'
+                );
                 tabPageStore.View = View.Tabs;
               } else {
+                ipcRenderer.send(
+                  'mixpanel-track',
+                  'toggle on workspace with button'
+                );
                 workspaceStore.setActiveWorkspaceId(workspace.id);
                 tabPageStore.View = View.WorkSpace;
               }
@@ -105,17 +114,6 @@ const Footer = observer(() => {
   const { tabPageStore } = useStore();
   return (
     <FooterParent id="footer">
-      {/* <FooterButtonParent */}
-      {/*  onClick={() => { */}
-      {/*    runInAction(() => { */}
-      {/*      if (tabPageStore.View === View.Tabs) { */}
-      {/*        tabPageStore.View = View.WorkSpace; */}
-      {/*      } else if (tabPageStore.View === View.WorkSpace) { */}
-      {/*        tabPageStore.View = View.Tabs; */}
-      {/*      } */}
-      {/*    }); */}
-      {/*  }} */}
-      {/* /> */}
       <WorkspaceButtons />
       <HistoryButton />
       <NavButtonParent

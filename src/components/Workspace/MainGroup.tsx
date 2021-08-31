@@ -3,6 +3,7 @@ import { Instance, isValidReference } from 'mobx-state-tree';
 import React, { useEffect, useRef } from 'react';
 import { runInAction } from 'mobx';
 import { DraggableCore, DraggableData } from 'react-draggable';
+import { ipcRenderer } from 'electron';
 import { useStore } from '../../store/tab-page-store';
 import { easeOut, overTrash } from './utils';
 import { lerp } from '../../utils/utils';
@@ -171,11 +172,11 @@ const MainGroup = observer(
             group.setTempResizeWidth(
               widthPixelsToInt((data.x - screenGroupX) / workspace.scale)
             );
-            workspace.setGroupWidth(
-              roundFunc(group.tempResizeWidth),
-              group,
-              true
-            );
+            const newWidth = roundFunc(group.tempResizeWidth);
+            if (newWidth !== group.width) {
+              ipcRenderer.send('mixpanel-track', 'resize workspace group');
+            }
+            workspace.setGroupWidth(newWidth, group, true);
             group.setResizing(false);
           }
 
@@ -273,7 +274,11 @@ const MainGroup = observer(
                   tabPageStore.activeGroupBoxRef = null;
                   tabPageStore.editingGroupId = '';
                 });
-                if (e.currentTarget.value !== '') {
+                if (
+                  e.currentTarget.value !== '' &&
+                  e.currentTarget.value !== group.title
+                ) {
+                  ipcRenderer.send('mixpanel-track', 'rename workspace group');
                   group.setTitle(e.currentTarget.value);
                 }
               }}
