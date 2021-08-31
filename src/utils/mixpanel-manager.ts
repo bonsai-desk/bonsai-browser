@@ -4,8 +4,8 @@ import { app } from 'electron';
 
 const Mixpanel = require('mixpanel');
 
-const projectDevToken = '3450398c23014cc3e96e7d8238db3bb9';
-const projectToken = 'bd5e50b762f1fa079a9620ad50f71b50';
+const projectDevToken = '6e88c4d3f57b5687ddba475e49f2aa45';
+const projectToken = '15bdcc7325b32b21052a15413ed77dc2';
 
 class MixpanelManager {
   userId = '';
@@ -17,7 +17,14 @@ class MixpanelManager {
 
     const token = app.isPackaged ? projectToken : projectDevToken;
     const mixpanel = Mixpanel.init(token);
-    mixpanel.track('test event');
+    mixpanel.track(
+      'test event',
+      { distinct_id: userId, ip: '127.0.0.1' },
+      (err) => {
+        console.log('woo');
+        console.log(err);
+      }
+    );
     // this.mixpanel = Mixpanel.init(token, { debug: true });
     // console.log('init mixpanel');
     //
