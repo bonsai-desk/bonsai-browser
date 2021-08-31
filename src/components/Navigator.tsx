@@ -7,7 +7,7 @@ import { useStore, View } from '../store/tab-page-store';
 import { goBack, goForward, headsOnNode, INode } from '../store/history-store';
 import { IWorkSpaceStore } from '../store/workspace/workspace-store';
 import { Workspace } from '../store/workspace/workspace';
-import hamburger from '../../assets/plus.svg';
+import plusImg from '../../assets/plus.svg';
 
 enum Direction {
   Back,
@@ -56,7 +56,7 @@ const NavigatorPanel = styled.div`
 
 const ButtonParent = styled.div`
   padding: 0.5rem;
-  margin: 0.5rem 0 0.5rem 0;
+  margin: 1rem 0 1rem 0;
   background-color: rgba(0, 0, 0, 0.25);
   border-radius: 50%;
   transition-duration: 0.25s;
@@ -65,10 +65,10 @@ const ButtonParent = styled.div`
   }
 `;
 
-const Hamburger = styled.div`
+const Plus = styled.div`
   width: 1rem;
   height: 1rem;
-  background-image: url(${hamburger});
+  background-image: url(${plusImg});
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center center;
@@ -82,13 +82,15 @@ const AddToWorkspaceParent = styled.div`
   width: 100%;
   white-space: nowrap;
   text-align: center;
+  #BacklinkToWorkspace + #BacklinkToWorkspace {
+    margin: 1rem 0 1rem 0;
+  }
 `;
 
 const Title = styled.div`
-  margin: 1rem 0 0 0.5rem;
+  margin: 1rem 0 1rem 0.5rem;
   font-size: 1rem;
   font-weight: 600;
-  padding: 1rem 0 0 0;
   color: white;
 `;
 
@@ -100,7 +102,7 @@ const NavigatorHover = styled.div`
       `;
     }
     return css`
-      background-color: rgba(0, 0, 0, 0.25);
+      background-color: rgba(0, 0, 0, 0.1);
     `;
   }}
   position: absolute;
@@ -109,6 +111,20 @@ const NavigatorHover = styled.div`
   width: 100%;
   height: 100%;
   transition-duration: 0.25s;
+`;
+
+const AddToWorkspaceButtonParent = styled.div`
+  transition-duration: 0.25s;
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  height: 3rem;
+  background-color: rgba(0, 0, 0, 0.5);
+  :hover {
+    background-color: rgba(0, 0, 0, 0.75);
+  }
 `;
 
 const NavigatorItemParent = styled.div`
@@ -139,7 +155,6 @@ const NavigatorItemText = styled.div`
   top: 0.5rem;
   left: 0.5rem;
   width: calc(100% - 1rem);
-  //margin: 0 0.5rem 0 0.5rem;
   height: 2rem;
   text-overflow: ellipsis;
   overflow: hidden;
@@ -337,9 +352,9 @@ const AddToWorkspaceButton = observer(
     callback: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
   }) => {
     return (
-      <NavigatorItemParent img="" onClick={callback}>
+      <AddToWorkspaceButtonParent id="BacklinkToWorkspace" onClick={callback}>
         {ws.name}
-      </NavigatorItemParent>
+      </AddToWorkspaceButtonParent>
     );
   }
 );
@@ -372,7 +387,7 @@ const AddToWorkspace = observer(({ node }: { node: INode }) => {
       <>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <ButtonParent>
-            <Hamburger />
+            <Plus />
           </ButtonParent>
         </div>
         {open

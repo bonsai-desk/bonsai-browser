@@ -69,6 +69,14 @@ export const GroupHeader = styled.div`
   overflow: hidden;
   position: relative;
   outline: none;
+  #InboxX {
+    opacity: 0;
+  }
+  :hover {
+    #InboxX {
+      opacity: 100;
+    }
+  }
 `;
 export const HeaderText = styled.div`
   position: absolute;
