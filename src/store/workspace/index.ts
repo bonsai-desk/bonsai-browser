@@ -7,6 +7,7 @@ import fs from 'fs';
 import { Item } from './item';
 import { ItemGroup } from './item-group';
 import WorkspaceStore from './workspace-store';
+import { decrypt, encrypt } from '../../utils/utils';
 
 const animationTime = 0.15;
 
@@ -15,7 +16,7 @@ function saveSnapshot(workspaceStore: Instance<typeof WorkspaceStore>) {
     try {
       const snapshot = getSnapshot(workspaceStore);
       const snapshotString = JSON.stringify(snapshot);
-      fs.writeFileSync(workspaceStore.snapshotPath, snapshotString);
+      fs.writeFileSync(workspaceStore.snapshotPath, encrypt(snapshotString));
     } catch {
       //
     }
@@ -30,7 +31,7 @@ function loadSnapshot(workspaceStore: Instance<typeof WorkspaceStore>) {
         'utf8'
       );
       if (workspaceJson !== '') {
-        const workspaceSnapshot = JSON.parse(workspaceJson);
+        const workspaceSnapshot = JSON.parse(decrypt(workspaceJson));
         applySnapshot(workspaceStore, workspaceSnapshot);
       }
     } catch {

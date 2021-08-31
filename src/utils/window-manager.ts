@@ -27,6 +27,8 @@ import {
   VIBRANCY,
 } from '../constants';
 import {
+  decrypt,
+  encrypt,
   parseMap,
   stringifyMap,
   stringToUrl,
@@ -311,7 +313,7 @@ export function addListeners(wm: WindowManager) {
   ipcMain.on('request-snapshot-path', () => {
     const snapshotPath = path.join(
       app.getPath('userData'),
-      'workspaceSnapshot.json'
+      'workspaceSnapshot'
     );
     wm.tabPageView.webContents.send('set-snapshot-path', snapshotPath);
   });
@@ -381,6 +383,9 @@ export function addListeners(wm: WindowManager) {
   });
   ipcMain.on('mixpanel-track', (_, eventName) => {
     wm.mixpanelManager.track(eventName);
+  });
+  ipcMain.on('mixpanel-track-with-properties', (_, [eventName, properties]) => {
+    wm.mixpanelManager.track(eventName, properties);
   });
 }
 
@@ -1248,9 +1253,9 @@ export default class WindowManager {
 
   saveHistory() {
     try {
-      const savePath = path.join(app.getPath('userData'), 'history.json');
-      const saveString = stringifyMap(this.historyMap);
-      fs.writeFileSync(savePath, saveString);
+      const savePath = path.join(app.getPath('userData'), 'history');
+      const historyString = stringifyMap(this.historyMap);
+      fs.writeFileSync(savePath, encrypt(historyString));
       if (this.loadedOpenTabs) {
         saveTabs(this.allWebViews);
       }
@@ -1642,9 +1647,9 @@ export default class WindowManager {
 
   private loadHistory() {
     try {
-      const savePath = path.join(app.getPath('userData'), 'history.json');
-      const saveString = fs.readFileSync(savePath, 'utf8');
-      const saveMap = parseMap(saveString);
+      const historySavePath = path.join(app.getPath('userData'), 'history');
+      const saveString = fs.readFileSync(historySavePath, 'utf8');
+      const saveMap = parseMap(decrypt(saveString));
       if (
         saveMap === null ||
         typeof saveMap === 'undefined' ||
@@ -1668,19 +1673,19 @@ export default class WindowManager {
           this.tabPageView.webContents.send('add-history', entry);
         }
       }
-      this.loadTabs();
     } catch {
       // console.log('loadHistory error');
       // console.log(e);
     }
+    this.loadTabs();
   }
 
   private loadTabs() {
     this.loadedOpenTabs = true;
     try {
-      const savePath = path.join(app.getPath('userData'), 'openTabs.json');
-      const saveString = fs.readFileSync(savePath, 'utf8');
-      const saveData = JSON.parse(saveString);
+      const openTabsSavePath = path.join(app.getPath('userData'), 'openTabs');
+      const saveString = fs.readFileSync(openTabsSavePath, 'utf8');
+      const saveData = JSON.parse(decrypt(saveString));
 
       saveData.forEach((tab: TabInfo) => {
         this.loadTabFromTabInfo(tab);

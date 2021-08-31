@@ -48,6 +48,7 @@ const TabImage = observer(
             onClick={(e) => {
               e.stopPropagation();
               ipcRenderer.send('remove-tab', tab.id);
+              ipcRenderer.send('mixpanel-track', 'click remove tab in home');
             }}
           >
             <img draggable={false} src={redX} alt="x" width="30px" />
