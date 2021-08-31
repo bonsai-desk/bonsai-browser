@@ -7,6 +7,12 @@ import { useStore, View } from '../store/tab-page-store';
 import { goBack, goForward, headsOnNode, INode } from '../store/history-store';
 import { IWorkSpaceStore } from '../store/workspace/workspace-store';
 import { Workspace } from '../store/workspace/workspace';
+import hamburger from '../../assets/plus.svg';
+
+enum Direction {
+  Back,
+  Forward,
+}
 
 const NavigatorParent = styled.div`
   width: 100%;
@@ -19,27 +25,53 @@ const NavigatorParent = styled.div`
 
 const NavigatorPanel = styled.div`
   background: rgba(0, 0, 0, 0.25);
-  border-radius: 0.5rem;
   overflow: scroll;
+  display: flex;
+  flex-direction: column;
   ::-webkit-scrollbar {
     display: none;
   }
-  div + div {
+  #NavItem + #NavItem {
     margin-top: 10px;
   }
   ${({
     width,
     height,
-    margin,
+    direction,
   }: {
     width: string;
     height: string;
-    margin: string;
-  }) => css`
-    height: ${height};
-    margin: 0 ${margin} 0 ${margin};
-    width: ${width};
-  `}
+    direction: Direction;
+  }) => {
+    const thing =
+      direction === Direction.Back ? '0 10px 10px 0' : '10px 0 0 10px';
+    const borRad = `border-radius: ${thing};`;
+    return css`
+      height: ${height};
+      width: ${width};
+      ${borRad}
+    `;
+  }}
+`;
+
+const ButtonParent = styled.div`
+  padding: 0.5rem;
+  margin: 0.5rem 0 0.5rem 0;
+  background-color: rgba(0, 0, 0, 0.25);
+  border-radius: 50%;
+  transition-duration: 0.25s;
+  :hover {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+`;
+
+const Hamburger = styled.div`
+  width: 1rem;
+  height: 1rem;
+  background-image: url(${hamburger});
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center;
 `;
 
 const AddToWorkspaceParent = styled.div`
@@ -47,30 +79,76 @@ const AddToWorkspaceParent = styled.div`
   cursor: default;
   font-size: 0.75rem;
   color: white;
-  width: calc(100% - 0.5rem);
-  overflow: hidden;
-  text-overflow: ellipsis;
+  width: 100%;
   white-space: nowrap;
   text-align: center;
-  //padding-top: 56.25%;
-  background-color: rgba(100, 100, 100, 1);
-  padding: 0.5rem 0 0.5rem 0.5rem;
-  border-radius: 0.5rem;
+`;
+
+const Title = styled.div`
+  margin: 1rem 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 1rem 0 0 0;
+  color: white;
+`;
+
+const NavigatorHover = styled.div`
+  ${({ active }: { active: boolean }) => {
+    if (active) {
+      return css`
+        background-color: rgba(0, 0, 0, 0.7);
+      `;
+    }
+    return css`
+      background-color: rgba(0, 0, 0, 0.25);
+    `;
+  }}
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transition-duration: 0.25s;
 `;
 
 const NavigatorItemParent = styled.div`
+  width: 100%;
+  min-height: 3rem;
+  max-height: 10rem;
+  flex-grow: 1;
+  position: relative;
+  background-size: cover; /* <------ */
+  background-repeat: no-repeat;
+  ${({ img }: { img: string }) => {
+    if (img) {
+      return css`
+        background-image: ${img};
+      `;
+    }
+    return '';
+  }}
   user-select: none;
   cursor: default;
-  font-size: 0.75rem;
+  font-size: 0.6rem;
   color: white;
-  width: calc(100% - 0.5rem);
-  overflow: hidden;
+  //overflow: hidden;
+  //padding: 0.5rem 0 0.5rem 0;
+`;
+
+const NavigatorItemText = styled.div`
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  width: calc(100% - 1rem);
+  //margin: 0 0.5rem 0 0.5rem;
+  height: 2rem;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  //padding-top: 56.25%;
-  background-color: rgba(100, 100, 100, 1);
-  padding: 0.5rem 0 0.5rem 0.5rem;
-  border-radius: 0.5rem;
+  overflow: hidden;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  white-space: normal;
+  z-index: 10;
 `;
 
 interface Dimensions {
@@ -79,21 +157,48 @@ interface Dimensions {
   margin: number;
 }
 
-function asPx(a: number) {
+function asPx(a: number): string {
   return `${a}px`;
 }
 
-enum Direction {
-  Back,
-  Forward,
-}
-
 const NavigatorItem = observer(
+  ({
+    img,
+    text,
+    onClick,
+    active = true,
+  }: {
+    img: string;
+    text: string;
+    onClick?: () => void;
+    active?: boolean;
+  }) => {
+    return (
+      <NavigatorItemParent id="NavItem" img={img} onClick={onClick}>
+        <NavigatorItemText>{text}</NavigatorItemText>
+        <NavigatorHover active={active} />
+      </NavigatorItemParent>
+    );
+  }
+);
+
+const HistoryNavigatorItem = observer(
   ({ node, dir }: { node: INode; dir: Direction }) => {
-    const { historyStore } = useStore();
+    const { historyStore, tabPageStore } = useStore();
+    let img = '';
+    const heads = headsOnNode(historyStore, node);
+
+    if (heads.length > 0) {
+      const tab = tabPageStore.openTabs[heads[0][0]];
+      if (tab && tab.image) {
+        img = `url(${tab.image})`;
+      }
+    }
+
     const title = node.data.title ? node.data.title : node.data.url;
     return (
-      <NavigatorItemParent
+      <NavigatorItem
+        img={img}
         onClick={() => {
           if (dir === Direction.Back) {
             goBack(historyStore, node);
@@ -102,9 +207,8 @@ const NavigatorItem = observer(
             goForward(historyStore, node);
           }
         }}
-      >
-        {title}
-      </NavigatorItemParent>
+        text={title}
+      />
     );
   }
 );
@@ -112,7 +216,8 @@ const NavigatorItem = observer(
 const WorkspaceItem = observer(({ data }: { data: IItemPath }) => {
   const { tabPageStore, workspaceStore } = useStore();
   return (
-    <NavigatorItemParent
+    <NavigatorItem
+      img=""
       onClick={() => {
         workspaceStore.setActiveWorkspaceId(data.workspaceId);
         tabPageStore.View = View.WorkSpace;
@@ -122,7 +227,8 @@ const WorkspaceItem = observer(({ data }: { data: IItemPath }) => {
         }
         ipcRenderer.send('click-main');
       }}
-    >{`${data.workspaceName} / ${data.groupName}`}</NavigatorItemParent>
+      text={`${data.workspaceName} / ${data.groupName}`}
+    />
   );
 });
 
@@ -138,16 +244,14 @@ const Panel = observer(
     dir: Direction;
     children?: JSX.Element | JSX.Element[];
   }) => {
-    const { width, height, margin } = dim;
+    const { width, height } = dim;
+    const navigatorItems = items.map((item) => (
+      <HistoryNavigatorItem key={item.id} node={item} dir={dir} />
+    ));
     return (
-      <NavigatorPanel
-        width={asPx(width)}
-        height={asPx(height)}
-        margin={asPx(margin)}
-      >
-        {items.map((item) => (
-          <NavigatorItem key={item.id} node={item} dir={dir} />
-        ))}
+      <NavigatorPanel direction={dir} width={asPx(width)} height={asPx(height)}>
+        <Title>{dir === Direction.Back ? 'Back' : 'Forward'}</Title>
+        {navigatorItems}
         {children}
       </NavigatorPanel>
     );
@@ -195,8 +299,6 @@ function nodeInWorkspaces(
   return [];
 }
 
-const AddToWorkspaceButtonParent = styled.div``;
-
 const AddToWorkspaceButton = observer(
   ({
     ws,
@@ -206,9 +308,9 @@ const AddToWorkspaceButton = observer(
     callback: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
   }) => {
     return (
-      <AddToWorkspaceButtonParent onClick={callback}>
+      <NavigatorItemParent img="" onClick={callback}>
         {ws.name}
-      </AddToWorkspaceButtonParent>
+      </NavigatorItemParent>
     );
   }
 );
@@ -239,7 +341,11 @@ const AddToWorkspace = observer(({ node }: { node: INode }) => {
       }}
     >
       <>
-        +
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <ButtonParent>
+            <Hamburger />
+          </ButtonParent>
+        </div>
         {open
           ? ws.map((workspace) => {
               const callback = (
@@ -285,7 +391,7 @@ const Navigator = observer(() => {
   const gutter =
     (tabPageStore.screen.width - tabPageStore.innerBounds.width) / 2;
   const margin = 20;
-  const width = gutter - 2 * margin;
+  const width = gutter - margin;
   const { height } = tabPageStore.innerBounds;
   const head = historyStore.heads.get(historyStore.active);
   const leftItems = head && head.parent ? [head.parent] : [];
@@ -306,6 +412,17 @@ const Navigator = observer(() => {
         dim={{ width, height, margin }}
       >
         <>
+          {leftItems.length === 0 ? (
+            <NavigatorItem
+              active={false}
+              img=""
+              onClick={() => {}}
+              text="None"
+            />
+          ) : (
+            ''
+          )}
+          <Title>Workspaces</Title>
           {matches.map((match) => (
             <WorkspaceItem key={match.itemId} data={match} />
           ))}

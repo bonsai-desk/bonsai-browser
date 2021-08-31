@@ -6,9 +6,9 @@ export const ColumnParent = styled.div`
   justify-content: center;
   flex-direction: column;
   user-select: none;
-  margin-right: 1rem;
   color: white;
   width: 10rem;
+  padding: 0 0.5rem 0 0.5rem;
 `;
 export const ColumnHeaderParent = styled.div`
   padding: 0.75rem 0 0.75rem 0;
@@ -19,11 +19,11 @@ export const ColumnHeaderParent = styled.div`
   transition-duration: 0.25s;
   position: relative;
   overflow: hidden;
-  :hover {
-    #FaviconX {
-      opacity: 100;
-    }
-  }
+  //:hover {
+  //  #FaviconX {
+  //    opacity: 100;
+  //  }
+  //}
 `;
 export const HeaderTitle = styled.div`
   text-shadow: 0 0 5px #9c9c9c;
@@ -60,6 +60,7 @@ export const FaviconX = styled.div`
   opacity: 0;
   transition-duration: 0.25s;
   :hover {
+    opacity: 100;
     transition-duration: 0s;
     background-color: red;
   }

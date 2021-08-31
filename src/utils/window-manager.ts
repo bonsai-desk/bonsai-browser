@@ -60,6 +60,7 @@ import {
   TabInfo,
 } from './interfaces';
 import { HistoryData, INode } from '../store/history-store';
+import MixpanelManager from './mixpanel-manager';
 
 const glMatrix = require('gl-matrix');
 
@@ -421,6 +422,8 @@ export default class WindowManager {
 
   mainWindow: BrowserWindow;
 
+  mixpanelManager: MixpanelManager;
+
   titleBarView: BrowserView;
 
   tabPageView: BrowserView;
@@ -485,8 +488,9 @@ export default class WindowManager {
 
   private windowSpeeds: number[][] = [];
 
-  constructor(mainWindow: BrowserWindow) {
+  constructor(mainWindow: BrowserWindow, mixpanelManager: MixpanelManager) {
     this.mainWindow = mainWindow;
+    this.mixpanelManager = mixpanelManager;
 
     const displays = screen.getAllDisplays();
     if (displays.length === 0) {
