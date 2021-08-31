@@ -195,10 +195,11 @@ function initShortcuts(wm: WindowManager) {
     shortCut = 'Ctrl+Alt+Space';
   }
   globalShortcut.register(shortCut, () => {
-    wm.mixpanelManager.track('toggle with global shortcut');
     if (!wm.mainWindow?.isVisible()) {
+      wm.mixpanelManager.track('show with global shortcut');
       wm.showWindow();
     } else {
+      wm.mixpanelManager.track('hide with global shortcut');
       wm.hideWindow();
     }
   });

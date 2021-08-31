@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { observer } from 'mobx-react-lite';
+import { ipcRenderer } from 'electron';
 import { useStore } from '../../store/tab-page-store';
 
 const Background = styled.div`
@@ -92,6 +93,10 @@ const SelectWorkspaceModal = observer(() => {
                     tab.image,
                     tab.favicon,
                     workspace.inboxGroup
+                  );
+                  ipcRenderer.send(
+                    'mixpanel-track',
+                    'create backlink to workspace from home'
                   );
                 }
               }}

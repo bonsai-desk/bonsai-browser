@@ -121,6 +121,7 @@ const TitleBar = observer(() => {
                   tabStore.activeTabId,
                   searchText,
                 ]);
+                ipcRenderer.send('mixpanel-track', 'search url from title bar');
               }
             }
           }}
@@ -142,6 +143,7 @@ const TitleBar = observer(() => {
           color="#949494"
           onClick={() => {
             ipcRenderer.send('float');
+            ipcRenderer.send('mixpanel-track', 'click float window button');
           }}
         >
           <RoundButtonIcon src={copyIcon} />
