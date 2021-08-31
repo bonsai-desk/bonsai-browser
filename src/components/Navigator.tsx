@@ -156,8 +156,8 @@ const NavigatorItemText = styled.div`
   left: 0.5rem;
   width: calc(100% - 1rem);
   height: 2rem;
-  text-overflow: ellipsis;
   overflow: hidden;
+  text-overflow: ellipsis;
   display: -webkit-box !important;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;

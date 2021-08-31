@@ -33,11 +33,12 @@ export const ItemImg = styled.img`
   user-select: none;
   -webkit-user-drag: none;
 `;
-export const ItemTitle = styled.div`
+
+export const ItemShade = styled.div`
   background-color: rgba(0, 0, 0, 0.6);
   color: white;
   position: absolute;
-  font-size: 0.9rem;
+  font-size: 0.6rem;
   width: calc(100% - 10px);
   height: calc(100% - 10px);
   padding: 5px;
@@ -46,6 +47,22 @@ export const ItemTitle = styled.div`
   left: 0;
   opacity: 0;
   transition: opacity 0.25s;
+`;
+
+export const ItemTitle = styled.div`
+  color: white;
+  position: absolute;
+  font-size: 0.6rem;
+  width: calc(100% - 1rem);
+  height: 3rem;
+  padding: 0.5rem 0.5rem 0 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  top: 0;
+  left: 0;
 `;
 export const Group = styled.div`
   border-radius: 20px;

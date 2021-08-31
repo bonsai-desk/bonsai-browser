@@ -7,7 +7,7 @@ import { ipcRenderer } from 'electron';
 import { useStore, View } from '../../store/tab-page-store';
 import { easeOut, getGroupBelowItem, overTrash } from './utils';
 import { lerp } from '../../utils/utils';
-import { ItemContainer, ItemImg, ItemTitle } from './style';
+import { ItemContainer, ItemImg, ItemShade, ItemTitle } from './style';
 import {
   Item as MobxItem,
   itemHeight,
@@ -251,6 +251,7 @@ const MainItem = observer(
               group.setHovering(false);
             }}
           >
+            <ItemShade />
             <ItemImg src={item.image} alt="tab_image" />
             <ItemTitle>{item.title}</ItemTitle>
           </ItemContainer>
