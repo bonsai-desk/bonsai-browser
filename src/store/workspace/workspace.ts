@@ -433,7 +433,7 @@ export const Workspace = types
       const x = clamp(
         Math.floor(
           (relativePos[0] - (groupPadding + groupBorder) * scale) /
-            (itemWidth * scale)
+            ((itemWidth + itemSpacing) * scale)
         ),
         0,
         group.width - 1
@@ -442,7 +442,7 @@ export const Workspace = types
         Math.floor(
           (relativePos[1] -
             (groupPadding + groupTitleHeight + groupBorder) * scale) /
-            (itemHeight * scale)
+            ((itemHeight + itemSpacing) * scale)
         ),
         0,
         group.height() - 1
