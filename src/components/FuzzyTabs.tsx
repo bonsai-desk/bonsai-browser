@@ -51,6 +51,7 @@ const FuzzyTabs = observer(() => {
           const { item } = result;
           return (
             <Tab
+              disableButtons
               key={item.id}
               tab={item}
               selected={
@@ -68,6 +69,7 @@ const FuzzyTabs = observer(() => {
           const { item } = result;
           return (
             <Tab
+              disableButtons
               key={item.id}
               tab={itemToTabPageTab(item)}
               selected={
