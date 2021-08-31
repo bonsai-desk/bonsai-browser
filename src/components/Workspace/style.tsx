@@ -45,8 +45,8 @@ export const ItemImg = styled.div`
 `;
 
 export const ItemFaviconParent = styled.div`
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   position: absolute;
   right: 0.5rem;
   bottom: 0.5rem;
@@ -60,7 +60,7 @@ export const ItemFaviconParent = styled.div`
 
 export const ItemFavicon = styled.div`
   position: absolute;
-  --circum: 32px;
+  --circum: 28px;
   top: 2px;
   left: 2px;
   width: var(--circum);
