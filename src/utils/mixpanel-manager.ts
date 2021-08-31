@@ -17,8 +17,8 @@ class MixpanelManager {
     this.track('boot app');
   }
 
-  track(eventName: string) {
-    this.mixpanel.track(eventName, { distinct_id: this.userId });
+  track(eventName: string, properties = {}) {
+    this.mixpanel.track(eventName, { ...properties, distinct_id: this.userId });
   }
 }
 

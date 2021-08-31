@@ -382,6 +382,9 @@ export function addListeners(wm: WindowManager) {
   ipcMain.on('mixpanel-track', (_, eventName) => {
     wm.mixpanelManager.track(eventName);
   });
+  ipcMain.on('mixpanel-track-with-properties', (_, [eventName, properties]) => {
+    wm.mixpanelManager.track(eventName, properties);
+  });
 }
 
 interface IAction {
@@ -524,7 +527,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {

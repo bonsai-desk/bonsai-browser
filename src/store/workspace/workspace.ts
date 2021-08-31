@@ -112,9 +112,11 @@ export const Workspace = types
       self.name = name;
     },
     repositionInbox() {
-      const worldPos = self.screenToWorld(0, 0);
-      self.inboxGroup.setPos(worldPos[0], worldPos[1]);
-      self.hiddenGroup.setPos(worldPos[0], worldPos[1]);
+      const inboxPos = self.screenToWorld(0, -self.inboxScrollY);
+      self.inboxGroup.setPos(inboxPos[0], inboxPos[1]);
+
+      const hiddenPos = self.screenToWorld(0, 0);
+      self.hiddenGroup.setPos(hiddenPos[0], hiddenPos[1]);
     },
     setInboxScrollY(inboxScrollY: number) {
       const maxY = Math.max(
@@ -122,6 +124,7 @@ export const Workspace = types
         0
       );
       self.inboxScrollY = clamp(inboxScrollY, 0, maxY);
+      this.repositionInbox();
     },
     moveGroupsToPosition(x: number, y: number) {
       self.groups.forEach((group) => {
@@ -340,6 +343,7 @@ export const Workspace = types
           0
         );
         self.inboxScrollY = clamp(self.inboxScrollY, 0, maxY);
+        this.repositionInbox();
       }
     },
     setGroupWidth(

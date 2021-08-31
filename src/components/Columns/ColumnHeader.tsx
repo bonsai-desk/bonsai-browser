@@ -29,7 +29,12 @@ const ColumnHeader = observer(({ column }: { column: TabPageColumn }) => {
             id="FaviconX"
             onClick={(e) => {
               e.stopPropagation();
-              Object.keys(tabPageStore.openTabs).forEach((key: string) => {
+              const keys = Object.keys(tabPageStore.openTabs);
+              ipcRenderer.send('mixpanel-track-with-properties', [
+                'click remove column in home',
+                { num_tabs: keys.length },
+              ]);
+              keys.forEach((key: string) => {
                 const tab = tabPageStore.openTabs[key];
                 if (getRootDomain(tab.url) === column.domain) {
                   ipcRenderer.send('remove-tab', tab.id);
