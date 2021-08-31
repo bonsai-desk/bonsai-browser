@@ -7,7 +7,14 @@ import { ipcRenderer } from 'electron';
 import { useStore, View } from '../../store/tab-page-store';
 import { easeOut, getGroupBelowItem, overTrash } from './utils';
 import { lerp } from '../../utils/utils';
-import { ItemContainer, ItemImg, ItemShade, ItemTitle } from './style';
+import {
+  ItemContainer,
+  ItemFavicon,
+  ItemFaviconParent,
+  ItemImg,
+  ItemShade,
+  ItemTitle,
+} from './style';
 import {
   Item as MobxItem,
   itemHeight,
@@ -252,7 +259,14 @@ const MainItem = observer(
             }}
           >
             <ItemShade />
-            <ItemImg src={item.image} alt="tab_image" />
+            <ItemImg img={`url(${item.image})`} />
+            {item.favicon ? (
+              <ItemFaviconParent>
+                <ItemFavicon img={`url(${item.favicon})`} />
+              </ItemFaviconParent>
+            ) : (
+              ''
+            )}
             <ItemTitle>{item.title}</ItemTitle>
           </ItemContainer>
         </div>

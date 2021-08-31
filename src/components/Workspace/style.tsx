@@ -21,13 +21,62 @@ export const ItemContainer = styled.div`
       }
     `};
 `;
-export const ItemImg = styled.img`
+export const ItemImg = styled.div`
   height: 100%;
   width: 100%;
   object-fit: cover;
-  background-color: white;
+
+  ${({ img }: { img: string }) => {
+    if (img) {
+      return css`
+        background-image: ${img};
+        background-size: cover;
+        background-repeat: no-repeat;
+      `;
+    }
+    return 'background-color: gray;';
+  }}
 
   // :(
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+`;
+
+export const ItemFaviconParent = styled.div`
+  width: 36px;
+  height: 36px;
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  background-color: white;
+  border-radius: 50%;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+`;
+
+export const ItemFavicon = styled.div`
+  position: absolute;
+  --circum: 32px;
+  top: 2px;
+  left: 2px;
+  width: var(--circum);
+  height: var(--circum);
+  ${({ img }: { img: string }) => {
+    if (img) {
+      return css`
+        background-image: ${img};
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-position: center center;
+      `;
+    }
+    return '';
+  }}
+  border-radius: 50%;
   -webkit-user-select: none;
   -moz-user-select: none;
   user-select: none;
