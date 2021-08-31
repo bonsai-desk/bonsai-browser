@@ -1,7 +1,5 @@
 import React from 'react';
 import { render } from 'react-dom';
-// import { v4 as uuidv4 } from 'uuid';
-// import { getSnapshot, Instance } from 'mobx-state-tree';
 import App from './pages/App';
 import DebugApp from './pages/DebugApp';
 import UrlPeek from './pages/UrlPeek';

@@ -7,7 +7,7 @@ import { useStore, View } from '../store/tab-page-store';
 import { goBack, goForward, headsOnNode, INode } from '../store/history-store';
 import { IWorkSpaceStore } from '../store/workspace/workspace-store';
 import { Workspace } from '../store/workspace/workspace';
-import hamburger from '../../assets/plus.svg';
+import plusImg from '../../assets/plus.svg';
 
 enum Direction {
   Back,
@@ -56,7 +56,7 @@ const NavigatorPanel = styled.div`
 
 const ButtonParent = styled.div`
   padding: 0.5rem;
-  margin: 0.5rem 0 0.5rem 0;
+  margin: 1rem 0 1rem 0;
   background-color: rgba(0, 0, 0, 0.25);
   border-radius: 50%;
   transition-duration: 0.25s;
@@ -65,10 +65,10 @@ const ButtonParent = styled.div`
   }
 `;
 
-const Hamburger = styled.div`
+const Plus = styled.div`
   width: 1rem;
   height: 1rem;
-  background-image: url(${hamburger});
+  background-image: url(${plusImg});
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center center;
@@ -82,13 +82,15 @@ const AddToWorkspaceParent = styled.div`
   width: 100%;
   white-space: nowrap;
   text-align: center;
+  #BacklinkToWorkspace + #BacklinkToWorkspace {
+    margin: 1rem 0 1rem 0;
+  }
 `;
 
 const Title = styled.div`
-  margin: 1rem 0 0 0.5rem;
+  margin: 1rem 0 1rem 0.5rem;
   font-size: 1rem;
   font-weight: 600;
-  padding: 1rem 0 0 0;
   color: white;
 `;
 
@@ -100,7 +102,7 @@ const NavigatorHover = styled.div`
       `;
     }
     return css`
-      background-color: rgba(0, 0, 0, 0.25);
+      background-color: rgba(0, 0, 0, 0.1);
     `;
   }}
   position: absolute;
@@ -111,28 +113,41 @@ const NavigatorHover = styled.div`
   transition-duration: 0.25s;
 `;
 
+const AddToWorkspaceButtonParent = styled.div`
+  transition-duration: 0.25s;
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  height: 3rem;
+  background-color: rgba(0, 0, 0, 0.5);
+  :hover {
+    background-color: rgba(0, 0, 0, 0.75);
+  }
+`;
+
 const NavigatorItemParent = styled.div`
   width: 100%;
   min-height: 3rem;
-  max-height: 10rem;
   flex-grow: 1;
   position: relative;
   background-size: cover; /* <------ */
   background-repeat: no-repeat;
-  ${({ img }: { img: string }) => {
+  ${({ img, maxHeight = '5rem' }: { img: string; maxHeight?: string }) => {
+    const maxHeightLine = `max-height: ${maxHeight};`;
     if (img) {
       return css`
         background-image: ${img};
+        ${maxHeightLine}
       `;
     }
-    return '';
+    return maxHeightLine;
   }}
   user-select: none;
   cursor: default;
   font-size: 0.6rem;
   color: white;
-  //overflow: hidden;
-  //padding: 0.5rem 0 0.5rem 0;
 `;
 
 const NavigatorItemText = styled.div`
@@ -140,10 +155,9 @@ const NavigatorItemText = styled.div`
   top: 0.5rem;
   left: 0.5rem;
   width: calc(100% - 1rem);
-  //margin: 0 0.5rem 0 0.5rem;
   height: 2rem;
-  text-overflow: ellipsis;
   overflow: hidden;
+  text-overflow: ellipsis;
   display: -webkit-box !important;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -166,15 +180,22 @@ const NavigatorItem = observer(
     img,
     text,
     onClick,
+    maxHeight,
     active = true,
   }: {
     img: string;
     text: string;
     onClick?: () => void;
     active?: boolean;
+    maxHeight?: string;
   }) => {
     return (
-      <NavigatorItemParent id="NavItem" img={img} onClick={onClick}>
+      <NavigatorItemParent
+        maxHeight={maxHeight}
+        id="NavItem"
+        img={img}
+        onClick={onClick}
+      >
         <NavigatorItemText>{text}</NavigatorItemText>
         <NavigatorHover active={active} />
       </NavigatorItemParent>
@@ -183,10 +204,20 @@ const NavigatorItem = observer(
 );
 
 const HistoryNavigatorItem = observer(
-  ({ node, dir }: { node: INode; dir: Direction }) => {
+  ({
+    node,
+    dir,
+    parentDim,
+  }: {
+    parentDim: Dimensions;
+    node: INode;
+    dir: Direction;
+  }) => {
     const { historyStore, tabPageStore } = useStore();
     let img = '';
     const heads = headsOnNode(historyStore, node);
+
+    const maxHeight = `${(9 / 16) * parentDim.width}px`;
 
     if (heads.length > 0) {
       const tab = tabPageStore.openTabs[heads[0][0]];
@@ -198,6 +229,7 @@ const HistoryNavigatorItem = observer(
     const title = node.data.title ? node.data.title : node.data.url;
     return (
       <NavigatorItem
+        maxHeight={maxHeight}
         img={img}
         onClick={() => {
           if (dir === Direction.Back) {
@@ -219,6 +251,7 @@ const WorkspaceItem = observer(({ data }: { data: IItemPath }) => {
   const { tabPageStore, workspaceStore } = useStore();
   return (
     <NavigatorItem
+      maxHeight="3rem"
       img=""
       onClick={() => {
         workspaceStore.setActiveWorkspaceId(data.workspaceId);
@@ -252,7 +285,12 @@ const Panel = observer(
   }) => {
     const { width, height } = dim;
     const navigatorItems = items.map((item) => (
-      <HistoryNavigatorItem key={item.id} node={item} dir={dir} />
+      <HistoryNavigatorItem
+        parentDim={dim}
+        key={item.id}
+        node={item}
+        dir={dir}
+      />
     ));
     return (
       <NavigatorPanel direction={dir} width={asPx(width)} height={asPx(height)}>
@@ -314,9 +352,9 @@ const AddToWorkspaceButton = observer(
     callback: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
   }) => {
     return (
-      <NavigatorItemParent img="" onClick={callback}>
+      <AddToWorkspaceButtonParent id="BacklinkToWorkspace" onClick={callback}>
         {ws.name}
-      </NavigatorItemParent>
+      </AddToWorkspaceButtonParent>
     );
   }
 );
@@ -349,7 +387,7 @@ const AddToWorkspace = observer(({ node }: { node: INode }) => {
       <>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <ButtonParent>
-            <Hamburger />
+            <Plus />
           </ButtonParent>
         </div>
         {open
@@ -401,7 +439,8 @@ const Navigator = observer(() => {
   const gutter =
     (tabPageStore.screen.width - tabPageStore.innerBounds.width) / 2;
   const margin = 20;
-  const width = gutter - margin;
+  const tabWidth = gutter - margin;
+  // const tabMaxHeight = (9 / 16) * tabWidth;
   const { height } = tabPageStore.innerBounds;
   const head = historyStore.heads.get(historyStore.active);
   const leftItems = head && head.parent ? [head.parent] : [];
@@ -423,7 +462,7 @@ const Navigator = observer(() => {
       <Panel
         dir={Direction.Back}
         items={leftItems}
-        dim={{ width, height, margin }}
+        dim={{ width: tabWidth, height, margin }}
       >
         <>
           {leftItems.length === 0 ? (
@@ -432,6 +471,7 @@ const Navigator = observer(() => {
               img=""
               onClick={() => {}}
               text="None"
+              maxHeight="3rem"
             />
           ) : (
             ''
@@ -446,7 +486,7 @@ const Navigator = observer(() => {
       <Panel
         dir={Direction.Forward}
         items={rightItems}
-        dim={{ width, height, margin }}
+        dim={{ width: tabWidth, height, margin }}
       />
     </NavigatorParent>
   );

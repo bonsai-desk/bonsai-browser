@@ -21,11 +21,21 @@ export const ItemContainer = styled.div`
       }
     `};
 `;
-export const ItemImg = styled.img`
+export const ItemImg = styled.div`
   height: 100%;
   width: 100%;
   object-fit: cover;
-  background-color: white;
+
+  ${({ img }: { img: string }) => {
+    if (img) {
+      return css`
+        background-image: ${img};
+        background-size: cover;
+        background-repeat: no-repeat;
+      `;
+    }
+    return 'background-color: gray;';
+  }}
 
   // :(
   -webkit-user-select: none;
@@ -33,11 +43,51 @@ export const ItemImg = styled.img`
   user-select: none;
   -webkit-user-drag: none;
 `;
-export const ItemTitle = styled.div`
+
+export const ItemFaviconParent = styled.div`
+  width: 36px;
+  height: 36px;
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  background-color: white;
+  border-radius: 50%;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+`;
+
+export const ItemFavicon = styled.div`
+  position: absolute;
+  --circum: 32px;
+  top: 2px;
+  left: 2px;
+  width: var(--circum);
+  height: var(--circum);
+  ${({ img }: { img: string }) => {
+    if (img) {
+      return css`
+        background-image: ${img};
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-position: center center;
+      `;
+    }
+    return '';
+  }}
+  border-radius: 50%;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+`;
+
+export const ItemShade = styled.div`
   background-color: rgba(0, 0, 0, 0.6);
   color: white;
   position: absolute;
-  font-size: 0.9rem;
+  font-size: 0.6rem;
   width: calc(100% - 10px);
   height: calc(100% - 10px);
   padding: 5px;
@@ -46,6 +96,22 @@ export const ItemTitle = styled.div`
   left: 0;
   opacity: 0;
   transition: opacity 0.25s;
+`;
+
+export const ItemTitle = styled.div`
+  color: white;
+  position: absolute;
+  font-size: 0.6rem;
+  width: calc(100% - 1rem);
+  height: 3rem;
+  padding: 0.5rem 0.5rem 0 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  top: 0;
+  left: 0;
 `;
 export const Group = styled.div`
   border-radius: 20px;
@@ -69,6 +135,14 @@ export const GroupHeader = styled.div`
   overflow: hidden;
   position: relative;
   outline: none;
+  #InboxX {
+    opacity: 0;
+  }
+  :hover {
+    #InboxX {
+      opacity: 100;
+    }
+  }
 `;
 export const HeaderText = styled.div`
   position: absolute;

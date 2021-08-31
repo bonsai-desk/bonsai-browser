@@ -21,6 +21,7 @@ export interface ITab {
   hover: boolean;
   selected: boolean;
   callback?: () => void;
+  disableButtons?: boolean;
 }
 
 export interface TabPageColumn {
