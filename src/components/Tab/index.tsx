@@ -6,7 +6,13 @@ import { ITab, TabPageTab } from '../../interfaces/tab';
 import redX from '../../../assets/x-letter.svg';
 import hamburgerIcon from '../../../assets/hamburger-menu.svg';
 import RedX from '../RedX';
-import { RedXParent, TabImageParent, TabParent, TabTitle } from './style';
+import {
+  RedXParent,
+  TabImageParent,
+  TabParent,
+  TabTitle,
+  TitleParent,
+} from './style';
 
 interface ITabImage {
   hover: boolean;
@@ -21,8 +27,10 @@ const TabImage = observer(
     const { workspaceStore } = useStore();
     return (
       <TabImageParent img={`url(${imgUrl})`} selected={selected}>
-        <RedXParent hover={hover}>
+        <TitleParent hover={hover}>
           <TabTitle>{title === '' ? 'New Tab' : title}</TabTitle>
+        </TitleParent>
+        <RedXParent hover={hover}>
           <RedX
             style={{
               left: '0.5rem',

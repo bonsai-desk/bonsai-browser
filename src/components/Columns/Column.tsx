@@ -27,7 +27,11 @@ export const Column = observer(({ column }: { column: TabPageColumn }) => {
   }
 
   return (
-    <ColumnParent onMouseOver={handleMouseOver} onMouseLeave={handleMouseExit}>
+    <ColumnParent
+      id="Column"
+      onMouseOver={handleMouseOver}
+      onMouseLeave={handleMouseExit}
+    >
       <ColumnHeader column={column} />
       {column.tabs.map((tab) => {
         return <Tab key={tab.id} tab={tab} hover={hovered} selected={false} />;
