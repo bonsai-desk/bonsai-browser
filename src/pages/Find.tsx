@@ -11,8 +11,8 @@ const GlobalStyle = createGlobalStyle`
   body {
     margin: 0;
     padding: 0;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
   }
 `;
 
@@ -127,51 +127,47 @@ const Find = observer(() => {
   }, [hasRunOnce]);
 
   return (
-    <>
+    <FindFull>
       <GlobalStyle />
-      <FindFull>
-        <FindBox>
-          <SearchBox
-            type="input"
-            ref={textBoxRef}
-            value={boxText}
-            onInput={(e) => {
-              setBoxText(e.currentTarget.value);
-              ipcRenderer.send('find-text-change', e.currentTarget.value);
-            }}
-          />
-          <Results>
-            {boxText === ''
-              ? ''
-              : `${findStore.current}/${findStore.numResults}`}
-          </Results>
-          <IconButton
-            rotation="-90"
-            onClick={() => {
-              ipcRenderer.send('find-previous');
-            }}
-          >
-            <UpIcon src={arrowIcon} extraCSS="" />
-          </IconButton>
-          <IconButton
-            rotation="90"
-            onClick={() => {
-              ipcRenderer.send('find-next');
-            }}
-          >
-            <UpIcon src={arrowIcon} extraCSS="" />
-          </IconButton>
-          <IconButton
-            rotation="0"
-            onClick={() => {
-              ipcRenderer.send('close-find');
-            }}
-          >
-            <UpIcon src={xIcon} extraCSS="width: 50px; height: 50px" />
-          </IconButton>
-        </FindBox>
-      </FindFull>
-    </>
+      <FindBox>
+        <SearchBox
+          type="input"
+          ref={textBoxRef}
+          value={boxText}
+          onInput={(e) => {
+            setBoxText(e.currentTarget.value);
+            ipcRenderer.send('find-text-change', e.currentTarget.value);
+          }}
+        />
+        <Results>
+          {boxText === '' ? '' : `${findStore.current}/${findStore.numResults}`}
+        </Results>
+        <IconButton
+          rotation="-90"
+          onClick={() => {
+            ipcRenderer.send('find-previous');
+          }}
+        >
+          <UpIcon src={arrowIcon} extraCSS="" />
+        </IconButton>
+        <IconButton
+          rotation="90"
+          onClick={() => {
+            ipcRenderer.send('find-next');
+          }}
+        >
+          <UpIcon src={arrowIcon} extraCSS="" />
+        </IconButton>
+        <IconButton
+          rotation="0"
+          onClick={() => {
+            ipcRenderer.send('close-find');
+          }}
+        >
+          <UpIcon src={xIcon} extraCSS="height: 100%" />
+        </IconButton>
+      </FindBox>
+    </FindFull>
   );
 });
 
