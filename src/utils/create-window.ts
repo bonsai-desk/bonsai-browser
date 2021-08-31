@@ -16,6 +16,7 @@ import { ICON_PNG, ICON_SMALL_PNG, VIBRANCY } from '../constants';
 import windowFixedUpdate from './calculate-window-physics';
 import { windowHasView } from './utils';
 import { floatingSize } from './wm-utils';
+import MixpanelManager from './mixpanel-manager';
 
 // class AppUpdater {
 //   constructor() {
@@ -194,6 +195,7 @@ function initShortcuts(wm: WindowManager) {
     shortCut = 'Ctrl+Alt+Space';
   }
   globalShortcut.register(shortCut, () => {
+    wm.mixpanelManager.track('toggle with global shortcut');
     if (!wm.mainWindow?.isVisible()) {
       wm.showWindow();
     } else {
@@ -304,7 +306,9 @@ export const createWindow = async () => {
 
   console.log(`User Id: ${userId}`);
 
-  const wm = new WindowManager(initWindow());
+  const mixpanelManager = new MixpanelManager(userId);
+
+  const wm = new WindowManager(initWindow(), mixpanelManager);
 
   initBoot(wm);
 
