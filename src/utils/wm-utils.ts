@@ -2,7 +2,7 @@ import { app, BrowserView, BrowserWindow, Display } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { IWebView } from './interfaces';
-import { urlToMapKey } from './utils';
+import { encrypt, urlToMapKey } from './utils';
 import { floatingWindowEdgeMargin } from './calculate-window-target';
 
 function pointInBounds(
@@ -221,8 +221,8 @@ export function reloadTab(allWebViews: Record<number, IWebView>, id: number) {
 
 export function saveTabs(allWebViews: Record<number, IWebView>) {
   try {
-    const savePath = path.join(app.getPath('userData'), 'openTabs.json');
-    const saveData = Object.values(allWebViews).map((tabView) => {
+    const savePath = path.join(app.getPath('userData'), 'openTabs');
+    const openTabsData = Object.values(allWebViews).map((tabView) => {
       return {
         url:
           tabView.unloadedUrl === ''
@@ -234,7 +234,8 @@ export function saveTabs(allWebViews: Record<number, IWebView>) {
         scrollHeight: tabView.scrollHeight,
       };
     });
-    fs.writeFileSync(savePath, JSON.stringify(saveData));
+    const openTabsString = JSON.stringify(openTabsData);
+    fs.writeFileSync(savePath, encrypt(openTabsString));
   } catch {
     //
   }
