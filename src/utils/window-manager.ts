@@ -700,6 +700,16 @@ export default class WindowManager {
         callback(false); // todo: popup to request permissions
       }
     );
+    webView.view.webContents.session.webRequest.onHeadersReceived(
+      (details, callback) => {
+        callback({
+          responseHeaders: {
+            ...details.responseHeaders,
+            'Content-Security-Policy': 'self',
+          },
+        });
+      }
+    );
 
     // webView.view.webContents.openDevTools({ mode: 'detach' });
 

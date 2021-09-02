@@ -47,6 +47,14 @@ export function makeView(loadURL: string) {
       contextIsolation: false,
     },
   });
+  newView.webContents.on('will-navigate', (event, navigationUrl) => {
+    console.log(`view tried to navigate ${navigationUrl}`);
+    event.preventDefault();
+  });
+  newView.webContents.setWindowOpenHandler(({ url }) => {
+    console.log(`view tried to open ${url}`);
+    return { action: 'deny' };
+  });
   newView.webContents.loadURL(loadURL);
   return newView;
 }
