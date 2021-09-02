@@ -679,9 +679,10 @@ export default class WindowManager {
       view: new BrowserView({
         webPreferences: {
           nodeIntegration: false,
+          devTools: false,
+          contextIsolation: true,
           sandbox: true,
           preload: PRELOAD,
-          contextIsolation: true, // todo: do we need this? security concern?
         },
       }),
       historyEntry: null,
