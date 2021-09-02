@@ -334,7 +334,6 @@ export default class TabPageStore {
         this.innerBounds = bounds;
       });
     });
-
     ipcRenderer.on('tabView-created-with-id', (_, id) => {
       runInAction(() => {
         this.openTabs[id] = {
@@ -480,6 +479,10 @@ export default class TabPageStore {
       runInAction(() => {
         this.windowFloating = windowFloating;
       });
+    });
+    ipcRenderer.on('will-navigate', () => {
+      this.navigatorTabModalSelectedNodeId = '';
+      this.navigatorTabModal = [0, 0];
     });
   }
 }

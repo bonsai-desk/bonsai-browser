@@ -14,7 +14,7 @@ const TitleBarFull = styled.div`
 `;
 
 const TitleBarBottom = styled.div`
-  width: calc(100%);
+  width: calc(100% - 20px);
   height: 36px;
   border-radius: 10px 10px 0 0;
   background-color: white;
@@ -25,6 +25,7 @@ const TitleBarBottom = styled.div`
   //padding-left: 4px;
   //padding-right: 5px;
   overflow: hidden;
+  padding: 0 10px 0 10px;
 `;
 
 const RoundButton = styled.div`
@@ -39,7 +40,6 @@ const RoundButton = styled.div`
   border: none;
   border-radius: 10px;
   color: white;
-  margin: 0 10px 0 10px;
 
   transition-duration: 0.1s;
   background-color: rgba(0, 0, 0, 0.25);
@@ -60,6 +60,7 @@ const URLBox = styled.input`
   border: 2px solid rgba(0, 0, 0, 0.25);
   padding-left: 10px;
   height: 22px;
+  margin: 0 10px 0 10px;
 `;
 
 const TitleBar = observer(() => {
@@ -142,6 +143,7 @@ const TitleBar = observer(() => {
         >
           <RoundButtonIcon src={copyIcon} />
         </RoundButton>
+        <div style={{ height: '100%', width: '10px' }} />
         <RoundButton
           onClick={() => {
             ipcRenderer.send('sleep-and-back');
