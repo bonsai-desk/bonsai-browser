@@ -1,8 +1,8 @@
 import { app } from 'electron';
 import { init, Mixpanel } from 'mixpanel';
 
-const projectDevToken = '6e88c4d3f57b5687ddba475e49f2aa45';
-const projectToken = '15bdcc7325b32b21052a15413ed77dc2';
+const projectDevToken = '88c46eeab06417e9bf2036451269a022';
+const projectToken = 'fa4d29136a737991cef9ae0a39f0b904';
 
 class MixpanelManager {
   userId = '';
