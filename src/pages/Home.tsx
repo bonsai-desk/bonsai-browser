@@ -214,8 +214,8 @@ function paintVignette(
     context.lineTo(x, y);
     context.closePath();
 
-    context.filter = 'blur(100px)';
-    context.lineWidth = 500;
+    context.filter = 'blur(50px)';
+    context.lineWidth = 250;
     context.stroke();
   }
 }
