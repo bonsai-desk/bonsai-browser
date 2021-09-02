@@ -26,6 +26,8 @@ export const ItemGroup = types
     y: 0,
     zIndex: 0,
     width: 1,
+    textColor: '#e3e3e3',
+    groupColor: '#32a852',
   })
   .volatile(() => ({
     animationLerp: 1,
@@ -60,6 +62,10 @@ export const ItemGroup = types
     },
   }))
   .actions((self) => ({
+    setColors(textColor: string, groupColor: string) {
+      self.textColor = textColor;
+      self.groupColor = groupColor;
+    },
     setHovering(hovering: boolean) {
       self.hovering = hovering;
     },

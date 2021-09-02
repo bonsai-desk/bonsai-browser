@@ -115,7 +115,6 @@ export const ItemTitle = styled.div`
 `;
 export const Group = styled.div`
   border-radius: 20px;
-  color: rgb(250, 250, 250);
   position: absolute;
 `;
 export const GroupResize = styled.div`
@@ -155,7 +154,6 @@ export const HeaderText = styled.div`
   text-overflow: ellipsis;
   font-size: 2rem;
   font-weight: bold;
-  color: rgb(250, 250, 250);
   font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
     Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
 `;
@@ -170,7 +168,6 @@ export const HeaderInput = styled.input`
   outline: none;
   border: none;
   background: none;
-  color: rgb(250, 250, 250);
   font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
     Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
 `;
