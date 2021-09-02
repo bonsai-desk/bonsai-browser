@@ -43,7 +43,8 @@ export function makeView(loadURL: string) {
   const newView = new BrowserView({
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false, // todo: do we need this? security concern?
+      devTools: false,
+      contextIsolation: false,
     },
   });
   newView.webContents.loadURL(loadURL);

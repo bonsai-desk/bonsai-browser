@@ -591,8 +591,8 @@ export default class WindowManager {
         return;
       }
       const mainWindowVisible = mainWindow.isVisible();
-      const webBrowserViewIsActive = this.webBrowserViewActive;
-      const mouseIsInBorder = !this.mouseInInner;
+      const webBrowserViewIsActive = this.webBrowserViewActive();
+      const mouseIsInBorder = !this.mouseInInner();
       const findIsActive = windowHasView(this.mainWindow, this.findView);
       if (
         !escapeActive &&
@@ -602,12 +602,12 @@ export default class WindowManager {
       ) {
         escapeActive = true;
         globalShortcut.register('Escape', () => {
-          if (this.mouseInInner) {
+          if (this.mouseInInner()) {
             this.mixpanelManager.track('escape while mouse in inner');
           } else {
             this.mixpanelManager.track('escape while mouse not in inner');
           }
-          this.toggle(!this.mouseInInner);
+          this.toggle(!this.mouseInInner());
         });
       } else if (
         escapeActive &&
@@ -1360,22 +1360,18 @@ export default class WindowManager {
     while (i >= 1) {
       const current = this.windowSpeeds[i];
       const last = this.windowSpeeds[i - 1];
-      const [
-        valid,
-        hasVelocity,
-        target,
-        windowVelocity,
-      ] = calculateWindowTarget(
-        current[0],
-        last[0],
-        current[1],
-        current[2],
-        last[1],
-        last[2],
-        this.windowSize,
-        this.windowPosition,
-        this.display
-      );
+      const [valid, hasVelocity, target, windowVelocity] =
+        calculateWindowTarget(
+          current[0],
+          last[0],
+          current[1],
+          current[2],
+          last[1],
+          last[2],
+          this.windowSize,
+          this.windowPosition,
+          this.display
+        );
 
       if (firstTarget === null && valid) {
         firstTarget = target;
@@ -1604,7 +1600,7 @@ export default class WindowManager {
     tabView.view.webContents.capturePage().then(handleImage).catch(handleError);
   }
 
-  private get mouseInInner() {
+  private mouseInInner() {
     const bounds = innerBounds(this.mainWindow, this.padding());
     return pointInBounds(screen.getCursorScreenPoint(), bounds);
   }

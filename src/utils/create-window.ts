@@ -182,7 +182,7 @@ function initWindow(): BrowserWindow {
     webPreferences: {
       nodeIntegration: false,
       devTools: false,
-      contextIsolation: true, // todo: do we need this? security concern?
+      contextIsolation: true,
     },
   });
   mainWindow.setAlwaysOnTop(true, 'status');
