@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 import { ipcRenderer } from 'electron';
 import { useStore } from '../utils/data';
 import refreshIcon from '../../assets/refresh.svg';
 import copyIcon from '../../assets/copy.svg';
+import backParent from '../../assets/back-parent.svg';
 
 const TitleBarFull = styled.div`
   width: 100vw;
@@ -13,7 +14,7 @@ const TitleBarFull = styled.div`
 `;
 
 const TitleBarBottom = styled.div`
-  width: calc(100% - 4px - 5px);
+  width: calc(100%);
   height: 36px;
   border-radius: 10px 10px 0 0;
   background-color: white;
@@ -21,14 +22,10 @@ const TitleBarBottom = styled.div`
   display: flex;
   align-items: center;
   align-content: center;
-  padding-left: 4px;
-  padding-right: 5px;
+  //padding-left: 4px;
+  //padding-right: 5px;
   overflow: hidden;
 `;
-
-interface StyledRoundButtonProps {
-  color: string;
-}
 
 const RoundButton = styled.div`
   -webkit-app-region: no-drag;
@@ -40,14 +37,15 @@ const RoundButton = styled.div`
   width: 28px;
   height: 28px;
   border: none;
-  border-radius: 50%;
-  margin-left: 2px;
+  border-radius: 10px;
   color: white;
+  margin: 0 10px 0 10px;
 
-  ${({ color }: StyledRoundButtonProps) =>
-    css`
-      background-color: ${color};
-    `}
+  transition-duration: 0.1s;
+  background-color: rgba(0, 0, 0, 0.25);
+  :active {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
 `;
 
 const RoundButtonIcon = styled.img`
@@ -57,12 +55,10 @@ const RoundButtonIcon = styled.img`
 
 const URLBox = styled.input`
   flex-grow: 1;
-  margin-left: 10px;
-  border-radius: 10000000px;
+  border-radius: 10px;
   outline: none;
-  border: 2px solid black;
+  border: 2px solid rgba(0, 0, 0, 0.25);
   padding-left: 10px;
-  margin-right: 5px;
   height: 22px;
 `;
 
@@ -95,7 +91,6 @@ const TitleBar = observer(() => {
     <TitleBarFull>
       <TitleBarBottom>
         <RoundButton
-          color="#949494"
           onClick={() => {
             ipcRenderer.send('tab-refresh', tabStore.activeTabId);
           }}
@@ -140,13 +135,20 @@ const TitleBar = observer(() => {
           }}
         />
         <RoundButton
-          color="#949494"
           onClick={() => {
             ipcRenderer.send('float');
             ipcRenderer.send('mixpanel-track', 'click float window button');
           }}
         >
           <RoundButtonIcon src={copyIcon} />
+        </RoundButton>
+        <RoundButton
+          onClick={() => {
+            ipcRenderer.send('sleep-and-back');
+            ipcRenderer.send('mixpanel-track', 'click sleep and back');
+          }}
+        >
+          <RoundButtonIcon src={backParent} />
         </RoundButton>
       </TitleBarBottom>
     </TitleBarFull>
