@@ -12,6 +12,10 @@ export const ColumnsParent = styled.div`
   align-items: flex-start;
   flex-grow: 1;
   margin: 0 10px 0 10px;
+  overflow: scroll;
+  ::-webkit-scrollbar {
+    display: none;
+  }
 `;
 
 export const Column = observer(({ column }: { column: TabPageColumn }) => {

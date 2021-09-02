@@ -143,6 +143,24 @@ function handleGoForward(
   }
 }
 
+function handleGoBack(wm: WindowManager, senderId: string, backTo: INode) {
+  log(`${senderId} request go back`);
+  const webView = wm.allWebViews[parseInt(senderId, 10)];
+  if (webView) {
+    if (webView.view.webContents.canGoBack()) {
+      log(`${senderId} can go back`);
+      goBack(webView, [wm.tabPageView]);
+    } else {
+      const { url } = backTo.data;
+      log(`${senderId} load url ${url}`);
+      handleWillNavigate(webView, url, [wm.tabPageView]);
+      webView.view.webContents.loadURL(url);
+    }
+  } else {
+    log(`Failed to find webView for ${senderId}`);
+  }
+}
+
 function openWindow(
   wm: WindowManager,
   view: IWebView,
@@ -342,21 +360,7 @@ export function addListeners(wm: WindowManager) {
   });
   ipcMain.on('go-back', (_, data) => {
     const { senderId, backTo }: { senderId: string; backTo: INode } = data;
-    log(`${senderId} request go back`);
-    const webView = wm.allWebViews[parseInt(senderId, 10)];
-    if (webView) {
-      if (webView.view.webContents.canGoBack()) {
-        log(`${senderId} can go back`);
-        goBack(webView, [wm.tabPageView]);
-      } else {
-        const { url } = backTo.data;
-        log(`${senderId} load url ${url}`);
-        handleWillNavigate(webView, url, [wm.tabPageView]);
-        webView.view.webContents.loadURL(url);
-      }
-    } else {
-      log(`Failed to find webView for ${senderId}`);
-    }
+    handleGoBack(wm, senderId, backTo);
   });
   ipcMain.on('go-forward', (_, eventData) => {
     const { senderId, forwardTo } = eventData;
@@ -394,6 +398,9 @@ export function addListeners(wm: WindowManager) {
   });
   ipcMain.on('mixpanel-track-with-properties', (_, [eventName, properties]) => {
     wm.mixpanelManager.track(eventName, properties);
+  });
+  ipcMain.on('sleep-and-back', () => {
+    wm.tabPageView.webContents.send('sleep-and-back');
   });
 }
 

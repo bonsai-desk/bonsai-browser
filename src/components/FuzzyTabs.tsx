@@ -9,10 +9,11 @@ import { Item } from '../store/workspace/item';
 import { TabPageTab } from '../interfaces/tab';
 
 const FuzzyTabsParent = styled.div`
+  display: flex;
   flex-grow: 1;
-  display: flex;
-  display: flex;
+  height: 100%;
   justify-content: center;
+  overflow: scroll;
 `;
 
 export const ColumnParent = styled.div`

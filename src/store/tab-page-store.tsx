@@ -47,6 +47,10 @@ export default class TabPageStore {
     }
   }
 
+  navigatorTabModal = [0, 0];
+
+  navigatorTabModalSelectedNodeId = '';
+
   hoveringUrlInput = false;
 
   openTabs: Record<string, TabPageTab> = {};
@@ -311,6 +315,10 @@ export default class TabPageStore {
     this.historyText = newValue;
   }
 
+  setNavigatorTabModal(loc: [number, number]) {
+    this.navigatorTabModal = loc;
+  }
+
   constructor(workspaceStore: Instance<typeof WorkspaceStore>) {
     this.screen = { width: 200, height: 200 };
     this.innerBounds = { x: 0, y: 0, width: 100, height: 100 };
@@ -326,7 +334,6 @@ export default class TabPageStore {
         this.innerBounds = bounds;
       });
     });
-
     ipcRenderer.on('tabView-created-with-id', (_, id) => {
       runInAction(() => {
         this.openTabs[id] = {
@@ -472,6 +479,10 @@ export default class TabPageStore {
       runInAction(() => {
         this.windowFloating = windowFloating;
       });
+    });
+    ipcRenderer.on('will-navigate', () => {
+      this.navigatorTabModalSelectedNodeId = '';
+      this.navigatorTabModal = [0, 0];
     });
   }
 }

@@ -167,11 +167,15 @@ function setTab(webViewId: number) {
   ipcRenderer.send('set-tab', webViewId);
 }
 
-export function goBack(history: IHistory, node: INode) {
+export function goBack(history: IHistory, node: INode, sleepOldNode = false) {
   log('=== go back ===');
   const key = headKeyWhereNode(history, node);
   if (key) {
+    const headId = history.active;
     setTab(key);
+    if (sleepOldNode) {
+      ipcRenderer.send('remove-tab', headId);
+    }
   } else {
     log('dispatch go-back to main');
     ipcRenderer.send('go-back', {
@@ -218,23 +222,27 @@ function childrenWithUrl(node: INode | undefined, url: string): INode[] {
   return [];
 }
 
+export function spawnNewWindow(h: IHistory, senderId: string, url: string) {
+  log('=== new window intercept ===');
+  const oldNode = h.heads.get(senderId);
+  const matchNode = childrenWithUrl(oldNode, url);
+  const heads = headsOnNode(h, matchNode[0]);
+  if (heads.length > 0) {
+    const [headId, node] = heads[0];
+    log(
+      `${senderId} child ${node.showNode()} with active webView ${headId} matches ${url}`
+    );
+  } else {
+    log(`${senderId} dispatch spawn window for ${url}`);
+    ipcRenderer.send('request-new-window', { senderId, url });
+  }
+}
+
 export function hookListeners(h: Instance<typeof HistoryStore>) {
   ipcRenderer.on('new-window-intercept', (_, data) => {
     const { senderId, details } = data;
-    log('=== new window intercept ===');
     const { url } = details;
-    const oldNode = h.heads.get(senderId);
-    const matchNode = childrenWithUrl(oldNode, url);
-    const heads = headsOnNode(h, matchNode[0]);
-    if (heads.length > 0) {
-      const [headId, node] = heads[0];
-      log(
-        `${senderId} child ${node.showNode()} with active webView ${headId} matches ${url}`
-      );
-    } else {
-      log(`${senderId} dispatch spawn window for ${url}`);
-      ipcRenderer.send('request-new-window', { senderId, url });
-    }
+    spawnNewWindow(h, senderId, url);
   });
   ipcRenderer.on('new-window', (_, data) => {
     const { senderId, receiverId, url } = data;
@@ -363,6 +371,17 @@ export function hookListeners(h: Instance<typeof HistoryStore>) {
     const node = h.heads.get(id);
     if (node) {
       node.setData({ ...node.data, title });
+    }
+  });
+  ipcRenderer.on('sleep-and-back', () => {
+    const headId = h.active;
+    const oldNode = h.heads.get(headId);
+    if (oldNode) {
+      if (oldNode.parent) {
+        goBack(h, oldNode.parent, true);
+      } else {
+        console.log('oh no');
+      }
     }
   });
 }

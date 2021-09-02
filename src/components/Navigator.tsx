@@ -3,11 +3,13 @@ import styled, { css } from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import { Instance } from 'mobx-state-tree';
+import { runInAction } from 'mobx';
 import { useStore, View } from '../store/tab-page-store';
 import { goBack, goForward, headsOnNode, INode } from '../store/history-store';
 import { IWorkSpaceStore } from '../store/workspace/workspace-store';
 import { Workspace } from '../store/workspace/workspace';
 import plusImg from '../../assets/plus.svg';
+import NavigatorTabModal from './NavigatorTabModal';
 
 enum Direction {
   Back,
@@ -25,6 +27,12 @@ const NavigatorParent = styled.div`
 
 const NavigatorPanel = styled.div`
   background: rgba(0, 0, 0, 0.25);
+  //background-color: gray;
+  //border: #936943;
+  //border-style: solid;
+  //border-width: 5px 5px 5px 0;
+  //background: #ffdfb4;
+  border-radius: 10px;
   overflow: scroll;
   display: flex;
   flex-direction: column;
@@ -91,6 +99,7 @@ const Title = styled.div`
   margin: 1rem 0 1rem 0.5rem;
   font-size: 1rem;
   font-weight: 600;
+  //color: #483526;
   color: white;
 `;
 
@@ -128,21 +137,53 @@ const AddToWorkspaceButtonParent = styled.div`
 `;
 
 const NavigatorItemParent = styled.div`
-  width: 100%;
+  --bor: 255;
+
+  overflow: hidden;
+  border-radius: 5px;
+
   min-height: 3rem;
+
+  --bw: 5px;
+  width: calc(100% - 3 * var(--bw));
+  border-style: solid;
+
   flex-grow: 1;
   position: relative;
   background-size: cover; /* <------ */
   background-repeat: no-repeat;
-  ${({ img, maxHeight = '5rem' }: { img: string; maxHeight?: string }) => {
-    const maxHeightLine = `max-height: ${maxHeight};`;
-    if (img) {
-      return css`
-        background-image: ${img};
-        ${maxHeightLine}
+  ${({
+    img,
+    maxHeight = '5rem',
+    direction = Direction.Forward,
+    borderActive = false,
+  }: {
+    img: string;
+    maxHeight?: string;
+    direction?: Direction;
+    borderActive?: boolean;
+  }) => {
+    let border = css`
+      border-width: 0 0 0 var(--bw);
+      margin: 0 0 0 var(--bw);
+    `;
+    if (direction === Direction.Back) {
+      border = css`
+        border-width: 0 var(--bw) 0 0;
+        margin: 0 0 0 var(--bw);
       `;
     }
-    return maxHeightLine;
+    const maxHeightLine = `max-height: ${maxHeight};`;
+    const imgCss = css`
+      background-image: ${img};
+      ${maxHeightLine}
+    `;
+    return css`
+      border-color: ${borderActive ? 'white' : 'black'};
+      ${maxHeightLine}
+      ${border}
+      ${img ? imgCss : ''}
+    `;
   }}
   user-select: none;
   cursor: default;
@@ -182,15 +223,24 @@ const NavigatorItem = observer(
     onClick,
     maxHeight,
     active = true,
+    dir = Direction.Forward,
+    borderActive = false,
+    contextMenuCallback,
   }: {
     img: string;
     text: string;
     onClick?: () => void;
     active?: boolean;
     maxHeight?: string;
+    dir?: Direction;
+    borderActive?: boolean;
+    contextMenuCallback?: (e: any) => void;
   }) => {
     return (
       <NavigatorItemParent
+        onContextMenu={contextMenuCallback}
+        borderActive={borderActive}
+        direction={dir}
         maxHeight={maxHeight}
         id="NavItem"
         img={img}
@@ -218,8 +268,9 @@ const HistoryNavigatorItem = observer(
     const heads = headsOnNode(historyStore, node);
 
     const maxHeight = `${(9 / 16) * parentDim.width}px`;
+    const headIsOnNode = heads.length > 0;
 
-    if (heads.length > 0) {
+    if (headIsOnNode) {
       const tab = tabPageStore.openTabs[heads[0][0]];
       if (tab && tab.image) {
         img = `url(${tab.image})`;
@@ -229,9 +280,21 @@ const HistoryNavigatorItem = observer(
     const title = node.data.title ? node.data.title : node.data.url;
     return (
       <NavigatorItem
+        contextMenuCallback={(e) => {
+          if (dir === Direction.Forward) {
+            const { pageX, pageY } = e;
+            tabPageStore.setNavigatorTabModal([pageX, pageY]);
+            runInAction(() => {
+              tabPageStore.navigatorTabModalSelectedNodeId = node.id;
+            });
+          }
+        }}
+        borderActive={headIsOnNode}
+        dir={dir}
         maxHeight={maxHeight}
         img={img}
         onClick={() => {
+          // tabPageStore.setNavigatorTabModal([0, 0]);
           if (dir === Direction.Back) {
             goBack(historyStore, node);
             ipcRenderer.send('mixpanel-track', 'click go back in navigator');
@@ -251,6 +314,8 @@ const WorkspaceItem = observer(({ data }: { data: IItemPath }) => {
   const { tabPageStore, workspaceStore } = useStore();
   return (
     <NavigatorItem
+      dir={Direction.Back}
+      borderActive
       maxHeight="3rem"
       img=""
       onClick={() => {
@@ -446,6 +511,8 @@ const Navigator = observer(() => {
   const leftItems = head && head.parent ? [head.parent] : [];
   const rightItems = head ? head.children.slice().reverse() : [];
   const matches = nodeInWorkspaces(head, workspaceStore);
+  const [x, y] = tabPageStore.navigatorTabModal;
+  const tabModalInactive = x === 0 && y === 0;
   return (
     <NavigatorParent
       ref={backRef}
@@ -459,6 +526,7 @@ const Navigator = observer(() => {
         }
       }}
     >
+      {!tabModalInactive ? <NavigatorTabModal /> : ''}
       <Panel
         dir={Direction.Back}
         items={leftItems}
@@ -467,6 +535,7 @@ const Navigator = observer(() => {
         <>
           {leftItems.length === 0 ? (
             <NavigatorItem
+              dir={Direction.Back}
               active={false}
               img=""
               onClick={() => {}}

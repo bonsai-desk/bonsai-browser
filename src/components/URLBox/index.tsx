@@ -20,6 +20,7 @@ const Input = styled.input`
   border: none;
   padding: 0.5rem 1.25rem 0.5rem 1.25rem;
   width: 20rem;
+  height: 1rem;
   color: white;
   ::placeholder {
     color: rgba(255, 255, 255, 0.8);
@@ -44,11 +45,7 @@ const URLBox = observer(() => {
           tabPageStore.hoveringUrlInput = true;
         });
       }}
-      onMouseLeave={() => {
-        runInAction(() => {
-          tabPageStore.hoveringUrlInput = false;
-        });
-      }}
+      onMouseLeave={() => {}}
     >
       <Input
         type="text"

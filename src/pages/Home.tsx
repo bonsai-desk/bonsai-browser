@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import { runInAction } from 'mobx';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { useStore, View } from '../store/tab-page-store';
 import URLBox from '../components/URLBox';
 import FuzzyTabs from '../components/FuzzyTabs';
@@ -20,6 +20,52 @@ import {
   HistoryModalBackground,
   HistoryModalParent,
 } from '../components/History/style';
+import redX from '../../assets/x-letter.svg';
+import home from '../../assets/home.svg';
+
+const BackHomeButtonParent = styled.div`
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0 0 10px 0;
+  background-color: rgba(0, 0, 0, 0.1);
+  position: absolute;
+  top: 0;
+  left: 0;
+  transition-duration: 0.1s;
+
+  background-size: 100%;
+  background-repeat: no-repeat;
+  background-position: center center;
+  ${({ view }: { view: View }) => {
+    if (view === View.Tabs) {
+      return `background-image: url(${redX});`;
+    }
+    return css`
+      background-image: url(${home});
+      background-size: 60%;
+    `;
+  }}
+  :hover {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+`;
+
+const BackHomeButton = observer(() => {
+  const { tabPageStore } = useStore();
+
+  return (
+    <BackHomeButtonParent
+      view={tabPageStore.View}
+      onClick={() => {
+        if (tabPageStore.View === View.Tabs) {
+          ipcRenderer.send('toggle');
+        } else {
+          ipcRenderer.send('click-main');
+        }
+      }}
+    />
+  );
+});
 
 const MainContent = observer(() => {
   const { tabPageStore, workspaceStore } = useStore();
@@ -168,8 +214,8 @@ function paintVignette(
     context.lineTo(x, y);
     context.closePath();
 
-    context.filter = 'blur(100px)';
-    context.lineWidth = 500;
+    context.filter = 'blur(50px)';
+    context.lineWidth = 250;
     context.stroke();
   }
 }
@@ -236,6 +282,8 @@ const Home = observer(() => {
         }
       }}
     >
+      <BackHomeButton />
+
       <Content />
       <History />
       <Debug />
