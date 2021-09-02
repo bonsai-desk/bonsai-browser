@@ -2,16 +2,26 @@ import React from 'react';
 import { observer } from 'mobx-react-lite';
 import styled from 'styled-components';
 import { runInAction } from 'mobx';
+import { ipcRenderer } from 'electron';
 import { useStore } from '../store/tab-page-store';
-import { spawnNewWindow } from '../store/history-store';
+import { headsOnNode, spawnNewWindow } from '../store/history-store';
 
 const Parent = styled.div`
   width: 100px;
-  height: 100px;
   position: absolute;
+  height: 4rem;
   bottom: 0;
   right: 0;
-  z-index: 1;
+  background-color: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(4px);
+  border-radius: 5px;
+  padding: 5px;
+  z-index: 12;
+`;
+
+const List = styled.div`
+  display: flex;
+  flex-direction: column;
 `;
 
 const Background = styled.div`
@@ -22,13 +32,30 @@ const Background = styled.div`
   top: 0;
   left: 0;
   //background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1;
-  background-color: rgba(0, 0, 0, 0.25);
+  z-index: 11;
+`;
+
+const ListItem = styled.div`
+  color: white;
+  font-size: 1rem;
+  border-radius: 5px;
+  padding: 0 0 0 20px;
+  :hover {
+    background-color: blue;
+  }
 `;
 
 const NavigatorTabModal = observer(() => {
   const { tabPageStore, historyStore } = useStore();
   const [x, y] = tabPageStore.navigatorTabModal;
+
+  const senderId = historyStore.active;
+  const nodeId = tabPageStore.navigatorTabModalSelectedNodeId;
+  const node = historyStore.nodes.get(nodeId);
+
+  const heads = headsOnNode(historyStore, node);
+  const aHeadIsOnNode = heads.length > 0;
+
   return (
     <Background
       onClick={() => {
@@ -38,19 +65,23 @@ const NavigatorTabModal = observer(() => {
         });
       }}
     >
-      <Parent
-        onClick={() => {
-          const senderId = historyStore.active;
-          const nodeId = tabPageStore.navigatorTabModalSelectedNodeId;
-          const node = historyStore.nodes.get(nodeId);
-          if (senderId && node) {
-            console.log('spawn');
-            spawnNewWindow(historyStore, senderId, node.data.url);
-          }
-        }}
-        style={{ backgroundColor: 'blue', top: y, left: x }}
-      >
-        woo
+      <Parent style={{ top: y, left: x }}>
+        <List>
+          <ListItem
+            onClick={() => {
+              if (senderId && node) {
+                if (aHeadIsOnNode) {
+                  ipcRenderer.send('remove-tab', heads[0][0]);
+                } else {
+                  console.log('spawn');
+                  spawnNewWindow(historyStore, senderId, node.data.url);
+                }
+              }
+            }}
+          >
+            {aHeadIsOnNode ? 'Sleep' : 'Wake'}
+          </ListItem>
+        </List>
       </Parent>
     </Background>
   );
