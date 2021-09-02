@@ -44,11 +44,7 @@ const URLBox = observer(() => {
           tabPageStore.hoveringUrlInput = true;
         });
       }}
-      onMouseLeave={() => {
-        runInAction(() => {
-          tabPageStore.hoveringUrlInput = false;
-        });
-      }}
+      onMouseLeave={() => {}}
     >
       <Input
         type="text"
