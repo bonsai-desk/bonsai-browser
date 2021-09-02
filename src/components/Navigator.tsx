@@ -281,11 +281,13 @@ const HistoryNavigatorItem = observer(
     return (
       <NavigatorItem
         contextMenuCallback={(e) => {
-          const { pageX, pageY } = e;
-          tabPageStore.setNavigatorTabModal([pageX, pageY]);
-          runInAction(() => {
-            tabPageStore.navigatorTabModalSelectedNodeId = node.id;
-          });
+          if (dir === Direction.Forward) {
+            const { pageX, pageY } = e;
+            tabPageStore.setNavigatorTabModal([pageX, pageY]);
+            runInAction(() => {
+              tabPageStore.navigatorTabModalSelectedNodeId = node.id;
+            });
+          }
         }}
         borderActive={headIsOnNode}
         dir={dir}
