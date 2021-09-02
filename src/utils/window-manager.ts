@@ -695,6 +695,11 @@ export default class WindowManager {
       forwardUrls: [],
       gestureAfterDOMLoad: false,
     };
+    webView.view.webContents.session.setPermissionRequestHandler(
+      (_a, _b, callback) => {
+        callback(false); // todo: popup to request permissions
+      }
+    );
 
     // webView.view.webContents.openDevTools({ mode: 'detach' });
 
