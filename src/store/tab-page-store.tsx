@@ -47,6 +47,10 @@ export default class TabPageStore {
     }
   }
 
+  navigatorTabModal = [0, 0];
+
+  navigatorTabModalSelectedNodeId = '';
+
   hoveringUrlInput = false;
 
   openTabs: Record<string, TabPageTab> = {};
@@ -309,6 +313,10 @@ export default class TabPageStore {
 
   setHistoryText(newValue: string) {
     this.historyText = newValue;
+  }
+
+  setNavigatorTabModal(loc: [number, number]) {
+    this.navigatorTabModal = loc;
   }
 
   constructor(workspaceStore: Instance<typeof WorkspaceStore>) {

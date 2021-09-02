@@ -3,11 +3,13 @@ import styled, { css } from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import { Instance } from 'mobx-state-tree';
+import { runInAction } from 'mobx';
 import { useStore, View } from '../store/tab-page-store';
 import { goBack, goForward, headsOnNode, INode } from '../store/history-store';
 import { IWorkSpaceStore } from '../store/workspace/workspace-store';
 import { Workspace } from '../store/workspace/workspace';
 import plusImg from '../../assets/plus.svg';
+import NavigatorTabModal from './NavigatorTabModal';
 
 enum Direction {
   Back,
@@ -223,6 +225,7 @@ const NavigatorItem = observer(
     active = true,
     dir = Direction.Forward,
     borderActive = false,
+    contextMenuCallback,
   }: {
     img: string;
     text: string;
@@ -231,9 +234,11 @@ const NavigatorItem = observer(
     maxHeight?: string;
     dir?: Direction;
     borderActive?: boolean;
+    contextMenuCallback?: (e: any) => void;
   }) => {
     return (
       <NavigatorItemParent
+        onContextMenu={contextMenuCallback}
         borderActive={borderActive}
         direction={dir}
         maxHeight={maxHeight}
@@ -275,11 +280,19 @@ const HistoryNavigatorItem = observer(
     const title = node.data.title ? node.data.title : node.data.url;
     return (
       <NavigatorItem
+        contextMenuCallback={(e) => {
+          const { pageX, pageY } = e;
+          tabPageStore.setNavigatorTabModal([pageX, pageY]);
+          runInAction(() => {
+            tabPageStore.navigatorTabModalSelectedNodeId = node.id;
+          });
+        }}
         borderActive={headIsOnNode}
         dir={dir}
         maxHeight={maxHeight}
         img={img}
         onClick={() => {
+          // tabPageStore.setNavigatorTabModal([0, 0]);
           if (dir === Direction.Back) {
             goBack(historyStore, node);
             ipcRenderer.send('mixpanel-track', 'click go back in navigator');
@@ -496,6 +509,8 @@ const Navigator = observer(() => {
   const leftItems = head && head.parent ? [head.parent] : [];
   const rightItems = head ? head.children.slice().reverse() : [];
   const matches = nodeInWorkspaces(head, workspaceStore);
+  const [x, y] = tabPageStore.navigatorTabModal;
+  const tabModalInactive = x === 0 && y === 0;
   return (
     <NavigatorParent
       ref={backRef}
@@ -509,6 +524,7 @@ const Navigator = observer(() => {
         }
       }}
     >
+      {!tabModalInactive ? <NavigatorTabModal /> : ''}
       <Panel
         dir={Direction.Back}
         items={leftItems}
