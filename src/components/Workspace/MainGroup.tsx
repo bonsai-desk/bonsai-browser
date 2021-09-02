@@ -217,8 +217,9 @@ const MainGroup = observer(
                 : `${groupBorder}px solid black`,
             display: group.id === 'hidden' ? 'none' : 'block',
             cursor: group.beingDragged ? 'grabbing' : 'auto',
+            color: group.textColor,
             backgroundColor:
-              group.id === 'inbox' ? 'transparent' : 'rgb(255, 170, 166)',
+              group.id === 'inbox' ? 'transparent' : group.groupColor,
           }}
           onMouseOver={() => {
             group.setHovering(true);
@@ -236,12 +237,14 @@ const MainGroup = observer(
                 }
                 return group.beingDragged ? 'grabbing' : 'pointer';
               })(),
+              color: group.textColor,
             }}
           >
             <HeaderText
               style={{
                 display:
                   tabPageStore.editingGroupId === group.id ? 'none' : 'block',
+                color: group.textColor,
               }}
             >
               {group.id === 'inbox' ? 'Inbox' : group.title}

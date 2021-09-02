@@ -43,8 +43,17 @@ export function makeView(loadURL: string) {
   const newView = new BrowserView({
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false, // todo: do we need this? security concern?
+      devTools: false,
+      contextIsolation: false,
     },
+  });
+  newView.webContents.on('will-navigate', (event, navigationUrl) => {
+    console.log(`view tried to navigate ${navigationUrl}`);
+    event.preventDefault();
+  });
+  newView.webContents.setWindowOpenHandler(({ url }) => {
+    console.log(`view tried to open ${url}`);
+    return { action: 'deny' };
   });
   newView.webContents.loadURL(loadURL);
   return newView;

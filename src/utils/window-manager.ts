@@ -1,4 +1,5 @@
 /* eslint no-console: off */
+/* eslint prefer-destructuring: off */
 import {
   app,
   BrowserView,
@@ -263,9 +264,16 @@ export function addListeners(wm: WindowManager) {
   ipcMain.on('wheel', (_, [deltaX, deltaY]) => {
     const activeTabView = wm.allWebViews[wm.activeTabId];
     if (activeTabView !== null) {
-      activeTabView.view.webContents.executeJavaScript(`
-        window.scrollBy(${deltaX}, ${deltaY});
-      `);
+      activeTabView.view.webContents
+        .executeJavaScript(
+          `
+        {
+          window.scrollBy(${deltaX}, ${deltaY});
+        }
+      `,
+          true
+        )
+        .catch(console.log);
     }
   });
   ipcMain.on('search-url', (_, url) => {
@@ -598,8 +606,8 @@ export default class WindowManager {
         return;
       }
       const mainWindowVisible = mainWindow.isVisible();
-      const webBrowserViewIsActive = this.webBrowserViewActive;
-      const mouseIsInBorder = !this.mouseInInner;
+      const webBrowserViewIsActive = this.webBrowserViewActive();
+      const mouseIsInBorder = !this.mouseInInner();
       const findIsActive = windowHasView(this.mainWindow, this.findView);
       if (
         !escapeActive &&
@@ -609,12 +617,12 @@ export default class WindowManager {
       ) {
         escapeActive = true;
         globalShortcut.register('Escape', () => {
-          if (this.mouseInInner) {
+          if (this.mouseInInner()) {
             this.mixpanelManager.track('escape while mouse in inner');
           } else {
             this.mixpanelManager.track('escape while mouse not in inner');
           }
-          this.toggle(!this.mouseInInner);
+          this.toggle(!this.mouseInInner());
         });
       } else if (
         escapeActive &&
@@ -686,9 +694,10 @@ export default class WindowManager {
       view: new BrowserView({
         webPreferences: {
           nodeIntegration: false,
+          devTools: false,
+          contextIsolation: true,
           sandbox: true,
           preload: PRELOAD,
-          contextIsolation: true, // todo: do we need this? security concern?
         },
       }),
       historyEntry: null,
@@ -701,6 +710,21 @@ export default class WindowManager {
       forwardUrls: [],
       gestureAfterDOMLoad: false,
     };
+    webView.view.webContents.session.setPermissionRequestHandler(
+      (_a, _b, callback) => {
+        callback(false); // todo: popup to request permissions
+      }
+    );
+    // webView.view.webContents.session.webRequest.onHeadersReceived(
+    //   (details, callback) => {
+    //     callback({
+    //       responseHeaders: {
+    //         ...details.responseHeaders,
+    //         'Content-Security-Policy': 'self',
+    //       },
+    //     });
+    //   }
+    // );
 
     // webView.view.webContents.openDevTools({ mode: 'detach' });
 
@@ -839,7 +863,7 @@ export default class WindowManager {
       if (opacity < 0.0) {
         opacity = 0.0;
         clearInterval(handle);
-        this.unFloat();
+        // this.unFloat();
         this.tabPageView.webContents.send('blur');
         this.mainWindow?.hide();
         if (
@@ -874,12 +898,22 @@ export default class WindowManager {
     });
     this.mainWindow.setOpacity(1.0);
     this.setPinned(false);
-    this.unFloat();
+    // this.unFloat();
+    this.resizeBrowserWindow();
     if (this.webViewIsActive()) {
       // todo: search box does not get highlighted on macos unless we do this hack
       setTimeout(() => {
         this.unSetTab();
       }, 10);
+    }
+
+    if (this.windowFloating) {
+      this.windowPosition[0] = this.targetWindowPosition[0];
+      this.windowPosition[1] = this.targetWindowPosition[1];
+      const [floatingWidth, floatingHeight] = floatingSize(this.display);
+      this.windowSize.width = floatingWidth;
+      this.windowSize.height = floatingHeight;
+      this.updateMainWindowBounds();
     }
 
     // todo: setting the opacity to zero here
@@ -1367,22 +1401,18 @@ export default class WindowManager {
     while (i >= 1) {
       const current = this.windowSpeeds[i];
       const last = this.windowSpeeds[i - 1];
-      const [
-        valid,
-        hasVelocity,
-        target,
-        windowVelocity,
-      ] = calculateWindowTarget(
-        current[0],
-        last[0],
-        current[1],
-        current[2],
-        last[1],
-        last[2],
-        this.windowSize,
-        this.windowPosition,
-        this.display
-      );
+      const [valid, hasVelocity, target, windowVelocity] =
+        calculateWindowTarget(
+          current[0],
+          last[0],
+          current[1],
+          current[2],
+          last[1],
+          last[2],
+          this.windowSize,
+          this.windowPosition,
+          this.display
+        );
 
       if (firstTarget === null && valid) {
         firstTarget = target;
@@ -1611,7 +1641,7 @@ export default class WindowManager {
     tabView.view.webContents.capturePage().then(handleImage).catch(handleError);
   }
 
-  private get mouseInInner() {
+  private mouseInInner() {
     const bounds = innerBounds(this.mainWindow, this.padding());
     return pointInBounds(screen.getCursorScreenPoint(), bounds);
   }
@@ -1702,15 +1732,18 @@ export default class WindowManager {
     }
   }
 
-  private unFloat() {
+  private resizeBrowserWindow() {
     const { display } = this;
-
     this.windowPosition[0] = display.bounds.x;
     this.windowPosition[1] = display.bounds.y;
     this.windowSize.width = display.workArea.width;
     this.windowSize.height =
       display.bounds.height + (process.platform === 'darwin' ? 0 : 1); // todo: on windows if you make it the same size as monitor, everything breaks!?!??!?!?
     this.updateMainWindowBounds();
+  }
+
+  private unFloat() {
+    this.resizeBrowserWindow();
 
     const hh = this.headerHeight();
     const windowSize = currentWindowSize(this.mainWindow);

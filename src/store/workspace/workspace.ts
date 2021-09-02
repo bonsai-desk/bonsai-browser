@@ -276,6 +276,13 @@ export const Workspace = types
         itemArrangement: [],
         zIndex: maxGroupZ + 1,
       });
+      const colors = [
+        ['#ffffff', '#209756'],
+        ['#6F3D4F', '#FDEEC8'],
+        ['#ffffff', '#FF8400'],
+      ];
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      group.setColors(color[0], color[1]);
       self.groups.put(group);
       return group;
     },

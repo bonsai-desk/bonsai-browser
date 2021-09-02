@@ -163,6 +163,18 @@ function initBoot(wm: WindowManager) {
 }
 
 function initWindow(): BrowserWindow {
+  app.on('web-contents-created', (_, contents) => {
+    contents.on('will-attach-webview', (event, webPreferences) => {
+      // Strip away preload scripts if unused or verify their location is legitimate
+      delete webPreferences.preload;
+
+      // Disable Node.js integration
+      webPreferences.nodeIntegration = false;
+
+      event.preventDefault();
+    });
+  });
+
   const mac = process.platform === 'darwin';
   const mainWindow: BrowserWindow | null = new BrowserWindow({
     frame: false,
@@ -182,7 +194,7 @@ function initWindow(): BrowserWindow {
     webPreferences: {
       nodeIntegration: false,
       devTools: false,
-      contextIsolation: true, // todo: do we need this? security concern?
+      contextIsolation: true,
     },
   });
   mainWindow.setAlwaysOnTop(true, 'status');
