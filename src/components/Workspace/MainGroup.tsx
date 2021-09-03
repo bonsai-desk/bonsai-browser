@@ -214,10 +214,14 @@ const MainGroup = observer(
             border:
               group.id === 'inbox'
                 ? `${groupBorder}px solid transparent`
-                : `${groupBorder}px solid black`,
+                : `${groupBorder}px solid rgba(0,0,0,0.1)`,
             display: group.id === 'hidden' ? 'none' : 'block',
             cursor: group.beingDragged ? 'grabbing' : 'auto',
             color: group.textColor,
+            boxShadow:
+              group.id === 'inbox'
+                ? ''
+                : 'rgba(100, 100, 111, 0.2) 0px 7px 29px 0px',
             backgroundColor:
               group.id === 'inbox' ? 'transparent' : group.groupColor,
           }}
@@ -244,7 +248,7 @@ const MainGroup = observer(
               style={{
                 display:
                   tabPageStore.editingGroupId === group.id ? 'none' : 'block',
-                color: group.id === 'inbox' ? '#ffffff' : group.textColor,
+                color: group.id === 'inbox' ? 'rgb(50,50,50)' : group.textColor,
               }}
             >
               {group.id === 'inbox' ? 'Inbox' : group.title}

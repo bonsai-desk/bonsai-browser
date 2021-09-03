@@ -475,6 +475,11 @@ export default class WindowManager {
 
   display: Display;
 
+  setDisplay(display: Display) {
+    this.tabPageView.webContents.send('resize-work-area', display.workArea);
+    this.display = display;
+  }
+
   webBrowserViewActive(): boolean {
     return this.activeTabId !== -1;
   }
@@ -628,7 +633,7 @@ export default class WindowManager {
 
     mainWindow.webContents.on('did-finish-load', () => {
       const mousePoint = screen.getCursorScreenPoint();
-      this.display = screen.getDisplayNearestPoint(mousePoint);
+      this.setDisplay(screen.getDisplayNearestPoint(mousePoint));
       this.mainWindow.webContents.send(
         'set-padding',
         this.browserPadding.toString()
@@ -888,7 +893,7 @@ export default class WindowManager {
     const mousePoint = screen.getCursorScreenPoint();
     // const display = { activeDisplay: screen.getPrimaryDisplay() };
     // display.activeDisplay = screen.getDisplayNearestPoint(mousePoint);
-    this.display = screen.getDisplayNearestPoint(mousePoint);
+    this.setDisplay(screen.getDisplayNearestPoint(mousePoint));
 
     this.mainWindow.setVisibleOnAllWorkspaces(true, {
       visibleOnFullScreen: true,
@@ -1349,7 +1354,7 @@ export default class WindowManager {
     this.movingWindow = true;
 
     const mousePoint = screen.getCursorScreenPoint();
-    this.display = screen.getDisplayNearestPoint(mousePoint);
+    this.setDisplay(screen.getDisplayNearestPoint(mousePoint));
 
     const [floatingWidth, floatingHeight] = floatingSize(this.display);
     this.windowSize.width = floatingWidth;
@@ -1405,18 +1410,22 @@ export default class WindowManager {
     while (i >= 1) {
       const current = this.windowSpeeds[i];
       const last = this.windowSpeeds[i - 1];
-      const [valid, hasVelocity, target, windowVelocity] =
-        calculateWindowTarget(
-          current[0],
-          last[0],
-          current[1],
-          current[2],
-          last[1],
-          last[2],
-          this.windowSize,
-          this.windowPosition,
-          this.display
-        );
+      const [
+        valid,
+        hasVelocity,
+        target,
+        windowVelocity,
+      ] = calculateWindowTarget(
+        current[0],
+        last[0],
+        current[1],
+        current[2],
+        last[1],
+        last[2],
+        this.windowSize,
+        this.windowPosition,
+        this.display
+      );
 
       if (firstTarget === null && valid) {
         firstTarget = target;

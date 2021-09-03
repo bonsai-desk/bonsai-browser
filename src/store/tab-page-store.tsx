@@ -1,5 +1,5 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import { ipcRenderer } from 'electron';
+import { ipcRenderer, Rectangle } from 'electron';
 import { RefObject, createContext, useContext } from 'react';
 import Fuse from 'fuse.js';
 import { Instance } from 'mobx-state-tree';
@@ -46,6 +46,8 @@ export default class TabPageStore {
       this.urlText = '';
     }
   }
+
+  workAreaRect: Rectangle;
 
   navigatorTabModal = [0, 0];
 
@@ -320,6 +322,7 @@ export default class TabPageStore {
   }
 
   constructor(workspaceStore: Instance<typeof WorkspaceStore>) {
+    this.workAreaRect = { x: 0, y: 0, width: 1, height: 1 };
     this.screen = { width: 200, height: 200 };
     this.innerBounds = { x: 0, y: 0, width: 100, height: 100 };
     this.workspaceStore = workspaceStore;
@@ -483,6 +486,9 @@ export default class TabPageStore {
     ipcRenderer.on('will-navigate', () => {
       this.navigatorTabModalSelectedNodeId = '';
       this.navigatorTabModal = [0, 0];
+    });
+    ipcRenderer.on('resize-work-area', (_, workSpaceRect) => {
+      this.workAreaRect = workSpaceRect;
     });
   }
 }

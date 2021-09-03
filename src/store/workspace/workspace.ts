@@ -15,7 +15,7 @@ import { Item, itemHeight, itemWidth } from './item';
 import { clamp } from '../../utils/utils';
 import { calculateMatrices, transformPosition } from './utils';
 
-export const InboxColumnWidth = 300;
+export const InboxColumnWidth = 250;
 
 const minZoom = 0.035;
 const maxZoom = 1;

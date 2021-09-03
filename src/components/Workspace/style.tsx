@@ -114,7 +114,7 @@ export const ItemTitle = styled.div`
   left: 0;
 `;
 export const Group = styled.div`
-  border-radius: 20px;
+  border-radius: 10px;
   position: absolute;
 `;
 export const GroupResize = styled.div`

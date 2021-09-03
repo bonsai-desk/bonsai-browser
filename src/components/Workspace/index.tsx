@@ -26,21 +26,31 @@ export const Background = styled.div`
   display: flex;
 `;
 export const WorkspaceContentBackground = styled.div`
+  margin: 10px 30px 10px 30px;
   user-select: none;
   flex-grow: 1;
   background-color: white;
   border-radius: 10px;
   position: relative;
   overflow: hidden;
+  //box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+  box-shadow: rgba(0, 0, 0, 0.35) 0 5px 15px;
 `;
 const InboxColumn = styled.div`
-  //background-color: #4287f5;
-  background-color: green;
+  //background-color: #d2eefc;
+  background-color: white;
+  //background-color: rgba(0, 100, 0, 0.25);
+  //backdrop-filter: blur(4x);
   position: absolute;
   left: 0;
   top: 0;
   height: 100%;
   z-index: 9999999;
+  //border-style: solid;
+  //border-color: rgba(0, 0, 0, 0.1);
+  //border-width: 0 1px 0 0;
+  //box-shadow: rgba(0, 0, 0, 0.35) 0 5px 15px;
+  box-shadow: rgba(149, 157, 165, 0.2) 0 8px 24px;
 `;
 export const TrashButton = styled.div`
   position: absolute;
@@ -312,8 +322,8 @@ const Workspace = observer(
                 cursor: 'pointer',
                 width: 'auto',
                 paddingRight: '12px',
-                fontSize: '50px',
-                zIndex: 10000000,
+                fontSize: '40px',
+                zIndex: 9999998,
                 backgroundColor: 'white',
                 borderRadius: '0 0 10px 0',
               }}
@@ -346,8 +356,8 @@ const Workspace = observer(
                 width: workspace.width - InboxColumnWidth,
                 color: 'rgb(50, 50, 50)',
                 left: InboxColumnWidth,
-                top: 7,
-                fontSize: '50px',
+                top: 5,
+                fontSize: '40px',
                 zIndex: 10000000,
               }}
               onMouseDown={(e) => {

@@ -4,7 +4,7 @@
 import { types } from 'mobx-state-tree';
 import { itemHeight, itemWidth } from './item';
 
-export const groupBorder = 2;
+export const groupBorder = 5;
 export const groupTitleHeight = 48;
 export const groupPadding = 10;
 export const itemSpacing = 10;

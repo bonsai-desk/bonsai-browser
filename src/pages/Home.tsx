@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { ipcRenderer } from 'electron';
+import { ipcRenderer, Rectangle } from 'electron';
 import { runInAction } from 'mobx';
 import styled, { css } from 'styled-components';
 import { useStore, View } from '../store/tab-page-store';
@@ -197,7 +197,8 @@ function useWindowSize(
 
 function paintVignette(
   ws: { width: number; height: number },
-  canvas: HTMLCanvasElement
+  canvas: HTMLCanvasElement,
+  workArea: Rectangle
 ) {
   const context = canvas.getContext('2d');
   if (context) {
@@ -246,10 +247,10 @@ const Home = observer(() => {
   const canvasRef = useCallback(
     (node: HTMLCanvasElement) => {
       if (node !== null) {
-        paintVignette(ws, node);
+        paintVignette(ws, node, tabPageStore.workAreaRect);
       }
     },
-    [ws]
+    [ws, tabPageStore.workAreaRect]
   );
 
   useEffect(() => {
