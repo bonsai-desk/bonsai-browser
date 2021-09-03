@@ -59,6 +59,10 @@ const BackHomeButton = observer(() => {
       onClick={() => {
         if (tabPageStore.View === View.Tabs) {
           ipcRenderer.send('toggle');
+        } else if (tabPageStore.View === View.WorkSpace) {
+          runInAction(() => {
+            tabPageStore.View = View.Tabs;
+          });
         } else {
           ipcRenderer.send('click-main');
         }
@@ -283,7 +287,6 @@ const Home = observer(() => {
       }}
     >
       <BackHomeButton />
-
       <Content />
       <History />
       <Debug />
