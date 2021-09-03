@@ -26,7 +26,7 @@ export const ItemGroup = types
     y: 0,
     zIndex: 0,
     width: 1,
-    textColor: '#e3e3e3',
+    textColor: '#ffffff',
     groupColor: '#32a852',
   })
   .volatile(() => ({

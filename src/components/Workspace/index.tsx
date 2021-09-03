@@ -34,7 +34,8 @@ export const WorkspaceContentBackground = styled.div`
   overflow: hidden;
 `;
 const InboxColumn = styled.div`
-  background-color: #4287f5;
+  //background-color: #4287f5;
+  background-color: green;
   position: absolute;
   left: 0;
   top: 0;
@@ -314,7 +315,7 @@ const Workspace = observer(
                 fontSize: '50px',
                 zIndex: 10000000,
                 backgroundColor: 'white',
-                borderRadius: '0 1000000px 1000000px 0',
+                borderRadius: '0 0 10px 0',
               }}
               onMouseDown={(e) => {
                 e.stopPropagation();
@@ -345,7 +346,7 @@ const Workspace = observer(
                 width: workspace.width - InboxColumnWidth,
                 color: 'rgb(50, 50, 50)',
                 left: InboxColumnWidth,
-                top: 3,
+                top: 7,
                 fontSize: '50px',
                 zIndex: 10000000,
               }}

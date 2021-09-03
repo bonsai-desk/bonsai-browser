@@ -244,7 +244,7 @@ const MainGroup = observer(
               style={{
                 display:
                   tabPageStore.editingGroupId === group.id ? 'none' : 'block',
-                color: group.textColor,
+                color: group.id === 'inbox' ? '#ffffff' : group.textColor,
               }}
             >
               {group.id === 'inbox' ? 'Inbox' : group.title}
@@ -257,6 +257,7 @@ const MainGroup = observer(
                 display:
                   tabPageStore.editingGroupId === group.id ? 'block' : 'none',
                 height: groupTitleHeight + groupPadding,
+                color: group.textColor,
               }}
               onMouseDown={(e) => {
                 if (e.button !== 1) {
