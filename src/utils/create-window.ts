@@ -189,8 +189,8 @@ function initWindow(): BrowserWindow {
     vibrancy: mac ? VIBRANCY : undefined, // menu, popover, hud, fullscreen-ui
     roundedCorners: false,
     visualEffectState: mac ? 'active' : undefined,
-    // fullscreen: true,
-    // simpleFullscreen: true,
+    fullscreen: true,
+    simpleFullscreen: true,
     webPreferences: {
       nodeIntegration: false,
       devTools: !app.isPackaged,

@@ -15,8 +15,8 @@ export function overTrash(
   return (
     testPos[0] >= workspace.width / 2 - 50 &&
     testPos[0] <= workspace.width / 2 + 50 &&
-    testPos[1] >= 0 &&
-    testPos[1] <= 100
+    testPos[1] >= 10 &&
+    testPos[1] <= 110
   );
 }
 

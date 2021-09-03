@@ -11,9 +11,12 @@ import { TabPageTab } from '../interfaces/tab';
 const FuzzyTabsParent = styled.div`
   display: flex;
   flex-grow: 1;
-  height: 100%;
+  //height: 100%;
   justify-content: center;
   overflow: scroll;
+  ::-webkit-scrollbar {
+    display: none;
+  }
 `;
 
 export const ColumnParent = styled.div`
@@ -26,6 +29,7 @@ export const ColumnParent = styled.div`
 `;
 
 const FuzzyTitle = styled.h1`
+  text-shadow: 0 0 5px #9c9c9c;
   padding-left: 4px;
   justify-content: center;
 `;

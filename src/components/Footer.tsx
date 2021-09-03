@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import { runInAction } from 'mobx';
 import React from 'react';
@@ -8,38 +8,84 @@ import HistoryButton from './HistoryButton';
 
 export const NavButtonParent = styled.button`
   position: absolute;
-  bottom: 0;
-  right: 135px;
+  bottom: 10px;
+  right: 145px;
   width: 125px;
   height: 50px;
   border-radius: 10px;
   border: none;
   outline: none;
 
+  font-weight: bold;
+  color: white;
+  transition-duration: 0.1s;
+  background-color: rgba(0, 0, 0, 0.25);
+
   :hover {
-    background-color: lightgray;
+    background-color: rgba(0, 0, 0, 0.5);
   }
 `;
 
 const FooterParent = styled.div`
   width: 100%;
-  height: 85px;
+  height: 100px;
   display: flex;
   justify-content: center;
   align-items: center;
 `;
-const FooterButtonParent = styled.button`
+const TheThing = styled.div`
+  width: 50px;
+  height: 50px;
+  margin: 0 4px 0 4px;
+`;
+const PlusButtonParent = styled.button`
+  color: white;
+  font-size: 0.8rem;
+  font-weight: bold;
   border: none;
   outline: none;
-  width: 100px;
-  height: 75px;
-  border-radius: 1rem;
-  margin: 0 2px 0 2px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  margin: 0 4px 0 4px;
   overflow: hidden;
+  transition-duration: 0.25s;
+  background-color: rgba(0, 0, 0, 0.25);
 
   :hover {
-    filter: brightness(0.7);
+    background-color: rgba(0, 0, 0, 0.5);
   }
+`;
+const FooterButtonParent = styled.button`
+  font-size: 0.8rem;
+  font-weight: bold;
+  border: none;
+  outline: none;
+  width: 120px;
+  height: 75px;
+  border-radius: 1rem;
+  margin: 0 4px 0 4px;
+  overflow: hidden;
+  background-color: red;
+  transition-duration: 0.1s;
+  color: ghostwhite;
+  ${({ active }: { active: boolean }) => {
+    if (active) {
+      return css`
+        background-color: rgba(0, 0, 0, 0.5);
+        :hover {
+          background-color: rgba(0, 0, 0, 0.6);
+        }
+      `;
+    }
+
+    return css`
+      background-color: rgba(0, 0, 0, 0.25);
+      :hover {
+        background-color: rgba(0, 0, 0, 0.5);
+      }
+    `;
+  }}
 `;
 
 const WorkspaceButtons = observer(() => {
@@ -50,13 +96,10 @@ const WorkspaceButtons = observer(() => {
       return (
         <FooterButtonParent
           key={workspace.id}
-          style={{
-            backgroundColor:
-              tabPageStore.View === View.WorkSpace &&
-              workspace.id === workspaceStore.activeWorkspaceId
-                ? '#ffaf54'
-                : 'white',
-          }}
+          active={
+            tabPageStore.View === View.WorkSpace &&
+            workspace.id === workspaceStore.activeWorkspaceId
+          }
           onMouseDown={(e) => {
             e.stopPropagation();
           }}
@@ -90,8 +133,9 @@ const WorkspaceButtons = observer(() => {
 
   return (
     <>
+      <TheThing />
       {buttons}
-      <FooterButtonParent
+      <PlusButtonParent
         onMouseDown={(e) => {
           e.stopPropagation();
         }}
@@ -105,7 +149,7 @@ const WorkspaceButtons = observer(() => {
         }}
       >
         +
-      </FooterButtonParent>
+      </PlusButtonParent>
     </>
   );
 });
@@ -127,7 +171,7 @@ const Footer = observer(() => {
           });
         }}
       >
-        debug
+        Debug
       </NavButtonParent>
     </FooterParent>
   );

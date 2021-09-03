@@ -484,11 +484,15 @@ export default class TabPageStore {
       });
     });
     ipcRenderer.on('will-navigate', () => {
-      this.navigatorTabModalSelectedNodeId = '';
-      this.navigatorTabModal = [0, 0];
+      runInAction(() => {
+        this.navigatorTabModalSelectedNodeId = '';
+        this.navigatorTabModal = [0, 0];
+      });
     });
     ipcRenderer.on('resize-work-area', (_, workSpaceRect) => {
-      this.workAreaRect = workSpaceRect;
+      runInAction(() => {
+        this.workAreaRect = workSpaceRect;
+      });
     });
   }
 }

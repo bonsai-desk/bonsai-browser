@@ -2,16 +2,21 @@ import styled, { css } from 'styled-components';
 
 export const HistoryButtonParent = styled.button`
   position: absolute;
-  bottom: 0;
-  right: 0;
+  bottom: 10px;
+  right: 10px;
   width: 125px;
   height: 50px;
   border-radius: 10px;
   border: none;
   outline: none;
 
+  font-weight: bold;
+  color: white;
+  transition-duration: 0.1s;
+  background-color: rgba(0, 0, 0, 0.25);
+
   :hover {
-    background-color: lightgray;
+    background-color: rgba(0, 0, 0, 0.5);
   }
 `;
 export const HistoryModalParent = styled.div`
@@ -49,11 +54,17 @@ export const HistoryModal = styled.div`
   box-shadow: 0 0 5px 0 rgba(0, 0, 0, 1);
   padding: 20px;
   overflow: scroll;
+  ::-webkit-scrollbar {
+    display: none;
+  }
 `;
 export const HistoryResultsParent = styled.div`
   //background-color: blue;
   overflow-y: auto;
   height: calc(100% - 40px);
+  ::-webkit-scrollbar {
+    display: none;
+  }
 `;
 export const HistoryHeader = styled.div`
   width: 100%;

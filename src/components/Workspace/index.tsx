@@ -26,7 +26,7 @@ export const Background = styled.div`
   display: flex;
 `;
 export const WorkspaceContentBackground = styled.div`
-  margin: 10px 30px 10px 30px;
+  margin: 10px 30px 0 30px;
   user-select: none;
   flex-grow: 1;
   background-color: white;
@@ -63,22 +63,30 @@ export const TrashButton = styled.div`
 `;
 export const SideButton = styled.div`
   position: absolute;
-  width: 100px;
-  height: 100px;
+  width: 40px;
+  height: 40px;
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 10000001;
-  background-color: rgba(0, 0, 0, 0.7);
+  transition-duration: 0.25s;
+  background-color: rgba(0, 0, 0, 0.25);
 
   :hover {
-    background-color: rgba(50, 50, 50, 0.7);
+    background-color: rgba(50, 50, 50, 0.5);
   }
 `;
-export const CornerButtonIcon = styled.img`
-  width: 75px;
+export const TrashButtonIcon = styled.img`
+  width: 50px;
   margin-bottom: 5px;
 
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+`;
+export const CornerButtonIcon = styled.img`
+  width: 20px;
   -webkit-user-select: none;
   -moz-user-select: none;
   user-select: none;
@@ -94,18 +102,21 @@ const HamburgerBackground = styled.div`
 `;
 const HamburgerMenu = styled.div`
   position: absolute;
-  top: 0;
-  right: 100px;
-  width: 300px;
-  background-color: red;
+  top: 10px;
+  right: 60px;
+  width: 200px;
   z-index: 10000003;
 `;
 const HamburgerOption = styled.div`
-  background-color: lightblue;
-  height: 50px;
+  color: white;
+  background-color: rgba(0, 0, 0, 0.25);
+  padding: 5px;
+  border-radius: 10px;
+  margin-bottom: 5px;
 
   :hover {
     filter: brightness(0.8);
+    background-color: rgba(0, 0, 0, 0.5);
   }
 `;
 
@@ -245,21 +256,21 @@ const Workspace = observer(
             <TrashButton
               style={{
                 left: workspace.width / 2 - 50,
-                top: 0,
-                borderRadius: '0 0 20px 20px',
+                top: '10px',
+                borderRadius: '10px',
                 display: workspace.anyDragging ? 'flex' : 'none',
                 backgroundColor: workspace.anyOverTrash
                   ? 'red'
                   : 'rgba(0, 0, 0, 0.7)',
               }}
             >
-              <CornerButtonIcon src={trashIcon} />
+              <TrashButtonIcon src={trashIcon} />
             </TrashButton>
             <SideButton
               style={{
-                right: 0,
-                top: 0,
-                borderRadius: '0 0 0 20px',
+                right: '10px',
+                top: '10px',
+                borderRadius: '10px',
               }}
               onMouseDown={(e) => {
                 e.stopPropagation();
@@ -322,6 +333,7 @@ const Workspace = observer(
                 cursor: 'pointer',
                 width: 'auto',
                 paddingRight: '12px',
+                paddingLeft: '20px',
                 fontSize: '40px',
                 zIndex: 9999998,
                 backgroundColor: 'white',
@@ -354,6 +366,7 @@ const Workspace = observer(
                     ? 'none'
                     : 'block',
                 width: workspace.width - InboxColumnWidth,
+                paddingLeft: '20px',
                 color: 'rgb(50, 50, 50)',
                 left: InboxColumnWidth,
                 top: 5,

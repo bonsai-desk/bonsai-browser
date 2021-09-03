@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { ipcRenderer, Rectangle } from 'electron';
+import { ipcRenderer } from 'electron';
 import { runInAction } from 'mobx';
 import styled, { css } from 'styled-components';
 import { useStore, View } from '../store/tab-page-store';
@@ -195,35 +195,48 @@ function useWindowSize(
   return windowSize;
 }
 
-function paintVignette(
-  ws: { width: number; height: number },
-  canvas: HTMLCanvasElement,
-  workArea: Rectangle
-) {
-  const context = canvas.getContext('2d');
-  if (context) {
-    const { width } = ws;
-    canvas.width = width;
-    const { height } = ws;
-    canvas.height = height;
-
-    const x = 0;
-    const y = 0;
-
-    context.strokeStyle = '#d2eefc';
-    context.beginPath();
-    context.moveTo(x, y);
-    context.lineTo(x + width, y);
-    context.lineTo(x + width, y + height);
-    context.lineTo(x, y + height);
-    context.lineTo(x, y);
-    context.closePath();
-
-    context.filter = 'blur(50px)';
-    context.lineWidth = 250;
-    context.stroke();
-  }
-}
+// function paintVignette(
+//   ws: { width: number; height: number },
+//   canvas: HTMLCanvasElement,
+//   workArea: Rectangle
+// ) {
+//   return;
+//   const context = canvas.getContext('2d');
+//   if (context) {
+//     const { width } = ws;
+//     canvas.width = width;
+//     const { height } = ws;
+//     canvas.height = height;
+//
+//     const sides = [
+//       workArea.y,
+//       ws.width - (workArea.x + workArea.width),
+//       ws.height - (workArea.y + workArea.height),
+//       workArea.x,
+//     ];
+//
+//     const max = Math.max(...sides);
+//
+//     const x = 0;
+//     const y = 0;
+//
+//     context.strokeStyle = 'grey';
+//     context.beginPath();
+//     context.moveTo(x - 500, y + height);
+//     context.lineTo(x + width + 500, y + height);
+//     context.closePath();
+//
+//     context.strokeStyle = 'darkgray';
+//     context.beginPath();
+//     context.moveTo(x - 500, y);
+//     context.lineTo(x + width + 500, y);
+//     context.closePath();
+//
+//     context.filter = 'blur(50px)';
+//     context.lineWidth = (max + 150) * 2;
+//     context.stroke();
+//   }
+// }
 
 const FloatingShadow = styled.div`
   position: fixed;
@@ -247,7 +260,7 @@ const Home = observer(() => {
   const canvasRef = useCallback(
     (node: HTMLCanvasElement) => {
       if (node !== null) {
-        paintVignette(ws, node, tabPageStore.workAreaRect);
+        // paintVignette(ws, node, tabPageStore.workAreaRect);
       }
     },
     [ws, tabPageStore.workAreaRect]
