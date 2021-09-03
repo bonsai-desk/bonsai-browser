@@ -544,7 +544,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -568,23 +568,7 @@ export default class WindowManager {
         }
         this.handleResize();
 
-        const target = calculateWindowTarget(
-          1,
-          0,
-          0,
-          0,
-          0,
-          0,
-          this.windowSize,
-          this.windowPosition,
-          this.display
-        );
-        if (target[0]) {
-          // eslint-disable-next-line prefer-destructuring
-          this.targetWindowPosition[0] = target[2][0];
-          // eslint-disable-next-line prefer-destructuring
-          this.targetWindowPosition[1] = target[2][1];
-        }
+        this.setTargetNoVelocity();
       }
     });
 
@@ -678,6 +662,26 @@ export default class WindowManager {
     this.handleResize();
   }
 
+  setTargetNoVelocity() {
+    const target = calculateWindowTarget(
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      this.windowSize,
+      this.windowPosition,
+      this.display
+    );
+    if (target[0]) {
+      // eslint-disable-next-line prefer-destructuring
+      this.targetWindowPosition[0] = target[2][0];
+      // eslint-disable-next-line prefer-destructuring
+      this.targetWindowPosition[1] = target[2][1];
+    }
+  }
+
   createTabView(
     window: BrowserWindow,
     titleBarView: BrowserView,
@@ -694,7 +698,7 @@ export default class WindowManager {
       view: new BrowserView({
         webPreferences: {
           nodeIntegration: false,
-          devTools: false,
+          devTools: !app.isPackaged,
           contextIsolation: true,
           sandbox: true,
           preload: PRELOAD,
@@ -1502,17 +1506,20 @@ export default class WindowManager {
     this.windowPosition[0] =
       this.display.workAreaSize.width / 2.0 -
       floatingWidth / 2.0 +
-      this.display.workArea.x;
+      this.display.workArea.x +
+      5;
     this.windowPosition[1] =
       this.display.workAreaSize.height / 2.0 -
       floatingHeight / 2.0 +
-      this.display.workArea.y;
+      this.display.workArea.y -
+      5;
     this.windowSize.width = floatingWidth;
     this.windowSize.height = floatingHeight;
     this.windowVelocity[0] = 0;
     this.windowVelocity[1] = 0;
     this.resizeActiveWebView();
     this.updateMainWindowBounds();
+    this.setTargetNoVelocity();
   }
 
   resizeWebViewForNonFloating(tabView: IWebView, bounds: Electron.Rectangle) {
