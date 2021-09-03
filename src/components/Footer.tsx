@@ -96,7 +96,7 @@ const WorkspaceButtons = observer(() => {
           e.stopPropagation();
         }}
         onClick={() => {
-          const workspace = workspaceStore.createWorkspace('new workspace');
+          const workspace = workspaceStore.createWorkspace('my new workspace');
           workspace.setShouldEditName(true);
           workspaceStore.setActiveWorkspaceId(workspace.id);
           runInAction(() => {
