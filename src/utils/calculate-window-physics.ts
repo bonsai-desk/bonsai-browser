@@ -17,22 +17,22 @@ export default function windowFixedUpdate(
 
   const padding = 25;
 
-  if (
-    Math.round(wm.windowPosition[0]) ===
-      Math.round(
-        wm.display.workAreaSize.width / 2.0 -
-          floatingWidth / 2.0 +
-          wm.display.workArea.x
-      ) &&
-    Math.round(wm.windowPosition[1]) ===
-      Math.round(
-        wm.display.workAreaSize.height / 2.0 -
-          floatingHeight / 2.0 +
-          wm.display.workArea.y
-      )
-  ) {
-    return;
-  }
+  // if (
+  //   Math.round(wm.windowPosition[0]) ===
+  //     Math.round(
+  //       wm.display.workAreaSize.width / 2.0 -
+  //         floatingWidth / 2.0 +
+  //         wm.display.workArea.x
+  //     ) &&
+  //   Math.round(wm.windowPosition[1]) ===
+  //     Math.round(
+  //       wm.display.workAreaSize.height / 2.0 -
+  //         floatingHeight / 2.0 +
+  //         wm.display.workArea.y
+  //     )
+  // ) {
+  //   return;
+  // }
 
   const up = wm.windowPosition[1];
   const down =
