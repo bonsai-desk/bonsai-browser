@@ -193,7 +193,7 @@ function initWindow(): BrowserWindow {
     // simpleFullscreen: true,
     webPreferences: {
       nodeIntegration: false,
-      devTools: false,
+      devTools: !app.isPackaged,
       contextIsolation: true,
     },
   });

@@ -544,7 +544,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -698,7 +698,7 @@ export default class WindowManager {
       view: new BrowserView({
         webPreferences: {
           nodeIntegration: false,
-          devTools: false,
+          devTools: !app.isPackaged,
           contextIsolation: true,
           sandbox: true,
           preload: PRELOAD,

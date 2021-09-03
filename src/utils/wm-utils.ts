@@ -43,7 +43,7 @@ export function makeView(loadURL: string) {
   const newView = new BrowserView({
     webPreferences: {
       nodeIntegration: true,
-      devTools: false,
+      devTools: !app.isPackaged,
       contextIsolation: false,
     },
   });
