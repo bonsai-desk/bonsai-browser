@@ -21,6 +21,8 @@ export const OVERLAY_HTML = `file://${__dirname}/overlay.html`;
 
 export const TAB_PAGE = `file://${__dirname}/tab-page.html`;
 
+export const ONBOARDING_HTML = `file://${__dirname}/onboarding.html`;
+
 export const ICON_PNG = getAssetPath('icon.png');
 
 export const ICON_SMALL_PNG = getAssetPath('/icons/24x24-tray@2x.png');

@@ -15,11 +15,17 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import { setInterval } from 'timers';
 import WindowManager from './window-manager';
-import { ICON_PNG, ICON_SMALL_PNG, VIBRANCY } from '../constants';
+import {
+  ICON_PNG,
+  ICON_SMALL_PNG,
+  ONBOARDING_HTML,
+  VIBRANCY,
+} from '../constants';
 import windowFixedUpdate from './calculate-window-physics';
 import { windowHasView } from './utils';
-import { floatingSize } from './wm-utils';
+import { floatingSize, makeWebContentsSafe } from './wm-utils';
 import MixpanelManager from './mixpanel-manager';
+import SaveData from './SaveData';
 
 // import App from '../pages/App';
 
@@ -166,11 +172,27 @@ function initFixedUpdate(wm: WindowManager) {
   setInterval(update, 1);
 }
 
-function initBoot(wm: WindowManager) {
+let onboardingWindowReady = false;
+let mainWindowReady = false;
+
+function showOnboardingWindow(onboardingWindow: BrowserWindow | null) {
+  onboardingWindow?.show();
+  onboardingWindow?.focus();
+  onboardingWindow?.webContents.focus();
+}
+
+function initBoot(wm: WindowManager, onboardingWindow: BrowserWindow | null) {
   let booted = false;
   const boot = () => {
     if (!booted) {
       booted = true;
+      mainWindowReady = true;
+      if (onboardingWindowReady) {
+        showOnboardingWindow(onboardingWindow);
+      }
+      if (!wm.saveData.data.finishedOnboarding) {
+        return;
+      }
       wm.showWindow();
     }
   };
@@ -192,7 +214,7 @@ function initWindow(): BrowserWindow {
   });
 
   const mac = process.platform === 'darwin';
-  const mainWindow: BrowserWindow | null = new BrowserWindow({
+  const mainWindow: BrowserWindow = new BrowserWindow({
     frame: false,
     transparent: true,
     resizable: false,
@@ -209,12 +231,38 @@ function initWindow(): BrowserWindow {
     // simpleFullscreen: true,
     webPreferences: {
       nodeIntegration: false,
-      devTools: !app.isPackaged,
+      devTools: false,
       contextIsolation: true,
     },
   });
+  makeWebContentsSafe(mainWindow.webContents);
   mainWindow.setAlwaysOnTop(true, 'status');
   return mainWindow;
+}
+
+function initOnboardingWindow(): BrowserWindow {
+  const onboardingWindow: BrowserWindow = new BrowserWindow({
+    width: 600,
+    height: 300,
+    minWidth: 50,
+    minHeight: 50,
+    show: false,
+    icon: ICON_SMALL_PNG,
+    webPreferences: {
+      nodeIntegration: true,
+      devTools: false,
+      contextIsolation: false,
+    },
+  });
+  makeWebContentsSafe(onboardingWindow.webContents);
+  onboardingWindow.webContents.loadURL(ONBOARDING_HTML);
+  onboardingWindow.webContents.on('did-finish-load', () => {
+    onboardingWindowReady = true;
+    if (mainWindowReady) {
+      showOnboardingWindow(onboardingWindow);
+    }
+  });
+  return onboardingWindow;
 }
 
 function initShortcuts(wm: WindowManager) {
@@ -223,6 +271,11 @@ function initShortcuts(wm: WindowManager) {
     shortCut = 'Ctrl+Alt+Space';
   }
   globalShortcut.register(shortCut, () => {
+    if (!wm.saveData.data.finishedOnboarding) {
+      wm.saveData.data.finishedOnboarding = true;
+      wm.saveData.save();
+      wm.onboardingWindow?.close();
+    }
     if (!wm.mainWindow?.isVisible()) {
       wm.mixpanelManager.track('show with global shortcut');
       wm.showWindow();
@@ -337,9 +390,19 @@ export const createWindow = async () => {
 
   const mixpanelManager = new MixpanelManager(userId);
 
-  const wm = new WindowManager(initWindow(), mixpanelManager);
+  const saveData = new SaveData();
+  const onboardingWindow = saveData.data.finishedOnboarding
+    ? null
+    : initOnboardingWindow();
 
-  initBoot(wm);
+  const wm = new WindowManager(
+    initWindow(),
+    mixpanelManager,
+    saveData,
+    onboardingWindow
+  );
+
+  initBoot(wm, onboardingWindow);
 
   initFixedUpdate(wm);
 

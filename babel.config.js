@@ -53,11 +53,13 @@ module.exports = (api) => {
       // Stage 3
       require('@babel/plugin-syntax-dynamic-import'),
       require('@babel/plugin-syntax-import-meta'),
-      [require('@babel/plugin-proposal-class-properties'), { loose: true }],
+      [require('@babel/plugin-proposal-class-properties'), { loose: false }],
       require('@babel/plugin-proposal-json-strings'),
 
       // cameron put this here
       [require('babel-plugin-styled-components'), { ssr: false }],
+
+      // ['@babel/plugin-proposal-private-property-in-object', { loose: false }],
 
       ...(development ? developmentPlugins : productionPlugins),
     ],

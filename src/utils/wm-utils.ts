@@ -1,4 +1,10 @@
-import { app, BrowserView, BrowserWindow, Display } from 'electron';
+import {
+  app,
+  BrowserView,
+  BrowserWindow,
+  Display,
+  WebContents,
+} from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { IWebView } from './interfaces';
@@ -39,6 +45,19 @@ function innerRectangle(
 
 export { pointInBounds, innerRectangle };
 
+export function makeWebContentsSafe(webContents: WebContents) {
+  if (app.isPackaged) {
+    webContents.on('will-navigate', (event, navigationUrl) => {
+      console.log(`view tried to navigate ${navigationUrl}`);
+      event.preventDefault();
+    });
+    webContents.setWindowOpenHandler(({ url }) => {
+      console.log(`view tried to open ${url}`);
+      return { action: 'deny' };
+    });
+  }
+}
+
 export function makeView(loadURL: string) {
   const newView = new BrowserView({
     webPreferences: {
@@ -47,16 +66,7 @@ export function makeView(loadURL: string) {
       contextIsolation: false,
     },
   });
-  if (app.isPackaged) {
-    newView.webContents.on('will-navigate', (event, navigationUrl) => {
-      console.log(`view tried to navigate ${navigationUrl}`);
-      event.preventDefault();
-    });
-    newView.webContents.setWindowOpenHandler(({ url }) => {
-      console.log(`view tried to open ${url}`);
-      return { action: 'deny' };
-    });
-  }
+  makeWebContentsSafe(newView.webContents);
   newView.webContents.loadURL(loadURL);
   return newView;
 }

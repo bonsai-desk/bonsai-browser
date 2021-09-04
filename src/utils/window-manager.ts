@@ -64,6 +64,7 @@ import {
 } from './interfaces';
 import { HistoryData, INode } from '../store/history-store';
 import MixpanelManager from './mixpanel-manager';
+import SaveData from './SaveData';
 
 const glMatrix = require('gl-matrix');
 
@@ -516,9 +517,20 @@ export default class WindowManager {
 
   private windowSpeeds: number[][] = [];
 
-  constructor(mainWindow: BrowserWindow, mixpanelManager: MixpanelManager) {
+  saveData: SaveData;
+
+  onboardingWindow: BrowserWindow | null;
+
+  constructor(
+    mainWindow: BrowserWindow,
+    mixpanelManager: MixpanelManager,
+    saveData: SaveData,
+    onboardingWindow: BrowserWindow | null
+  ) {
     this.mainWindow = mainWindow;
     this.mixpanelManager = mixpanelManager;
+    this.saveData = saveData;
+    this.onboardingWindow = onboardingWindow;
 
     const displays = screen.getAllDisplays();
     if (displays.length === 0) {
@@ -549,7 +561,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {

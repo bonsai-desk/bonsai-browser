@@ -14,6 +14,7 @@ import TabPageStore, {
 import Home from './pages/Home';
 import createWorkspaceStore from './store/workspace';
 import { hookListeners, HistoryStore } from './store/history-store';
+import Onboarding from './pages/Onboarding';
 
 if (document.getElementById('root')) {
   const tabStore = new TabStore();
@@ -59,4 +60,8 @@ if (document.getElementById('tab-page')) {
     </>,
     document.getElementById('tab-page')
   );
+}
+
+if (document.getElementById('onboarding')) {
+  render(<Onboarding />, document.getElementById('onboarding'));
 }
