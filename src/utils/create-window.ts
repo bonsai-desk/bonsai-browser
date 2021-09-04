@@ -117,6 +117,18 @@ function initMenu(wm: WindowManager) {
           }
         },
       },
+      {
+        label: 'Quit',
+        accelerator: 'Cmd+Q',
+        click: () => {
+          wm.tabPageView.webContents.send('save-snapshot');
+          wm.saveHistory();
+          setTimeout(() => {
+            wm.mainWindow?.destroy();
+            app.quit();
+          }, 100);
+        },
+      },
     ],
   });
   const template = [main, edit];
