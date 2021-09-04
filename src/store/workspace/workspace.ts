@@ -44,6 +44,8 @@ export const Workspace = types
     inboxScrollY: 0,
     hamburgerOpen: false,
     shouldEditName: false,
+    cameraXRender: 0,
+    cameraYRender: 0,
   }))
   .views((self) => {
     const noAllocPos = vec4.create();
@@ -77,8 +79,8 @@ export const Workspace = types
           self.width,
           self.height,
           self.cameraZoom,
-          self.cameraX,
-          self.cameraY,
+          self.cameraXRender,
+          self.cameraYRender,
           noAllocPos3,
           WorldToClip,
           ClipToWorld,
@@ -147,6 +149,11 @@ export const Workspace = types
     setCameraPosition(x: number, y: number) {
       self.cameraX = x;
       self.cameraY = y;
+      this.repositionInbox();
+    },
+    updateVolatileRenderValues() {
+      self.cameraXRender = self.cameraX;
+      self.cameraYRender = self.cameraY;
       this.repositionInbox();
     },
     centerCameraOnItem(itemId: string) {

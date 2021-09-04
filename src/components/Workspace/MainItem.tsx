@@ -54,10 +54,8 @@ const MainItem = observer(
       zIndex = group.zIndex;
     }
 
-    const [
-      worldContainerDragPosX,
-      worldContainerDragPosY,
-    ] = workspace.worldToScreen(item.containerDragPosX, item.containerDragPosY);
+    const [worldContainerDragPosX, worldContainerDragPosY] =
+      workspace.worldToScreen(item.containerDragPosX, item.containerDragPosY);
 
     return (
       <DraggableCore
@@ -100,13 +98,11 @@ const MainItem = observer(
               ]);
             }
 
-            const [
-              containerDragPosX,
-              containerDragPosY,
-            ] = workspace.worldToScreen(
-              item.containerDragPosX,
-              item.containerDragPosY
-            );
+            const [containerDragPosX, containerDragPosY] =
+              workspace.worldToScreen(
+                item.containerDragPosX,
+                item.containerDragPosY
+              );
 
             item.setOverTrash(overTrash([data.x, data.y], workspace));
             workspace.setAnyOverTrash(item.overTrash);
@@ -150,13 +146,11 @@ const MainItem = observer(
             ipcRenderer.send('mixpanel-track', 'click workspace tab');
           } else {
             if (!item.overTrash) {
-              const [
-                containerDragPosX,
-                containerDragPosY,
-              ] = workspace.worldToScreen(
-                item.containerDragPosX,
-                item.containerDragPosY
-              );
+              const [containerDragPosX, containerDragPosY] =
+                workspace.worldToScreen(
+                  item.containerDragPosX,
+                  item.containerDragPosY
+                );
 
               const groupBelow = getGroupBelowItem(
                 item,

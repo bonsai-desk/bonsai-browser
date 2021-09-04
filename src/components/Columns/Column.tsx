@@ -1,6 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import { runInAction } from 'mobx';
 import { TabPageColumn } from '../../interfaces/tab';
 import { ColumnParent } from './style';
 import ColumnHeader from './ColumnHeader';
@@ -22,7 +23,9 @@ export const Column = observer(({ column }: { column: TabPageColumn }) => {
   const { tabPageStore } = useStore();
   const [hovered, setHovered] = useState(false);
   function handleMouseOver() {
-    tabPageStore.hoveringUrlInput = false;
+    runInAction(() => {
+      tabPageStore.hoveringUrlInput = false;
+    });
     setHovered(true);
   }
 
@@ -33,8 +36,12 @@ export const Column = observer(({ column }: { column: TabPageColumn }) => {
   return (
     <ColumnParent
       id="Column"
-      onMouseOver={handleMouseOver}
-      onMouseLeave={handleMouseExit}
+      onMouseOver={() => {
+        handleMouseOver();
+      }}
+      onMouseLeave={() => {
+        handleMouseExit();
+      }}
     >
       <ColumnHeader column={column} />
       {column.tabs.map((tab) => {

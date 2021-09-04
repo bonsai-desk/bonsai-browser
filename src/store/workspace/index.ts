@@ -72,6 +72,8 @@ function update(
   }
 
   workspaceStore.workspaces.forEach((workspace) => {
+    workspace.updateVolatileRenderValues();
+
     workspace.items.forEach((item) => {
       animateItem(item, deltaTime);
       if (item.groupId === 'hidden') {

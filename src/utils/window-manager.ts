@@ -549,7 +549,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -1410,22 +1410,18 @@ export default class WindowManager {
     while (i >= 1) {
       const current = this.windowSpeeds[i];
       const last = this.windowSpeeds[i - 1];
-      const [
-        valid,
-        hasVelocity,
-        target,
-        windowVelocity,
-      ] = calculateWindowTarget(
-        current[0],
-        last[0],
-        current[1],
-        current[2],
-        last[1],
-        last[2],
-        this.windowSize,
-        this.windowPosition,
-        this.display
-      );
+      const [valid, hasVelocity, target, windowVelocity] =
+        calculateWindowTarget(
+          current[0],
+          last[0],
+          current[1],
+          current[2],
+          last[1],
+          last[2],
+          this.windowSize,
+          this.windowPosition,
+          this.display
+        );
 
       if (firstTarget === null && valid) {
         firstTarget = target;
