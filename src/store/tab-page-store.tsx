@@ -11,6 +11,7 @@ import { clamp } from '../utils/utils';
 import { HistoryEntry } from '../utils/interfaces';
 import { HistoryStore } from './history-store';
 import WorkspaceStore from './workspace/workspace-store';
+import packageInfo from '../package.json';
 
 export enum View {
   None,
@@ -92,6 +93,8 @@ export default class TabPageStore {
   private workspaceStore: Instance<typeof WorkspaceStore>;
 
   windowFloating = false;
+
+  versionString = 'None';
 
   fuzzySelectedTab(): [boolean, TabPageTab | Instance<typeof Item>] | null {
     if (this.fuzzySelectionIndex[1] === 0) {
@@ -322,6 +325,7 @@ export default class TabPageStore {
   }
 
   constructor(workspaceStore: Instance<typeof WorkspaceStore>) {
+    this.versionString = packageInfo.version;
     this.workAreaRect = { x: 0, y: 0, width: 1, height: 1 };
     this.screen = { width: 200, height: 200 };
     this.innerBounds = { x: 0, y: 0, width: 100, height: 100 };

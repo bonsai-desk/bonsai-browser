@@ -35,10 +35,10 @@ const DebugNode = observer(({ node }: { node: INode }) => {
 });
 
 const NavigatorDebug = observer(() => {
-  const { historyStore } = useStore();
+  const { tabPageStore, historyStore } = useStore();
   return (
     <div>
-      <h1>Debug</h1>
+      <h1>Debug: [{tabPageStore.versionString}]</h1>
       <ul>
         {historyStore.roots.map((root: INode) => (
           <DebugNode key={root.id} node={root} />

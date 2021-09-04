@@ -11,6 +11,9 @@ import {
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { autoUpdater } from 'electron-updater';
+import log from 'electron-log';
+import { setInterval } from 'timers';
 import WindowManager from './window-manager';
 import { ICON_PNG, ICON_SMALL_PNG, VIBRANCY } from '../constants';
 import windowFixedUpdate from './calculate-window-physics';
@@ -18,13 +21,14 @@ import { windowHasView } from './utils';
 import { floatingSize } from './wm-utils';
 import MixpanelManager from './mixpanel-manager';
 
-// class AppUpdater {
-//   constructor() {
-//     log.transports.file.level = 'info';
-//     autoUpdater.logger = log;
-//     autoUpdater.checkForUpdatesAndNotify();
-//   }
-// }
+// import App from '../pages/App';
+
+function updateIfNeeded() {
+  // eslint-disable-next-line global-require
+  log.transports.file.level = 'info';
+  autoUpdater.logger = log;
+  autoUpdater.checkForUpdatesAndNotify();
+}
 
 // function initUpdater() {
 //   // Remove this if your app does not use auto updates
@@ -344,4 +348,9 @@ export const createWindow = async () => {
   initMenu(wm);
 
   initApp(wm);
+
+  if (app.isPackaged) {
+    updateIfNeeded();
+    setInterval(updateIfNeeded, 1000 * 60 * 60);
+  }
 };

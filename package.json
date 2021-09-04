@@ -9,6 +9,7 @@
     "rebuild": "electron-rebuild --parallel --types prod,dev,optional --module-dir src",
     "lint": "cross-env NODE_ENV=development eslint . --cache --ext .js,.jsx,.ts,.tsx",
     "package": "rm -rf src/dist && yarn build && electron-builder build --publish never",
+    "package-deploy": "rm -rf src/dist && yarn build && electron-builder build --publish always",
     "postinstall": "node -r @babel/register .erb/scripts/CheckNativeDep.js && electron-builder install-app-deps && yarn cross-env NODE_ENV=development webpack --config ./.erb/configs/webpack.config.renderer.dev.dll.babel.js && opencollective-postinstall && yarn-deduplicate yarn.lock",
     "start": "node -r @babel/register ./.erb/scripts/CheckPortInUse.js && yarn start:renderer",
     "start:main": "cross-env NODE_ENV=development electron -r ./.erb/scripts/BabelRegister ./src/main.dev.ts",
@@ -46,7 +47,19 @@
     "afterSign": ".erb/scripts/Notarize.js",
     "mac": {
       "target": [
-        "dmg"
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ],
       "type": "distribution",
       "hardenedRuntime": true,
@@ -93,29 +106,30 @@
     "publish": {
       "provider": "github",
       "owner": "hyferg",
-      "repo": "bonsai-browser"
+      "repo": "bonsai-browser-public",
+      "protocol": "https",
+      "releaseType": "draft"
     }
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hyferg/bonsai-browser.git"
+    "url": "git+https://github.com/hyferg/bonsai-browser-public.git"
   },
   "author": {
     "name": "Cameron Ferguson",
-    "email": "cam@hyferg.com",
     "url": "https://bonsaibrowser.com/"
   },
   "contributors": [
   ],
   "license": "",
   "bugs": {
-    "url": "https://github.com/hyferg/bonsai-browser/issues"
+    "url": "https://github.com/hyferg/bonsai-browser-public/issues"
   },
   "keywords": [
     "bonsai",
     "browser"
   ],
-  "homepage": "https://github.com/hyferg/bonsai-browser/issues",
+  "homepage": "https://github.com/hyferg/bonsai-browser-public/issues",
   "jest": {
     "testURL": "http://localhost/",
     "moduleNameMapper": {
