@@ -240,12 +240,15 @@ function initWindow(): BrowserWindow {
 
 function initOnboardingWindow(): BrowserWindow {
   const onboardingWindow: BrowserWindow = new BrowserWindow({
-    width: 600,
-    height: 300,
-    minWidth: 50,
-    minHeight: 50,
+    width: 800,
+    height: 600,
+    minWidth: 800,
+    minHeight: 600,
+    maxWidth: 800,
+    maxHeight: 600,
     show: false,
     icon: ICON_SMALL_PNG,
+    fullscreen: false,
     webPreferences: {
       nodeIntegration: true,
       devTools: false,
