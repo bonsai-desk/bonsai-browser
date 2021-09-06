@@ -27,8 +27,6 @@ import { floatingSize, makeWebContentsSafe } from './wm-utils';
 import MixpanelManager from './mixpanel-manager';
 import SaveData from './SaveData';
 
-// import App from '../pages/App';
-
 function updateIfNeeded() {
   // eslint-disable-next-line global-require
   log.transports.file.level = 'info';
@@ -274,7 +272,8 @@ function initShortcuts(wm: WindowManager) {
     if (!wm.saveData.data.finishedOnboarding) {
       wm.saveData.data.finishedOnboarding = true;
       wm.saveData.save();
-      wm.onboardingWindow?.close();
+      wm.onboardingWindow?.destroy();
+      wm.onboardingWindow = null;
     }
     if (!wm.mainWindow?.isVisible()) {
       wm.mixpanelManager.track('show with global shortcut');
@@ -300,7 +299,13 @@ function initApp(wm: WindowManager) {
   }
 
   app.on('activate', () => {
-    wm.showWindow();
+    if (wm.saveData.data.finishedOnboarding) {
+      wm.showWindow();
+    } else if (wm.onboardingWindow && !wm.onboardingWindow.isDestroyed()) {
+      wm.onboardingWindow.show();
+    } else {
+      wm.onboardingWindow = initOnboardingWindow();
+    }
   });
 
   app.on('before-quit', () => {
