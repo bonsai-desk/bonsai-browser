@@ -1,9 +1,7 @@
 import { BrowserView, BrowserWindow } from 'electron';
 import { createCipheriv, createDecipheriv } from 'crypto';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import ph from 'parse-hosts';
 import { HistoryEntry } from './interfaces';
+import { get } from './jsutils';
 
 export const windowHasView = (
   window: BrowserWindow,
@@ -23,7 +21,7 @@ function hostInHosts(host: string): boolean {
     return true;
   }
 
-  const hosts = ph.get();
+  const hosts = get();
 
   let hostInHost = false;
   Object.values(hosts).forEach((list: any) => {
