@@ -1760,7 +1760,7 @@ export default class WindowManager {
     const { display } = this;
     this.windowPosition[0] = display.bounds.x;
     this.windowPosition[1] = display.bounds.y;
-    this.windowSize.width = display.workArea.width;
+    this.windowSize.width = display.bounds.width;
     this.windowSize.height =
       display.bounds.height + (process.platform === 'darwin' ? 0 : 1); // todo: on windows if you make it the same size as monitor, everything breaks!?!??!?!?
     this.updateMainWindowBounds();
