@@ -119,8 +119,7 @@
     "name": "Cameron Ferguson",
     "url": "https://bonsaibrowser.com/"
   },
-  "contributors": [
-  ],
+  "contributors": [],
   "license": "",
   "bugs": {
     "url": "https://github.com/hyferg/bonsai-browser-public/issues"
@@ -273,7 +272,8 @@
     "regenerator-runtime": "^0.13.5",
     "source-map-support": "^0.5.19",
     "styled-components": "^5",
-    "uuid": "^8.3.2"
+    "uuid": "^8.3.2",
+    "valid-url": "^1.0.9"
   },
   "resolutions": {
     "styled-components": "^5"

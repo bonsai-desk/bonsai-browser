@@ -1,5 +1,6 @@
 import { BrowserView, BrowserWindow } from 'electron';
 import { createCipheriv, createDecipheriv } from 'crypto';
+import { isUri } from 'valid-url';
 import { HistoryEntry } from './interfaces';
 
 export const windowHasView = (
@@ -15,30 +16,20 @@ export const windowHasView = (
   return false;
 };
 
-export function validURL(str: string): boolean {
-  const pattern = new RegExp(
-    '^(https?:\\/\\/)?' + // protocol
-    '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
-    '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
-    '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
-    '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
-      '(\\#[-a-z\\d_]*)?$',
-    'i'
-  ); // fragment locator
-  return pattern.test(str);
-}
-
 export function stringToUrl(url: string): string {
-  let fullUrl = url;
-  if (!/^https?:\/\//i.test(url)) {
-    fullUrl = `http://${url}`;
+  if (url.indexOf('.') !== -1) {
+    if (isUri(url)) {
+      return url;
+    }
+
+    const urlWithHttp = `http://${url}`;
+    if (isUri(urlWithHttp)) {
+      return urlWithHttp;
+    }
   }
 
   // url is invalid
-  if (!validURL(fullUrl)) {
-    fullUrl = `https://www.google.com/search?q=${url}`;
-  }
-  return fullUrl;
+  return `https://www.google.com/search?q=${encodeURIComponent(url)}`;
 }
 
 function replacer(_: string, value: any) {
