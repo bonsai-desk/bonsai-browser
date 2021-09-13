@@ -1,6 +1,7 @@
 import { BrowserView, BrowserWindow } from 'electron';
 import { createCipheriv, createDecipheriv } from 'crypto';
 import { HistoryEntry } from './interfaces';
+import { get } from './jsutils';
 
 export const windowHasView = (
   window: BrowserWindow,
@@ -15,30 +16,60 @@ export const windowHasView = (
   return false;
 };
 
-export function validURL(str: string): boolean {
-  const pattern = new RegExp(
-    '^(https?:\\/\\/)?' + // protocol
-    '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
-    '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
-    '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
-    '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
-      '(\\#[-a-z\\d_]*)?$',
-    'i'
-  ); // fragment locator
-  return pattern.test(str);
+function hostInHosts(host: string): boolean {
+  if (host === 'localhost') {
+    return true;
+  }
+
+  const hosts = get();
+
+  let hostInHost = false;
+  Object.values(hosts).forEach((list: any) => {
+    for (let i = 0; i < list.length; i += 1) {
+      if (list[i] === host) {
+        hostInHost = true;
+      }
+    }
+  });
+
+  return hostInHost;
 }
 
-export function stringToUrl(url: string): string {
-  let fullUrl = url;
-  if (!/^https?:\/\//i.test(url)) {
-    fullUrl = `http://${url}`;
+export function stringToUrl(inputString: string): string {
+  let inputTrimmed = inputString.trim();
+  if (inputTrimmed.startsWith('localhost')) {
+    inputTrimmed = `http://${inputTrimmed}`;
   }
 
-  // url is invalid
-  if (!validURL(fullUrl)) {
-    fullUrl = `https://www.google.com/search?q=${url}`;
+  let url: URL | null = null;
+  let urlString = '';
+
+  try {
+    url = new URL(inputTrimmed);
+    urlString = inputTrimmed;
+  } catch {
+    //
   }
-  return fullUrl;
+
+  if (!url) {
+    try {
+      url = new URL(`http://${inputTrimmed}`);
+      urlString = `http://${inputTrimmed}`;
+    } catch {
+      //
+    }
+  }
+
+  if (
+    !url ||
+    (url.hostname.indexOf('.') === -1 && !hostInHosts(url.hostname))
+  ) {
+    return `https://www.google.com/search?q=${encodeURIComponent(
+      inputTrimmed
+    )}`;
+  }
+
+  return urlString;
 }
 
 function replacer(_: string, value: any) {
