@@ -7,9 +7,9 @@ import Favicon from '../Favicon';
 import {
   ClearHistory,
   HistoryHeader,
-  HistoryModal,
-  HistoryModalBackground,
-  HistoryModalParent,
+  ModalSheet,
+  ModalBackground,
+  ModalParent,
   HistoryResult,
   HistoryResultsParent,
   HistorySearch,
@@ -50,7 +50,7 @@ const HistoryResults = observer(() => {
   );
 });
 
-const History = observer(() => {
+const HistoryModal = observer(() => {
   const { tabPageStore } = useStore();
 
   const historyBoxRef = useRef<HTMLInputElement>(null);
@@ -68,15 +68,15 @@ const History = observer(() => {
   }, [tabPageStore.View, tabPageStore.historyText]);
 
   return (
-    <HistoryModalParent active={tabPageStore.View === View.History}>
-      <HistoryModalBackground
+    <ModalParent active={tabPageStore.View === View.History}>
+      <ModalBackground
         onClick={() => {
           runInAction(() => {
             tabPageStore.View = View.Tabs;
           });
         }}
       />
-      <HistoryModal>
+      <ModalSheet>
         <HistoryHeader>
           <HistorySearch
             ref={historyBoxRef}
@@ -96,9 +96,9 @@ const History = observer(() => {
           </ClearHistory>
         </HistoryHeader>
         <HistoryResults />
-      </HistoryModal>
-    </HistoryModalParent>
+      </ModalSheet>
+    </ModalParent>
   );
 });
 
-export default History;
+export default HistoryModal;

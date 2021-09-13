@@ -21,6 +21,7 @@ export enum View {
   History,
   Navigator,
   NavigatorDebug,
+  Settings,
 }
 
 export default class TabPageStore {
@@ -96,6 +97,8 @@ export default class TabPageStore {
 
   versionString = 'None';
 
+  keys = ['0'];
+
   fuzzySelectedTab(): [boolean, TabPageTab | Instance<typeof Item>] | null {
     if (this.fuzzySelectionIndex[1] === 0) {
       const tab = this.filteredOpenTabs[this.fuzzySelectionIndex[0]];
@@ -136,9 +139,12 @@ export default class TabPageStore {
         }
         break;
       case 'Escape':
-        if (this.View === View.History) {
-          this.View = View.Tabs;
-        } else if (this.View === View.WorkSpace) {
+        if (
+          this.View === View.History ||
+          this.View === View.WorkSpace ||
+          this.View === View.Settings ||
+          this.View === View.NavigatorDebug
+        ) {
           this.View = View.Tabs;
         } else if (this.urlText.length > 0) {
           this.setUrlText('');
@@ -182,8 +188,13 @@ export default class TabPageStore {
         }
         break;
       default:
-        this.setFocus();
-        this.fuzzySelectionIndex = [-1, -1];
+        if (this.View === View.Settings) {
+          console.log('key pressed in settings');
+          this.keys.push(e.key);
+        } else {
+          this.setFocus();
+          this.fuzzySelectionIndex = [-1, -1];
+        }
         break;
     }
   }

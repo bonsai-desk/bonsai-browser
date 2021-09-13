@@ -2,12 +2,12 @@ import { observer } from 'mobx-react-lite';
 import { runInAction } from 'mobx';
 import React from 'react';
 import { useStore, View } from '../store/tab-page-store';
-import { HistoryButtonParent } from './History/style';
+import NavButtonParent from './NavButtonParent';
 
 const HistoryButton = observer(() => {
   const { tabPageStore } = useStore();
   return (
-    <HistoryButtonParent
+    <NavButtonParent
       type="button"
       onClick={() => {
         runInAction(() => {
@@ -16,7 +16,7 @@ const HistoryButton = observer(() => {
       }}
     >
       History
-    </HistoryButtonParent>
+    </NavButtonParent>
   );
 });
 

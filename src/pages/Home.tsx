@@ -8,20 +8,17 @@ import URLBox from '../components/URLBox';
 import FuzzyTabs from '../components/FuzzyTabs';
 import ClickerParent from '../components/Clicker';
 import Background from '../components/Background';
-import History from '../components/History';
+import HistoryModal from '../components/History';
 import Columns from '../components/Columns';
 import Footer from '../components/Footer';
 import Container from '../components/Container';
 import Workspace from '../components/Workspace';
 import Navigator from '../components/Navigator';
 import NavigatorDebug from '../components/NavigatorDebug';
-import {
-  HistoryModal,
-  HistoryModalBackground,
-  HistoryModalParent,
-} from '../components/History/style';
 import redX from '../../assets/x-letter.svg';
 import home from '../../assets/home.svg';
+import GenericModal from '../components/GenericModal';
+import SettingsModal from '../components/SettingsModal';
 
 const BackHomeButtonParent = styled.div`
   width: 2rem;
@@ -120,7 +117,7 @@ const Content = observer(() => {
   );
 });
 
-const Debug = observer(() => {
+const DebugModal = observer(() => {
   const { tabPageStore } = useStore();
 
   const historyBoxRef = useRef<HTMLInputElement>(null);
@@ -142,18 +139,9 @@ const Debug = observer(() => {
   }
 
   return (
-    <HistoryModalParent active={tabPageStore.View === View.NavigatorDebug}>
-      <HistoryModalBackground
-        onClick={() => {
-          runInAction(() => {
-            tabPageStore.View = View.Tabs;
-          });
-        }}
-      />
-      <HistoryModal>
-        <NavigatorDebug />
-      </HistoryModal>
-    </HistoryModalParent>
+    <GenericModal view={View.NavigatorDebug}>
+      <NavigatorDebug />
+    </GenericModal>
   );
 });
 
@@ -302,9 +290,9 @@ const Home = observer(() => {
     >
       <BackHomeButton />
       <Content />
-      <History />
-      <Debug />
-      {/* <PinButton /> */}
+      <HistoryModal />
+      <DebugModal />
+      <SettingsModal />
       <Canvas ref={canvasRef} />
     </Background>
   );

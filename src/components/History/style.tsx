@@ -1,10 +1,10 @@
 import styled, { css } from 'styled-components';
 
 export const HistoryButtonParent = styled.button`
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  width: 125px;
+  //position: absolute;
+  //bottom: 10px;
+  //right: 10px;
+  //width: 125px;
   height: 50px;
   border-radius: 10px;
   border: none;
@@ -19,7 +19,7 @@ export const HistoryButtonParent = styled.button`
     background-color: rgba(0, 0, 0, 0.5);
   }
 `;
-export const HistoryModalParent = styled.div`
+export const ModalParent = styled.div`
   position: absolute;
   left: 0;
   top: 0;
@@ -31,7 +31,7 @@ export const HistoryModalParent = styled.div`
       display: ${active ? 'block' : 'none'};
     `}
 `;
-export const HistoryModalBackground = styled.div`
+export const ModalBackground = styled.div`
   background-color: rgba(0.25, 0.25, 0.25, 0.35);
   position: absolute;
   left: 0;
@@ -39,7 +39,8 @@ export const HistoryModalBackground = styled.div`
   width: 100vw;
   height: 100vh;
 `;
-export const HistoryModal = styled.div`
+export const ModalSheet = styled.div`
+  box-shadow: rgba(0, 0, 0, 0.35) 0 5px 15px;
   position: absolute;
   left: 0;
   top: 0;
@@ -48,10 +49,10 @@ export const HistoryModal = styled.div`
   margin: auto;
   width: 80vw;
   height: 80vh;
-  background-color: lightgrey;
-  border-radius: 25px;
-  border: 2px solid white;
-  box-shadow: 0 0 5px 0 rgba(0, 0, 0, 1);
+  background-color: white;
+  border-radius: 10px;
+  //border: 2px solid white;
+  //box-shadow: 0 0 5px 0 rgba(0, 0, 0, 1);
   padding: 20px;
   overflow: scroll;
   ::-webkit-scrollbar {
@@ -78,6 +79,7 @@ export const HistorySearch = styled.input`
   padding: 5px 10px 5px 10px;
   border-radius: 10000px;
   border: 2px solid white;
+  background-color: rgba(0, 0, 0, 0.1);
   //width: calc(100% - 20px - 4px);
   flex-grow: 1;
 `;

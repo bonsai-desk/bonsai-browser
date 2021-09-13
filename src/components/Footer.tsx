@@ -3,28 +3,10 @@ import { observer } from 'mobx-react-lite';
 import { runInAction } from 'mobx';
 import React from 'react';
 import { ipcRenderer } from 'electron';
-import { useStore, View } from '../store/tab-page-store';
+import TabPageStore, { useStore, View } from '../store/tab-page-store';
 import HistoryButton from './HistoryButton';
-
-export const NavButtonParent = styled.button`
-  position: absolute;
-  bottom: 10px;
-  right: 145px;
-  width: 125px;
-  height: 50px;
-  border-radius: 10px;
-  border: none;
-  outline: none;
-
-  font-weight: bold;
-  color: white;
-  transition-duration: 0.1s;
-  background-color: rgba(0, 0, 0, 0.25);
-
-  :hover {
-    background-color: rgba(0, 0, 0, 0.5);
-  }
-`;
+import gearImg from '../../assets/gear.svg';
+import NavButtonParent from './NavButtonParent';
 
 const FooterParent = styled.div`
   width: 100%;
@@ -154,25 +136,60 @@ const WorkspaceButtons = observer(() => {
   );
 });
 
+const RightButtons = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  //width: 125px;
+`;
+
+const GearDiv = styled.div`
+  background-image: url(${gearImg});
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center center;
+  width: 30px;
+  height: 40%;
+`;
+
+function genTogglePage(tabPageStore: TabPageStore, view: View) {
+  return () => {
+    runInAction(() => {
+      if (tabPageStore.View === View.Tabs) {
+        tabPageStore.View = view;
+      } else if (tabPageStore.View === view) {
+        tabPageStore.View = View.Tabs;
+      }
+    });
+  };
+}
+
 const Footer = observer(() => {
   const { tabPageStore } = useStore();
+  const toggleDebug = genTogglePage(tabPageStore, View.NavigatorDebug);
+  const toggleSettings = genTogglePage(tabPageStore, View.Settings);
   return (
     <FooterParent id="footer">
       <WorkspaceButtons />
-      <HistoryButton />
-      <NavButtonParent
-        onClick={() => {
-          runInAction(() => {
-            if (tabPageStore.View === View.Tabs) {
-              tabPageStore.View = View.NavigatorDebug;
-            } else if (tabPageStore.View === View.NavigatorDebug) {
-              tabPageStore.View = View.Tabs;
-            }
-          });
-        }}
-      >
-        Debug
-      </NavButtonParent>
+      <RightButtons>
+        <HistoryButton />
+        <NavButtonParent
+          onClick={() => {
+            toggleDebug();
+          }}
+        >
+          Debug
+        </NavButtonParent>
+        <NavButtonParent
+          onClick={() => {
+            toggleSettings();
+          }}
+        >
+          <GearDiv />
+        </NavButtonParent>
+      </RightButtons>
     </FooterParent>
   );
 });
