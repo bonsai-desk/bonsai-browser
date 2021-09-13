@@ -252,6 +252,7 @@
     "yarn-deduplicate": "^3.1.0"
   },
   "dependencies": {
+    "@types/valid-url": "^1.0.3",
     "bezier-easing": "^2.1.0",
     "dotenv": "^10.0.0",
     "electron-debug": "^3.1.0",
@@ -265,6 +266,7 @@
     "mobx-react-lite": "^3.2.0",
     "mobx-state-tree": "^5.0.2",
     "mousetrap": "^1.6.5",
+    "parse-hosts": "^1.0.1",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "react-draggable": "^4.4.3",

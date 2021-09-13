@@ -1,6 +1,8 @@
 import { BrowserView, BrowserWindow } from 'electron';
 import { createCipheriv, createDecipheriv } from 'crypto';
-import { isUri } from 'valid-url';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import ph from 'parse-hosts';
 import { HistoryEntry } from './interfaces';
 
 export const windowHasView = (
@@ -16,20 +18,60 @@ export const windowHasView = (
   return false;
 };
 
-export function stringToUrl(url: string): string {
-  if (url.indexOf('.') !== -1) {
-    if (isUri(url)) {
-      return url;
-    }
+function hostInHosts(host: string): boolean {
+  if (host === 'localhost') {
+    return true;
+  }
 
-    const urlWithHttp = `http://${url}`;
-    if (isUri(urlWithHttp)) {
-      return urlWithHttp;
+  const hosts = ph.get();
+
+  let hostInHost = false;
+  Object.values(hosts).forEach((list: any) => {
+    for (let i = 0; i < list.length; i += 1) {
+      if (list[i] === host) {
+        hostInHost = true;
+      }
+    }
+  });
+
+  return hostInHost;
+}
+
+export function stringToUrl(inputString: string): string {
+  let inputTrimmed = inputString.trim();
+  if (inputTrimmed.startsWith('localhost')) {
+    inputTrimmed = `http://${inputTrimmed}`;
+  }
+
+  let url: URL | null = null;
+  let urlString = '';
+
+  try {
+    url = new URL(inputTrimmed);
+    urlString = inputTrimmed;
+  } catch {
+    //
+  }
+
+  if (!url) {
+    try {
+      url = new URL(`http://${inputTrimmed}`);
+      urlString = `http://${inputTrimmed}`;
+    } catch {
+      //
     }
   }
 
-  // url is invalid
-  return `https://www.google.com/search?q=${encodeURIComponent(url)}`;
+  if (
+    !url ||
+    (url.hostname.indexOf('.') === -1 && !hostInHosts(url.hostname))
+  ) {
+    return `https://www.google.com/search?q=${encodeURIComponent(
+      inputTrimmed
+    )}`;
+  }
+
+  return urlString;
 }
 
 function replacer(_: string, value: any) {
