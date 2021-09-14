@@ -92,6 +92,21 @@ function initMenu(wm: WindowManager) {
         },
       },
       {
+        label: 'Toggle Float Window',
+        accelerator: 'CmdOrCtrl+\\',
+        click: () => {
+          if (wm.activeTabId === -1) {
+            return;
+          }
+
+          if (wm.windowFloating) {
+            wm.unFloat();
+          } else {
+            wm.float();
+          }
+        },
+      },
+      {
         label: 'Select Search',
         accelerator: 'CmdOrCtrl+L',
         click: () => {
