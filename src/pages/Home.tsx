@@ -243,13 +243,13 @@ const FloatingShadow = styled.div`
   top: 0;
   left: 0;
 
-  background-color: white;
+  //background-color: white;
   box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.5);
 
   width: calc(100% - 20px);
-  height: calc(100% - 20px);
+  height: calc(100% - 20px - 37px - 10px);
 
-  margin: 10px;
+  margin: 57px 10px 10px 10px;
 `;
 
 const Home = observer(() => {

@@ -39,7 +39,10 @@ import {
 import calculateWindowTarget from './calculate-window-target';
 import {
   currentWindowSize,
+  floatingPadding,
   floatingSize,
+  floatingTitleBarHeight,
+  floatingTitleBarSpacing,
   handleFindText,
   innerBounds,
   makeView,
@@ -403,6 +406,15 @@ export function addListeners(wm: WindowManager) {
   ipcMain.on('sleep-and-back', () => {
     wm.tabPageView.webContents.send('sleep-and-back');
   });
+  ipcMain.on('unfloat-button', () => {
+    if (wm.windowFloating) {
+      wm.mixpanelManager.track('unfloat window by clicking button');
+      wm.unFloat();
+    }
+  });
+  ipcMain.on('go-back-from-floating', () => {
+    wm.tabPageView.webContents.send('go-back-from-floating');
+  });
 }
 
 interface IAction {
@@ -514,6 +526,10 @@ export default class WindowManager {
   private startMouseY: number | null = null;
 
   private validFloatingClick = false;
+
+  private lastValidFloatingClickTime = 0;
+
+  private lastValidFloatingClickPoint: Electron.Point = { x: 0, y: 0 };
 
   private windowSpeeds: number[][] = [];
 
@@ -876,6 +892,8 @@ export default class WindowManager {
   // window
 
   hideWindow() {
+    this.overlayView.webContents.send('cancel-animation-frame');
+
     let opacity = 1.0;
     // const display = { activeDisplay: screen.getPrimaryDisplay() };
     this.mainWindow.setOpacity(opacity);
@@ -902,6 +920,8 @@ export default class WindowManager {
   }
 
   showWindow() {
+    this.overlayView.webContents.send('cancel-animation-frame');
+
     const mousePoint = screen.getCursorScreenPoint();
     // const display = { activeDisplay: screen.getPrimaryDisplay() };
     // display.activeDisplay = screen.getDisplayNearestPoint(mousePoint);
@@ -1235,6 +1255,7 @@ export default class WindowManager {
             // failed to load url
             // todo: handle this
             console.log(`error loading url: ${fullUrl}`);
+            console.log('todo: handle this? callback is not called?');
           });
         tabView.view.webContents.send('scroll-to', scrollHeight);
       } else {
@@ -1477,10 +1498,23 @@ export default class WindowManager {
     this.windowSpeeds = [];
     this.movingWindow = false;
     if (this.validFloatingClick) {
-      if (this.windowFloating) {
-        this.mixpanelManager.track('unfloat window by clicking');
+      const now = Date.now() / 1000.0;
+      const mousePoint = screen.getCursorScreenPoint();
+      const xDist = mousePoint.x - this.lastValidFloatingClickPoint.x;
+      const yDist = mousePoint.y - this.lastValidFloatingClickPoint.y;
+      const distSquared = xDist * xDist + yDist * yDist;
+      if (
+        now - this.lastValidFloatingClickTime < 0.5 &&
+        distSquared < WindowManager.dragThresholdSquared
+      ) {
+        if (this.windowFloating) {
+          // used to be: "unfloat window by clicking"
+          this.mixpanelManager.track('unfloat window by double clicking');
+          this.unFloat();
+        }
       }
-      this.unFloat();
+      this.lastValidFloatingClickTime = now;
+      this.lastValidFloatingClickPoint = mousePoint;
     }
     this.validFloatingClick = false;
   }
@@ -1551,12 +1585,15 @@ export default class WindowManager {
 
   resizeWebViewForFloating(tabView: IWebView) {
     const [floatingWidth, floatingHeight] = floatingSize(this.display);
-    const padding = 10;
     const bounds = {
-      x: padding,
-      y: padding,
-      width: floatingWidth - padding * 2,
-      height: floatingHeight - padding * 2,
+      x: floatingPadding,
+      y: floatingPadding + floatingTitleBarHeight + floatingTitleBarSpacing,
+      width: floatingWidth - floatingPadding * 2,
+      height:
+        floatingHeight -
+        floatingPadding * 2 -
+        floatingTitleBarHeight -
+        floatingTitleBarSpacing,
     };
     tabView.view.setBounds(bounds);
   }
@@ -1766,7 +1803,7 @@ export default class WindowManager {
     this.updateMainWindowBounds();
   }
 
-  private unFloat() {
+  unFloat() {
     this.resizeBrowserWindow();
 
     const hh = this.headerHeight();

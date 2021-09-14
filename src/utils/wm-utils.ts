@@ -11,6 +11,10 @@ import { IWebView } from './interfaces';
 import { encrypt, urlToMapKey } from './utils';
 import { floatingWindowEdgeMargin } from './calculate-window-target';
 
+export const floatingTitleBarHeight = 37;
+export const floatingTitleBarSpacing = 10;
+export const floatingPadding = 10;
+
 function pointInBounds(
   mousePoint: Electron.Point,
   bounds: Electron.Rectangle
@@ -192,7 +196,7 @@ export function resizeAsOverlayView(view: BrowserView, windowSize: number[]) {
     x: 0,
     y: 0,
     width: windowSize[0],
-    height: windowSize[1],
+    height: floatingTitleBarHeight + floatingPadding + floatingTitleBarSpacing,
   });
 }
 
