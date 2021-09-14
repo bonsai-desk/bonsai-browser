@@ -129,7 +129,7 @@ const Overlay = observer(() => {
               e.stopPropagation();
             }}
             onClick={() => {
-              //
+              ipcRenderer.send('go-back-from-floating');
             }}
           >
             <ButtonIcon src={backIcon} />

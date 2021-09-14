@@ -412,6 +412,9 @@ export function addListeners(wm: WindowManager) {
       wm.unFloat();
     }
   });
+  ipcMain.on('go-back-from-floating', () => {
+    wm.tabPageView.webContents.send('go-back-from-floating');
+  });
 }
 
 interface IAction {
@@ -571,7 +574,7 @@ export default class WindowManager {
     // this.findView.webContents.openDevTools({ mode: 'detach' });
 
     this.overlayView = makeView(OVERLAY_HTML);
-    this.overlayView.webContents.openDevTools({ mode: 'detach' });
+    // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
     // this.tabPageView.webContents.openDevTools({ mode: 'detach' });

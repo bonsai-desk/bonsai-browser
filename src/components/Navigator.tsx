@@ -296,7 +296,7 @@ const HistoryNavigatorItem = observer(
         onClick={() => {
           // tabPageStore.setNavigatorTabModal([0, 0]);
           if (dir === Direction.Back) {
-            goBack(historyStore, node);
+            goBack(historyStore);
             ipcRenderer.send('mixpanel-track', 'click go back in navigator');
           }
           if (dir === Direction.Forward) {
