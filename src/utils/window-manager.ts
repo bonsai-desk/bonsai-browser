@@ -577,7 +577,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -1140,6 +1140,11 @@ export default class WindowManager {
   setTab(id: number, shouldScreenshot = true) {
     if (id === -1) {
       throw new Error('Use unSetTab instead of setTab(-1)!');
+    }
+    if (this.activeTabId !== -1) {
+      console.log('set tab should only be used when no tab is active');
+      this.unSetTab();
+      return;
     }
     const oldTabView = this.allWebViews[this.activeTabId];
 

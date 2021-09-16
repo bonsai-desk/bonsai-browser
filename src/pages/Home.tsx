@@ -107,15 +107,20 @@ const Content = observer(() => {
     );
   }
 
-  if (tabPageStore.View === View.Navigator) {
-    return <Navigator />;
-  }
+  const containerContent =
+    tabPageStore.View === View.Navigator ? (
+      <Navigator />
+    ) : (
+      <>
+        <MainContent />
+        <Footer />
+      </>
+    );
 
   return (
     <Container>
-      <URLBox />
-      <MainContent />
-      <Footer />
+      <URLBox onViewPage={tabPageStore.View === View.Navigator} />
+      {containerContent}
     </Container>
   );
 });
