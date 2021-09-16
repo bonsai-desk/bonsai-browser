@@ -307,6 +307,7 @@ export default class TabPageStore {
     if (newValue.length > 0) {
       this.View = View.FuzzySearch;
       this.searchTab(newValue);
+      ipcRenderer.send('unset-tab');
     } else {
       this.View = View.Tabs;
     }

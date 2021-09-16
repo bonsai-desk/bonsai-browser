@@ -8,7 +8,7 @@ const URLBoxParent = styled.div`
   display: flex;
   justify-content: center;
   width: 100%;
-  padding: 30px 0 10px 0;
+  padding: 18px 0 10px 0;
 `;
 
 const Input = styled.input`
@@ -28,7 +28,7 @@ const Input = styled.input`
   }
 `;
 
-const URLBox = observer(() => {
+const URLBox = observer(({ onViewPage }: { onViewPage: boolean }) => {
   const { tabPageStore } = useStore();
 
   const urlBoxRef = useRef<HTMLInputElement>(null);
@@ -40,12 +40,28 @@ const URLBox = observer(() => {
   return (
     <URLBoxParent
       id="header"
+      style={{
+        position: onViewPage ? 'absolute' : 'static',
+        top: onViewPage ? '0' : 'auto',
+        zIndex: onViewPage ? 1 : 'auto',
+        visibility: onViewPage ? 'hidden' : 'visible',
+      }}
       onMouseOver={() => {
         runInAction(() => {
           tabPageStore.hoveringUrlInput = true;
         });
       }}
       onMouseLeave={() => {}}
+      onMouseDown={(e) => {
+        if (onViewPage) {
+          e.stopPropagation();
+        }
+      }}
+      onClick={(e) => {
+        if (onViewPage) {
+          e.stopPropagation();
+        }
+      }}
     >
       <Input
         type="text"
@@ -53,6 +69,9 @@ const URLBox = observer(() => {
         ref={urlBoxRef}
         placeholder="Search Google or type a URL"
         value={tabPageStore.urlText}
+        style={{
+          visibility: 'visible',
+        }}
         onInput={(e) => {
           tabPageStore.setUrlText(e.currentTarget.value);
         }}

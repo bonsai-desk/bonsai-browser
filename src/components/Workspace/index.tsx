@@ -199,7 +199,7 @@ const Workspace = observer(
     }, [tabPageStore, workspace]);
 
     return (
-      <Background>
+      <Background id="workspaceBackground">
         <DraggableCore
           onMouseDown={(e) => {
             e.stopPropagation();
