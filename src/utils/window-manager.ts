@@ -319,6 +319,11 @@ export function addListeners(wm: WindowManager) {
       wm.unSetTab();
     }
   });
+  ipcMain.on('unset-tab', () => {
+    if (wm.webBrowserViewActive()) {
+      wm.unSetTab(true, false);
+    }
+  });
   ipcMain.on('open-workspace-url', (_, url) => {
     wm.tabPageView.webContents.send('close-history-modal');
 
@@ -499,7 +504,7 @@ export default class WindowManager {
 
   browserPadding(): number {
     if (this.display !== null) {
-      const ratio = this.webViewIsActive() ? 50 : 15;
+      const ratio = this.noWebPageOpen() ? 50 : 15;
       return Math.floor(this.display.workAreaSize.height / ratio);
     }
     return 35;
@@ -577,7 +582,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -939,14 +944,10 @@ export default class WindowManager {
     });
     this.mainWindow.setOpacity(1.0);
     this.setPinned(false);
-    // this.unFloat();
     this.resizeBrowserWindow();
-    if (this.webViewIsActive()) {
-      // todo: search box does not get highlighted on macos unless we do this hack
-      setTimeout(() => {
-        this.unSetTab();
-      }, 10);
-    }
+
+    this.tabPageView.webContents.focus();
+    this.tabPageView.webContents.send('focus-search');
 
     if (this.windowFloating) {
       this.windowPosition[0] = this.targetWindowPosition[0];
@@ -1073,7 +1074,7 @@ export default class WindowManager {
     }
   }
 
-  unSetTab(shouldScreenshot = true) {
+  unSetTab(shouldScreenshot = true, shouldFocusSearch = true) {
     const oldTabView = this.allWebViews[this.activeTabId];
 
     // move title bar off screen
@@ -1116,7 +1117,9 @@ export default class WindowManager {
     // return to main tab page
     this.mainWindow.setTopBrowserView(this.tabPageView);
     this.tabPageView.webContents.focus();
-    this.tabPageView.webContents.send('focus-search');
+    if (shouldFocusSearch) {
+      this.tabPageView.webContents.send('focus-search');
+    }
 
     if (windowHasView(this.mainWindow, this.findView)) {
       this.closeFind();
@@ -1140,11 +1143,6 @@ export default class WindowManager {
   setTab(id: number, shouldScreenshot = true) {
     if (id === -1) {
       throw new Error('Use unSetTab instead of setTab(-1)!');
-    }
-    if (this.activeTabId !== -1) {
-      console.log('set tab should only be used when no tab is active');
-      this.unSetTab();
-      return;
     }
     const oldTabView = this.allWebViews[this.activeTabId];
 
@@ -1654,7 +1652,7 @@ export default class WindowManager {
     if (this.windowFloating) {
       this.hideWindow();
       // this.hideMainWindow();
-    } else if (this.webViewIsActive()) {
+    } else if (this.noWebPageOpen()) {
       if (this.historyModalActive) {
         this.tabPageView.webContents.send('close-history-modal');
       } else {
@@ -1815,7 +1813,7 @@ export default class WindowManager {
     const windowSize = currentWindowSize(this.mainWindow);
     const padding = this.padding();
 
-    if (this.webViewIsActive()) {
+    if (this.noWebPageOpen()) {
       resizeAsTabPageView(this.tabPageView, windowSize);
     } else {
       const bounds = innerBounds(this.mainWindow, padding);
@@ -1850,7 +1848,7 @@ export default class WindowManager {
     return this.windowFloating ? 10 : this.browserPadding();
   }
 
-  private webViewIsActive(): boolean {
+  private noWebPageOpen(): boolean {
     return this.activeTabId === -1;
   }
 

@@ -8,7 +8,7 @@ const URLBoxParent = styled.div`
   display: flex;
   justify-content: center;
   width: 100%;
-  padding: 30px 0 10px 0;
+  padding: 18px 0 10px 0;
 `;
 
 const Input = styled.input`
@@ -42,9 +42,8 @@ const URLBox = observer(({ onViewPage }: { onViewPage: boolean }) => {
       id="header"
       style={{
         position: onViewPage ? 'absolute' : 'static',
-        top: onViewPage ? '-12px' : 'auto',
+        top: onViewPage ? '0' : 'auto',
         zIndex: onViewPage ? 1 : 'auto',
-        backgroundColor: 'red',
         visibility: onViewPage ? 'hidden' : 'visible',
       }}
       onMouseOver={() => {

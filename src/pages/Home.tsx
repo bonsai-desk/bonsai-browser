@@ -289,11 +289,12 @@ const Home = observer(() => {
   return (
     <Background
       onClick={(e) => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        const { id } = e.target.id;
         if (
           tabPageStore.View !== View.Tabs &&
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          (e.target.id === 'header' || e.target.id === 'footer')
+          (id === 'header' || id === 'footer' || id === 'workspaceBackground')
         ) {
           if (tabPageStore.View === View.WorkSpace) {
             ipcRenderer.send(
