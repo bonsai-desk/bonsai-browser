@@ -118,6 +118,9 @@ function initMenu(wm: WindowManager) {
         accelerator: 'CmdOrCtrl+H',
         click: () => {
           if (windowHasView(wm.mainWindow, wm.tabPageView)) {
+            if (wm.webBrowserViewActive()) {
+              wm.unSetTab();
+            }
             wm.tabPageView.webContents.send('toggle-history-modal');
           }
         },
@@ -127,6 +130,9 @@ function initMenu(wm: WindowManager) {
         accelerator: 'CmdOrCtrl+D',
         click: () => {
           if (windowHasView(wm.mainWindow, wm.tabPageView)) {
+            if (wm.webBrowserViewActive()) {
+              wm.unSetTab();
+            }
             wm.tabPageView.webContents.send('toggle-debug-modal');
           }
         },
