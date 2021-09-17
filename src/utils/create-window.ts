@@ -2,7 +2,6 @@
 import {
   app,
   BrowserWindow,
-  globalShortcut,
   Menu,
   MenuItem,
   MenuItemConstructorOptions,
@@ -266,27 +265,27 @@ function initOnboardingWindow(): BrowserWindow {
   return onboardingWindow;
 }
 
-function initShortcuts(wm: WindowManager) {
-  let shortCut = 'Alt+Space';
-  if (process.env.NODE_ENV === 'development') {
-    shortCut = 'Ctrl+Alt+Space';
-  }
-  globalShortcut.register(shortCut, () => {
-    if (!wm.saveData.data.finishedOnboarding) {
-      wm.saveData.data.finishedOnboarding = true;
-      wm.saveData.save();
-      wm.onboardingWindow?.destroy();
-      wm.onboardingWindow = null;
-    }
-    if (!wm.mainWindow?.isVisible()) {
-      wm.mixpanelManager.track('show with global shortcut');
-      wm.showWindow();
-    } else {
-      wm.mixpanelManager.track('hide with global shortcut');
-      wm.hideWindow();
-    }
-  });
-}
+// function initShortcuts(wm: WindowManager) {
+//   let shortCut = 'Alt+Space';
+//   if (process.env.NODE_ENV === 'development') {
+//     shortCut = 'Ctrl+Alt+Space';
+//   }
+//   globalShortcut.register(shortCut, () => {
+//     if (!wm.saveData.data.finishedOnboarding) {
+//       wm.saveData.data.finishedOnboarding = true;
+//       wm.saveData.save();
+//       wm.onboardingWindow?.destroy();
+//       wm.onboardingWindow = null;
+//     }
+//     if (!wm.mainWindow?.isVisible()) {
+//       wm.mixpanelManager.track('show with global shortcut');
+//       wm.showWindow();
+//     } else {
+//       wm.mixpanelManager.track('hide with global shortcut');
+//       wm.hideWindow();
+//     }
+//   });
+// }
 
 function initApp(wm: WindowManager) {
   app.on('window-all-closed', () => {
@@ -414,7 +413,7 @@ export const createWindow = async () => {
 
   initFixedUpdate(wm);
 
-  initShortcuts(wm);
+  // initShortcuts(wm);
 
   initMenu(wm);
 

@@ -123,6 +123,10 @@ export default class TabPageStore {
     if (this.View === View.Settings && this.rebindModalId) {
       e.preventDefault();
       this.bindKeys = chord(e);
+      ipcRenderer.send('rebind-hotkey', {
+        hotkeyId: 'test',
+        newBind: [...this.bindKeys],
+      });
       return;
     }
 

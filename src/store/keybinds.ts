@@ -40,6 +40,7 @@ const keyMap: Record<string, string | Record<string, string>> = {
   Control: 'Ctrl',
   Meta: { Win: 'Win', Mac: '⌘' },
   Alt: { Win: 'Alt', Mac: '⌥' },
+  Backslash: '\\',
 };
 
 function showKey(key: string): string {
@@ -139,6 +140,13 @@ export function defaultKeybindStore(): Instance<typeof KeybindStore> {
   });
 }
 
+const modifiers = ['Shift', 'Control', 'Meta', 'Alt']; // shift, ctrl, meta, alt
+
+export function globalKeybindValid(bind: string[]) {
+  const isFn = bind.length === 1 && bind[0][0] === 'F' && bind[0].length <= 3;
+  return isFn;
+}
+
 export function bindEquals(a: string[], b: string[]) {
   const lenMatch = a.length === b.length;
   let charMatch = true;
@@ -156,6 +164,13 @@ export function createAndLoadKeybindStore(): Instance<typeof KeybindStore> {
   ipcRenderer.on('user-data-path', (_, userDataPath) => {
     keybindStore.setUserDataPath(userDataPath);
     loadSnapshot(keybindStore, false);
+    const binds = getSnapshot(keybindStore.binds);
+    Object.entries(binds).forEach(([id, data]) => {
+      ipcRenderer.send('rebind-hotkey', {
+        hotkeyId: id,
+        newBind: data.currentBind,
+      });
+    });
   });
 
   return keybindStore;

@@ -219,6 +219,72 @@ function openWindow(
   });
 }
 
+const keyMap: Record<string, string> = {
+  Comma: ',',
+  Period: '.',
+  Slash: '/',
+  Semicolon: ';',
+  Quote: '"',
+  Meta: 'Cmd',
+  BracketLeft: '[',
+  BracketRight: ']',
+  Backslash: '\\',
+  Backquote: '`',
+  Minus: '-',
+  Equal: '=',
+  Digit0: '0',
+  Digit1: '1',
+  Digit2: '2',
+  Digit3: '3',
+  Digit4: '4',
+  Digit5: '5',
+  Digit6: '6',
+  Digit7: '7',
+  Digit8: '8',
+  Digit9: '9',
+  KeyA: 'A',
+  KeyB: 'B',
+  KeyC: 'C',
+  KeyD: 'D',
+  KeyE: 'E',
+  KeyF: 'F',
+  KeyG: 'G',
+  KeyH: 'H',
+  KeyI: 'I',
+  KeyJ: 'J',
+  KeyK: 'K',
+  KeyL: 'L',
+  KeyM: 'M',
+  KeyN: 'N',
+  KeyO: 'O',
+  KeyP: 'P',
+  KeyQ: 'Q',
+  KeyR: 'R',
+  KeyS: 'S',
+  KeyT: 'T',
+  KeyU: 'U',
+  KeyV: 'V',
+  KeyW: 'W',
+  KeyX: 'X',
+  KeyY: 'Y',
+  KeyZ: 'Z',
+};
+
+function translateKey(jsKey: string) {
+  if (keyMap[jsKey]) {
+    return keyMap[jsKey];
+  }
+
+  return jsKey;
+}
+
+function translateKeys(jsKeys: string[]) {
+  if (jsKeys) {
+    return jsKeys.map(translateKey);
+  }
+  return jsKeys;
+}
+
 export function addListeners(wm: WindowManager) {
   ipcMain.on('create-new-tab', () => {
     wm.createNewTab();
@@ -409,6 +475,22 @@ export function addListeners(wm: WindowManager) {
   });
   ipcMain.on('log-data', (_, data) => {
     console.log(data);
+  });
+  ipcMain.on('disable-hotkeys', () => {
+    wm.disableHotkeys();
+  });
+  ipcMain.on('enable-hotkeys', () => {
+    wm.enableHotkeys();
+  });
+  ipcMain.on('rebind-hotkey', (_, { hotkeyId, newBind }) => {
+    const electronBind = translateKeys(newBind).join('+');
+    switch (hotkeyId) {
+      case 'toggle-app':
+        wm.bindToggleShortcut(electronBind);
+        break;
+      default:
+        break;
+    }
   });
 }
 
@@ -684,6 +766,7 @@ export default class WindowManager {
 
     this.hideWindow();
     this.handleResize();
+    this.bindToggleShortcut('Alt+Space');
   }
 
   setTargetNoVelocity() {
@@ -1670,6 +1753,50 @@ export default class WindowManager {
       }
     };
     tabView.view.webContents.capturePage().then(handleImage).catch(handleError);
+  }
+
+  toggleAppShortcut = '';
+
+  disableHotkeys() {
+    globalShortcut.unregister(this.toggleAppShortcut);
+  }
+
+  enableHotkeys() {
+    this.bindToggleShortcut(this.toggleAppShortcut);
+  }
+
+  bindToggleShortcut(newShortCut: string) {
+    if (this.toggleAppShortcut !== '') {
+      globalShortcut.unregister(this.toggleAppShortcut);
+    }
+    this.toggleAppShortcut = newShortCut;
+    if (process.env.NODE_ENV === 'development' && newShortCut) {
+      this.toggleAppShortcut = `Ctrl+${this.toggleAppShortcut}`;
+    }
+    const shortCut = this.toggleAppShortcut;
+    if (shortCut === '') {
+      return;
+    }
+    console.log('bind', shortCut);
+    globalShortcut.register(shortCut, () => {
+      if (!this.saveData.data.finishedOnboarding) {
+        this.saveData.data.finishedOnboarding = true;
+        this.saveData.save();
+        this.onboardingWindow?.destroy();
+        this.onboardingWindow = null;
+      }
+      if (!this.mainWindow?.isVisible()) {
+        this.mixpanelManager.track('show with global shortcut', {
+          shortcut: shortCut,
+        });
+        this.showWindow();
+      } else {
+        this.mixpanelManager.track('hide with global shortcut', {
+          shortcut: shortCut,
+        });
+        this.hideWindow();
+      }
+    });
   }
 
   private mouseInInner() {

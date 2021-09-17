@@ -1,14 +1,21 @@
 import { observer } from 'mobx-react-lite';
-import React from 'react';
+import React, { useEffect } from 'react';
 import styled from 'styled-components';
 import { runInAction } from 'mobx';
+import { ipcRenderer } from 'electron';
 import GenericModal from './GenericModal';
 import { useStore, View } from '../store/tab-page-store';
 import MiniGenericModal from './MiniGenericModal';
 import '../index.css';
-import { StretchButton, Button, BlueButton, ButtonBase } from './StretchButton';
+import {
+  StretchButton,
+  Button,
+  BlueButton,
+  ButtonBase,
+  InertButtonStyle,
+} from './StretchButton';
 import refreshIcon from '../../assets/refresh.svg';
-import { bindEquals, showKeys } from '../store/keybinds';
+import { bindEquals, globalKeybindValid, showKeys } from '../store/keybinds';
 
 const SettingsParent = styled.div`
   display: flex;
@@ -99,8 +106,17 @@ const RebindModal = observer(({ active }: IRebindModal) => {
   const id = tabPageStore.rebindModalId;
   const bind = keybindStore.binds.get(id);
   const bindKeys =
-    tabPageStore.bindKeys.length > 0 ? tabPageStore.bindKeys : ['???'];
+    tabPageStore.bindKeys.length > 0 ? tabPageStore.bindKeys : ['None'];
   const bindIsDefault = bind ? bindEquals(bindKeys, bind.defaultBind) : true;
+  useEffect(() => {
+    if (active) {
+      ipcRenderer.send('disable-hotkeys');
+    }
+    return () => {
+      ipcRenderer.send('enable-hotkeys');
+    };
+  }, [active]);
+  const keysValid = globalKeybindValid(bindKeys);
   return (
     <MiniGenericModal active={active}>
       <RebindContainer>
@@ -138,12 +154,19 @@ const RebindModal = observer(({ active }: IRebindModal) => {
             Cancel
           </Button>
           <BlueButton
+            style={keysValid ? {} : InertButtonStyle}
             onClick={() => {
-              runInAction(() => {
-                bind?.setCurrentBind(tabPageStore.bindKeys);
-                keybindStore.saveSnapshot();
-                tabPageStore.rebindModalId = '';
-              });
+              if (bind && keysValid) {
+                runInAction(() => {
+                  bind.setCurrentBind(tabPageStore.bindKeys);
+                  keybindStore.saveSnapshot();
+                  ipcRenderer.send('rebind-hotkey', {
+                    hotkeyId: tabPageStore.rebindModalId,
+                    newBind: [...tabPageStore.bindKeys],
+                  });
+                  tabPageStore.rebindModalId = '';
+                });
+              }
             }}
             id="button"
           >
@@ -193,31 +216,32 @@ const SettingsModal = observer(() => {
         <SettingsParent>
           <Settings>
             <Title>Settings</Title>
-            <div>
-              Toggle floating window{' '}
-              <KeyBindButton id="toggle-floating-window" />
-            </div>
-            <div>
-              Toggle app <KeyBindButton id="toggle-app" />
-            </div>
-            <div>asdfa sdf asdf asd fas df asdf asdf</div>
-            <div>asdfa sdf asdf asd fas df asdf asdf</div>
-            <div>
-              Some text <StretchButton>asdf</StretchButton> and more.
-            </div>
-            <div>
-              Some text <StretchButton>asdf</StretchButton> and more.
-            </div>
 
             <SettingsSection>
-              <SubTitle>Key Binds</SubTitle>
-              <div>Option+Space: Toggle app</div>
+              <SubTitle>General</SubTitle>
+              <div>
+                Toggle app <KeyBindButton id="toggle-app" />
+              </div>
             </SettingsSection>
+
             <SettingsSection>
-              <SubTitle>Key Binds</SubTitle>
+              <SubTitle>Home</SubTitle>
               <div>Tab: Toggle workspace</div>
               <div>Esc: Back/Exit</div>
+            </SettingsSection>
+
+            <SettingsSection>
+              <SubTitle>Search</SubTitle>
+              <div>Esc: clear</div>
               <div>Arrows: Select page in fuzzy search</div>
+            </SettingsSection>
+
+            <SettingsSection>
+              <SubTitle>Web Page</SubTitle>
+              <div>
+                Toggle floating window{' '}
+                <KeyBindButton id="toggle-floating-window" />
+              </div>
             </SettingsSection>
           </Settings>
         </SettingsParent>

@@ -51,3 +51,9 @@ export const BlueButton = styled(Button)`
     background-color: hsla(147, 65%, 22%, 1);
   }
 `;
+
+export const InertButtonStyle = {
+  color: 'rgba(0, 0, 0, 0.25)',
+  backgroundColor: 'rgba(0, 0, 0, 0.1)',
+  cursor: 'default',
+};
