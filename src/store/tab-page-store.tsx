@@ -482,6 +482,10 @@ export default class TabPageStore {
       this.setFocus();
       this.selectText();
     });
+    ipcRenderer.on('focus-main', () => {
+      this.urlBoxRef?.current?.focus();
+      this.urlBoxRef?.current?.select();
+    });
     ipcRenderer.on('set-pinned', (_, newIsPinned) => {
       runInAction(() => {
         this.isPinned = newIsPinned;

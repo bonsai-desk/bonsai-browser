@@ -140,19 +140,6 @@ export function resizeAsPeekView(
   });
 }
 
-export function resizeAsWebView(
-  tabView: IWebView,
-  bounds: Electron.Rectangle,
-  urlHeight: number
-) {
-  // const windowSize = this.mainWindow.getSize();
-  tabView.view.setBounds({
-    x: bounds.x,
-    y: bounds.y + urlHeight,
-    width: bounds.width,
-    height: bounds.height - urlHeight,
-  });
-}
 export function resizeAsFindView(
   view: BrowserView,
   headerHeight: number,

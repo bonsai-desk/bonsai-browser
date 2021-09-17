@@ -110,7 +110,7 @@ function initMenu(wm: WindowManager) {
         label: 'Select Search',
         accelerator: 'CmdOrCtrl+L',
         click: () => {
-          wm.focusSearch();
+          wm.focusMainSearch();
         },
       },
       {

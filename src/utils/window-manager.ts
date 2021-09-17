@@ -1594,7 +1594,18 @@ export default class WindowManager {
   }
 
   resizeWebViewForNonFloating(tabView: IWebView, bounds: Electron.Rectangle) {
-    resizeAsWebView(tabView, bounds, this.headerHeight());
+    const windowSize = currentWindowSize(this.mainWindow);
+    this.tabPageView.webContents.send('inner-bounds', {
+      screen: { width: windowSize[0], height: windowSize[1] },
+      bounds,
+    });
+    const urlHeight = this.headerHeight();
+    tabView.view.setBounds({
+      x: bounds.x,
+      y: bounds.y + urlHeight,
+      width: bounds.width,
+      height: bounds.height - urlHeight,
+    });
   }
 
   resizeWebViewForFloating(tabView: IWebView) {
@@ -1680,11 +1691,16 @@ export default class WindowManager {
     }
   }
 
-  focusSearch() {
+  focusURLSearch() {
     if (this.webBrowserViewActive()) {
       this.titleBarView.webContents.focus();
       this.titleBarView.webContents.send('focus');
     }
+  }
+
+  focusMainSearch() {
+    this.tabPageView.webContents.focus();
+    this.tabPageView.webContents.send('focus-main');
   }
 
   setGesture(webViewId: number, gesture: boolean) {
