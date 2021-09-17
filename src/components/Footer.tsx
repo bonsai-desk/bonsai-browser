@@ -171,6 +171,31 @@ const Footer = observer(({ onViewPage }: { onViewPage: boolean }) => {
   const { tabPageStore } = useStore();
   const toggleDebug = genTogglePage(tabPageStore, View.NavigatorDebug);
   const toggleSettings = genTogglePage(tabPageStore, View.Settings);
+
+  const footerContent =
+    tabPageStore.View === View.Navigator ? null : (
+      <>
+        <WorkspaceButtons />
+        <RightButtons>
+          <HistoryButton />
+          <NavButtonParent
+            onClick={() => {
+              toggleDebug();
+            }}
+          >
+            Debug
+          </NavButtonParent>
+          <NavButtonParent
+            onClick={() => {
+              toggleSettings();
+            }}
+          >
+            <GearDiv />
+          </NavButtonParent>
+        </RightButtons>
+      </>
+    );
+
   return (
     <FooterParent
       id="footer"
@@ -183,24 +208,7 @@ const Footer = observer(({ onViewPage }: { onViewPage: boolean }) => {
           (tabPageStore.innerBounds.y + tabPageStore.innerBounds.height),
       }}
     >
-      <WorkspaceButtons />
-      <RightButtons>
-        <HistoryButton />
-        <NavButtonParent
-          onClick={() => {
-            toggleDebug();
-          }}
-        >
-          Debug
-        </NavButtonParent>
-        <NavButtonParent
-          onClick={() => {
-            toggleSettings();
-          }}
-        >
-          <GearDiv />
-        </NavButtonParent>
-      </RightButtons>
+      {footerContent}
     </FooterParent>
   );
 });
