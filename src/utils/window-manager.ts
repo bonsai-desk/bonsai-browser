@@ -52,7 +52,6 @@ import {
   resizeAsOverlayView,
   resizeAsPeekView,
   resizeAsTitleBar,
-  resizeAsWebView,
   saveTabs,
   updateContents,
   updateWebContents,

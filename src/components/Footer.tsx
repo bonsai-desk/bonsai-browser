@@ -165,11 +165,7 @@ const Footer = observer(({ onViewPage }: { onViewPage: boolean }) => {
         <NavButtonParent
           onClick={() => {
             runInAction(() => {
-              if (tabPageStore.View === View.Tabs) {
-                tabPageStore.View = View.NavigatorDebug;
-              } else if (tabPageStore.View === View.NavigatorDebug) {
-                tabPageStore.View = View.Tabs;
-              }
+              tabPageStore.View = View.NavigatorDebug;
             });
           }}
         >
