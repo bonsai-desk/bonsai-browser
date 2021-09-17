@@ -337,6 +337,10 @@ export function addListeners(wm: WindowManager) {
       wm.setTab(newTabId);
     }
   });
+  ipcMain.on('request-user-data-path', (event) => {
+    const userDataPath = app.getPath('userData');
+    event.sender.send('user-data-path', userDataPath);
+  });
   ipcMain.on('request-snapshot-path', () => {
     const snapshotPath = path.join(
       app.getPath('userData'),
@@ -402,6 +406,9 @@ export function addListeners(wm: WindowManager) {
   });
   ipcMain.on('sleep-and-back', () => {
     wm.tabPageView.webContents.send('sleep-and-back');
+  });
+  ipcMain.on('log-data', (_, data) => {
+    console.log(data);
   });
 }
 

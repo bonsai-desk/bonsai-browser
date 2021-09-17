@@ -33,12 +33,18 @@ export const ModalParent = styled.div`
 `;
 export const ModalBackground = styled.div`
   background-color: rgba(0.25, 0.25, 0.25, 0.35);
+  //background-color: blue;
   position: absolute;
   left: 0;
   top: 0;
   width: 100vw;
   height: 100vh;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
 `;
+
 export const ModalSheet = styled.div`
   box-shadow: rgba(0, 0, 0, 0.35) 0 5px 15px;
   position: absolute;

@@ -15,13 +15,49 @@ export const windowHasView = (
   return false;
 };
 
+export function chord(e: KeyboardEvent): string[] {
+  // Ctrl Option Shift Cmd + Key
+  // what is e.keyCode good for?
+
+  const modifiers = [
+    'ShiftLeft',
+    'ControlLeft',
+    'MetaLeft',
+    'AltLeft',
+    'ShiftRight',
+    'ControlRight',
+    'MetaRight',
+    'AltRight',
+  ]; // shift, ctrl, meta, alt
+
+  const keys = [];
+  if (e.ctrlKey) {
+    keys.push('Control');
+  }
+  if (e.altKey) {
+    keys.push('Alt');
+  }
+  if (e.shiftKey) {
+    keys.push('Shift');
+  }
+  if (e.metaKey) {
+    keys.push('Meta');
+  }
+
+  if (!modifiers.includes(e.code)) {
+    keys.push(e.code);
+  }
+
+  return keys;
+}
+
 export function validURL(str: string): boolean {
   const pattern = new RegExp(
     '^(https?:\\/\\/)?' + // protocol
-    '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
-    '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
-    '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
-    '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
+      '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
+      '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
+      '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
+      '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
       '(\\#[-a-z\\d_]*)?$',
     'i'
   ); // fragment locator

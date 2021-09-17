@@ -7,11 +7,12 @@ import { TabPageColumn, TabPageTab } from '../interfaces/tab';
 import { getRootDomain } from '../utils/data';
 import { Item } from './workspace/item';
 import { Direction } from '../render-constants';
-import { clamp } from '../utils/utils';
+import { chord, clamp } from '../utils/utils';
 import { HistoryEntry } from '../utils/interfaces';
 import { HistoryStore } from './history-store';
 import WorkspaceStore from './workspace/workspace-store';
 import packageInfo from '../package.json';
+import { KeybindStore } from './keybinds';
 
 export enum View {
   None,
@@ -97,7 +98,11 @@ export default class TabPageStore {
 
   versionString = 'None';
 
-  keys = ['0'];
+  keys = '';
+
+  bindKeys: string[] = [];
+
+  rebindModalId = '';
 
   fuzzySelectedTab(): [boolean, TabPageTab | Instance<typeof Item>] | null {
     if (this.fuzzySelectionIndex[1] === 0) {
@@ -115,6 +120,12 @@ export default class TabPageStore {
   }
 
   handleKeyDown(e: KeyboardEvent) {
+    if (this.View === View.Settings && this.rebindModalId) {
+      e.preventDefault();
+      this.bindKeys = chord(e);
+      return;
+    }
+
     switch (e.key) {
       case 'Enter':
         if (this.View === View.FuzzySearch) {
@@ -188,10 +199,7 @@ export default class TabPageStore {
         }
         break;
       default:
-        if (this.View === View.Settings) {
-          console.log('key pressed in settings');
-          this.keys.push(e.key);
-        } else {
+        if (this.view !== View.Settings) {
           this.setFocus();
           this.fuzzySelectionIndex = [-1, -1];
         }
@@ -516,6 +524,7 @@ interface IContext {
   tabPageStore: TabPageStore;
   historyStore: Instance<typeof HistoryStore>;
   workspaceStore: Instance<typeof WorkspaceStore>;
+  keybindStore: Instance<typeof KeybindStore>;
 }
 const TabPageContext = createContext<null | IContext>(null);
 export const { Provider } = TabPageContext;

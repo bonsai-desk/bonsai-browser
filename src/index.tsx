@@ -15,6 +15,7 @@ import Home from './pages/Home';
 import createWorkspaceStore from './store/workspace';
 import { hookListeners, HistoryStore } from './store/history-store';
 import Onboarding from './pages/Onboarding';
+import { createAndLoadKeybindStore } from './store/keybinds';
 
 if (document.getElementById('root')) {
   const tabStore = new TabStore();
@@ -47,13 +48,15 @@ if (document.getElementById('tab-page')) {
   const workspaceStore = createWorkspaceStore();
   const tabPageStore = new TabPageStore(workspaceStore);
   const historyStore = HistoryStore.create({ nodes: {}, active: '' });
+  const keybindStore = createAndLoadKeybindStore();
+  keybindStore.loadFromFile('');
 
   hookListeners(historyStore);
 
   render(
     <>
       <TabPageStoreProvider
-        value={{ tabPageStore, workspaceStore, historyStore }}
+        value={{ tabPageStore, workspaceStore, historyStore, keybindStore }}
       >
         <Home />
       </TabPageStoreProvider>

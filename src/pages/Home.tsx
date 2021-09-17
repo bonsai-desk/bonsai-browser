@@ -88,7 +88,10 @@ const MainContent = observer(() => {
     }
     tabPageStore.setUrlText('');
   }
-  return tabPageStore.View === View.Tabs ? <Columns /> : <FuzzyTabs />;
+  if (tabPageStore.View === View.FuzzySearch) {
+    return <FuzzyTabs />;
+  }
+  return <Columns />;
 });
 
 const Content = observer(() => {
