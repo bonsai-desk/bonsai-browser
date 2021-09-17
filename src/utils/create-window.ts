@@ -107,6 +107,30 @@ function initMenu(wm: WindowManager) {
         },
       },
       {
+        label: 'Close current tab',
+        accelerator: 'CmdOrCtrl+W',
+        click: () => {
+          if (wm.activeTabId === -1) {
+            return;
+          }
+
+          wm.removeTabs([wm.activeTabId]);
+        },
+      },
+      {
+        label: 'Back to home',
+        accelerator: 'CmdOrCtrl+B',
+        click: () => {
+          if (wm.activeTabId === -1) {
+            return;
+          }
+
+          if (wm.webBrowserViewActive()) {
+            wm.unSetTab();
+          }
+        },
+      },
+      {
         label: 'Select Search',
         accelerator: 'CmdOrCtrl+L',
         click: () => {
