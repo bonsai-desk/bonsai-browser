@@ -1,7 +1,7 @@
 import { urlToMapKey } from './utils';
 import { HistoryEntry, OpenGraphInfo } from './interfaces';
 
-export const headerHeight = 79 - 32 - 10;
+export const headerHeight = 37; // = 79 - 32 - 10;
 
 function createOpenGraphInfo(): OpenGraphInfo {
   return { title: '', type: '', image: '', url: '' };

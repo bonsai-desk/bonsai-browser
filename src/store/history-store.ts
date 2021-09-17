@@ -167,11 +167,28 @@ function setTab(webViewId: number) {
   ipcRenderer.send('set-tab', webViewId);
 }
 
-export function goBack(history: IHistory, node: INode, sleepOldNode = false) {
+export function goBack(history: IHistory, sleepOldNode = false) {
+  const headId = history.active;
+  const oldNode = history.heads.get(headId);
+  let nodeParent;
+  if (oldNode) {
+    if (oldNode.parent) {
+      nodeParent = oldNode.parent;
+    } else {
+      console.log('oh no 2');
+    }
+  }
+
+  if (!nodeParent) {
+    console.log('oh no 3');
+    return;
+  }
+
+  const node = nodeParent;
+
   log('=== go back ===');
   const key = headKeyWhereNode(history, node);
   if (key) {
-    const headId = history.active;
     setTab(key);
     if (sleepOldNode) {
       ipcRenderer.send('remove-tab', headId);
@@ -378,10 +395,13 @@ export function hookListeners(h: Instance<typeof HistoryStore>) {
     const oldNode = h.heads.get(headId);
     if (oldNode) {
       if (oldNode.parent) {
-        goBack(h, oldNode.parent, true);
+        goBack(h, true);
       } else {
         console.log('oh no');
       }
     }
+  });
+  ipcRenderer.on('go-back-from-floating', () => {
+    goBack(h);
   });
 }

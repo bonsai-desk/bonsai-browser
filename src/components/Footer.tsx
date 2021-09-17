@@ -10,7 +10,6 @@ import NavButtonParent from './NavButtonParent';
 
 const FooterParent = styled.div`
   width: 100%;
-  height: 100px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -19,6 +18,7 @@ const TheThing = styled.div`
   width: 50px;
   height: 50px;
   margin: 0 4px 0 4px;
+  pointer-events: none;
 `;
 const PlusButtonParent = styled.button`
   color: white;
@@ -44,7 +44,7 @@ const FooterButtonParent = styled.button`
   border: none;
   outline: none;
   width: 120px;
-  height: 75px;
+  height: calc(100% - 10px);
   border-radius: 1rem;
   margin: 0 4px 0 4px;
   overflow: hidden;
@@ -166,12 +166,22 @@ function genTogglePage(tabPageStore: TabPageStore, view: View) {
   };
 }
 
-const Footer = observer(() => {
+const Footer = observer(({ onViewPage }: { onViewPage: boolean }) => {
   const { tabPageStore } = useStore();
   const toggleDebug = genTogglePage(tabPageStore, View.NavigatorDebug);
   const toggleSettings = genTogglePage(tabPageStore, View.Settings);
   return (
-    <FooterParent id="footer">
+    <FooterParent
+      id="footer"
+      style={{
+        position: onViewPage ? 'absolute' : 'static',
+        bottom: onViewPage ? '0px' : 'auto',
+        zIndex: onViewPage ? 1 : 'auto',
+        height:
+          tabPageStore.screen.height -
+          (tabPageStore.innerBounds.y + tabPageStore.innerBounds.height),
+      }}
+    >
       <WorkspaceButtons />
       <RightButtons>
         <HistoryButton />

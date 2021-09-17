@@ -1,6 +1,7 @@
 import { BrowserView, BrowserWindow } from 'electron';
 import { createCipheriv, createDecipheriv } from 'crypto';
 import { HistoryEntry } from './interfaces';
+import { get } from './jsutils';
 
 export const windowHasView = (
   window: BrowserWindow,
@@ -63,18 +64,60 @@ export function validURL(str: string): boolean {
   ); // fragment locator
   return pattern.test(str);
 }
-
-export function stringToUrl(url: string): string {
-  let fullUrl = url;
-  if (!/^https?:\/\//i.test(url)) {
-    fullUrl = `http://${url}`;
+function hostInHosts(host: string): boolean {
+  if (host === 'localhost') {
+    return true;
   }
 
-  // url is invalid
-  if (!validURL(fullUrl)) {
-    fullUrl = `https://www.google.com/search?q=${url}`;
+  const hosts = get();
+
+  let hostInHost = false;
+  Object.values(hosts).forEach((list: any) => {
+    for (let i = 0; i < list.length; i += 1) {
+      if (list[i] === host) {
+        hostInHost = true;
+      }
+    }
+  });
+
+  return hostInHost;
+}
+
+export function stringToUrl(inputString: string): string {
+  let inputTrimmed = inputString.trim();
+  if (inputTrimmed.startsWith('localhost')) {
+    inputTrimmed = `http://${inputTrimmed}`;
   }
-  return fullUrl;
+
+  let url: URL | null = null;
+  let urlString = '';
+
+  try {
+    url = new URL(inputTrimmed);
+    urlString = inputTrimmed;
+  } catch {
+    //
+  }
+
+  if (!url) {
+    try {
+      url = new URL(`http://${inputTrimmed}`);
+      urlString = `http://${inputTrimmed}`;
+    } catch {
+      //
+    }
+  }
+
+  if (
+    !url ||
+    (url.hostname.indexOf('.') === -1 && !hostInHosts(url.hostname))
+  ) {
+    return `https://www.google.com/search?q=${encodeURIComponent(
+      inputTrimmed
+    )}`;
+  }
+
+  return urlString;
 }
 
 function replacer(_: string, value: any) {

@@ -8,7 +8,7 @@ const URLBoxParent = styled.div`
   display: flex;
   justify-content: center;
   width: 100%;
-  padding: 30px 0 10px 0;
+  align-items: center;
 `;
 
 const Input = styled.input`
@@ -28,7 +28,7 @@ const Input = styled.input`
   }
 `;
 
-const URLBox = observer(() => {
+const Header = observer(({ onViewPage }: { onViewPage: boolean }) => {
   const { tabPageStore } = useStore();
 
   const urlBoxRef = useRef<HTMLInputElement>(null);
@@ -40,6 +40,12 @@ const URLBox = observer(() => {
   return (
     <URLBoxParent
       id="header"
+      style={{
+        position: onViewPage ? 'absolute' : 'static',
+        top: onViewPage ? '0' : 'auto',
+        zIndex: onViewPage ? 1 : 'auto',
+        height: tabPageStore.innerBounds.y,
+      }}
       onMouseOver={() => {
         runInAction(() => {
           tabPageStore.hoveringUrlInput = true;
@@ -74,4 +80,4 @@ const URLBox = observer(() => {
   );
 });
 
-export default URLBox;
+export default Header;

@@ -4,7 +4,7 @@ import { ipcRenderer } from 'electron';
 import { runInAction } from 'mobx';
 import styled, { css } from 'styled-components';
 import { useStore, View } from '../store/tab-page-store';
-import URLBox from '../components/URLBox';
+import Header from '../components/URLBox';
 import FuzzyTabs from '../components/FuzzyTabs';
 import ClickerParent from '../components/Clicker';
 import Background from '../components/Background';
@@ -13,7 +13,7 @@ import Columns from '../components/Columns';
 import Footer from '../components/Footer';
 import Container from '../components/Container';
 import Workspace from '../components/Workspace';
-import Navigator from '../components/Navigator';
+import Navigator, { clickMain } from '../components/Navigator';
 import NavigatorDebug from '../components/NavigatorDebug';
 import redX from '../../assets/x-letter.svg';
 import home from '../../assets/home.svg';
@@ -107,15 +107,14 @@ const Content = observer(() => {
     );
   }
 
-  if (tabPageStore.View === View.Navigator) {
-    return <Navigator />;
-  }
+  const containerContent =
+    tabPageStore.View === View.Navigator ? <Navigator /> : <MainContent />;
 
   return (
     <Container>
-      <URLBox />
-      <MainContent />
-      <Footer />
+      <Header onViewPage={tabPageStore.View === View.Navigator} />
+      {containerContent}
+      <Footer onViewPage={tabPageStore.View === View.Navigator} />
     </Container>
   );
 });
@@ -234,13 +233,13 @@ const FloatingShadow = styled.div`
   top: 0;
   left: 0;
 
-  background-color: white;
+  //background-color: white;
   box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.5);
 
   width: calc(100% - 20px);
-  height: calc(100% - 20px);
+  height: calc(100% - 20px - 37px - 10px);
 
-  margin: 10px;
+  margin: 57px 10px 10px 10px;
 `;
 
 const Home = observer(() => {
@@ -275,19 +274,24 @@ const Home = observer(() => {
   return (
     <Background
       onClick={(e) => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        const { id } = e.target;
         if (
           tabPageStore.View !== View.Tabs &&
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          (e.target.id === 'header' || e.target.id === 'footer')
+          (id === 'header' || id === 'footer' || id === 'workspaceBackground')
         ) {
-          if (tabPageStore.View === View.WorkSpace) {
-            ipcRenderer.send(
-              'mixpanel-track',
-              'toggle off workspace with background click'
-            );
+          if (tabPageStore.View === View.Navigator) {
+            clickMain();
+          } else {
+            if (tabPageStore.View === View.WorkSpace) {
+              ipcRenderer.send(
+                'mixpanel-track',
+                'toggle off workspace with background click'
+              );
+            }
+            tabPageStore.View = View.Tabs;
           }
-          tabPageStore.View = View.Tabs;
         }
       }}
     >

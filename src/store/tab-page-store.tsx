@@ -311,7 +311,7 @@ export default class TabPageStore {
     const openTabFuse = new Fuse<TabPageTab>(Object.values(this.openTabs), {
       keys: ['title', 'openGraphData.title'],
     });
-    this.filteredOpenTabs = openTabFuse.search(pattern);
+    this.filteredOpenTabs = openTabFuse.search(pattern, { limit: 10 });
 
     const workspaceItems: Instance<typeof Item>[] = [];
     this.workspaceStore.workspaces.forEach((workspace) => {
@@ -322,7 +322,9 @@ export default class TabPageStore {
     const workspaceTabFuse = new Fuse<Instance<typeof Item>>(workspaceItems, {
       keys: ['title'],
     });
-    this.filteredWorkspaceTabs = workspaceTabFuse.search(pattern);
+    this.filteredWorkspaceTabs = workspaceTabFuse.search(pattern, {
+      limit: 10,
+    });
   }
 
   setUrlText(newValue: string) {
@@ -330,6 +332,7 @@ export default class TabPageStore {
     if (newValue.length > 0) {
       this.View = View.FuzzySearch;
       this.searchTab(newValue);
+      ipcRenderer.send('unset-tab');
     } else {
       this.View = View.Tabs;
     }
@@ -348,17 +351,19 @@ export default class TabPageStore {
   }
 
   constructor(workspaceStore: Instance<typeof WorkspaceStore>) {
+    makeAutoObservable(this);
+
     this.versionString = packageInfo.version;
     this.workAreaRect = { x: 0, y: 0, width: 1, height: 1 };
     this.screen = { width: 200, height: 200 };
     this.innerBounds = { x: 0, y: 0, width: 100, height: 100 };
     this.workspaceStore = workspaceStore;
-    makeAutoObservable(this);
 
     this.filteredOpenTabs = [];
     this.filteredWorkspaceTabs = [];
 
     ipcRenderer.on('inner-bounds', (_, { screen, bounds }) => {
+      console.log('inner bounds set');
       runInAction(() => {
         this.screen = screen;
         this.innerBounds = bounds;
@@ -499,6 +504,10 @@ export default class TabPageStore {
     ipcRenderer.on('focus-search', () => {
       this.setFocus();
       this.selectText();
+    });
+    ipcRenderer.on('focus-main', () => {
+      this.urlBoxRef?.current?.focus();
+      this.urlBoxRef?.current?.select();
     });
     ipcRenderer.on('set-pinned', (_, newIsPinned) => {
       runInAction(() => {

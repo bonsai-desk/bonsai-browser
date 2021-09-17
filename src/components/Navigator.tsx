@@ -17,6 +17,9 @@ enum Direction {
 }
 
 const NavigatorParent = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   display: flex;
@@ -296,7 +299,7 @@ const HistoryNavigatorItem = observer(
         onClick={() => {
           // tabPageStore.setNavigatorTabModal([0, 0]);
           if (dir === Direction.Back) {
-            goBack(historyStore, node);
+            goBack(historyStore);
             ipcRenderer.send('mixpanel-track', 'click go back in navigator');
           }
           if (dir === Direction.Forward) {
@@ -498,6 +501,11 @@ const AddToWorkspace = observer(({ node }: { node: INode }) => {
   );
 });
 
+export function clickMain() {
+  ipcRenderer.send('click-main');
+  ipcRenderer.send('mixpanel-track', 'go to home from navigator border click');
+}
+
 const Navigator = observer(() => {
   const backRef = useRef(null);
   const { workspaceStore, tabPageStore, historyStore } = useStore();
@@ -518,11 +526,7 @@ const Navigator = observer(() => {
       ref={backRef}
       onClick={(e) => {
         if (backRef.current && e.target === backRef.current) {
-          ipcRenderer.send('click-main');
-          ipcRenderer.send(
-            'mixpanel-track',
-            'go to home from navigator border click'
-          );
+          clickMain();
         }
       }}
     >

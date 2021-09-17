@@ -91,10 +91,60 @@ function initMenu(wm: WindowManager) {
         },
       },
       {
+        label: 'Toggle Float Window',
+        accelerator: 'CmdOrCtrl+\\',
+        click: () => {
+          if (wm.activeTabId === -1) {
+            return;
+          }
+
+          if (wm.windowFloating) {
+            wm.unFloat();
+          } else {
+            wm.float();
+          }
+        },
+      },
+      {
+        label: 'Close current tab',
+        accelerator: 'CmdOrCtrl+W',
+        click: () => {
+          if (wm.activeTabId === -1) {
+            return;
+          }
+
+          wm.removeTabs([wm.activeTabId]);
+        },
+      },
+      {
+        label: 'Back to home',
+        accelerator: 'CmdOrCtrl+B',
+        click: () => {
+          if (wm.activeTabId === -1) {
+            return;
+          }
+
+          if (wm.webBrowserViewActive()) {
+            wm.unSetTab();
+          }
+        },
+      },
+      {
+        label: 'Refresh',
+        accelerator: 'CmdOrCtrl+R',
+        click: () => {
+          if (wm.activeTabId === -1) {
+            return;
+          }
+
+          wm.tabRefresh(wm.activeTabId);
+        },
+      },
+      {
         label: 'Select Search',
         accelerator: 'CmdOrCtrl+L',
         click: () => {
-          wm.focusSearch();
+          wm.focusMainSearch();
         },
       },
       {
@@ -102,6 +152,9 @@ function initMenu(wm: WindowManager) {
         accelerator: 'CmdOrCtrl+H',
         click: () => {
           if (windowHasView(wm.mainWindow, wm.tabPageView)) {
+            if (wm.webBrowserViewActive()) {
+              wm.unSetTab();
+            }
             wm.tabPageView.webContents.send('toggle-history-modal');
           }
         },
@@ -111,6 +164,9 @@ function initMenu(wm: WindowManager) {
         accelerator: 'CmdOrCtrl+D',
         click: () => {
           if (windowHasView(wm.mainWindow, wm.tabPageView)) {
+            if (wm.webBrowserViewActive()) {
+              wm.unSetTab();
+            }
             wm.tabPageView.webContents.send('toggle-debug-modal');
           }
         },
