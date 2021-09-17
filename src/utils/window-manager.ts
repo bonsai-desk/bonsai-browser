@@ -268,6 +268,21 @@ const keyMap: Record<string, string> = {
   KeyX: 'X',
   KeyY: 'Y',
   KeyZ: 'Z',
+  Numpad0: 'num0',
+  Numpad1: 'num1',
+  Numpad2: 'num2',
+  Numpad3: 'num3',
+  Numpad4: 'num4',
+  Numpad5: 'num5',
+  Numpad6: 'num6',
+  Numpad7: 'num7',
+  Numpad8: 'num8',
+  Numpad9: 'num9',
+  NumpadDecimal: 'numdec',
+  NumpadAdd: 'numadd',
+  NumpadSubtract: 'numsub',
+  NumpadMultiply: 'nummult',
+  NumpadDivide: 'numdiv',
 };
 
 function translateKey(jsKey: string) {
@@ -1777,7 +1792,6 @@ export default class WindowManager {
     if (shortCut === '') {
       return;
     }
-    console.log('bind', shortCut);
     globalShortcut.register(shortCut, () => {
       if (!this.saveData.data.finishedOnboarding) {
         this.saveData.data.finishedOnboarding = true;

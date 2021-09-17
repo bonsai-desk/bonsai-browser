@@ -141,10 +141,44 @@ export function defaultKeybindStore(): Instance<typeof KeybindStore> {
 }
 
 const modifiers = ['Shift', 'Control', 'Meta', 'Alt']; // shift, ctrl, meta, alt
+const singletons = [
+  'Insert',
+  'Home',
+  'PageUp',
+  'Delete',
+  'End',
+  'PageDown',
+  'NumpadMultiply',
+  'NumpadDivide',
+  'NumpadSubtract',
+  'NumpadAdd',
+  'NumpadDecimal',
+];
+const badKeys = ['NumpadEnter', 'NumLock', 'ContextMenu'];
 
 export function globalKeybindValid(bind: string[]) {
+  let aBad = false;
+  bind.forEach((key) => {
+    if (badKeys.includes(key)) {
+      aBad = true;
+    }
+  });
+  if (aBad) {
+    return false;
+  }
+
   const isFn = bind.length === 1 && bind[0][0] === 'F' && bind[0].length <= 3;
-  return isFn;
+  let validChord = false;
+  if (bind.length > 1) {
+    const hasAMod =
+      bind.filter((key) => {
+        return modifiers.includes(key);
+      }).length > 0;
+    const lastNotAMod = !modifiers.includes(bind[bind.length - 1]);
+    validChord = hasAMod && lastNotAMod;
+  }
+  const isSingleton = bind.length === 1 && singletons.includes(bind[0]);
+  return isFn || isSingleton || validChord;
 }
 
 export function bindEquals(a: string[], b: string[]) {
