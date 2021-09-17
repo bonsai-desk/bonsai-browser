@@ -131,6 +131,17 @@ function initMenu(wm: WindowManager) {
         },
       },
       {
+        label: 'Refresh',
+        accelerator: 'CmdOrCtrl+R',
+        click: () => {
+          if (wm.activeTabId === -1) {
+            return;
+          }
+
+          wm.tabRefresh(wm.activeTabId);
+        },
+      },
+      {
         label: 'Select Search',
         accelerator: 'CmdOrCtrl+L',
         click: () => {
