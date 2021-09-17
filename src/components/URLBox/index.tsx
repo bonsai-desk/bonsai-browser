@@ -9,6 +9,7 @@ const URLBoxParent = styled.div`
   justify-content: center;
   width: 100%;
   align-items: center;
+  flex-shrink: 0;
 `;
 
 const Input = styled.input`
@@ -43,6 +44,8 @@ const Header = observer(({ onViewPage }: { onViewPage: boolean }) => {
       style={{
         position: onViewPage ? 'absolute' : 'static',
         top: onViewPage ? '0' : 'auto',
+        // position: 'absolute',
+        // top: 10,
         zIndex: onViewPage ? 1 : 'auto',
         height: tabPageStore.innerBounds.y,
       }}
