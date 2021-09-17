@@ -288,7 +288,7 @@ export default class TabPageStore {
     const openTabFuse = new Fuse<TabPageTab>(Object.values(this.openTabs), {
       keys: ['title', 'openGraphData.title'],
     });
-    this.filteredOpenTabs = openTabFuse.search(pattern);
+    this.filteredOpenTabs = openTabFuse.search(pattern, { limit: 10 });
 
     const workspaceItems: Instance<typeof Item>[] = [];
     this.workspaceStore.workspaces.forEach((workspace) => {
@@ -299,7 +299,9 @@ export default class TabPageStore {
     const workspaceTabFuse = new Fuse<Instance<typeof Item>>(workspaceItems, {
       keys: ['title'],
     });
-    this.filteredWorkspaceTabs = workspaceTabFuse.search(pattern);
+    this.filteredWorkspaceTabs = workspaceTabFuse.search(pattern, {
+      limit: 10,
+    });
   }
 
   setUrlText(newValue: string) {
