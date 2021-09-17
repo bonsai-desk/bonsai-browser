@@ -31,6 +31,7 @@ const FooterParent = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-shrink: 0;
 `;
 const TheThing = styled.div`
   width: 50px;
