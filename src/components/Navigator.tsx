@@ -501,6 +501,11 @@ const AddToWorkspace = observer(({ node }: { node: INode }) => {
   );
 });
 
+export function clickMain() {
+  ipcRenderer.send('click-main');
+  ipcRenderer.send('mixpanel-track', 'go to home from navigator border click');
+}
+
 const Navigator = observer(() => {
   const backRef = useRef(null);
   const { workspaceStore, tabPageStore, historyStore } = useStore();
@@ -521,11 +526,7 @@ const Navigator = observer(() => {
       ref={backRef}
       onClick={(e) => {
         if (backRef.current && e.target === backRef.current) {
-          ipcRenderer.send('click-main');
-          ipcRenderer.send(
-            'mixpanel-track',
-            'go to home from navigator border click'
-          );
+          clickMain();
         }
       }}
     >

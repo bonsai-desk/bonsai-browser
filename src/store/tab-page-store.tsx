@@ -328,17 +328,19 @@ export default class TabPageStore {
   }
 
   constructor(workspaceStore: Instance<typeof WorkspaceStore>) {
+    makeAutoObservable(this);
+
     this.versionString = packageInfo.version;
     this.workAreaRect = { x: 0, y: 0, width: 1, height: 1 };
     this.screen = { width: 200, height: 200 };
     this.innerBounds = { x: 0, y: 0, width: 100, height: 100 };
     this.workspaceStore = workspaceStore;
-    makeAutoObservable(this);
 
     this.filteredOpenTabs = [];
     this.filteredWorkspaceTabs = [];
 
     ipcRenderer.on('inner-bounds', (_, { screen, bounds }) => {
+      console.log('inner bounds set');
       runInAction(() => {
         this.screen = screen;
         this.innerBounds = bounds;

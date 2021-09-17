@@ -142,16 +142,10 @@ export function resizeAsPeekView(
 
 export function resizeAsWebView(
   tabView: IWebView,
-  tabPage: BrowserView,
   bounds: Electron.Rectangle,
-  urlHeight: number,
-  windowSize: [number, number]
+  urlHeight: number
 ) {
   // const windowSize = this.mainWindow.getSize();
-  tabPage.webContents.send('inner-bounds', {
-    screen: { width: windowSize[0], height: windowSize[1] },
-    bounds,
-  });
   tabView.view.setBounds({
     x: bounds.x,
     y: bounds.y + urlHeight,
@@ -179,27 +173,6 @@ export function resizeAsFindView(
   });
 }
 
-export function resizeAsTabPageView(
-  view: BrowserView,
-  windowSize: [number, number]
-) {
-  view.setBounds({
-    x: 0,
-    y: 0,
-    width: windowSize[0],
-    height: windowSize[1],
-  });
-}
-
-export function resizeAsOverlayView(view: BrowserView, windowSize: number[]) {
-  view.setBounds({
-    x: 0,
-    y: 0,
-    width: windowSize[0],
-    height: floatingTitleBarHeight + floatingPadding + floatingTitleBarSpacing,
-  });
-}
-
 export function currentWindowSize(window: BrowserWindow): [number, number] {
   const [x, y] = window.getSize();
   return [x, y];
@@ -210,6 +183,15 @@ export function innerBounds(
   padding: number
 ): Electron.Rectangle {
   return innerRectangle(4 / 3, currentWindowSize(mainWindow), padding);
+}
+
+export function resizeAsOverlayView(view: BrowserView, windowSize: number[]) {
+  view.setBounds({
+    x: 0,
+    y: 0,
+    width: windowSize[0],
+    height: floatingTitleBarHeight + floatingPadding + floatingTitleBarSpacing,
+  });
 }
 
 export const updateContents = (

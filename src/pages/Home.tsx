@@ -4,7 +4,7 @@ import { ipcRenderer } from 'electron';
 import { runInAction } from 'mobx';
 import styled, { css } from 'styled-components';
 import { useStore, View } from '../store/tab-page-store';
-import URLBox from '../components/URLBox';
+import Header from '../components/URLBox';
 import FuzzyTabs from '../components/FuzzyTabs';
 import ClickerParent from '../components/Clicker';
 import Background from '../components/Background';
@@ -13,7 +13,7 @@ import Columns from '../components/Columns';
 import Footer from '../components/Footer';
 import Container from '../components/Container';
 import Workspace from '../components/Workspace';
-import Navigator from '../components/Navigator';
+import Navigator, { clickMain } from '../components/Navigator';
 import NavigatorDebug from '../components/NavigatorDebug';
 import {
   HistoryModal,
@@ -108,19 +108,13 @@ const Content = observer(() => {
   }
 
   const containerContent =
-    tabPageStore.View === View.Navigator ? (
-      <Navigator />
-    ) : (
-      <>
-        <MainContent />
-        <Footer />
-      </>
-    );
+    tabPageStore.View === View.Navigator ? <Navigator /> : <MainContent />;
 
   return (
     <Container>
-      <URLBox onViewPage={tabPageStore.View === View.Navigator} />
+      <Header onViewPage={tabPageStore.View === View.Navigator} />
       {containerContent}
+      <Footer onViewPage={tabPageStore.View === View.Navigator} />
     </Container>
   );
 });
@@ -296,13 +290,17 @@ const Home = observer(() => {
           tabPageStore.View !== View.Tabs &&
           (id === 'header' || id === 'footer' || id === 'workspaceBackground')
         ) {
-          if (tabPageStore.View === View.WorkSpace) {
-            ipcRenderer.send(
-              'mixpanel-track',
-              'toggle off workspace with background click'
-            );
+          if (tabPageStore.View === View.Navigator) {
+            clickMain();
+          } else {
+            if (tabPageStore.View === View.WorkSpace) {
+              ipcRenderer.send(
+                'mixpanel-track',
+                'toggle off workspace with background click'
+              );
+            }
+            tabPageStore.View = View.Tabs;
           }
-          tabPageStore.View = View.Tabs;
         }
       }}
     >

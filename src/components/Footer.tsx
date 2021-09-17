@@ -28,7 +28,6 @@ export const NavButtonParent = styled.button`
 
 const FooterParent = styled.div`
   width: 100%;
-  height: 100px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -37,6 +36,7 @@ const TheThing = styled.div`
   width: 50px;
   height: 50px;
   margin: 0 4px 0 4px;
+  pointer-events: none;
 `;
 const PlusButtonParent = styled.button`
   color: white;
@@ -62,7 +62,7 @@ const FooterButtonParent = styled.button`
   border: none;
   outline: none;
   width: 120px;
-  height: 75px;
+  height: calc(100% - 10px);
   border-radius: 1rem;
   margin: 0 4px 0 4px;
   overflow: hidden;
@@ -154,25 +154,43 @@ const WorkspaceButtons = observer(() => {
   );
 });
 
-const Footer = observer(() => {
+const Footer = observer(({ onViewPage }: { onViewPage: boolean }) => {
   const { tabPageStore } = useStore();
+
+  const footerContent =
+    tabPageStore.View === View.Navigator ? null : (
+      <>
+        <WorkspaceButtons />
+        <HistoryButton />
+        <NavButtonParent
+          onClick={() => {
+            runInAction(() => {
+              if (tabPageStore.View === View.Tabs) {
+                tabPageStore.View = View.NavigatorDebug;
+              } else if (tabPageStore.View === View.NavigatorDebug) {
+                tabPageStore.View = View.Tabs;
+              }
+            });
+          }}
+        >
+          Debug
+        </NavButtonParent>
+      </>
+    );
+
   return (
-    <FooterParent id="footer">
-      <WorkspaceButtons />
-      <HistoryButton />
-      <NavButtonParent
-        onClick={() => {
-          runInAction(() => {
-            if (tabPageStore.View === View.Tabs) {
-              tabPageStore.View = View.NavigatorDebug;
-            } else if (tabPageStore.View === View.NavigatorDebug) {
-              tabPageStore.View = View.Tabs;
-            }
-          });
-        }}
-      >
-        Debug
-      </NavButtonParent>
+    <FooterParent
+      id="footer"
+      style={{
+        position: onViewPage ? 'absolute' : 'static',
+        bottom: onViewPage ? '0px' : 'auto',
+        zIndex: onViewPage ? 1 : 'auto',
+        height:
+          tabPageStore.screen.height -
+          (tabPageStore.innerBounds.y + tabPageStore.innerBounds.height),
+      }}
+    >
+      {footerContent}
     </FooterParent>
   );
 });

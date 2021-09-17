@@ -51,7 +51,6 @@ import {
   resizeAsFindView,
   resizeAsOverlayView,
   resizeAsPeekView,
-  resizeAsTabPageView,
   resizeAsTitleBar,
   resizeAsWebView,
   saveTabs,
@@ -494,17 +493,30 @@ export default class WindowManager {
   display: Display;
 
   setDisplay(display: Display) {
-    this.tabPageView.webContents.send('resize-work-area', display.workArea);
     this.display = display;
+
+    this.tabPageView.webContents.send('resize-work-area', display.workArea);
+
+    const windowSize = currentWindowSize(this.mainWindow);
+    const padding = this.browserPadding(false);
+    const bounds = innerBounds(this.mainWindow, padding);
+    this.tabPageView.webContents.send('inner-bounds', {
+      screen: { width: windowSize[0], height: windowSize[1] },
+      bounds,
+    });
   }
 
   webBrowserViewActive(): boolean {
     return this.activeTabId !== -1;
   }
 
-  browserPadding(): number {
+  browserPadding(noWebPageOpen?: boolean): number {
+    let noPageOpen = noWebPageOpen;
+    if (typeof noWebPageOpen === 'undefined') {
+      noPageOpen = this.noWebPageOpen();
+    }
     if (this.display !== null) {
-      const ratio = this.noWebPageOpen() ? 50 : 15;
+      const ratio = noPageOpen ? 50 : 15;
       return Math.floor(this.display.workAreaSize.height / ratio);
     }
     return 35;
@@ -558,8 +570,6 @@ export default class WindowManager {
       throw new Error('No displays!');
     }
 
-    this.display = screen.getPrimaryDisplay();
-
     this.mainWindow.on('close', () => {
       this.saveHistory();
     });
@@ -582,7 +592,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -591,7 +601,13 @@ export default class WindowManager {
         this.removeTab(tabView.id);
       });
       this.loadHistory();
+
+      this.setDisplay(this.display);
     });
+
+    const display = screen.getPrimaryDisplay();
+    this.display = display; // linter doesn't know the function below sets the value
+    this.setDisplay(display);
 
     screen.on('display-metrics-changed', (_, changedDisplay) => {
       if (changedDisplay.id === this.display.id) {
@@ -608,6 +624,7 @@ export default class WindowManager {
 
         this.setTargetNoVelocity();
       }
+      this.setDisplay(this.display);
     });
 
     this.handleResize();
@@ -1577,13 +1594,7 @@ export default class WindowManager {
   }
 
   resizeWebViewForNonFloating(tabView: IWebView, bounds: Electron.Rectangle) {
-    resizeAsWebView(
-      tabView,
-      this.tabPageView,
-      bounds,
-      this.headerHeight(),
-      currentWindowSize(this.mainWindow)
-    );
+    resizeAsWebView(tabView, bounds, this.headerHeight());
   }
 
   resizeWebViewForFloating(tabView: IWebView) {
@@ -1628,7 +1639,7 @@ export default class WindowManager {
     resizeAsPeekView(this.urlPeekView, bounds);
     resizeAsFindView(this.findView, hh, bounds);
     resizeAsOverlayView(this.overlayView, windowSize);
-    resizeAsTabPageView(this.tabPageView, windowSize);
+    this.resizeTabPageView();
     this.resizeActiveWebView();
   }
 
@@ -1636,7 +1647,7 @@ export default class WindowManager {
     const windowSize = currentWindowSize(this.mainWindow);
 
     resizeAsOverlayView(this.overlayView, windowSize);
-    resizeAsTabPageView(this.tabPageView, windowSize);
+    this.resizeTabPageView();
     this.resizeActiveWebView();
   }
 
@@ -1814,7 +1825,7 @@ export default class WindowManager {
     const padding = this.padding();
 
     if (this.noWebPageOpen()) {
-      resizeAsTabPageView(this.tabPageView, windowSize);
+      this.resizeTabPageView();
     } else {
       const bounds = innerBounds(this.mainWindow, padding);
 
@@ -1854,5 +1865,15 @@ export default class WindowManager {
 
   private headerHeight(): number {
     return this.windowFloating ? 0 : headerHeight;
+  }
+
+  resizeTabPageView() {
+    const windowSize = currentWindowSize(this.mainWindow);
+    this.tabPageView.setBounds({
+      x: 0,
+      y: 0,
+      width: windowSize[0],
+      height: windowSize[1],
+    });
   }
 }
