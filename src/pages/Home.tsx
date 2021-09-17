@@ -291,7 +291,7 @@ const Home = observer(() => {
       onClick={(e) => {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        const { id } = e.target.id;
+        const { id } = e.target;
         if (
           tabPageStore.View !== View.Tabs &&
           (id === 'header' || id === 'footer' || id === 'workspaceBackground')
