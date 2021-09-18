@@ -15,7 +15,7 @@ export const ButtonBase = styled.div`
 
 export const InertButtonBase = styled.div`
   transition-duration: 0.1s;
-  color: rgba(0, 0, 0, 0.25);
+  color: rgba(0, 0, 0, 0.5);
   background-color: rgba(0, 0, 0, 0.1);
   cursor: 'default';
   -webkit-user-select: none; /* Chrome all / Safari all */

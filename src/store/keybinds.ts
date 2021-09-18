@@ -50,6 +50,36 @@ const keyMap: Record<string, string | Record<string, string>> = {
   Meta: { Win: 'Win', Mac: '⌘' },
   Alt: { Win: 'Alt', Mac: '⌥' },
   Backslash: '\\',
+  ArrowLeft: '←',
+  ArrowRight: '→',
+  ArrowUp: '↑',
+  ArrowDown: '↓',
+  KeyA: 'A',
+  KeyB: 'B',
+  KeyC: 'C',
+  KeyD: 'D',
+  KeyE: 'E',
+  KeyF: 'F',
+  KeyG: 'G',
+  KeyH: 'H',
+  KeyI: 'I',
+  KeyJ: 'J',
+  KeyK: 'K',
+  KeyL: 'L',
+  KeyM: 'M',
+  KeyN: 'N',
+  KeyO: 'O',
+  KeyP: 'P',
+  KeyQ: 'Q',
+  KeyR: 'R',
+  KeyS: 'S',
+  KeyT: 'T',
+  KeyU: 'U',
+  KeyV: 'V',
+  KeyW: 'W',
+  KeyX: 'X',
+  KeyY: 'Y',
+  KeyZ: 'Z',
 };
 
 function showKey(key: string): string {
@@ -111,6 +141,7 @@ const KeyBind = types
       return charMatch && lenMatch;
     },
   }));
+
 export const KeybindStore = types
   .model({ binds: types.map(KeyBind) })
   .volatile(() => ({
@@ -187,6 +218,61 @@ export function defaultKeybindStore(): Instance<typeof KeybindStore> {
         name: 'Fuzzy Down',
         defaultBind: ['Control', 'KeyJ'],
         currentBind: ['Control', 'KeyJ'],
+      },
+      'fuzzy-left-arrow': {
+        name: 'Fuzzy Left Arrow',
+        defaultBind: ['ArrowLeft'],
+        currentBind: ['ArrowLeft'],
+      },
+      'fuzzy-right-arrow': {
+        name: 'Fuzzy Right Arrow',
+        defaultBind: ['ArrowRight'],
+        currentBind: ['ArrowRight'],
+      },
+      'fuzzy-up-arrow': {
+        name: 'Fuzzy Up Arrow',
+        defaultBind: ['ArrowUp'],
+        currentBind: ['ArrowUp'],
+      },
+      'fuzzy-down-arrow': {
+        name: 'Fuzzy Down Arrow',
+        defaultBind: ['ArrowDown'],
+        currentBind: ['ArrowDown'],
+      },
+      'select-fuzzy-result': {
+        name: 'Select Fuzzy Result',
+        defaultBind: ['Enter'],
+        currentBind: ['Enter'],
+      },
+      'clear-fuzzy-search': {
+        name: 'Clear Fuzzy Search',
+        defaultBind: ['Escape'],
+        currentBind: ['Escape'],
+      },
+      'select-search-box': {
+        name: 'Select Search Box',
+        defaultBind: ['Meta', 'KeyL'],
+        currentBind: ['Meta', 'KeyL'],
+      },
+      'home-from-webpage': {
+        name: 'Back to Home',
+        defaultBind: ['Meta', 'KeyE'],
+        currentBind: ['Meta', 'KeyE'],
+      },
+      'toggle-workspace': {
+        name: 'Toggle Workspace',
+        defaultBind: ['Tab'],
+        currentBind: ['Tab'],
+      },
+      'hide-from-home': {
+        name: 'Hide from Home',
+        defaultBind: ['Escape'],
+        currentBind: ['Escape'],
+      },
+      'close-web-page': {
+        name: 'Close Web Page',
+        defaultBind: ['Meta', 'W'],
+        currentBind: ['Meta', 'W'],
       },
     },
   });

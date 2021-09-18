@@ -46,6 +46,12 @@ const SubTitle = styled.div`
 
 const SettingsSection = styled.div`
   margin: 1rem 0 0 0;
+  #settings-row {
+    margin: 0.4rem 0 0 0;
+  }
+  // div + div {
+  //   margin: 0.2rem 0 0 0;
+  // }
 `;
 
 const Row = styled.div`
@@ -223,22 +229,64 @@ const SettingsModal = observer(() => {
             </SettingsSection>
 
             <SettingsSection>
-              <SubTitle>Home</SubTitle>
-              <div>Tab: Toggle workspace</div>
-              <div>Esc: Back/Exit</div>
+              <SubTitle>Web Page</SubTitle>
+              <div id="settings-row">
+                Search is always focused when you toggle{' '}
+                <KeyBindButton id="toggle-app" /> into an active web page.
+              </div>
+              <div id="settings-row">
+                Toggle floating window{' '}
+                <KeyBindButton id="toggle-floating-window" />
+              </div>
+              <div id="settings-row">
+                Focus search box <KeyBindButton id="select-search-box" />
+              </div>
+              <div id="settings-row">
+                Return to tab page when search has focus{' '}
+                <KeyBindButton id="hide-from-home" />
+              </div>
+              <div id="settings-row">
+                Return to tab page <KeyBindButton id="home-from-webpage" />{' '}
+              </div>
+              <div id="settings-row">
+                Close web page <KeyBindButton id="close-web-page" />
+              </div>
             </SettingsSection>
 
             <SettingsSection>
               <SubTitle>Search</SubTitle>
-              <div>Esc: clear</div>
-              <div>Arrows: Select page in fuzzy search</div>
+              <div id="settings-row">
+                Clear search: <KeyBindButton id="clear-fuzzy-search" />
+              </div>
+              <div> You can select results in fuzzy search with keyboard.</div>
+              <div id="settings-row">
+                Left <KeyBindButton id="fuzzy-left-arrow" /> or{' '}
+                <KeyBindButton id="fuzzy-left" clickable />
+              </div>
+              <div id="settings-row">
+                Down <KeyBindButton id="fuzzy-down-arrow" /> or{' '}
+                <KeyBindButton id="fuzzy-down" clickable />
+              </div>
+              <div id="settings-row">
+                Up <KeyBindButton id="fuzzy-up-arrow" /> or{' '}
+                <KeyBindButton id="fuzzy-up" clickable />
+              </div>
+              <div id="settings-row">
+                Right <KeyBindButton id="fuzzy-right-arrow" /> or{' '}
+                <KeyBindButton id="fuzzy-right" clickable />
+              </div>
+              <div id="settings-row">
+                Open page: <KeyBindButton id="select-fuzzy-result" />
+              </div>
             </SettingsSection>
 
             <SettingsSection>
-              <SubTitle>Web Page</SubTitle>
+              <SubTitle>Home</SubTitle>
               <div>
-                Toggle floating window{' '}
-                <KeyBindButton id="toggle-floating-window" clickable />
+                Toggle workspace <KeyBindButton id="toggle-workspace" />
+              </div>
+              <div id="settings-row">
+                Hide <KeyBindButton id="hide-from-home" />
               </div>
             </SettingsSection>
           </Settings>

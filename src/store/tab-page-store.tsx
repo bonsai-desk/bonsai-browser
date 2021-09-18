@@ -146,7 +146,7 @@ export default class TabPageStore {
   }
 
   handleKeyBind(e: KeyboardEvent) {
-    ipcRenderer.send('log-data', { hkb: chord(e) });
+    // ipcRenderer.send('log-data', { hkb: chord(e) });
 
     if (this.view === View.FuzzySearch) {
       if (this.keybindStore.isBind(e, Bind.FuzzyUp)) {
