@@ -186,14 +186,18 @@ const Footer = observer(({ onViewPage }: { onViewPage: boolean }) => {
           <HistoryButton />
           <NavButtonParent
             onClick={() => {
-              toggleDebug();
+              runInAction(() => {
+                tabPageStore.View = View.NavigatorDebug;
+              });
             }}
           >
             Debug
           </NavButtonParent>
           <NavButtonParent
             onClick={() => {
-              toggleSettings();
+              runInAction(() => {
+                tabPageStore.View = View.Settings;
+              });
             }}
           >
             <GearDiv />
