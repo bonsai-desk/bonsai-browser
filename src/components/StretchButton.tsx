@@ -3,7 +3,7 @@ import styled from 'styled-components';
 export const ButtonBase = styled.div`
   transition-duration: 0.1s;
   background-color: rgba(0, 0, 0, 0.25);
-  color: black;
+  color: rgba(0, 0, 0, 0.9);
   :hover {
     background-color: rgba(0, 0, 0, 0.5);
     color: white;
@@ -54,6 +54,20 @@ export const Button = styled(ButtonBase)`
   user-select: none; /* Likely future */
   height: 3rem;
   width: 4rem;
+  justify-content: center;
+`;
+
+export const RoundButton = styled(ButtonBase)`
+  border-radius: 50%;
+  // padding: 0 1.5rem 0 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  cursor: pointer;
+  -webkit-user-select: none; /* Chrome all / Safari all */
+  user-select: none; /* Likely future */
+  height: 3rem;
+  width: 3rem;
   justify-content: center;
 `;
 

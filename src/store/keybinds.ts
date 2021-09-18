@@ -349,5 +349,10 @@ export function createAndLoadKeybindStore(): Instance<typeof KeybindStore> {
     });
   });
 
+  ipcRenderer.on('update-toggle-app-hotkey', (_, data) => {
+    ipcRenderer.send('log-data', { update: data });
+    keybindStore.setBind('toggle-app', data);
+  });
+
   return keybindStore;
 }

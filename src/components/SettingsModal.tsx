@@ -54,7 +54,7 @@ const SettingsSection = styled.div`
   // }
 `;
 
-const Row = styled.div`
+export const Row = styled.div`
   display: flex;
   flex-wrap: wrap;
   //background-color: blue;
@@ -73,7 +73,7 @@ const RebindContainer = styled.div`
   align-content: space-between;
 `;
 
-const KeyBindBox = styled.div`
+export const KeyBindBox = styled.div`
   position: relative;
   display: flex;
   flex-wrap: wrap;
@@ -86,7 +86,15 @@ const KeyBindBox = styled.div`
   align-content: center;
 `;
 
-const ResetButton = styled(ButtonBase)`
+export const DynamicKeyBindBox = styled(KeyBindBox)`
+  cursor: pointer;
+  transition-duration: 0.1s;
+  :hover {
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+`;
+
+export const ResetButton = styled(ButtonBase)`
   position: absolute;
   right: -2.5rem;
   top: 0.75rem;
@@ -99,7 +107,7 @@ const ResetButton = styled(ButtonBase)`
   align-content: center;
 `;
 
-const ResetButtonIcon = styled.img`
+export const ResetButtonIcon = styled.img`
   -webkit-user-drag: none;
 `;
 
@@ -258,7 +266,10 @@ const SettingsModal = observer(() => {
               <div id="settings-row">
                 Clear search: <KeyBindButton id="clear-fuzzy-search" />
               </div>
-              <div> You can select results in fuzzy search with keyboard.</div>
+              <div id="settings-row">
+                {' '}
+                You can select results in fuzzy search with keyboard.
+              </div>
               <div id="settings-row">
                 Left <KeyBindButton id="fuzzy-left-arrow" /> or{' '}
                 <KeyBindButton id="fuzzy-left" clickable />
