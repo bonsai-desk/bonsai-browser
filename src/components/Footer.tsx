@@ -141,9 +141,9 @@ const RightButtons = styled.div`
   display: flex;
   flex-wrap: wrap;
   position: absolute;
-  bottom: 10px;
+  bottom: 0;
   right: 10px;
-  //width: 125px;
+  align-items: center;
 `;
 
 const GearDiv = styled.div`
@@ -176,7 +176,13 @@ const Footer = observer(({ onViewPage }: { onViewPage: boolean }) => {
     tabPageStore.View === View.Navigator ? null : (
       <>
         <WorkspaceButtons />
-        <RightButtons>
+        <RightButtons
+          style={{
+            height:
+              tabPageStore.screen.height -
+              (tabPageStore.innerBounds.y + tabPageStore.innerBounds.height),
+          }}
+        >
           <HistoryButton />
           <NavButtonParent
             onClick={() => {

@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 
 const NavButtonParent = styled.button`
-  height: 50px;
+  height: calc(100% - 10px);
   border-radius: 10px;
   border: none;
   outline: none;
