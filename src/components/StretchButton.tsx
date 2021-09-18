@@ -3,7 +3,7 @@ import styled from 'styled-components';
 export const ButtonBase = styled.div`
   transition-duration: 0.1s;
   background-color: rgba(0, 0, 0, 0.25);
-  color: black;
+  color: rgba(0, 0, 0, 0.9);
   :hover {
     background-color: rgba(0, 0, 0, 0.5);
     color: white;
@@ -13,6 +13,21 @@ export const ButtonBase = styled.div`
   }
 `;
 
+export const InertButtonBase = styled.div`
+  transition-duration: 0.1s;
+  color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.1);
+  cursor: 'default';
+  -webkit-user-select: none; /* Chrome all / Safari all */
+  user-select: none; /* Likely future */
+`;
+
+export const InertButtonStyle = {
+  color: 'rgba(0, 0, 0, 0.25)',
+  backgroundColor: 'rgba(0, 0, 0, 0.1)',
+  cursor: 'default',
+};
+
 export const StretchButton = styled(ButtonBase)`
   border-radius: 10px;
   padding: 0.5rem 1rem 0.5rem 1rem;
@@ -20,6 +35,12 @@ export const StretchButton = styled(ButtonBase)`
   cursor: pointer;
   -webkit-user-select: none; /* Chrome all / Safari all */
   user-select: none; /* Likely future */
+`;
+
+export const StretchButtonInert = styled(InertButtonBase)`
+  border-radius: 10px;
+  padding: 0.5rem 1rem 0.5rem 1rem;
+  display: inline-block;
 `;
 
 export const Button = styled(ButtonBase)`
@@ -33,6 +54,20 @@ export const Button = styled(ButtonBase)`
   user-select: none; /* Likely future */
   height: 3rem;
   width: 4rem;
+  justify-content: center;
+`;
+
+export const RoundButton = styled(ButtonBase)`
+  border-radius: 50%;
+  // padding: 0 1.5rem 0 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  cursor: pointer;
+  -webkit-user-select: none; /* Chrome all / Safari all */
+  user-select: none; /* Likely future */
+  height: 3rem;
+  width: 3rem;
   justify-content: center;
 `;
 
@@ -51,9 +86,3 @@ export const BlueButton = styled(Button)`
     background-color: hsla(147, 65%, 22%, 1);
   }
 `;
-
-export const InertButtonStyle = {
-  color: 'rgba(0, 0, 0, 0.25)',
-  backgroundColor: 'rgba(0, 0, 0, 0.1)',
-  cursor: 'default',
-};

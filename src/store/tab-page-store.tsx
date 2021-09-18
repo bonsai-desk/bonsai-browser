@@ -12,7 +12,7 @@ import { HistoryEntry } from '../utils/interfaces';
 import { HistoryStore } from './history-store';
 import WorkspaceStore from './workspace/workspace-store';
 import packageInfo from '../package.json';
-import { KeybindStore } from './keybinds';
+import { Bind, KeybindStore } from './keybinds';
 
 export enum View {
   None,
@@ -94,6 +94,8 @@ export default class TabPageStore {
 
   private workspaceStore: Instance<typeof WorkspaceStore>;
 
+  private keybindStore: Instance<typeof KeybindStore>;
+
   windowFloating = false;
 
   versionString = 'None';
@@ -117,6 +119,52 @@ export default class TabPageStore {
       }
     }
     return null;
+  }
+
+  fuzzyDown(e: KeyboardEvent) {
+    e.preventDefault();
+    this.moveFuzzySelection(Direction.Down);
+  }
+
+  fuzzyUp(e: KeyboardEvent) {
+    e.preventDefault();
+    this.moveFuzzySelection(Direction.Up);
+  }
+
+  fuzzyLeft(e: KeyboardEvent) {
+    if (this.fuzzySelectionIndex[0] > -1) {
+      e.preventDefault();
+      this.moveFuzzySelection(Direction.Left);
+    }
+  }
+
+  fuzzyRight(e: KeyboardEvent) {
+    if (this.fuzzySelectionIndex[0] > -1) {
+      e.preventDefault();
+      this.moveFuzzySelection(Direction.Right);
+    }
+  }
+
+  handleKeyBind(e: KeyboardEvent) {
+    // ipcRenderer.send('log-data', { hkb: chord(e) });
+
+    if (this.view === View.FuzzySearch) {
+      if (this.keybindStore.isBind(e, Bind.FuzzyUp)) {
+        this.fuzzyUp(e);
+      }
+      if (this.keybindStore.isBind(e, Bind.FuzzyDown)) {
+        this.fuzzyDown(e);
+      }
+      if (this.keybindStore.isBind(e, Bind.FuzzyLeft)) {
+        this.fuzzyLeft(e);
+      }
+      if (this.keybindStore.isBind(e, Bind.FuzzyRight)) {
+        this.fuzzyRight(e);
+      }
+    } else if (this.view !== View.Settings) {
+      this.setFocus();
+      this.fuzzySelectionIndex = [-1, -1];
+    }
   }
 
   handleKeyDown(e: KeyboardEvent) {
@@ -183,30 +231,19 @@ export default class TabPageStore {
         }
         break;
       case 'ArrowUp':
-        e.preventDefault();
-        this.moveFuzzySelection(Direction.Up);
+        this.fuzzyUp(e);
         break;
       case 'ArrowDown':
-        e.preventDefault();
-        this.moveFuzzySelection(Direction.Down);
+        this.fuzzyDown(e);
         break;
       case 'ArrowLeft':
-        if (this.fuzzySelectionIndex[0] > -1) {
-          e.preventDefault();
-          this.moveFuzzySelection(Direction.Left);
-        }
+        this.fuzzyLeft(e);
         break;
       case 'ArrowRight':
-        if (this.fuzzySelectionIndex[0] > -1) {
-          e.preventDefault();
-          this.moveFuzzySelection(Direction.Right);
-        }
+        this.fuzzyRight(e);
         break;
       default:
-        if (this.view !== View.Settings) {
-          this.setFocus();
-          this.fuzzySelectionIndex = [-1, -1];
-        }
+        this.handleKeyBind(e);
         break;
     }
   }
@@ -350,7 +387,10 @@ export default class TabPageStore {
     this.navigatorTabModal = loc;
   }
 
-  constructor(workspaceStore: Instance<typeof WorkspaceStore>) {
+  constructor(
+    workspaceStore: Instance<typeof WorkspaceStore>,
+    keybindStore: Instance<typeof KeybindStore>
+  ) {
     makeAutoObservable(this);
 
     this.versionString = packageInfo.version;
@@ -358,6 +398,8 @@ export default class TabPageStore {
     this.screen = { width: 200, height: 200 };
     this.innerBounds = { x: 0, y: 0, width: 100, height: 100 };
     this.workspaceStore = workspaceStore;
+
+    this.keybindStore = keybindStore;
 
     this.filteredOpenTabs = [];
     this.filteredWorkspaceTabs = [];
@@ -539,8 +581,11 @@ interface IContext {
   workspaceStore: Instance<typeof WorkspaceStore>;
   keybindStore: Instance<typeof KeybindStore>;
 }
+
 const TabPageContext = createContext<null | IContext>(null);
+
 export const { Provider } = TabPageContext;
+
 export function useStore() {
   const store = useContext(TabPageContext);
   if (store === null) {

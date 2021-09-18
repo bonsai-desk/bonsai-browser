@@ -118,7 +118,7 @@ function initMenu(wm: WindowManager) {
       },
       {
         label: 'Back to home',
-        accelerator: 'CmdOrCtrl+B',
+        accelerator: 'CmdOrCtrl+E',
         click: () => {
           if (wm.activeTabId === -1) {
             return;

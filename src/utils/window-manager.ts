@@ -503,11 +503,14 @@ export function addListeners(wm: WindowManager) {
   ipcMain.on('enable-hotkeys', () => {
     wm.enableHotkeys();
   });
-  ipcMain.on('rebind-hotkey', (_, { hotkeyId, newBind }) => {
+  ipcMain.on('rebind-hotkey', (sender, { hotkeyId, newBind }) => {
     const electronBind = translateKeys(newBind).join('+');
     switch (hotkeyId) {
       case 'toggle-app':
         wm.bindToggleShortcut(electronBind);
+        if (sender.processId !== wm.tabPageView.webContents.id) {
+          wm.tabPageView.webContents.send('update-toggle-app-hotkey', newBind);
+        }
         break;
       default:
         break;
@@ -1838,11 +1841,15 @@ export default class WindowManager {
 
   toggleAppShortcut = '';
 
+  hotkeysDisabled = false;
+
   disableHotkeys() {
     globalShortcut.unregister(this.toggleAppShortcut);
+    this.hotkeysDisabled = true;
   }
 
   enableHotkeys() {
+    this.hotkeysDisabled = false;
     this.bindToggleShortcut(this.toggleAppShortcut);
   }
 
@@ -1856,6 +1863,9 @@ export default class WindowManager {
     }
     const shortCut = this.toggleAppShortcut;
     if (shortCut === '') {
+      return;
+    }
+    if (this.hotkeysDisabled) {
       return;
     }
     globalShortcut.register(shortCut, () => {
