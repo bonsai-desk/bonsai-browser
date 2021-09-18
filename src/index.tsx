@@ -46,9 +46,9 @@ if (document.getElementById('overlay')) {
 
 if (document.getElementById('tab-page')) {
   const workspaceStore = createWorkspaceStore();
-  const tabPageStore = new TabPageStore(workspaceStore);
-  const historyStore = HistoryStore.create({ nodes: {}, active: '' });
   const keybindStore = createAndLoadKeybindStore();
+  const tabPageStore = new TabPageStore(workspaceStore, keybindStore);
+  const historyStore = HistoryStore.create({ nodes: {}, active: '' });
   keybindStore.loadFromFile('');
 
   hookListeners(historyStore);

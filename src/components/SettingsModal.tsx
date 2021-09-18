@@ -13,6 +13,7 @@ import {
   BlueButton,
   ButtonBase,
   InertButtonStyle,
+  StretchButtonInert,
 } from './StretchButton';
 import refreshIcon from '../../assets/refresh.svg';
 import { bindEquals, globalKeybindValid, showKeys } from '../store/keybinds';
@@ -46,11 +47,6 @@ const SubTitle = styled.div`
 const SettingsSection = styled.div`
   margin: 1rem 0 0 0;
 `;
-
-export interface IRebindModal {
-  active: boolean;
-  closeCallback?: () => void;
-}
 
 const Row = styled.div`
   display: flex;
@@ -100,6 +96,11 @@ const ResetButton = styled(ButtonBase)`
 const ResetButtonIcon = styled.img`
   -webkit-user-drag: none;
 `;
+
+export interface IRebindModal {
+  active: boolean;
+  closeCallback?: () => void;
+}
 
 const RebindModal = observer(({ active }: IRebindModal) => {
   const { tabPageStore, keybindStore } = useStore();
@@ -180,32 +181,29 @@ const RebindModal = observer(({ active }: IRebindModal) => {
 
 interface IKeyBindButton {
   id: string;
+  clickable?: boolean;
 }
 
-const KeyBindButton = observer(({ id }: IKeyBindButton) => {
+const KeyBindButton = observer(({ id, clickable = false }: IKeyBindButton) => {
   const { tabPageStore, keybindStore } = useStore();
-  // ipcRenderer.send('log-data', id);
-  // ipcRenderer.send(
-  //   'log-data',
-  //   getSnapshot(keybindStore.binds.get('floaty-window'))
-  // );
-
   const bind = keybindStore.binds.get(id);
-
-  // ipcRenderer.send('log-data', getSnapshot(bind));
-  // const code = bind ? bind.currentBind : '?';
-  return (
-    <StretchButton
-      onClick={() => {
-        runInAction(() => {
-          tabPageStore.rebindModalId = id;
-          tabPageStore.bindKeys = bind ? bind.currentBind : [];
-        });
-      }}
-    >
-      {bind?.showCode()}
-    </StretchButton>
-  );
+  if (clickable) {
+    return (
+      <StretchButton
+        onClick={() => {
+          if (clickable) {
+            runInAction(() => {
+              tabPageStore.rebindModalId = id;
+              tabPageStore.bindKeys = bind ? bind.currentBind : [];
+            });
+          }
+        }}
+      >
+        {bind?.showCode()}
+      </StretchButton>
+    );
+  }
+  return <StretchButtonInert>{bind?.showCode()}</StretchButtonInert>;
 });
 
 const SettingsModal = observer(() => {
@@ -220,7 +218,7 @@ const SettingsModal = observer(() => {
             <SettingsSection>
               <SubTitle>General</SubTitle>
               <div>
-                Toggle app <KeyBindButton id="toggle-app" />
+                Toggle app <KeyBindButton id="toggle-app" clickable />
               </div>
             </SettingsSection>
 
@@ -240,7 +238,7 @@ const SettingsModal = observer(() => {
               <SubTitle>Web Page</SubTitle>
               <div>
                 Toggle floating window{' '}
-                <KeyBindButton id="toggle-floating-window" />
+                <KeyBindButton id="toggle-floating-window" clickable />
               </div>
             </SettingsSection>
           </Settings>
