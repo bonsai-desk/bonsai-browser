@@ -18,7 +18,6 @@ import {
   Button as GrayButton,
   BlueButton,
   InertButtonStyle,
-  RoundButton,
 } from '../components/StretchButton';
 
 const Header = styled.div`
@@ -146,11 +145,11 @@ const Onboarding = () => {
 
   useEffect(() => {
     if (rebind) {
-      ipcRenderer.send('log-data', 'disable');
+      // ipcRenderer.send('log-data', 'disable');
       ipcRenderer.send('disable-hotkeys');
     }
     return () => {
-      ipcRenderer.send('log-data', 'enable');
+      // ipcRenderer.send('log-data', 'enable');
       ipcRenderer.send('enable-hotkeys');
     };
   }, [rebind]);
