@@ -813,7 +813,7 @@ export default class WindowManager {
     });
 
     mainWindow.on('minimize', (e: Event) => {
-      if (mainWindow !== null) {
+      if (mainWindow !== null && process.platform === 'darwin') {
         e.preventDefault();
         this.hideWindow();
       }
@@ -1031,35 +1031,47 @@ export default class WindowManager {
       if (opacity < 0.0) {
         opacity = 0.0;
         clearInterval(handle);
-        // this.unFloat();
-        this.tabPageView.webContents.send('blur');
-        this.mainWindow?.hide();
-        if (
-          process.platform === 'darwin' &&
-          process.env.NODE_ENV !== 'development'
-        ) {
-          // dont hide the app in development otherwise the devtool windows dissapear
-          // we want to hide in production so the previous window gets focus when bonsai
-          // gets closed
-          app.hide();
-        }
+        this.hideWindowNoAnimation();
       }
       this.mainWindow.setOpacity(easeOut(opacity));
     }, 10);
+  }
+
+  hideWindowNoAnimation() {
+    this.tabPageView.webContents.send('blur');
+    if (process.platform === 'darwin') {
+      this.mainWindow?.hide();
+    } else {
+      this.mainWindow.minimize();
+    }
+    if (
+      process.platform === 'darwin' &&
+      process.env.NODE_ENV !== 'development'
+    ) {
+      // dont hide the app in development otherwise the devtool windows dissapear
+      // we want to hide in production so the previous window gets focus when bonsai
+      // gets closed
+      app.hide();
+    }
   }
 
   showWindow() {
     this.overlayView.webContents.send('cancel-animation-frame');
 
     const mousePoint = screen.getCursorScreenPoint();
-    // const display = { activeDisplay: screen.getPrimaryDisplay() };
-    // display.activeDisplay = screen.getDisplayNearestPoint(mousePoint);
+    const display = { activeDisplay: screen.getPrimaryDisplay() };
+    display.activeDisplay = screen.getDisplayNearestPoint(mousePoint);
     this.setDisplay(screen.getDisplayNearestPoint(mousePoint));
 
     this.mainWindow.setVisibleOnAllWorkspaces(true, {
       visibleOnFullScreen: true,
     });
-    this.mainWindow.show();
+    if (process.platform === 'darwin' || !this.mainWindow.isVisible()) {
+      this.mainWindow.show();
+    }
+    if (process.platform !== 'darwin') {
+      this.mainWindow.restore();
+    }
     if (process.platform === 'darwin') {
       app.dock.show();
     }
@@ -1875,7 +1887,10 @@ export default class WindowManager {
         this.onboardingWindow?.destroy();
         this.onboardingWindow = null;
       }
-      if (!this.mainWindow?.isVisible()) {
+      if (
+        (process.platform === 'darwin' && !this.mainWindow.isVisible()) ||
+        (process.platform !== 'darwin' && this.mainWindow.isMinimized())
+      ) {
         this.mixpanelManager.track('show with global shortcut', {
           shortcut: shortCut,
         });
