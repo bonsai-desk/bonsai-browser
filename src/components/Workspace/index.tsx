@@ -5,10 +5,10 @@ import { Instance } from 'mobx-state-tree';
 import { DraggableCore } from 'react-draggable';
 import { runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
+import { MoreHoriz } from '@material-ui/icons';
 import MainItem from './MainItem';
 import MainGroup from './MainGroup';
 import trashIcon from '../../../assets/alternate-trash.svg';
-import hamburgerIcon from '../../../assets/hamburger-menu.svg';
 import { ItemGroup } from '../../store/workspace/item-group';
 import {
   InboxColumnWidth,
@@ -17,6 +17,7 @@ import {
 import { useStore, View } from '../../store/tab-page-store';
 import { HeaderInput, HeaderText } from './style';
 import ConfirmModal from '../Modal/Modal';
+import { ToggleButton } from '../Buttons';
 
 export { MainItem, MainGroup };
 
@@ -69,12 +70,6 @@ export const SideButton = styled.div`
   justify-content: center;
   align-items: center;
   z-index: 10000001;
-  transition-duration: 0.25s;
-  background-color: rgba(0, 0, 0, 0.25);
-
-  :hover {
-    background-color: rgba(50, 50, 50, 0.5);
-  }
 `;
 export const TrashButtonIcon = styled.img`
   width: 50px;
@@ -279,7 +274,9 @@ const Workspace = observer(
                 workspace.setHamburgerOpen(!workspace.hamburgerOpen);
               }}
             >
-              <CornerButtonIcon src={hamburgerIcon} />
+              <ToggleButton>
+                <MoreHoriz />
+              </ToggleButton>
             </SideButton>
             <HamburgerBackground
               style={{

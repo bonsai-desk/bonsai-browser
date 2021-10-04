@@ -14,12 +14,7 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import { setInterval } from 'timers';
 import WindowManager from './window-manager';
-import {
-  ICON_PNG,
-  ICON_SMALL_PNG,
-  ONBOARDING_HTML,
-  VIBRANCY,
-} from '../constants';
+import { ICON_PNG, ICON_SMALL_PNG, ONBOARDING_HTML } from '../constants';
 import windowFixedUpdate from './calculate-window-physics';
 import { windowHasView } from './utils';
 import { floatingSize, makeWebContentsSafe } from './wm-utils';
@@ -266,7 +261,7 @@ function initWindow(): BrowserWindow {
     });
   });
 
-  const mac = process.platform === 'darwin';
+  // const mac = process.platform === 'darwin';
   const mainWindow: BrowserWindow = new BrowserWindow({
     frame: false,
     transparent: true,
@@ -277,11 +272,9 @@ function initWindow(): BrowserWindow {
     minHeight: 50,
     show: false,
     icon: ICON_SMALL_PNG,
-    vibrancy: mac ? VIBRANCY : undefined, // menu, popover, hud, fullscreen-ui
+    // vibrancy: mac ? VIBRANCY : undefined, // menu, popover, hud, fullscreen-ui
+    // visualEffectState: mac ? 'active' : undefined,
     roundedCorners: false,
-    visualEffectState: mac ? 'active' : undefined,
-    // fullscreen: true,
-    // simpleFullscreen: true,
     webPreferences: {
       nodeIntegration: false,
       devTools: false,

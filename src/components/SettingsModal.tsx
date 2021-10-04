@@ -3,20 +3,25 @@ import React, { useEffect } from 'react';
 import styled from 'styled-components';
 import { runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
+import Search from '@material-ui/icons/Search';
+import BubbleChart from '@material-ui/icons/BubbleChart';
+import { Close, MoreHoriz } from '@material-ui/icons';
 import GenericModal from './GenericModal';
 import { useStore, View } from '../store/tab-page-store';
 import MiniGenericModal from './MiniGenericModal';
 import '../index.css';
 import {
-  StretchButton,
-  Button,
   BlueButton,
+  Button as BonsaiButton,
   ButtonBase,
   InertButtonStyle,
+  StretchButton,
   StretchButtonInert,
 } from './StretchButton';
 import refreshIcon from '../../assets/refresh.svg';
 import { bindEquals, globalKeybindValid, showKeys } from '../store/keybinds';
+import { color } from '../utils/jsutils';
+import { ButtonRow, Buttons, ToggleButton } from './Buttons';
 
 const SettingsParent = styled.div`
   display: flex;
@@ -49,15 +54,11 @@ const SettingsSection = styled.div`
   #settings-row {
     margin: 0.4rem 0 0 0;
   }
-  // div + div {
-  //   margin: 0.2rem 0 0 0;
-  // }
 `;
 
 export const Row = styled.div`
   display: flex;
   flex-wrap: wrap;
-  //background-color: blue;
   width: 100%;
 
   #button + #button {
@@ -158,7 +159,7 @@ const RebindModal = observer(({ active }: IRebindModal) => {
           </div>
         </Row>
         <Row style={{ justifyContent: 'flex-end' }}>
-          <Button
+          <BonsaiButton
             id="button"
             onClick={() => {
               runInAction(() => {
@@ -167,7 +168,7 @@ const RebindModal = observer(({ active }: IRebindModal) => {
             }}
           >
             Cancel
-          </Button>
+          </BonsaiButton>
           <BlueButton
             style={keysValid ? {} : InertButtonStyle}
             onClick={() => {
@@ -229,6 +230,39 @@ const SettingsModal = observer(() => {
           <Settings>
             <Title>Settings</Title>
 
+            <ToggleButton className="is-error">
+              <Close />
+            </ToggleButton>
+
+            <ToggleButton className="">
+              <MoreHoriz />
+            </ToggleButton>
+
+            <ButtonRow>
+              <Buttons className="is-active">
+                <BubbleChart />
+              </Buttons>
+              <Buttons className="is-active">
+                <Search />
+                <span style={{ paddingLeft: '1rem', paddingRight: '1rem' }}>
+                  Find or Create a Page
+                </span>
+              </Buttons>
+            </ButtonRow>
+            <ButtonRow>
+              <Buttons>Foo</Buttons>
+              <Buttons className="is-active">Foo</Buttons>
+              <Buttons disabled className="">
+                Foo
+              </Buttons>
+              <Buttons className="is-primary">Foo</Buttons>
+              <Buttons className="is-primary is-active">Foo</Buttons>
+              <Buttons disabled className="is-primary">
+                Foo
+              </Buttons>
+            </ButtonRow>
+
+            <div>{color('background-color', 'opacity-med')}</div>
             <SettingsSection>
               <SubTitle>General</SubTitle>
               <div>

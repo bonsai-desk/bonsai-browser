@@ -1,18 +1,19 @@
 import { observer } from 'mobx-react-lite';
-import React, { useState } from 'react';
+import React from 'react';
 import styled from 'styled-components';
-import { runInAction } from 'mobx';
+// import { runInAction } from 'mobx';
 import { TabPageColumn } from '../../interfaces/tab';
 import { ColumnParent } from './style';
 import ColumnHeader from './ColumnHeader';
 import Tab from '../Tab';
-import { useStore } from '../../store/tab-page-store';
+// import { useStore } from '../../store/tab-page-store';
 
 export const ColumnsParent = styled.div`
   display: flex;
   align-items: flex-start;
   flex-grow: 1;
-  margin: 0 10px 0 10px;
+  margin: 0 10px 0 -10px;
+  padding: 0 0 0 20px; // this is to stop shadow clipping
   overflow: scroll;
   ::-webkit-scrollbar {
     display: none;
@@ -20,32 +21,19 @@ export const ColumnsParent = styled.div`
 `;
 
 export const Column = observer(({ column }: { column: TabPageColumn }) => {
-  const { tabPageStore } = useStore();
-  const [hovered, setHovered] = useState(false);
-  function handleMouseOver() {
-    runInAction(() => {
-      tabPageStore.hoveringUrlInput = false;
-    });
-    setHovered(true);
-  }
-
-  function handleMouseExit() {
-    setHovered(false);
-  }
-
   return (
     <ColumnParent
       id="Column"
       onMouseOver={() => {
-        handleMouseOver();
+        // handleMouseOver();
       }}
       onMouseLeave={() => {
-        handleMouseExit();
+        // handleMouseExit();
       }}
     >
       <ColumnHeader column={column} />
       {column.tabs.map((tab) => {
-        return <Tab key={tab.id} tab={tab} hover={hovered} selected={false} />;
+        return <Tab key={tab.id} tab={tab} hover selected={false} />;
       })}
     </ColumnParent>
   );

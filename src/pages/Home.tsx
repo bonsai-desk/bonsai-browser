@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import { runInAction } from 'mobx';
-import styled, { css } from 'styled-components';
+import styled, { createGlobalStyle, css } from 'styled-components';
 import { useStore, View } from '../store/tab-page-store';
 import Header from '../components/URLBox';
 import FuzzyTabs from '../components/FuzzyTabs';
@@ -19,6 +19,71 @@ import redX from '../../assets/x-letter.svg';
 import home from '../../assets/home.svg';
 import GenericModal from '../components/GenericModal';
 import SettingsModal from '../components/SettingsModal';
+import { color, themePermute } from '../utils/jsutils';
+
+const THEME_LIGHT = {
+  'link-color': '#0075E1',
+  'highlight-color': '#F9A132',
+  'text-highlight-color': '#ffdb8a',
+  'warning-color': '#D20000',
+  'confirmation-color': '#009E23',
+  'header-text-color': '#322F38',
+  'body-text-color': '#433F38',
+  'border-color': 'hsla(32, 81%, 10%, 0.08)',
+  'background-plus-2': '#ffffff',
+  'background-plus-1': '#fbfbfb',
+  'background-color': '#F6F6F6',
+  'background-minus-1': '#FAF8F6',
+  'background-minus-2': '#EFEDEB',
+  'graph-control-bg': '#f9f9f9',
+  'graph-control-color': 'black',
+  'graph-node-normal': '#909090',
+  'graph-node-hlt': '#0075E1',
+  'graph-link-normal': '#cfcfcf',
+  'error-color': '#fd5243',
+};
+
+// const THEME_DARK = {
+//   'link-color': '#2399E7',
+//   'highlight-color': '#FBBE63',
+//   'text-highlight-color': '#FBBE63',
+//   'warning-color': '#DE3C21',
+//   'confirmation-color': '#189E36',
+//   'header-text-color': '#BABABA',
+//   'body-text-color': '#AAAAAA',
+//   'border-color': 'hsla(32, 81%, 90%, 0.08)',
+//   'background-minus-1': '#151515',
+//   'background-minus-2': '#111',
+//   'background-color': '#1A1A1A',
+//   'background-plus-1': '#222',
+//   'background-plus-2': '#333',
+//   'graph-control-bg': '#272727',
+//   'graph-control-color': 'white',
+//   'graph-node-normal': '#909090',
+//   'graph-node-hlt': '#FBBE63',
+//   'graph-link-normal': '#323232',
+//   'error-color': '#fd5243',
+// };
+
+const OPACITIES = {
+  'opacity-lower': 0.1,
+  'opacity-low': 0.25,
+  'opacity-med': 0.5,
+  'opacity-high': 0.75,
+  'opacity-higher': 0.85,
+};
+
+const GlobalStyle = createGlobalStyle`
+html,
+body {
+  line-height: 1.5;
+  color: ${color('body-text-color')};
+  font-size: 16px;
+}
+:root {
+${themePermute(THEME_LIGHT, OPACITIES)}
+}
+`;
 
 const BackHomeButtonParent = styled.div`
   width: 2rem;
@@ -122,20 +187,6 @@ const Content = observer(() => {
 const DebugModal = observer(() => {
   const { tabPageStore } = useStore();
 
-  const historyBoxRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    tabPageStore.historyBoxRef = historyBoxRef;
-  }, [tabPageStore]);
-
-  useEffect(() => {
-    const historyActive = tabPageStore.View === View.History;
-    ipcRenderer.send('history-modal-active-update', historyActive);
-    if (historyActive) {
-      ipcRenderer.send('history-search', tabPageStore.historyText);
-    }
-  }, [tabPageStore.View, tabPageStore.historyText]);
-
   if (tabPageStore.View !== View.NavigatorDebug) {
     return <div />;
   }
@@ -185,48 +236,27 @@ function useWindowSize(
   return windowSize;
 }
 
-// function paintVignette(
-//   ws: { width: number; height: number },
-//   canvas: HTMLCanvasElement,
-//   workArea: Rectangle
-// ) {
-//   return;
-//   const context = canvas.getContext('2d');
-//   if (context) {
-//     const { width } = ws;
-//     canvas.width = width;
-//     const { height } = ws;
-//     canvas.height = height;
-//
-//     const sides = [
-//       workArea.y,
-//       ws.width - (workArea.x + workArea.width),
-//       ws.height - (workArea.y + workArea.height),
-//       workArea.x,
-//     ];
-//
-//     const max = Math.max(...sides);
-//
-//     const x = 0;
-//     const y = 0;
-//
-//     context.strokeStyle = 'grey';
-//     context.beginPath();
-//     context.moveTo(x - 500, y + height);
-//     context.lineTo(x + width + 500, y + height);
-//     context.closePath();
-//
-//     context.strokeStyle = 'darkgray';
-//     context.beginPath();
-//     context.moveTo(x - 500, y);
-//     context.lineTo(x + width + 500, y);
-//     context.closePath();
-//
-//     context.filter = 'blur(50px)';
-//     context.lineWidth = (max + 150) * 2;
-//     context.stroke();
-//   }
-// }
+function paintVignette(
+  ws: { width: number; height: number },
+  canvas: HTMLCanvasElement
+) {
+  const context = canvas.getContext('2d');
+  if (context) {
+    const { width } = ws;
+    canvas.width = width;
+    const { height } = ws;
+    canvas.height = height;
+    const grd = context.createLinearGradient(0, 0, canvas.width, canvas.height);
+
+    grd.addColorStop(0, 'rgb(76,89,199)');
+    grd.addColorStop(1, 'rgb(97,151,219)');
+
+    // grd.addColorStop(0, 'rgb(76,89,199)');
+    // grd.addColorStop(1, 'rgb(0,0,0)');
+    context.fillStyle = grd;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+  }
+}
 
 const FloatingShadow = styled.div`
   position: fixed;
@@ -250,10 +280,10 @@ const Home = observer(() => {
   const canvasRef = useCallback(
     (node: HTMLCanvasElement) => {
       if (node !== null) {
-        // paintVignette(ws, node, tabPageStore.workAreaRect);
+        paintVignette(ws, node);
       }
     },
-    [ws, tabPageStore.workAreaRect]
+    [ws]
   );
 
   useEffect(() => {
@@ -295,6 +325,7 @@ const Home = observer(() => {
         }
       }}
     >
+      <GlobalStyle />
       <BackHomeButton />
       <Content />
       <HistoryModal />

@@ -1,12 +1,12 @@
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import { runInAction } from 'mobx';
 import React from 'react';
 import { ipcRenderer } from 'electron';
-import TabPageStore, { useStore, View } from '../store/tab-page-store';
-import HistoryButton from './HistoryButton';
-import gearImg from '../../assets/gear.svg';
-import NavButtonParent from './NavButtonParent';
+import { Add, Settings } from '@material-ui/icons';
+import { useStore, View } from '../store/tab-page-store';
+import { ToggleButton, Buttons, ButtonRow } from './Buttons';
+import { color } from '../utils/jsutils';
 
 const FooterParent = styled.div`
   width: 100%;
@@ -15,60 +15,25 @@ const FooterParent = styled.div`
   align-items: center;
   flex-shrink: 0;
 `;
-const TheThing = styled.div`
-  width: 50px;
-  height: 50px;
-  margin: 0 4px 0 4px;
-  pointer-events: none;
-`;
-const PlusButtonParent = styled.button`
-  color: white;
-  font-size: 0.8rem;
-  font-weight: bold;
-  border: none;
-  outline: none;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  margin: 0 4px 0 4px;
-  overflow: hidden;
-  transition-duration: 0.25s;
-  background-color: rgba(0, 0, 0, 0.25);
 
-  :hover {
-    background-color: rgba(0, 0, 0, 0.5);
-  }
+const BottomButtonRow = styled(ButtonRow)`
+  background-color: ${color('background-color')};
+  border-radius: 0.25rem;
 `;
-const FooterButtonParent = styled.button`
-  font-size: 0.8rem;
-  font-weight: bold;
-  border: none;
-  outline: none;
-  width: 120px;
-  height: calc(100% - 10px);
-  border-radius: 1rem;
-  margin: 0 4px 0 4px;
-  overflow: hidden;
-  background-color: red;
-  transition-duration: 0.1s;
-  color: ghostwhite;
-  ${({ active }: { active: boolean }) => {
-    if (active) {
-      return css`
-        background-color: rgba(0, 0, 0, 0.5);
-        :hover {
-          background-color: rgba(0, 0, 0, 0.6);
-        }
-      `;
-    }
 
-    return css`
-      background-color: rgba(0, 0, 0, 0.25);
-      :hover {
-        background-color: rgba(0, 0, 0, 0.5);
-      }
-    `;
-  }}
+const RightButtons = styled(BottomButtonRow)`
+  position: absolute;
+  right: 10px;
+`;
+
+const MiddleButtons = styled(BottomButtonRow)`
+  position: relative;
+`;
+
+const PlusButton = styled(ToggleButton)`
+  position: absolute;
+  right: -2rem;
+  top: 0;
 `;
 
 const WorkspaceButtons = observer(() => {
@@ -76,13 +41,13 @@ const WorkspaceButtons = observer(() => {
 
   const buttons = Array.from(workspaceStore.workspaces.values()).map(
     (workspace) => {
+      const active =
+        tabPageStore.View === View.WorkSpace &&
+        workspace.id === workspaceStore.activeWorkspaceId;
       return (
-        <FooterButtonParent
+        <Buttons
+          className={active ? 'is-active' : ''}
           key={workspace.id}
-          active={
-            tabPageStore.View === View.WorkSpace &&
-            workspace.id === workspaceStore.activeWorkspaceId
-          }
           onMouseDown={(e) => {
             e.stopPropagation();
           }}
@@ -109,82 +74,64 @@ const WorkspaceButtons = observer(() => {
           }}
         >
           {workspace.name}
-        </FooterButtonParent>
+        </Buttons>
       );
     }
   );
 
   return (
     <>
-      <TheThing />
-      {buttons}
-      <PlusButtonParent
-        onMouseDown={(e) => {
-          e.stopPropagation();
-        }}
-        onClick={() => {
-          const workspace = workspaceStore.createWorkspace('my new workspace');
-          workspace.setShouldEditName(true);
-          workspaceStore.setActiveWorkspaceId(workspace.id);
-          runInAction(() => {
-            tabPageStore.View = View.WorkSpace;
-          });
-        }}
-      >
-        +
-      </PlusButtonParent>
+      <MiddleButtons>
+        {buttons}
+        <PlusButton
+          onMouseDown={(e) => {
+            e.stopPropagation();
+          }}
+          onClick={() => {
+            const workspace =
+              workspaceStore.createWorkspace('my new workspace');
+            workspace.setShouldEditName(true);
+            workspaceStore.setActiveWorkspaceId(workspace.id);
+            runInAction(() => {
+              tabPageStore.View = View.WorkSpace;
+            });
+          }}
+        >
+          <Add />
+        </PlusButton>
+      </MiddleButtons>
     </>
   );
 });
 
-const RightButtons = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  position: absolute;
-  bottom: 0;
-  right: 10px;
-  align-items: center;
-`;
-
-const GearDiv = styled.div`
-  background-image: url(${gearImg});
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center center;
-  width: 30px;
-  height: 40%;
-`;
-
-function genTogglePage(tabPageStore: TabPageStore, view: View) {
-  return () => {
-    runInAction(() => {
-      if (tabPageStore.View === View.Tabs) {
-        tabPageStore.View = view;
-      } else if (tabPageStore.View === view) {
-        tabPageStore.View = View.Tabs;
-      }
-    });
-  };
-}
-
 const Footer = observer(({ onViewPage }: { onViewPage: boolean }) => {
   const { tabPageStore } = useStore();
-  const toggleDebug = genTogglePage(tabPageStore, View.NavigatorDebug);
-  const toggleSettings = genTogglePage(tabPageStore, View.Settings);
 
   const footerContent =
     tabPageStore.View === View.Navigator ? null : (
       <>
         <WorkspaceButtons />
         <RightButtons
-          style={{
-            height:
-              tabPageStore.screen.height -
-              (tabPageStore.innerBounds.y + tabPageStore.innerBounds.height),
-          }}
+        // style={{
+        //   height:
+        //     tabPageStore.screen.height -
+        //     (tabPageStore.innerBounds.y + tabPageStore.innerBounds.height),
+        // }}
         >
-          <HistoryButton />
-          <NavButtonParent
+          <Buttons
+            className={tabPageStore.View === View.History ? 'is-active' : ''}
+            onClick={() => {
+              runInAction(() => {
+                tabPageStore.View = View.History;
+              });
+            }}
+          >
+            History
+          </Buttons>
+          <Buttons
+            className={
+              tabPageStore.View === View.NavigatorDebug ? 'is-active' : ''
+            }
             onClick={() => {
               runInAction(() => {
                 tabPageStore.View = View.NavigatorDebug;
@@ -192,16 +139,17 @@ const Footer = observer(({ onViewPage }: { onViewPage: boolean }) => {
             }}
           >
             Debug
-          </NavButtonParent>
-          <NavButtonParent
+          </Buttons>
+          <Buttons
+            className={tabPageStore.View === View.Settings ? 'is-active' : ''}
             onClick={() => {
               runInAction(() => {
                 tabPageStore.View = View.Settings;
               });
             }}
           >
-            <GearDiv />
-          </NavButtonParent>
+            <Settings />
+          </Buttons>
         </RightButtons>
       </>
     );
