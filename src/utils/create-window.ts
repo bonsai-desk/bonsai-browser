@@ -282,7 +282,7 @@ function initWindow(): BrowserWindow {
     },
   });
   makeWebContentsSafe(mainWindow.webContents);
-  mainWindow.setAlwaysOnTop(true, 'status');
+  mainWindow.setAlwaysOnTop(true, 'pop-up-menu');
   return mainWindow;
 }
 

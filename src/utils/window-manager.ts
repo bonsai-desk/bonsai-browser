@@ -1062,6 +1062,8 @@ export default class WindowManager {
   }
 
   showWindow() {
+    this.mainWindow.setAlwaysOnTop(true, 'pop-up-menu');
+
     this.overlayView.webContents.send('cancel-animation-frame');
 
     const mousePoint = screen.getCursorScreenPoint();
