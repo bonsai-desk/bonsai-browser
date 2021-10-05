@@ -819,6 +819,12 @@ export default class WindowManager {
       }
     });
 
+    mainWindow.on('restore', () => {
+      if (mainWindow !== null && process.platform !== 'darwin') {
+        this.showWindow();
+      }
+    });
+
     this.hideWindow();
     this.handleResize();
     this.bindToggleShortcut('Alt+Space');
