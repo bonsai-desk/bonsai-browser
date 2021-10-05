@@ -230,39 +230,6 @@ const SettingsModal = observer(() => {
           <Settings>
             <Title>Settings</Title>
 
-            <ToggleButton className="is-error">
-              <Close />
-            </ToggleButton>
-
-            <ToggleButton className="">
-              <MoreHoriz />
-            </ToggleButton>
-
-            <ButtonRow>
-              <Buttons className="is-active">
-                <BubbleChart />
-              </Buttons>
-              <Buttons className="is-active">
-                <Search />
-                <span style={{ paddingLeft: '1rem', paddingRight: '1rem' }}>
-                  Find or Create a Page
-                </span>
-              </Buttons>
-            </ButtonRow>
-            <ButtonRow>
-              <Buttons>Foo</Buttons>
-              <Buttons className="is-active">Foo</Buttons>
-              <Buttons disabled className="">
-                Foo
-              </Buttons>
-              <Buttons className="is-primary">Foo</Buttons>
-              <Buttons className="is-primary is-active">Foo</Buttons>
-              <Buttons disabled className="is-primary">
-                Foo
-              </Buttons>
-            </ButtonRow>
-
-            <div>{color('background-color', 'opacity-med')}</div>
             <SettingsSection>
               <SubTitle>General</SubTitle>
               <div>
