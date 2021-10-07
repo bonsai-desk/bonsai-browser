@@ -18,7 +18,8 @@ import {
 } from './StretchButton';
 import refreshIcon from '../../assets/refresh.svg';
 import { bindEquals, globalKeybindValid, showKeys } from '../store/keybinds';
-import { Buttons, ToggleButton } from './Buttons';
+import { ButtonRow, Buttons, ToggleButton } from './Buttons';
+import { color } from '../utils/jsutils';
 
 const SettingsParent = styled.div`
   display: flex;
@@ -109,8 +110,12 @@ export const ResetButtonIcon = styled.img`
   -webkit-user-drag: none;
 `;
 
-const EmailError = styled.div`
-  padding-left: 100px;
+const Message = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  height: 2rem;
+  width: 100%;
 `;
 
 export interface IRebindModal {
@@ -222,6 +227,16 @@ const KeyBindButton = observer(({ id, clickable = false }: IKeyBindButton) => {
   return <StretchButtonInert>{bind?.showCode()}</StretchButtonInert>;
 });
 
+const EmailContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+`;
+
+const EmailInput = styled.input`
+  width: auto;
+`;
+
 function validateEmail(email: string) {
   const re =
     /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -241,69 +256,87 @@ const SettingsModal = observer(() => {
           <Settings>
             <Title>Settings</Title>
 
-            <SettingsSection
-              style={{
-                border: tabPageStore.seenEmailForm ? 'none' : '2px solid red',
-                position: 'relative',
-              }}
-            >
-              <SubTitle>Email List</SubTitle>
-              <ToggleButton
-                className="is-error rounded"
+            <EmailContainer>
+              <SettingsSection
                 style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: 0,
-                  display: tabPageStore.seenEmailForm ? 'none' : 'inline-flex',
-                }}
-                onClick={() => {
-                  ipcRenderer.send('dismiss-email-notification');
+                  width: '50%',
+                  position: 'relative',
+                  padding: '0.75rem',
+                  borderRadius: '10px',
+                  backgroundColor: tabPageStore.seenEmailForm
+                    ? color('background-minus-2')
+                    : color('link-color', 'opacity-lower'),
                 }}
               >
-                <Close />
-              </ToggleButton>
-              <div>
-                Enter email:{' '}
-                <input
-                  type="email"
-                  ref={emailBoxRef}
-                  onInput={() => {
-                    if (emailErrorRef.current !== null) {
-                      emailErrorRef.current.innerHTML = '';
-                    }
-                  }}
-                  onMouseDown={() => {
-                    ipcRenderer.send('dismiss-email-notification');
-                    if (emailErrorRef.current !== null) {
-                      emailErrorRef.current.innerHTML = '';
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (
-                      emailBoxRef.current !== null &&
-                      emailErrorRef.current !== null
-                    ) {
-                      if (validateEmail(emailBoxRef.current.value)) {
-                        ipcRenderer.send(
-                          'set-email',
-                          emailBoxRef.current.value
-                        );
-                        emailBoxRef.current.value = '';
-                        emailErrorRef.current.innerHTML = 'email submitted';
-                      } else {
-                        emailErrorRef.current.innerHTML = 'invalid email';
-                      }
-                    }
-                  }}
-                >
-                  Submit
-                </button>
-                <EmailError ref={emailErrorRef} />
-              </div>
-            </SettingsSection>
+                <SubTitle>Mailing List</SubTitle>
+                <Message ref={emailErrorRef} />
+                <div>
+                  <div
+                    style={{
+                      padding: '0 0 2rem 0',
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <ButtonRow>
+                      <SubTitle>Email:</SubTitle>
+                      <EmailInput
+                        type="email"
+                        ref={emailBoxRef}
+                        onInput={() => {
+                          if (emailErrorRef.current !== null) {
+                            emailErrorRef.current.innerHTML = '';
+                          }
+                        }}
+                      />
+                      <Buttons
+                        className="is-primary"
+                        onClick={() => {
+                          if (
+                            emailBoxRef.current !== null &&
+                            emailErrorRef.current !== null
+                          ) {
+                            if (validateEmail(emailBoxRef.current.value)) {
+                              ipcRenderer.send(
+                                'set-email',
+                                emailBoxRef.current.value
+                              );
+                              emailBoxRef.current.value = '';
+                              emailErrorRef.current.innerHTML =
+                                'email submitted';
+                            } else {
+                              emailErrorRef.current.innerHTML = 'invalid email';
+                            }
+                          }
+                        }}
+                      >
+                        Submit
+                      </Buttons>
+                    </ButtonRow>
+                  </div>
+                  <ButtonRow
+                    style={{
+                      justifyContent: 'flex-end',
+                    }}
+                  >
+                    <Buttons
+                      className="is-error"
+                      style={{
+                        display: tabPageStore.seenEmailForm
+                          ? 'none'
+                          : 'inline-flex',
+                      }}
+                      onClick={() => {
+                        ipcRenderer.send('dismiss-email-notification');
+                      }}
+                    >
+                      Clear Notification
+                    </Buttons>
+                  </ButtonRow>
+                </div>
+              </SettingsSection>
+            </EmailContainer>
 
             <SettingsSection>
               <SubTitle>General</SubTitle>
