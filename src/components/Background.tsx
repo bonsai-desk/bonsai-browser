@@ -9,7 +9,7 @@ const Background = styled.div`
   ${() => {
     if (myPlatform !== Platform.Mac) {
       return css`
-        background-color: rgba(100, 100, 100, 0.8);
+        //background-color: rgba(100, 100, 100, 0.8);
       `;
     }
     return '';

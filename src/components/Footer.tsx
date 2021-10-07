@@ -36,6 +36,34 @@ const PlusButton = styled(ToggleButton)`
   top: 0;
 `;
 
+const SettingsParent = styled.div`
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
+
+const NotificationIcon = styled.div`
+  background-color: red;
+  width: 15px;
+  height: 15px;
+  position: absolute;
+  border-radius: 100%;
+  right: -4px;
+  top: -4px;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
+
+const NotificationsNumber = styled.div`
+  height: 25px;
+  line-height: 25px;
+  font-size: 12px;
+  color: white;
+`;
+
 const WorkspaceButtons = observer(() => {
   const { tabPageStore, workspaceStore } = useStore();
 
@@ -140,16 +168,23 @@ const Footer = observer(({ onViewPage }: { onViewPage: boolean }) => {
           >
             Debug
           </Buttons>
-          <Buttons
-            className={tabPageStore.View === View.Settings ? 'is-active' : ''}
-            onClick={() => {
-              runInAction(() => {
-                tabPageStore.View = View.Settings;
-              });
-            }}
-          >
-            <Settings />
-          </Buttons>
+          <SettingsParent>
+            <Buttons
+              className={tabPageStore.View === View.Settings ? 'is-active' : ''}
+              onClick={() => {
+                runInAction(() => {
+                  tabPageStore.View = View.Settings;
+                });
+              }}
+            >
+              <Settings />
+            </Buttons>
+            <NotificationIcon
+              style={{ display: tabPageStore.seenEmailForm ? 'none' : 'flex' }}
+            >
+              <NotificationsNumber>1</NotificationsNumber>
+            </NotificationIcon>
+          </SettingsParent>
         </RightButtons>
       </>
     );

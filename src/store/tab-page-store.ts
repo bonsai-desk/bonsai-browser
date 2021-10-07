@@ -106,6 +106,8 @@ export default class TabPageStore {
 
   rebindModalId = '';
 
+  seenEmailForm: boolean | undefined = false;
+
   fuzzySelectedTab(): [boolean, TabPageTab | Instance<typeof Item>] | null {
     if (this.fuzzySelectionIndex[1] === 0) {
       const tab = this.filteredOpenTabs[this.fuzzySelectionIndex[0]];
@@ -570,6 +572,11 @@ export default class TabPageStore {
     ipcRenderer.on('resize-work-area', (_, workSpaceRect) => {
       runInAction(() => {
         this.workAreaRect = workSpaceRect;
+      });
+    });
+    ipcRenderer.on('set-seenEmailForm', (_, seenEmailForm) => {
+      runInAction(() => {
+        this.seenEmailForm = seenEmailForm;
       });
     });
   }

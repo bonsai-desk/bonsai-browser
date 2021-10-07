@@ -1,11 +1,9 @@
 import { observer } from 'mobx-react-lite';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { runInAction } from 'mobx';
+import { Close } from '@material-ui/icons';
 import { ipcRenderer } from 'electron';
-import Search from '@material-ui/icons/Search';
-import BubbleChart from '@material-ui/icons/BubbleChart';
-import { Close, MoreHoriz } from '@material-ui/icons';
 import GenericModal from './GenericModal';
 import { useStore, View } from '../store/tab-page-store';
 import MiniGenericModal from './MiniGenericModal';
@@ -20,8 +18,7 @@ import {
 } from './StretchButton';
 import refreshIcon from '../../assets/refresh.svg';
 import { bindEquals, globalKeybindValid, showKeys } from '../store/keybinds';
-import { color } from '../utils/jsutils';
-import { ButtonRow, Buttons, ToggleButton } from './Buttons';
+import { Buttons, ToggleButton } from './Buttons';
 
 const SettingsParent = styled.div`
   display: flex;
@@ -110,6 +107,10 @@ export const ResetButton = styled(ButtonBase)`
 
 export const ResetButtonIcon = styled.img`
   -webkit-user-drag: none;
+`;
+
+const EmailError = styled.div`
+  padding-left: 100px;
 `;
 
 export interface IRebindModal {
@@ -221,14 +222,88 @@ const KeyBindButton = observer(({ id, clickable = false }: IKeyBindButton) => {
   return <StretchButtonInert>{bind?.showCode()}</StretchButtonInert>;
 });
 
+function validateEmail(email: string) {
+  const re =
+    /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+  return re.test(String(email).toLowerCase());
+}
+
 const SettingsModal = observer(() => {
   const { tabPageStore } = useStore();
+
+  const emailBoxRef = useRef<HTMLInputElement>(null);
+  const emailErrorRef = useRef<HTMLDivElement>(null);
+
   return (
     <>
       <GenericModal view={View.Settings}>
         <SettingsParent>
           <Settings>
             <Title>Settings</Title>
+
+            <SettingsSection
+              style={{
+                border: tabPageStore.seenEmailForm ? 'none' : '2px solid red',
+                position: 'relative',
+              }}
+            >
+              <SubTitle>Email List</SubTitle>
+              <ToggleButton
+                className="is-error rounded"
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 0,
+                  display: tabPageStore.seenEmailForm ? 'none' : 'inline-flex',
+                }}
+                onClick={() => {
+                  ipcRenderer.send('dismiss-email-notification');
+                }}
+              >
+                <Close />
+              </ToggleButton>
+              <div>
+                Enter email:{' '}
+                <input
+                  type="email"
+                  ref={emailBoxRef}
+                  onInput={() => {
+                    if (emailErrorRef.current !== null) {
+                      emailErrorRef.current.innerHTML = '';
+                    }
+                  }}
+                  onMouseDown={() => {
+                    ipcRenderer.send('dismiss-email-notification');
+                    if (emailErrorRef.current !== null) {
+                      emailErrorRef.current.innerHTML = '';
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (
+                      emailBoxRef.current !== null &&
+                      emailErrorRef.current !== null
+                    ) {
+                      if (validateEmail(emailBoxRef.current.value)) {
+                        ipcRenderer.send(
+                          'set-email',
+                          emailBoxRef.current.value
+                        );
+                        emailBoxRef.current.value = '';
+                        emailErrorRef.current.innerHTML = 'email submitted';
+                      } else {
+                        emailErrorRef.current.innerHTML = 'invalid email';
+                      }
+                    }
+                  }}
+                >
+                  Submit
+                </button>
+                <EmailError ref={emailErrorRef} />
+              </div>
+            </SettingsSection>
 
             <SettingsSection>
               <SubTitle>General</SubTitle>

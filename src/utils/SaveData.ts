@@ -4,7 +4,7 @@ import fs from 'fs';
 import { decrypt, encrypt } from './utils';
 
 class SaveData {
-  data: { finishedOnboarding?: boolean };
+  data: { finishedOnboarding?: boolean; seenEmailForm?: boolean };
 
   constructor() {
     this.data = {};

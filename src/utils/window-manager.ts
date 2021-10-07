@@ -9,6 +9,7 @@ import {
   HandlerDetails,
   ipcMain,
   IpcMainEvent,
+  ipcRenderer,
   NativeImage,
   screen,
 } from 'electron';
@@ -525,6 +526,16 @@ export function addListeners(wm: WindowManager) {
   ipcMain.on('go-back-from-floating', () => {
     wm.tabPageView.webContents.send('go-back-from-floating');
   });
+  ipcMain.on('dismiss-email-notification', () => {
+    wm.saveData.data.seenEmailForm = true;
+    wm.saveData.save();
+    wm.tabPageView.webContents.send('set-seenEmailForm', true);
+  });
+  ipcMain.on('set-email', (_, email) => {
+    wm.mixpanelManager.mixpanel.people.set(wm.mixpanelManager.userId, {
+      email,
+    });
+  });
 }
 
 interface IAction {
@@ -707,6 +718,11 @@ export default class WindowManager {
         this.removeTab(tabView.id);
       });
       this.loadHistory();
+
+      this.tabPageView.webContents.send(
+        'set-seenEmailForm',
+        this.saveData.data.seenEmailForm
+      );
 
       this.setDisplay(this.display);
     });
