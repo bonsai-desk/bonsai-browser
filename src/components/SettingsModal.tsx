@@ -18,7 +18,7 @@ import {
 } from './StretchButton';
 import refreshIcon from '../../assets/refresh.svg';
 import { bindEquals, globalKeybindValid, showKeys } from '../store/keybinds';
-import { Buttons, ToggleButton } from './Buttons';
+import { ToggleButton } from './Buttons';
 
 const SettingsParent = styled.div`
   display: flex;

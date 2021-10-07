@@ -9,7 +9,6 @@ import {
   HandlerDetails,
   ipcMain,
   IpcMainEvent,
-  ipcRenderer,
   NativeImage,
   screen,
 } from 'electron';
