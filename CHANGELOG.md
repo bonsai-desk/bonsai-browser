@@ -1,5 +1,13 @@
 # Changelog
 
+## Bonsai 1.0.8 (October 8, 2021)
+
+- Windows version available at https://bonsaibrowser.com/
+- You will have to click 'more info' -> 'run anyway' to launch it the first time since the app is not signed on Windows
+- Update the style of some buttons
+- Change background to solid color instead of translucent
+- Sign up for mailing list in settings
+
 ## Bonsai 1.0.7 (September 18, 2021)
 
 - Floating window is now interactable
