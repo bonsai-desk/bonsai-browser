@@ -299,6 +299,49 @@ export default class TabPageStore {
     ];
   }
 
+  tabPageRow(): TabPageTab[] {
+    return Object.values(this.openTabs);
+  }
+
+  isFirstTab(id: number) {
+    const tabs = Object.values(this.openTabs);
+    const match = tabs.findIndex((element) => {
+      return element.id === id;
+    });
+    return match === 0;
+  }
+
+  leftOfTab(id: number): number | null {
+    const tabs = Object.values(this.openTabs);
+    const match = tabs.findIndex((element) => {
+      return element.id === id;
+    });
+    if (match) {
+      return tabs[match - 1].id;
+    }
+    return null;
+  }
+
+  leftOrRightOfTab(id: number) {
+    const tabs = Object.values(this.openTabs);
+    if (tabs.length <= 1) {
+      return null;
+    }
+    const match = tabs.findIndex((element) => {
+      return element.id === id;
+    });
+    if (match !== null) {
+      if (match === 0) {
+        return tabs[1].id;
+      }
+      if (tabs.length > match + 1) {
+        return tabs[match + 1].id;
+      }
+      return tabs[match - 1].id;
+    }
+    return null;
+  }
+
   tabPageColumns() {
     const columns: Record<string, TabPageTab[]> = {};
     Object.values(this.openTabs).forEach((tab) => {
@@ -578,6 +621,14 @@ export default class TabPageStore {
       runInAction(() => {
         this.seenEmailForm = seenEmailForm;
       });
+    });
+    ipcRenderer.on('close-tab', (_, tabId) => {
+      const neighborId = this.leftOrRightOfTab(tabId);
+      if (neighborId) {
+        ipcRenderer.send('set-tab', neighborId);
+      }
+      ipcRenderer.send('remove-tab', tabId);
+      ipcRenderer.send('mixpanel-track', 'close tab with hotkey in webview');
     });
   }
 }

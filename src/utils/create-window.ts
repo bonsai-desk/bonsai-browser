@@ -107,8 +107,8 @@ function initMenu(wm: WindowManager) {
           if (wm.activeTabId === -1) {
             return;
           }
-
-          wm.removeTabs([wm.activeTabId]);
+          wm.tabPageView.webContents.send('close-tab', wm.activeTabId);
+          // wm.removeTabs([wm.activeTabId]);
         },
       },
       {

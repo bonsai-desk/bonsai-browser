@@ -16,7 +16,6 @@ const TitleBarFull = styled.div`
 const TitleBarBottom = styled.div`
   width: calc(100% - 20px);
   height: 36px;
-  border-radius: 10px 10px 0 0;
   background-color: white;
   border-bottom: 1px solid #dee1e6;
   display: flex;

@@ -4,12 +4,15 @@ import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import { Instance } from 'mobx-state-tree';
 import { runInAction } from 'mobx';
+import { Close } from '@material-ui/icons';
 import { useStore, View } from '../store/tab-page-store';
 import { goBack, goForward, headsOnNode, INode } from '../store/history-store';
 import { IWorkSpaceStore } from '../store/workspace/workspace-store';
 import { Workspace } from '../store/workspace/workspace';
 import plusImg from '../../assets/plus.svg';
 import NavigatorTabModal from './NavigatorTabModal';
+import { color } from '../utils/jsutils';
+import { TabPageTab } from '../interfaces/tab';
 
 enum Direction {
   Back,
@@ -506,6 +509,197 @@ export function clickMain() {
   ipcRenderer.send('mixpanel-track', 'go to home from navigator border click');
 }
 
+const TabsBarParent = styled.div`
+  z-index: 1;
+  border-radius: 10px 10px 0 0;
+  display: flex;
+  background-color: #d9dde2;
+  width: 500px;
+  height: 34px;
+  position: absolute;
+  top: 0;
+  left: 0;
+`;
+
+const TabParent = styled.div`
+  padding: 0 0 0 13px;
+  height: 34px;
+  flex-grow: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  max-width: calc(240px - 13px);
+  //margin: 0 0 -1px 0;
+  border-radius: 10px 10px 0 0;
+
+  background-color: transparent;
+
+  //transition-property: filter, background, color, opacity;
+  transition-duration: 0.1s;
+
+  :hover {
+    background-color: #eff1f3;
+    #tab-inner {
+      border-right: 1px solid transparent;
+    }
+  }
+
+  &.is-active {
+    background-color: white;
+    :hover {
+      background-color: white;
+    }
+    #tab-inner {
+      border-right: 1px solid transparent;
+    }
+  }
+
+  &:not(:first-child) {
+    margin: 0 0 0 -1px;
+  }
+`;
+
+export const TabButton = styled.div`
+  border-radius: 1000px;
+  width: 16px;
+  height: 16px;
+  // color: ${color('body-text-color', 'opacity-high')};
+
+  color: ${color('body-text-color')};
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: center;
+  svg {
+    font-size: 14px;
+  }
+
+  :hover {
+    background-color: ${color('body-text-color', 'opacity-lower')};
+  }
+
+  :active,
+  :hover:active,
+  &.is-active {
+    color: ${color('body-text-color')};
+    background-color: ${color('body-text-color', 'opacity-lower')};
+  }
+
+  :active,
+  :hover:active,
+  :active.is-active {
+    background-color: ${color('body-text-color', 'opacity-low')};
+  }
+`;
+
+const Favicon = styled.div`
+  height: 16px;
+  width: 16px;
+  background-color: gray;
+  border-radius: 50%;
+  margin: 0 6px 0 0;
+`;
+
+const TabInner = styled.div`
+  width: calc(100%);
+  padding: 0 8px 0 0;
+  height: 19px;
+  border-right: 1px solid #808387;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-content: center;
+`;
+
+interface ITabsBar {
+  x: number;
+  y: number;
+  width: number;
+}
+
+interface ITab {
+  active?: boolean;
+  tab: TabPageTab;
+}
+
+const FavTitle = styled.div`
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  font-size: 12px;
+  width: calc(100% - 16px);
+`;
+
+const Tab = observer(({ tab, active = false }: ITab) => {
+  // eslint-disable-next-line @typescript-eslint/naming-convention,no-underscore-dangle
+  let _active = active;
+  const { tabPageStore, historyStore } = useStore();
+  let title = 'New Tab';
+  if (tab) {
+    title = tab.title ? tab.title : 'New Tab';
+  }
+  if (!active) {
+    _active = parseInt(historyStore.active, 10) === tab.id;
+  }
+  return (
+    <TabParent
+      className={_active ? 'is-active' : ''}
+      onClick={() => {
+        if (!_active) {
+          ipcRenderer.send('set-tab', tab.id);
+          ipcRenderer.send('mixpanel-track', 'click bar tab');
+          // tabPageStore.setUrlText('');
+        }
+      }}
+    >
+      <TabInner id="tab-inner">
+        <FavTitle>
+          <Favicon />
+          <div
+            style={{
+              height: '15px',
+              margin: '-1px 0 0 0',
+              width: 'calc(100% - 22px)',
+              textOverflow: 'ellipsis',
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              position: 'absolute',
+              left: '22px',
+            }}
+          >
+            {title}
+          </div>
+        </FavTitle>
+        <TabButton
+          onClick={(e) => {
+            e.stopPropagation();
+            const neighborId = tabPageStore.leftOrRightOfTab(tab.id);
+            if (neighborId) {
+              ipcRenderer.send('set-tab', neighborId);
+            }
+            ipcRenderer.send('remove-tab', tab.id);
+            ipcRenderer.send('mixpanel-track', 'click remove tab in bar');
+          }}
+        >
+          <Close />
+        </TabButton>
+      </TabInner>
+    </TabParent>
+  );
+});
+
+const TabsBar = observer(({ x, y, width }: ITabsBar) => {
+  const { tabPageStore } = useStore();
+  return (
+    <TabsBarParent style={{ top: y, left: x, width: `${width}px` }}>
+      {tabPageStore.tabPageRow().map((tab) => (
+        <Tab key={tab.id} tab={tab} />
+      ))}
+    </TabsBarParent>
+  );
+});
+
 const Navigator = observer(() => {
   const backRef = useRef(null);
   const { workspaceStore, tabPageStore, historyStore } = useStore();
@@ -521,6 +715,12 @@ const Navigator = observer(() => {
   const matches = nodeInWorkspaces(head, workspaceStore);
   const [x, y] = tabPageStore.navigatorTabModal;
   const tabModalInactive = x === 0 && y === 0;
+
+  const tabsBarPos = {
+    x: tabPageStore.innerBounds.x,
+    y: tabPageStore.innerBounds.y - 34,
+    width: tabPageStore.innerBounds.width,
+  };
   return (
     <NavigatorParent
       ref={backRef}
@@ -530,6 +730,7 @@ const Navigator = observer(() => {
         }
       }}
     >
+      <TabsBar x={tabsBarPos.x} y={tabsBarPos.y} width={tabsBarPos.width} />
       {!tabModalInactive ? <NavigatorTabModal /> : ''}
       <Panel
         dir={Direction.Back}

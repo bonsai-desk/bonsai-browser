@@ -82,7 +82,7 @@ export const RedXParent = styled.div`
 `;
 export const TabTitle = styled.div`
   width: calc(100% - 1rem);
-  height: 2rem;
+  height: 1.75rem;
   margin: 0.5rem 0.5rem 0 0.5rem;
   font-weight: 600;
   text-overflow: ellipsis;

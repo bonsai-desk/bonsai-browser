@@ -61,7 +61,6 @@ const TabImage = observer(
             hoverColor="#3572AC"
             onClick={(e) => {
               e.stopPropagation();
-
               workspaceStore.setChooseWorkspacePos(e.pageX, e.pageY);
               workspaceStore.setSelectedTab(tab);
             }}
