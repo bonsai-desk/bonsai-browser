@@ -1,5 +1,10 @@
 # Changelog
 
+## Bonsai 1.0.9 (October 12, 2021)
+
+- Linux version available at https://bonsaibrowser.com/
+    - Tested on Ubuntu 20.04
+
 ## Bonsai 1.0.8 (October 8, 2021)
 
 - Windows version available at https://bonsaibrowser.com/
