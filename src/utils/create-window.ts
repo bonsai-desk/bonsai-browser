@@ -2,6 +2,7 @@
 import {
   app,
   BrowserWindow,
+  BrowserWindowConstructorOptions,
   Menu,
   MenuItem,
   MenuItemConstructorOptions,
@@ -14,7 +15,12 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import { setInterval } from 'timers';
 import WindowManager from './window-manager';
-import { ICON_PNG, ICON_SMALL_PNG, ONBOARDING_HTML } from '../constants';
+import {
+  ICON_PNG,
+  ICON_PNG_2,
+  ICON_SMALL_PNG,
+  ONBOARDING_HTML,
+} from '../constants';
 import windowFixedUpdate from './calculate-window-physics';
 import { windowHasView } from './utils';
 import { floatingSize, makeWebContentsSafe } from './wm-utils';
@@ -245,7 +251,7 @@ function initBoot(wm: WindowManager, onboardingWindow: BrowserWindow | null) {
     }
   };
   wm.tabPageView.webContents.on('did-finish-load', boot);
-  setTimeout(boot, 5000);
+  setTimeout(boot, 15000);
 }
 
 function initWindow(): BrowserWindow {
@@ -261,8 +267,7 @@ function initWindow(): BrowserWindow {
     });
   });
 
-  // const mac = process.platform === 'darwin';
-  const mainWindow: BrowserWindow = new BrowserWindow({
+  const options: BrowserWindowConstructorOptions = {
     frame: false,
     transparent: true,
     resizable: false,
@@ -271,8 +276,8 @@ function initWindow(): BrowserWindow {
     minWidth: 50,
     minHeight: 50,
     show: false,
-    icon: ICON_SMALL_PNG,
-    // vibrancy: mac ? VIBRANCY : undefined, // menu, popover, hud, fullscreen-ui
+    icon: process.platform === 'linux' ? ICON_PNG_2 : ICON_SMALL_PNG,
+    // vibrancy: mac ? VIBRANCY : undefined, // menu, popov er, hud, fullscreen-ui
     // visualEffectState: mac ? 'active' : undefined,
     roundedCorners: false,
     webPreferences: {
@@ -280,7 +285,10 @@ function initWindow(): BrowserWindow {
       devTools: false,
       contextIsolation: true,
     },
-  });
+  };
+
+  // const mac = process.platform === 'darwin';
+  const mainWindow: BrowserWindow = new BrowserWindow(options);
   makeWebContentsSafe(mainWindow.webContents);
   mainWindow.setAlwaysOnTop(true, 'pop-up-menu');
   return mainWindow;
@@ -368,22 +376,24 @@ export function initTray(appIconPath: string, wm: WindowManager): Tray {
   const appIcon = new Tray(appIconPath);
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Alt+Space to open',
+      label:
+        'Hey, the tray is broken on linux. You can toggle the app on then right click the dock icon to close it.',
       click() {
         // do nothing. this is just to show the shortcut
       },
     },
-    {
-      label: 'Exit',
-      click() {
-        wm.tabPageView.webContents.send('save-snapshot');
-        wm.saveHistory();
-        setTimeout(() => {
-          wm.mainWindow?.destroy();
-          app.quit();
-        }, 100);
-      },
-    },
+    // {
+    //   label: 'Exit (broken on linux)',
+    //   click() {
+    //     console.log('exit');
+    //     wm.tabPageView.webContents.send('save-snapshot');
+    //     wm.saveHistory();
+    //     setTimeout(() => {
+    //       wm.mainWindow?.destroy();
+    //       app.quit();
+    //     }, 100);
+    //   },
+    // },
   ]);
 
   appIcon.on('double-click', () => {
@@ -457,6 +467,8 @@ export const createWindow = async () => {
     saveData,
     onboardingWindow
   );
+
+  initTray(ICON_SMALL_PNG, wm);
 
   initBoot(wm, onboardingWindow);
 

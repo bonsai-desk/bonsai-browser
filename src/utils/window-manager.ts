@@ -1060,7 +1060,7 @@ export default class WindowManager {
 
   hideWindowNoAnimation() {
     this.tabPageView.webContents.send('blur');
-    if (process.platform === 'darwin') {
+    if (process.platform === 'darwin' || process.platform === 'linux') {
       this.mainWindow?.hide();
     } else {
       this.mainWindow.minimize();
@@ -1089,10 +1089,14 @@ export default class WindowManager {
     this.mainWindow.setVisibleOnAllWorkspaces(true, {
       visibleOnFullScreen: true,
     });
-    if (process.platform === 'darwin' || !this.mainWindow.isVisible()) {
+    if (
+      process.platform === 'darwin' ||
+      process.platform === 'linux' ||
+      !this.mainWindow.isVisible()
+    ) {
       this.mainWindow.show();
     }
-    if (process.platform !== 'darwin') {
+    if (process.platform !== 'darwin' && process.platform !== 'linux') {
       this.mainWindow.restore();
     }
     if (process.platform === 'darwin') {
@@ -1105,6 +1109,14 @@ export default class WindowManager {
     this.setPinned(false);
     this.resizeBrowserWindow();
 
+    if (process.platform === 'linux') {
+      this.mainWindow.setResizable(true);
+      this.mainWindow.maximize();
+      setTimeout(() => {
+        this.mainWindow.setResizable(false);
+      }, 100);
+    }
+
     this.tabPageView.webContents.focus();
     this.tabPageView.webContents.send('focus-search');
 
@@ -1116,6 +1128,12 @@ export default class WindowManager {
       this.windowSize.height = floatingHeight;
       this.updateMainWindowBounds();
     }
+
+    setTimeout(() => {
+      this.handleResize();
+    }, 100);
+
+    // this.handleResize()
 
     // todo: setting the opacity to zero here
     // makes the vibrancy colors bad so we just don't
@@ -1704,6 +1722,10 @@ export default class WindowManager {
       return;
     }
 
+    if (process.platform === 'linux') {
+      this.mainWindow.unmaximize();
+    }
+
     this.setWindowFloating(true);
 
     const [floatingWidth, floatingHeight] = floatingSize(this.display);
@@ -1911,7 +1933,8 @@ export default class WindowManager {
         this.onboardingWindow = null;
       }
       if (
-        (process.platform === 'darwin' && !this.mainWindow.isVisible()) ||
+        ((process.platform === 'darwin' || process.platform === 'linux') &&
+          !this.mainWindow.isVisible()) ||
         (process.platform !== 'darwin' && this.mainWindow.isMinimized())
       ) {
         this.mixpanelManager.track('show with global shortcut', {
@@ -2020,16 +2043,32 @@ export default class WindowManager {
 
   private resizeBrowserWindow() {
     const { display } = this;
-    this.windowPosition[0] = display.bounds.x;
-    this.windowPosition[1] = display.bounds.y;
-    this.windowSize.width = display.bounds.width;
-    this.windowSize.height =
-      display.bounds.height + (process.platform === 'darwin' ? 0 : 1); // todo: on windows if you make it the same size as monitor, everything breaks!?!??!?!?
+    const extraPixel = process.platform === 'darwin' ? 0 : 1; // todo: on windows if you make it the same size as monitor, everything breaks!?!??!?!?
+    if (process.platform === 'linux') {
+      this.windowPosition[0] = display.workArea.x;
+      this.windowPosition[1] = display.workArea.y;
+      this.windowSize.width = display.workArea.width;
+      this.windowSize.height = display.workArea.height + extraPixel;
+    } else {
+      this.windowPosition[0] = display.bounds.x;
+      this.windowPosition[1] = display.bounds.y;
+      this.windowSize.width = display.bounds.width;
+      this.windowSize.height = display.bounds.height + extraPixel;
+    }
+
     this.updateMainWindowBounds();
   }
 
   unFloat() {
     this.resizeBrowserWindow();
+
+    if (process.platform === 'linux') {
+      this.mainWindow.setResizable(true);
+      this.mainWindow.maximize();
+      setTimeout(() => {
+        this.mainWindow.setResizable(false);
+      }, 100);
+    }
 
     const hh = this.headerHeight();
     const windowSize = currentWindowSize(this.mainWindow);

@@ -25,6 +25,8 @@ export const ONBOARDING_HTML = `file://${__dirname}/onboarding.html`;
 
 export const ICON_PNG = getAssetPath('icon.png');
 
+export const ICON_PNG_2 = getAssetPath('icons/128x128@1x.png');
+
 export const ICON_SMALL_PNG = getAssetPath('/icons/24x24-tray@2x.png');
 
 export const PRELOAD = `${__dirname}/utils/preload.js`;
