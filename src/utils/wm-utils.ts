@@ -80,6 +80,7 @@ export const updateWebContents = (
   id: number,
   view: BrowserView
 ) => {
+  // todo verify that this is hooked up
   titleBarView.webContents.send('web-contents-update', [
     id,
     view.webContents.canGoBack(),
@@ -118,8 +119,8 @@ export function resizeAsTitleBar(
   pageInnerBounds: Electron.Rectangle
 ) {
   const titleBarBounds = {
-    x: pageInnerBounds.x,
-    y: pageInnerBounds.y,
+    x: 0,
+    y: 0,
     width: pageInnerBounds.width,
     height,
   };
@@ -181,11 +182,7 @@ export function resizeAsOverlayView(view: BrowserView, windowSize: number[]) {
   });
 }
 
-export const updateContents = (
-  webView: IWebView,
-  titleBarView: BrowserView,
-  tabPageView: BrowserView
-) => {
+export const updateContents = (webView: IWebView, tabPageView: BrowserView) => {
   const url = webView.view.webContents.getURL();
   const key = urlToMapKey(url);
   if (webView.historyEntry === null || webView.historyEntry.key !== key) {
@@ -200,12 +197,12 @@ export const updateContents = (
     webView.historyEntry.url = url;
   }
 
-  titleBarView.webContents.send('web-contents-update', [
-    webView.id,
-    webView.view.webContents.canGoBack(),
-    webView.view.webContents.canGoForward(),
-    url,
-  ]);
+  // titleBarView.webContents.send('web-contents-update', [
+  //   webView.id,
+  //   webView.view.webContents.canGoBack(),
+  //   webView.view.webContents.canGoForward(),
+  //   url,
+  // ]);
   tabPageView.webContents.send('url-changed', [webView.id, url]);
 };
 

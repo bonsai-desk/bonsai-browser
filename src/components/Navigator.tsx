@@ -13,6 +13,7 @@ import plusImg from '../../assets/plus.svg';
 import NavigatorTabModal from './NavigatorTabModal';
 import { color } from '../utils/jsutils';
 import { TabPageTab } from '../interfaces/tab';
+import TitleBar from '../pages/App';
 
 enum Direction {
   Back,
@@ -509,21 +510,36 @@ export function clickMain() {
   ipcRenderer.send('mixpanel-track', 'go to home from navigator border click');
 }
 
+const TabsParent = styled.div`
+  z-index: 1;
+  border-radius: 10px 10px 0 0;
+  //display: flex;
+  background-color: #d9dde2;
+  width: 500px;
+  //height: 34px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 70px;
+  border-bottom: 1px solid #dee1e6;
+  //border-bottom: 1px solid black;
+`;
+
 const TabsBarParent = styled.div`
   z-index: 1;
   border-radius: 10px 10px 0 0;
   display: flex;
   background-color: #d9dde2;
-  width: 500px;
+  width: 100%;
   height: 34px;
-  position: absolute;
-  top: 0;
-  left: 0;
+  //position: absolute;
+  //top: 0;
+  //left: 0;
 `;
 
 const TabParent = styled.div`
   padding: 0 0 0 13px;
-  height: 34px;
+  height: 35px;
   flex-grow: 1;
   display: flex;
   flex-wrap: wrap;
@@ -692,11 +708,14 @@ const Tab = observer(({ tab, active = false }: ITab) => {
 const TabsBar = observer(({ x, y, width }: ITabsBar) => {
   const { tabPageStore } = useStore();
   return (
-    <TabsBarParent style={{ top: y, left: x, width: `${width}px` }}>
-      {tabPageStore.tabPageRow().map((tab) => (
-        <Tab key={tab.id} tab={tab} />
-      ))}
-    </TabsBarParent>
+    <TabsParent style={{ top: y, left: x, width: `${width}px` }}>
+      <TabsBarParent>
+        {tabPageStore.tabPageRow().map((tab) => (
+          <Tab key={tab.id} tab={tab} />
+        ))}
+      </TabsBarParent>
+      <TitleBar />
+    </TabsParent>
   );
 });
 

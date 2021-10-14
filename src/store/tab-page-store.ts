@@ -13,6 +13,7 @@ import { HistoryStore } from './history-store';
 import WorkspaceStore from './workspace/workspace-store';
 import packageInfo from '../package.json';
 import { Bind, KeybindStore } from './keybinds';
+import TabStore from './tabs';
 
 export enum View {
   None,
@@ -638,6 +639,7 @@ interface IContext {
   historyStore: Instance<typeof HistoryStore>;
   workspaceStore: Instance<typeof WorkspaceStore>;
   keybindStore: Instance<typeof KeybindStore>;
+  tabStore: TabStore;
 }
 
 const TabPageContext = createContext<null | IContext>(null);

@@ -86,7 +86,7 @@ function initMenu(wm: WindowManager) {
         label: 'Find',
         accelerator: 'CmdOrCtrl+F',
         click: () => {
-          if (windowHasView(wm.mainWindow, wm.titleBarView)) {
+          if (wm.activeTabId !== -1) {
             wm.clickFind();
           }
         },

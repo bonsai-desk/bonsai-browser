@@ -2,14 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import styled from 'styled-components';
 import { ipcRenderer } from 'electron';
-import { useStore } from '../utils/data';
 import refreshIcon from '../../assets/refresh.svg';
 import copyIcon from '../../assets/copy.svg';
 import backParent from '../../assets/back-parent.svg';
+import { useStore } from '../store/tab-page-store';
 
 const TitleBarFull = styled.div`
-  width: 100vw;
-  height: 100vh;
   font-family: sans-serif;
 `;
 
@@ -64,6 +62,7 @@ const URLBox = styled.input`
 
 const TitleBar = observer(() => {
   const { tabStore } = useStore();
+
   const urlBoxRef = useRef<HTMLInputElement>(null);
 
   const [hasRunOnce, setHasRunOnce] = useState(false);

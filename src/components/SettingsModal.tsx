@@ -2,7 +2,6 @@ import { observer } from 'mobx-react-lite';
 import React, { useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { runInAction } from 'mobx';
-import { Close } from '@material-ui/icons';
 import { ipcRenderer } from 'electron';
 import GenericModal from './GenericModal';
 import { useStore, View } from '../store/tab-page-store';
@@ -18,7 +17,7 @@ import {
 } from './StretchButton';
 import refreshIcon from '../../assets/refresh.svg';
 import { bindEquals, globalKeybindValid, showKeys } from '../store/keybinds';
-import { ButtonRow, Buttons, ToggleButton } from './Buttons';
+import { ButtonRow, Buttons } from './Buttons';
 import { color } from '../utils/jsutils';
 
 const SettingsParent = styled.div`

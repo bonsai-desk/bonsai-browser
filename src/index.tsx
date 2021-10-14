@@ -45,6 +45,7 @@ if (document.getElementById('overlay')) {
 }
 
 if (document.getElementById('tab-page')) {
+  const tabStore = new TabStore();
   const workspaceStore = createWorkspaceStore();
   const keybindStore = createAndLoadKeybindStore();
   const tabPageStore = new TabPageStore(workspaceStore, keybindStore);
@@ -56,7 +57,13 @@ if (document.getElementById('tab-page')) {
   render(
     <>
       <TabPageStoreProvider
-        value={{ tabPageStore, workspaceStore, historyStore, keybindStore }}
+        value={{
+          tabPageStore,
+          workspaceStore,
+          historyStore,
+          keybindStore,
+          tabStore,
+        }}
       >
         <Home />
       </TabPageStoreProvider>
