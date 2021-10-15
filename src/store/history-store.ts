@@ -364,17 +364,6 @@ export function hookListeners(h: Instance<typeof HistoryStore>) {
       node.setData({ ...node.data, title });
     }
   });
-  ipcRenderer.on('sleep-and-back', () => {
-    const headId = h.active;
-    const oldNode = h.heads.get(headId);
-    if (oldNode) {
-      if (oldNode.parent) {
-        goBack(h);
-      } else {
-        console.log('oh no');
-      }
-    }
-  });
   ipcRenderer.on('go-back-from-floating', () => {
     goBack(h);
   });

@@ -83,6 +83,16 @@ function initMenu(wm: WindowManager) {
     label: 'Main',
     submenu: [
       {
+        label: 'New Tab',
+        accelerator: 'CmdOrCtrl+T',
+        click: () => {
+          if (wm.activeTabId !== -1) {
+            const id = wm.createNewTab();
+            wm.setTab(id);
+          }
+        },
+      },
+      {
         label: 'Find',
         accelerator: 'CmdOrCtrl+F',
         click: () => {

@@ -2,9 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import styled from 'styled-components';
 import { ipcRenderer } from 'electron';
-import { Refresh, ArrowForward, ArrowBack } from '@material-ui/icons';
-import copyIcon from '../../assets/copy.svg';
-import backParent from '../../assets/back-parent.svg';
+import { Refresh, ArrowForward, ArrowBack, Launch } from '@material-ui/icons';
 import { useStore } from '../store/tab-page-store';
 import { Buttons } from '../components/Buttons';
 import { goForward } from '../store/history-store';
@@ -27,27 +25,7 @@ const TitleBarBottom = styled.div`
   padding: 0 10px 0 10px;
 `;
 
-const SquareButton = styled.div`
-  -webkit-app-region: no-drag;
-  user-select: none;
-  flex-shrink: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  border-radius: 10px;
-  color: white;
-
-  transition-duration: 0.1s;
-  background-color: rgba(0, 0, 0, 0.25);
-  :active {
-    background-color: rgba(0, 0, 0, 0.5);
-  }
-`;
-
-const RoundButton = styled(Buttons)`
+export const RoundButton = styled(Buttons)`
   border-radius: 50%;
   height: 28px;
   width: 28px;
@@ -55,11 +33,6 @@ const RoundButton = styled(Buttons)`
   svg {
     font-size: 20px;
   }
-`;
-
-const RoundButtonIcon = styled.img`
-  -webkit-user-drag: none;
-  width: 20px;
 `;
 
 const URLBox = styled.input`
@@ -137,9 +110,6 @@ const TitleBar = observer(() => {
           placeholder="Search Google or type a URL"
           value={tabStore.getActiveTabSearchBar()}
           onInput={(e) => {
-            // if (tabStore.activeTabId === -1) {
-            //   TabStore.requestAddTab();
-            // }
             tabStore.setActiveTabSearchBar(e.currentTarget.value);
           }}
           onKeyDown={(e) => {
@@ -168,23 +138,14 @@ const TitleBar = observer(() => {
             }
           }}
         />
-        <SquareButton
+        <RoundButton
           onClick={() => {
             ipcRenderer.send('float');
             ipcRenderer.send('mixpanel-track', 'click float window button');
           }}
         >
-          <RoundButtonIcon src={copyIcon} />
-        </SquareButton>
-        <div style={{ height: '100%', width: '10px' }} />
-        <SquareButton
-          onClick={() => {
-            ipcRenderer.send('sleep-and-back');
-            ipcRenderer.send('mixpanel-track', 'click sleep and back');
-          }}
-        >
-          <RoundButtonIcon src={backParent} />
-        </SquareButton>
+          <Launch />
+        </RoundButton>
       </TitleBarBottom>
     </TitleBarFull>
   );

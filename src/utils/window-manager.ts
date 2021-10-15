@@ -130,7 +130,7 @@ function handleGoForward(webView: IWebView, alertTargets: BrowserView[]) {
   });
 }
 
-function handleGoBack(wm: WindowManager, senderId: string, backTo: INode) {
+function handleGoBack(wm: WindowManager, senderId: string) {
   log(`${senderId} request go back`);
   const webView = wm.allWebViews[parseInt(senderId, 10)];
   if (webView) {
@@ -282,8 +282,11 @@ function translateKeys(jsKeys: string[]) {
 }
 
 export function addListeners(wm: WindowManager) {
-  ipcMain.on('create-new-tab', () => {
-    wm.createNewTab();
+  ipcMain.on('create-new-tab', (_, switchToTab = false) => {
+    const id = wm.createNewTab();
+    if (switchToTab) {
+      wm.setTab(id);
+    }
   });
   ipcMain.on('remove-tab', (_, id) => {
     wm.removeTabs([id]);
@@ -431,8 +434,8 @@ export function addListeners(wm: WindowManager) {
     }
   });
   ipcMain.on('go-back', (_, data) => {
-    const { senderId, backTo }: { senderId: string; backTo: INode } = data;
-    handleGoBack(wm, senderId, backTo);
+    const { senderId }: { senderId: string; backTo: INode } = data;
+    handleGoBack(wm, senderId);
   });
   ipcMain.on('go-forward', (_, eventData) => {
     const { senderId } = eventData;
@@ -470,9 +473,6 @@ export function addListeners(wm: WindowManager) {
   });
   ipcMain.on('mixpanel-track-with-properties', (_, [eventName, properties]) => {
     wm.mixpanelManager.track(eventName, properties);
-  });
-  ipcMain.on('sleep-and-back', () => {
-    wm.tabPageView.webContents.send('sleep-and-back');
   });
   ipcMain.on('log-data', (_, data) => {
     console.log(data);

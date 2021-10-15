@@ -112,6 +112,7 @@ export enum Bind {
   FuzzyRight = 'fuzzy-right',
   FuzzyUp = 'fuzzy-up',
   FuzzyDown = 'fuzzy-down',
+  NewTab = 'new-tab',
 }
 
 const KeyBind = types
@@ -174,6 +175,7 @@ export const KeybindStore = types
       // ipcRenderer.send('log-data', { bind });
       // ipcRenderer.send('log-data', getSnapshot(self.binds));
       const internalChord = self.binds.get(bind);
+      // ipcRenderer.send('log-data', getSnapshot(internalChord));
       if (internalChord) {
         // ipcRenderer.send('log-data', {
         //   cho: chord(e),
@@ -273,6 +275,11 @@ export function defaultKeybindStore(): Instance<typeof KeybindStore> {
         name: 'Close Web Page',
         defaultBind: ['Meta', 'W'],
         currentBind: ['Meta', 'W'],
+      },
+      'new-tab': {
+        name: 'New Tab',
+        defaultBind: ['Meta', 'KeyT'],
+        currentBind: ['Meta', 'KeyT'],
       },
     },
   });

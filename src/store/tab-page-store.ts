@@ -170,6 +170,14 @@ export default class TabPageStore {
     }
   }
 
+  closeTab(id: number, currentlyActive = false) {
+    const neighborId = this.leftOrRightOfTab(id);
+    if (currentlyActive && neighborId) {
+      ipcRenderer.send('set-tab', neighborId);
+    }
+    ipcRenderer.send('remove-tab', id);
+  }
+
   handleKeyDown(e: KeyboardEvent) {
     if (this.View === View.Settings && this.rebindModalId) {
       e.preventDefault();
@@ -178,6 +186,10 @@ export default class TabPageStore {
         hotkeyId: 'test',
         newBind: [...this.bindKeys],
       });
+      return;
+    }
+
+    if (this.view === View.Navigator) {
       return;
     }
 
@@ -451,7 +463,6 @@ export default class TabPageStore {
     this.filteredWorkspaceTabs = [];
 
     ipcRenderer.on('inner-bounds', (_, { screen, bounds }) => {
-      console.log('inner bounds set');
       runInAction(() => {
         this.screen = screen;
         this.innerBounds = bounds;

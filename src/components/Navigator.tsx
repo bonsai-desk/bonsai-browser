@@ -1,10 +1,10 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import styled, { css } from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import { Instance } from 'mobx-state-tree';
 import { runInAction } from 'mobx';
-import { Close } from '@material-ui/icons';
+import { Close, Add } from '@material-ui/icons';
 import { useStore, View } from '../store/tab-page-store';
 import { goBack, goForward, headsOnNode, INode } from '../store/history-store';
 import { IWorkSpaceStore } from '../store/workspace/workspace-store';
@@ -13,7 +13,7 @@ import plusImg from '../../assets/plus.svg';
 import NavigatorTabModal from './NavigatorTabModal';
 import { color } from '../utils/jsutils';
 import { TabPageTab } from '../interfaces/tab';
-import TitleBar from '../pages/App';
+import TitleBar, { RoundButton } from '../pages/App';
 
 enum Direction {
   Back,
@@ -650,6 +650,7 @@ const FavTitle = styled.div`
 `;
 
 const Tab = observer(({ tab, active = false }: ITab) => {
+  const tabRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/naming-convention,no-underscore-dangle
   let _active = active;
   const { tabPageStore, historyStore } = useStore();
@@ -657,11 +658,32 @@ const Tab = observer(({ tab, active = false }: ITab) => {
   if (tab) {
     title = tab.title ? tab.title : 'New Tab';
   }
+
   if (!active) {
     _active = parseInt(historyStore.active, 10) === tab.id;
   }
+
+  function handleAuxClick(e: MouseEvent) {
+    if (e.button === 1) {
+      tabPageStore.closeTab(tab.id, _active);
+      ipcRenderer.send('mixpanel-track', 'middle click remove tab in bar');
+    }
+  }
+
+  useEffect(() => {
+    if (tabRef && tabRef.current) {
+      tabRef.current.addEventListener('auxclick', handleAuxClick);
+      const cap = tabRef.current;
+      return () => {
+        cap?.removeEventListener('auxclick', handleAuxClick);
+      };
+    }
+    return () => {};
+  });
+
   return (
     <TabParent
+      ref={tabRef}
       className={_active ? 'is-active' : ''}
       onClick={() => {
         if (!_active) {
@@ -692,11 +714,7 @@ const Tab = observer(({ tab, active = false }: ITab) => {
         <TabButton
           onClick={(e) => {
             e.stopPropagation();
-            const neighborId = tabPageStore.leftOrRightOfTab(tab.id);
-            if (neighborId) {
-              ipcRenderer.send('set-tab', neighborId);
-            }
-            ipcRenderer.send('remove-tab', tab.id);
+            tabPageStore.closeTab(tab.id, _active);
             ipcRenderer.send('mixpanel-track', 'click remove tab in bar');
           }}
         >
@@ -707,6 +725,13 @@ const Tab = observer(({ tab, active = false }: ITab) => {
   );
 });
 
+const ButtonContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  margin: 0 8px 0 8px;
+`;
+
 const TabsBar = observer(({ x, y, width }: ITabsBar) => {
   const { tabPageStore } = useStore();
   return (
@@ -715,6 +740,16 @@ const TabsBar = observer(({ x, y, width }: ITabsBar) => {
         {tabPageStore.tabPageRow().map((tab) => (
           <Tab key={tab.id} tab={tab} />
         ))}
+
+        <ButtonContainer>
+          <RoundButton
+            onClick={() => {
+              ipcRenderer.send('create-new-tab', true);
+            }}
+          >
+            <Add />
+          </RoundButton>
+        </ButtonContainer>
       </TabsBarParent>
       <TitleBar />
     </TabsParent>
