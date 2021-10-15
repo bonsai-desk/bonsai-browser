@@ -16,7 +16,6 @@ import BezierEasing from 'bezier-easing';
 import fs from 'fs';
 import Fuse from 'fuse.js';
 import path from 'path';
-import { Instance } from 'mobx-state-tree';
 import { headerHeight } from './tab-view';
 import {
   FIND_HTML,
@@ -61,7 +60,7 @@ import {
   OpenGraphInfo,
   TabInfo,
 } from './interfaces';
-import { HistoryData, INode } from '../store/history-store';
+import { INode } from '../store/history-store';
 import MixpanelManager from './mixpanel-manager';
 import SaveData from './SaveData';
 
@@ -120,27 +119,15 @@ function goBack(webView: IWebView, alertTargets: BrowserView[]) {
   });
 }
 
-function handleGoForward(
-  webView: IWebView,
-  url: string,
-  alertTargets: BrowserView[]
-) {
-  log(`${webView.id} request go forward to (${url}) [${webView.forwardUrls}]`);
+function handleGoForward(webView: IWebView, alertTargets: BrowserView[]) {
+  log(`${webView.id} request go forward [${webView.forwardUrls}]`);
   const forwardUrl = webView.forwardUrls[webView.forwardUrls.length - 1];
-  if (forwardUrl === url) {
-    webView.forwardUrls.pop();
-    log(`${webView.id} match forward history match ${url}`);
-    webView.view.webContents.goForward();
-    alertTargets.forEach((target) => {
-      target.webContents.send('go-forward', { id: webView.id, url });
-    });
-  } else {
-    log(`${webView.id} go-pseudo-forward ${url}`);
-    alertTargets.forEach((target) => {
-      target.webContents.send('go-pseudo-forward', { id: webView.id, url });
-    });
-    webView.view.webContents.loadURL(url);
-  }
+
+  webView.forwardUrls.pop();
+  webView.view.webContents.goForward();
+  alertTargets.forEach((target) => {
+    target.webContents.send('go-forward', { id: webView.id, forwardUrl });
+  });
 }
 
 function handleGoBack(wm: WindowManager, senderId: string, backTo: INode) {
@@ -150,11 +137,6 @@ function handleGoBack(wm: WindowManager, senderId: string, backTo: INode) {
     if (webView.view.webContents.canGoBack()) {
       log(`${senderId} can go back`);
       goBack(webView, [wm.tabPageView]);
-    } else {
-      const { url } = backTo.data;
-      log(`${senderId} load url ${url}`);
-      handleWillNavigate(webView, url, [wm.tabPageView]);
-      webView.view.webContents.loadURL(url);
     }
   } else {
     log(`Failed to find webView for ${senderId}`);
@@ -453,12 +435,12 @@ export function addListeners(wm: WindowManager) {
     handleGoBack(wm, senderId, backTo);
   });
   ipcMain.on('go-forward', (_, eventData) => {
-    const { senderId, forwardTo } = eventData;
-    const { data: historyData }: INode = forwardTo;
-    const { url }: Instance<typeof HistoryData> = historyData;
+    const { senderId } = eventData;
+    // const { data: historyData }: INode = forwardTo;
+    // const { url }: Instance<typeof HistoryData> = historyData;
     const webView = wm.allWebViews[senderId];
     if (webView) {
-      handleGoForward(webView, url, [wm.tabPageView]);
+      handleGoForward(webView, [wm.tabPageView]);
     }
   });
   ipcMain.on('gesture', (event, data) => {

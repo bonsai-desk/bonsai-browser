@@ -1,4 +1,4 @@
-import { getSnapshot, IAnyModelType, Instance, types } from 'mobx-state-tree';
+import { IAnyModelType, Instance, types } from 'mobx-state-tree';
 import { ipcRenderer } from 'electron';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -146,76 +146,50 @@ function genNode(url: string) {
   return Node.create({ id: uuidv4(), data });
 }
 
-function headKeyWhereNode(
-  history: IHistory,
-  destinationNode: INode
-): number | undefined {
-  const match: number[] = [];
-  history.heads.forEach((node, key) => {
-    if (node.id === destinationNode.id) {
-      match.push(parseInt(key, 10));
-    }
-  });
-  if (match.length > 0) {
-    return match[0];
-  }
-  return undefined;
-}
+// function headKeyWhereNode(
+//   history: IHistory,
+//   destinationNode: INode
+// ): number | undefined {
+//   const match: number[] = [];
+//   history.heads.forEach((node, key) => {
+//     if (node.id === destinationNode.id) {
+//       match.push(parseInt(key, 10));
+//     }
+//   });
+//   if (match.length > 0) {
+//     return match[0];
+//   }
+//   return undefined;
+// }
 
 function setTab(webViewId: number) {
   log(`dispatch set-tab to ${webViewId}`);
   ipcRenderer.send('set-tab', webViewId);
 }
 
-export function goBack(history: IHistory, sleepOldNode = false) {
-  const headId = history.active;
-  const oldNode = history.heads.get(headId);
-  let nodeParent;
-  if (oldNode) {
-    if (oldNode.parent) {
-      nodeParent = oldNode.parent;
-    } else {
-      console.log('oh no 2');
-    }
-  }
-
-  if (!nodeParent) {
-    console.log('oh no 3');
-    return;
-  }
-
-  const node = nodeParent;
-
-  log('=== go back ===');
-  const key = headKeyWhereNode(history, node);
-  if (key) {
-    setTab(key);
-    if (sleepOldNode) {
-      ipcRenderer.send('remove-tab', headId);
-    }
-  } else {
-    log('dispatch go-back to main');
-    ipcRenderer.send('go-back', {
-      senderId: history.active,
-      backTo: getSnapshot(node),
-    });
-  }
+export function goBack(history: IHistory) {
+  ipcRenderer.send('go-back', {
+    senderId: history.active,
+  });
 }
 
-export function goForward(history: IHistory, destinationNode: INode) {
+export function goForward(history: IHistory) {
   log('=== go forward ===');
-  const key = headKeyWhereNode(history, destinationNode);
-  if (key) {
-    setTab(key);
-  } else {
-    log(
-      `${history.active} dispatch go forward to ${destinationNode.showNode()}`
-    );
-    ipcRenderer.send('go-forward', {
-      senderId: history.active,
-      forwardTo: getSnapshot(destinationNode),
-    });
-  }
+  ipcRenderer.send('go-forward', {
+    senderId: history.active,
+  });
+  // const key = headKeyWhereNode(history, destinationNode);
+  // if (key) {
+  //   setTab(key);
+  // } else {
+  //   log(
+  //     `${history.active} dispatch go forward to ${destinationNode.showNode()}`
+  //   );
+  //   ipcRenderer.send('go-forward', {
+  //     senderId: history.active,
+  //     forwardTo: getSnapshot(destinationNode),
+  //   });
+  // }
 }
 
 function handleGoForward(h: IHistory, webViewId: string, url: string) {
@@ -395,7 +369,7 @@ export function hookListeners(h: Instance<typeof HistoryStore>) {
     const oldNode = h.heads.get(headId);
     if (oldNode) {
       if (oldNode.parent) {
-        goBack(h, true);
+        goBack(h);
       } else {
         console.log('oh no');
       }

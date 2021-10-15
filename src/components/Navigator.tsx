@@ -307,7 +307,7 @@ const HistoryNavigatorItem = observer(
             ipcRenderer.send('mixpanel-track', 'click go back in navigator');
           }
           if (dir === Direction.Forward) {
-            goForward(historyStore, node);
+            goForward(historyStore);
             ipcRenderer.send('mixpanel-track', 'click go forward in navigator');
           }
         }}
@@ -349,11 +349,13 @@ const Panel = observer(
     dim,
     dir,
     children,
+    title = 'Panel',
   }: {
     items: INode[];
     dim: Dimensions;
     dir: Direction;
-    children?: JSX.Element | JSX.Element[];
+    children?: React.ReactNode;
+    title?: string;
   }) => {
     const { width, height } = dim;
     const navigatorItems = items.map((item) => (
@@ -366,7 +368,7 @@ const Panel = observer(
     ));
     return (
       <NavigatorPanel direction={dir} width={asPx(width)} height={asPx(height)}>
-        <Title>{dir === Direction.Back ? 'Back' : 'Forward'}</Title>
+        <Title>{title}</Title>
         {navigatorItems}
         {children}
       </NavigatorPanel>
@@ -729,8 +731,6 @@ const Navigator = observer(() => {
   // const tabMaxHeight = (9 / 16) * tabWidth;
   const { height } = tabPageStore.innerBounds;
   const head = historyStore.heads.get(historyStore.active);
-  const leftItems = head && head.parent ? [head.parent] : [];
-  const rightItems = head ? head.children.slice().reverse() : [];
   const matches = nodeInWorkspaces(head, workspaceStore);
   const [x, y] = tabPageStore.navigatorTabModal;
   const tabModalInactive = x === 0 && y === 0;
@@ -753,34 +753,15 @@ const Navigator = observer(() => {
       {!tabModalInactive ? <NavigatorTabModal /> : ''}
       <Panel
         dir={Direction.Back}
-        items={leftItems}
+        items={[]}
         dim={{ width: tabWidth, height, margin }}
+        title="Workspaces"
       >
-        <>
-          {leftItems.length === 0 ? (
-            <NavigatorItem
-              dir={Direction.Back}
-              active={false}
-              img=""
-              onClick={() => {}}
-              text="None"
-              maxHeight="3rem"
-            />
-          ) : (
-            ''
-          )}
-          <Title>Workspaces</Title>
-          {matches.map((match) => (
-            <WorkspaceItem key={match.itemId} data={match} />
-          ))}
-          {head ? <AddToWorkspace node={head} /> : ''}
-        </>
+        {matches.map((match) => (
+          <WorkspaceItem key={match.itemId} data={match} />
+        ))}
+        {head ? <AddToWorkspace node={head} /> : ''}
       </Panel>
-      <Panel
-        dir={Direction.Forward}
-        items={rightItems}
-        dim={{ width: tabWidth, height, margin }}
-      />
     </NavigatorParent>
   );
 });

@@ -2,10 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import styled from 'styled-components';
 import { ipcRenderer } from 'electron';
-import refreshIcon from '../../assets/refresh.svg';
+import { Refresh, ArrowForward, ArrowBack } from '@material-ui/icons';
 import copyIcon from '../../assets/copy.svg';
 import backParent from '../../assets/back-parent.svg';
 import { useStore } from '../store/tab-page-store';
+import { Buttons } from '../components/Buttons';
+import { goForward } from '../store/history-store';
 
 const TitleBarFull = styled.div`
   font-family: sans-serif;
@@ -25,7 +27,7 @@ const TitleBarBottom = styled.div`
   padding: 0 10px 0 10px;
 `;
 
-const RoundButton = styled.div`
+const SquareButton = styled.div`
   -webkit-app-region: no-drag;
   user-select: none;
   flex-shrink: 0;
@@ -45,6 +47,16 @@ const RoundButton = styled.div`
   }
 `;
 
+const RoundButton = styled(Buttons)`
+  border-radius: 50%;
+  height: 28px;
+  width: 28px;
+  padding: 0 8px;
+  svg {
+    font-size: 20px;
+  }
+`;
+
 const RoundButtonIcon = styled.img`
   -webkit-user-drag: none;
   width: 20px;
@@ -60,8 +72,15 @@ const URLBox = styled.input`
   margin: 0 10px 0 10px;
 `;
 
+const ButtonRow = styled.div`
+  display: grid;
+  grid-auto-flow: column;
+  grid-gap: 4px;
+  justify-content: flex-start;
+`;
+
 const TitleBar = observer(() => {
-  const { tabStore } = useStore();
+  const { tabStore, historyStore } = useStore();
 
   const urlBoxRef = useRef<HTMLInputElement>(null);
 
@@ -89,13 +108,29 @@ const TitleBar = observer(() => {
   return (
     <TitleBarFull>
       <TitleBarBottom>
-        <RoundButton
-          onClick={() => {
-            ipcRenderer.send('tab-refresh', tabStore.activeTabId);
-          }}
-        >
-          <RoundButtonIcon src={refreshIcon} />
-        </RoundButton>
+        <ButtonRow>
+          <RoundButton
+            onClick={() => {
+              ipcRenderer.send('go-back-from-floating');
+            }}
+          >
+            <ArrowBack />
+          </RoundButton>
+          <RoundButton
+            onClick={() => {
+              goForward(historyStore);
+            }}
+          >
+            <ArrowForward />
+          </RoundButton>
+          <RoundButton
+            onClick={() => {
+              ipcRenderer.send('tab-refresh', tabStore.activeTabId);
+            }}
+          >
+            <Refresh />
+          </RoundButton>
+        </ButtonRow>
         <URLBox
           type="text"
           ref={urlBoxRef}
@@ -133,23 +168,23 @@ const TitleBar = observer(() => {
             }
           }}
         />
-        <RoundButton
+        <SquareButton
           onClick={() => {
             ipcRenderer.send('float');
             ipcRenderer.send('mixpanel-track', 'click float window button');
           }}
         >
           <RoundButtonIcon src={copyIcon} />
-        </RoundButton>
+        </SquareButton>
         <div style={{ height: '100%', width: '10px' }} />
-        <RoundButton
+        <SquareButton
           onClick={() => {
             ipcRenderer.send('sleep-and-back');
             ipcRenderer.send('mixpanel-track', 'click sleep and back');
           }}
         >
           <RoundButtonIcon src={backParent} />
-        </RoundButton>
+        </SquareButton>
       </TitleBarBottom>
     </TitleBarFull>
   );
