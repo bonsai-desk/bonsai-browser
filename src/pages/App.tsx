@@ -2,7 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import styled from 'styled-components';
 import { ipcRenderer } from 'electron';
-import { Refresh, ArrowForward, ArrowBack, Launch } from '@material-ui/icons';
+import {
+  Refresh,
+  ArrowForward,
+  ArrowBack,
+  Launch,
+  PictureInPicture,
+} from '@material-ui/icons';
 import { useStore } from '../store/tab-page-store';
 import { Buttons } from '../components/Buttons';
 import { goForward } from '../store/history-store';
@@ -144,7 +150,7 @@ const TitleBar = observer(() => {
             ipcRenderer.send('mixpanel-track', 'click float window button');
           }}
         >
-          <Launch />
+          <PictureInPicture />
         </RoundButton>
       </TitleBarBottom>
     </TitleBarFull>
