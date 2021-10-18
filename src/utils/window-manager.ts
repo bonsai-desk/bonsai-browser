@@ -180,12 +180,14 @@ function openWindow(
     );
     if (windowHasView(wm.mainWindow, newWebView.view)) {
       const screenshotCallback = () => {
-        wm.mainWindow.removeBrowserView(newWebView.view);
-        log(
-          `remove ${view.id} after loaded ${url} with bounds ${JSON.stringify(
-            newWebView.view.getBounds()
-          )}`
-        );
+        if (wm.activeTabId !== newWebView.id) {
+          wm.mainWindow.removeBrowserView(newWebView.view);
+          log(
+            `remove ${view.id} after loaded ${url} with bounds ${JSON.stringify(
+              newWebView.view.getBounds()
+            )}`
+          );
+        }
       };
       wm.screenShotTab(newWebView.id, newWebView, screenshotCallback);
     }
@@ -1281,10 +1283,21 @@ export default class WindowManager {
     // this.resize();
   }
 
-  setTab(id: number, shouldScreenshot = true) {
+  setTab(_id: number | string, shouldScreenshot = true) {
+    let id;
+    if (typeof _id === 'string') {
+      id = parseInt(_id, 10);
+    } else {
+      id = _id;
+    }
     if (id === -1) {
       throw new Error('Use unSetTab instead of setTab(-1)!');
     }
+
+    if (this.activeTabId === id) {
+      return;
+    }
+
     const oldTabView = this.allWebViews[this.activeTabId];
 
     const cleanupBrowser = () => {
