@@ -174,10 +174,16 @@ function openWindow(
     }
   }
 
+  let didScreenshot = false;
+
   const loadedUrlCallback = () => {
     log(
       `url loaded and bounds are ${JSON.stringify(newWebView.view.getBounds())}`
     );
+    if (didScreenshot) {
+      return;
+    }
+    didScreenshot = true;
     if (windowHasView(wm.mainWindow, newWebView.view)) {
       const screenshotCallback = () => {
         if (wm.activeTabId !== newWebView.id) {
@@ -192,6 +198,10 @@ function openWindow(
       wm.screenShotTab(newWebView.id, newWebView, screenshotCallback);
     }
   };
+
+  setTimeout(() => {
+    loadedUrlCallback();
+  }, 750);
 
   wm.loadUrlInTab(newWindowId, url, false, 0, loadedUrlCallback);
   alertTargets.forEach((target) => {
