@@ -182,6 +182,22 @@ export function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
+export function get16Favicon(iconUrls: string[]) {
+  if (iconUrls.length === 1) {
+    return iconUrls[0];
+  }
+  let match = '';
+  iconUrls.forEach((icon) => {
+    if (icon.includes('16x16')) {
+      match = icon;
+    }
+  });
+  if (match) {
+    return match;
+  }
+  return iconUrls[0];
+}
+
 export function lerp(v0: number, v1: number, t: number): number {
   return v0 * (1 - t) + v1 * t;
 }

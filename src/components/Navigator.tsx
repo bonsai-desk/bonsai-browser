@@ -607,12 +607,15 @@ export const TabButton = styled.div`
   }
 `;
 
+// noinspection CssInvalidPropertyValue
 const Favicon = styled.div`
   height: 16px;
   width: 16px;
-  background-color: gray;
-  border-radius: 50%;
   margin: 0 6px 0 0;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center;
+  image-rendering: -webkit-optimize-contrast;
 `;
 
 const TabInner = styled.div`
@@ -668,6 +671,7 @@ const Tab = observer(
         try {
           style.transform = `translate(${x}px, 0)`;
         } catch (e) {
+          // todo handle when the thing becomes readonly when you stop dragging?
           console.log(e);
         }
       }
@@ -727,7 +731,11 @@ const Tab = observer(
         >
           <TabInner id="tab-inner">
             <FavTitle>
-              <Favicon />
+              <Favicon
+                style={{
+                  backgroundImage: `url(${tab.favicon})`,
+                }}
+              />
               <div
                 style={{
                   height: '15px',

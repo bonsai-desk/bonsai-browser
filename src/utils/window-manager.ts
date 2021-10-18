@@ -28,6 +28,7 @@ import {
 import {
   decrypt,
   encrypt,
+  get16Favicon,
   parseMap,
   stringifyMap,
   stringToUrl,
@@ -1005,7 +1006,7 @@ export default class WindowManager {
         webView.favicon = favicons[0];
         this.tabPageView.webContents.send('favicon-updated', [
           webView.id,
-          favicons[0],
+          get16Favicon(favicons),
         ]);
       }
     });
