@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-props-no-spreading */
 import React, { useEffect, useRef, useState } from 'react';
 import styled, { css } from 'styled-components';
 import { observer } from 'mobx-react-lite';
@@ -5,6 +6,12 @@ import { ipcRenderer } from 'electron';
 import { Instance } from 'mobx-state-tree';
 import { runInAction } from 'mobx';
 import { Close, Add } from '@material-ui/icons';
+import {
+  DragDropContext,
+  Draggable,
+  DraggableProvided,
+  Droppable,
+} from 'react-beautiful-dnd';
 import { useStore, View } from '../store/tab-page-store';
 import { goBack, goForward, headsOnNode, INode } from '../store/history-store';
 import { IWorkSpaceStore } from '../store/workspace/workspace-store';
@@ -527,26 +534,16 @@ const TabsParent = styled.div`
   //border-bottom: 1px solid black;
 `;
 
-const TabsBarParent = styled.div`
-  z-index: 1;
-  border-radius: 10px 10px 0 0;
-  display: flex;
-  background-color: #d9dde2;
-  width: 100%;
-  height: 34px;
-  //position: absolute;
-  //top: 0;
-  //left: 0;
-`;
-
 const TabParent = styled.div`
+  cursor: default !important;
+  width: ${({ width }: { width: number }) => `${width}px`};
   padding: 0 0 0 13px;
   height: 35px;
-  flex-grow: 1;
+  //flex-grow: 1;
   display: flex;
   flex-wrap: wrap;
   align-content: center;
-  max-width: calc(240px - 13px);
+  //max-width: calc(240px - 13px);
   //margin: 0 0 -1px 0;
   border-radius: 10px 10px 0 0;
 
@@ -638,6 +635,9 @@ interface ITabsBar {
 interface ITab {
   active?: boolean;
   tab: TabPageTab;
+  provided: DraggableProvided;
+  width: number;
+  tabBarInfo: { x: number; width: number };
 }
 
 const FavTitle = styled.div`
@@ -649,81 +649,115 @@ const FavTitle = styled.div`
   width: calc(100% - 16px);
 `;
 
-const Tab = observer(({ tab, active = false }: ITab) => {
-  const tabRef = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line @typescript-eslint/naming-convention,no-underscore-dangle
-  let _active = active;
-  const { tabPageStore, historyStore } = useStore();
-  let title = 'New Tab';
-  if (tab) {
-    title = tab.title ? tab.title : 'New Tab';
-  }
-
-  if (!active) {
-    _active = parseInt(historyStore.active, 10) === tab.id;
-  }
-
-  function handleAuxClick(e: MouseEvent) {
-    if (e.button === 1) {
-      tabPageStore.closeTab(tab.id, _active);
-      ipcRenderer.send('mixpanel-track', 'middle click remove tab in bar');
-    }
-  }
-
-  useEffect(() => {
-    if (tabRef && tabRef.current) {
-      tabRef.current.addEventListener('auxclick', handleAuxClick);
-      const cap = tabRef.current;
-      return () => {
-        cap?.removeEventListener('auxclick', handleAuxClick);
-      };
-    }
-    return () => {};
-  });
-
-  return (
-    <TabParent
-      ref={tabRef}
-      className={_active ? 'is-active' : ''}
-      onClick={() => {
-        if (!_active) {
-          ipcRenderer.send('set-tab', tab.id);
-          ipcRenderer.send('mixpanel-track', 'click bar tab');
-          // tabPageStore.setUrlText('');
+const Tab = observer(
+  ({ tabBarInfo, width, provided, tab, active = false }: ITab) => {
+    const { style } = provided.draggableProps;
+    const tabRef = useRef<HTMLDivElement>(null);
+    if (style && style.transform) {
+      if ('left' in style) {
+        let x: number = parseInt(
+          style.transform.split('(')[1].split('p')[0],
+          10
+        );
+        const absoluteX = style.left + x;
+        x = absoluteX >= tabBarInfo.x ? x : x - (absoluteX - tabBarInfo.x);
+        x =
+          absoluteX + width <= tabBarInfo.x + tabBarInfo.width
+            ? x
+            : x - absoluteX + tabBarInfo.x + tabBarInfo.width - width;
+        try {
+          style.transform = `translate(${x}px, 0)`;
+        } catch (e) {
+          console.log(e);
         }
-      }}
-    >
-      <TabInner id="tab-inner">
-        <FavTitle>
-          <Favicon />
-          <div
-            style={{
-              height: '15px',
-              margin: '-1px 0 0 0',
-              width: 'calc(100% - 22px)',
-              textOverflow: 'ellipsis',
-              overflow: 'hidden',
-              whiteSpace: 'nowrap',
-              position: 'absolute',
-              left: '22px',
-            }}
-          >
-            {title}
-          </div>
-        </FavTitle>
-        <TabButton
-          onClick={(e) => {
-            e.stopPropagation();
-            tabPageStore.closeTab(tab.id, _active);
-            ipcRenderer.send('mixpanel-track', 'click remove tab in bar');
+      }
+    }
+
+    // todo
+    // const tabRef = provided.innerRef;
+
+    // eslint-disable-next-line @typescript-eslint/naming-convention,no-underscore-dangle
+    let _active = active;
+    const { tabPageStore, historyStore } = useStore();
+    let title = 'New Tab';
+    if (tab) {
+      title = tab.title ? tab.title : 'New Tab';
+    }
+
+    if (!active) {
+      _active = parseInt(historyStore.active, 10) === tab.id;
+    }
+
+    function handleAuxClick(e: MouseEvent) {
+      if (e.button === 1) {
+        tabPageStore.closeTab(tab.id, _active);
+        ipcRenderer.send('mixpanel-track', 'middle click remove tab in bar');
+      }
+    }
+
+    // todo
+    useEffect(() => {
+      if (tabRef && tabRef.current) {
+        tabRef.current.addEventListener('auxclick', handleAuxClick);
+        const cap = tabRef.current;
+        return () => {
+          cap?.removeEventListener('auxclick', handleAuxClick);
+        };
+      }
+      return () => {};
+    });
+
+    return (
+      <div
+        ref={provided.innerRef}
+        {...provided.draggableProps}
+        {...provided.dragHandleProps}
+      >
+        <TabParent
+          ref={tabRef}
+          width={width}
+          className={_active ? 'is-active' : ''}
+          onClick={() => {
+            if (!_active) {
+              ipcRenderer.send('set-tab', tab.id);
+              ipcRenderer.send('mixpanel-track', 'click bar tab');
+              // tabPageStore.setUrlText('');
+            }
           }}
         >
-          <Close />
-        </TabButton>
-      </TabInner>
-    </TabParent>
-  );
-});
+          <TabInner id="tab-inner">
+            <FavTitle>
+              <Favicon />
+              <div
+                style={{
+                  height: '15px',
+                  margin: '-1px 0 0 0',
+                  width: 'calc(100% - 22px)',
+                  textOverflow: 'ellipsis',
+                  overflow: 'hidden',
+                  whiteSpace: 'nowrap',
+                  position: 'absolute',
+                  left: '22px',
+                }}
+              >
+                {title}
+              </div>
+            </FavTitle>
+            <TabButton
+              onClick={(e) => {
+                e.stopPropagation();
+                tabPageStore.closeTab(tab.id, _active);
+                ipcRenderer.send('mixpanel-track', 'click remove tab in bar');
+              }}
+            >
+              <Close />
+            </TabButton>
+          </TabInner>
+        </TabParent>
+      </div>
+    );
+  }
+);
 
 const ButtonContainer = styled.div`
   display: flex;
@@ -732,15 +766,78 @@ const ButtonContainer = styled.div`
   margin: 0 8px 0 8px;
 `;
 
+const TabsRow = styled.div`
+  display: flex;
+  height: 34px;
+`;
+
 const TabsBar = observer(({ x, y, width }: ITabsBar) => {
   const { tabPageStore } = useStore();
+  const tabs = tabPageStore.tabPageRow();
+  let tabWidth = (width - 45) / tabs.length - 12; // tabs have 13 pixel padding -1 margin
+  tabWidth = Math.min(tabWidth, 240 - 13);
+
+  let parentWidth: string | number = (tabWidth + 12) * tabs.length + 1;
+  parentWidth = parentWidth < width ? `${parentWidth}px` : '100%';
+  const TabsBarParentStyle = {
+    zIndex: 1,
+    borderRadius: '10px 10px 0 0',
+    display: 'flex',
+    backgroundColor: '#d9dde2',
+    // overflow: 'hidden',
+    width: parentWidth,
+  };
+
   return (
     <TabsParent style={{ top: y, left: x, width: `${width}px` }}>
-      <TabsBarParent>
-        {tabPageStore.tabPageRow().map((tab) => (
-          <Tab key={tab.id} tab={tab} />
-        ))}
-
+      <TabsRow>
+        <DragDropContext
+          onDragEnd={(result) => {
+            tabPageStore.reorderTabs(result);
+          }}
+          onDragStart={(data) => {
+            ipcRenderer.send('set-tab', data.draggableId);
+            ipcRenderer.send('mixpanel-track', 'drag tab');
+          }}
+        >
+          <Droppable droppableId="droppable" direction="horizontal">
+            {(provided, _) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                style={TabsBarParentStyle}
+              >
+                {tabs.map((tab, index) => (
+                  <Draggable
+                    key={tab.id}
+                    draggableId={tab.id.toString()}
+                    index={index}
+                  >
+                    {(provided0) => {
+                      return (
+                        <Tab
+                          tabBarInfo={{ x, width }}
+                          tab={tab}
+                          provided={provided0}
+                          width={tabWidth}
+                        />
+                        // <span
+                        //   ref={provided.innerRef}
+                        //   {...provided.draggableProps}
+                        //   {...provided.dragHandleProps}
+                        // >
+                        //   woo
+                        // </span>
+                      );
+                    }}
+                  </Draggable>
+                  // <Tab key={tab.id} tab={tab} />
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
         <ButtonContainer>
           <RoundButton
             onClick={() => {
@@ -750,7 +847,7 @@ const TabsBar = observer(({ x, y, width }: ITabsBar) => {
             <Add />
           </RoundButton>
         </ButtonContainer>
-      </TabsBarParent>
+      </TabsRow>
       <TitleBar />
     </TabsParent>
   );

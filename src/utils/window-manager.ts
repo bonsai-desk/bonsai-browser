@@ -1322,7 +1322,7 @@ export default class WindowManager {
     setTimeout(() => {
       // mouse icons dont switch properly on macOS after closing and opening a BrowserView
       // unless we time this out for some reason :/
-      tabView.view.webContents.focus();
+      tabView.view.webContents?.focus();
     }, 100);
     this.activeTabId = id;
     this.tabPageView.webContents.send('tab-was-set', id);

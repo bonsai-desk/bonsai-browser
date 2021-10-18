@@ -6,7 +6,6 @@ import {
   Refresh,
   ArrowForward,
   ArrowBack,
-  Launch,
   PictureInPicture,
 } from '@material-ui/icons';
 import { useStore } from '../store/tab-page-store';

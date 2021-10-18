@@ -3,6 +3,7 @@ import { ipcRenderer, Rectangle } from 'electron';
 import { RefObject, createContext, useContext } from 'react';
 import Fuse from 'fuse.js';
 import { Instance } from 'mobx-state-tree';
+import { DropResult } from 'react-beautiful-dnd';
 import { TabPageColumn, TabPageTab } from '../interfaces/tab';
 import { getRootDomain } from '../utils/data';
 import { Item } from './workspace/item';
@@ -149,8 +150,6 @@ export default class TabPageStore {
   }
 
   handleKeyBind(e: KeyboardEvent) {
-    // ipcRenderer.send('log-data', { hkb: chord(e) });
-
     if (this.view === View.FuzzySearch) {
       if (this.keybindStore.isBind(e, Bind.FuzzyUp)) {
         this.fuzzyUp(e);
@@ -312,8 +311,65 @@ export default class TabPageStore {
     ];
   }
 
+  sorting: number[] = [];
+
+  createTab(id: number) {
+    this.sorting.push(id);
+    this.openTabs[id] = {
+      id,
+      lastAccessTime: new Date().getTime(),
+      url: '',
+      title: '',
+      image: '',
+      favicon: '',
+      openGraphInfo: null,
+    };
+  }
+
+  deleteTab(idToRemove: number) {
+    this.sorting = this.sorting.filter((id) => id !== idToRemove);
+    // this.sorting.
+    delete this.openTabs[idToRemove];
+    // todo: could filter the fuse instead if it was a property
+    this.refreshFuse();
+  }
+
+  reorderTabs(result: DropResult) {
+    // result.source.index,
+    // result.destination.index
+    // const result = Array.from(list);
+
+    if (result.destination) {
+      const startIndex = result.source.index;
+      const endIndex = result.destination?.index;
+
+      const [removed] = this.sorting.splice(startIndex, 1);
+
+      this.sorting.splice(endIndex, 0, removed);
+    }
+
+    // const [removed] = result.splice(startIndex, 1);
+    // result.splice(endIndex, 0, removed);
+    // const tabList = this.sorting.map((id) => this.openTabs[id]);
+
+    // return tabList;
+    // const sourceWebViewId = parseInt(result.source.droppableId, 10);
+    // const sourceIndex = result.source.index;
+    //
+    // if (result.destination) {
+    //   const destWebViewId = parseInt(result.destination.droppableId, 10);
+    //   const destIndex = result.source.index;
+    //
+    //   ipcRenderer.send('log-data', [id, result]);
+    // }
+  }
+
   tabPageRow(): TabPageTab[] {
-    return Object.values(this.openTabs);
+    const row = this.sorting.map((id) => this.openTabs[id]);
+    row.filter((tab) => {
+      return typeof tab !== 'undefined';
+    });
+    return row;
   }
 
   isFirstTab(id: number) {
@@ -470,22 +526,12 @@ export default class TabPageStore {
     });
     ipcRenderer.on('tabView-created-with-id', (_, id) => {
       runInAction(() => {
-        this.openTabs[id] = {
-          id,
-          lastAccessTime: new Date().getTime(),
-          url: '',
-          title: '',
-          image: '',
-          favicon: '',
-          openGraphInfo: null,
-        };
+        this.createTab(id);
       });
     });
     ipcRenderer.on('tab-removed', (_, id) => {
       runInAction(() => {
-        delete this.openTabs[id];
-        // todo: could filter the fuse instead if it was a property
-        this.refreshFuse();
+        this.deleteTab(id);
       });
     });
     ipcRenderer.on('url-changed', (_, [id, url]) => {

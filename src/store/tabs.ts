@@ -39,7 +39,9 @@ export default class TabStore {
       //   }
       // }
       if (id === this.activeTabId) {
-        this.activeTabId = -1;
+        runInAction(() => {
+          this.activeTabId = -1;
+        });
       }
       this.popTab(id);
     });
@@ -65,7 +67,9 @@ export default class TabStore {
       this.pushTab(id);
     });
     ipcRenderer.on('tab-was-set', (_, id) => {
-      this.activeTabId = id;
+      runInAction(() => {
+        this.activeTabId = id;
+      });
     });
   }
 
