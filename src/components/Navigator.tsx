@@ -5,7 +5,7 @@ import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import { Instance } from 'mobx-state-tree';
 import { runInAction } from 'mobx';
-import { Close, Add } from '@material-ui/icons';
+import { Public, Close, Add } from '@material-ui/icons';
 import {
   DragDropContext,
   Draggable,
@@ -609,6 +609,7 @@ export const TabButton = styled.div`
 
 // noinspection CssInvalidPropertyValue
 const Favicon = styled.div`
+  position: relative;
   height: 16px;
   width: 16px;
   margin: 0 6px 0 0;
@@ -735,7 +736,21 @@ const Tab = observer(
                 style={{
                   backgroundImage: `url(${tab.favicon})`,
                 }}
-              />
+              >
+                {tab.favicon ? (
+                  ''
+                ) : (
+                  <Public
+                    style={{
+                      position: 'absolute',
+                      left: 0,
+                      top: 0,
+                      width: '100%',
+                      height: '100%',
+                    }}
+                  />
+                )}
+              </Favicon>
               <div
                 style={{
                   height: '15px',
