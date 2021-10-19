@@ -215,18 +215,31 @@ function childrenWithUrl(node: INode | undefined, url: string): INode[] {
 
 export function spawnNewWindow(h: IHistory, senderId: string, url: string) {
   log('=== new window intercept ===');
+  log(`${senderId} dispatch spawn window for ${url}`);
+
   const oldNode = h.heads.get(senderId);
   const matchNode = childrenWithUrl(oldNode, url);
   const heads = headsOnNode(h, matchNode[0]);
+
   if (heads.length > 0) {
     const [headId, node] = heads[0];
     log(
       `${senderId} child ${node.showNode()} with active webView ${headId} matches ${url}`
     );
-  } else {
-    log(`${senderId} dispatch spawn window for ${url}`);
-    ipcRenderer.send('request-new-window', { senderId, url });
   }
+
+  ipcRenderer.send('request-new-window', { senderId, url });
+
+  // todo remove this (we used to prevent duplication of windows when a child with same url exists)
+  // if (heads.length > 0) {
+  //   const [headId, node] = heads[0];
+  //   log(
+  //     `${senderId} child ${node.showNode()} with active webView ${headId} matches ${url}`
+  //   );
+  // } else {
+  //   log(`${senderId} dispatch spawn window for ${url}`);
+  //   ipcRenderer.send('request-new-window', { senderId, url });
+  // }
 }
 
 export function hookListeners(h: Instance<typeof HistoryStore>) {

@@ -313,8 +313,75 @@ export default class TabPageStore {
 
   sorting: number[] = [];
 
-  createTab(id: number) {
+  lastRHSDescendentIndex(rootIndex: number, ancestorIndex: number): number {
+    const rootId = this.sorting[rootIndex];
+    const tabRHSId = this.sorting[rootIndex + 1];
+    const ancestorId = this.sorting[ancestorIndex];
+
+    if (
+      typeof rootId !== 'undefined' &&
+      typeof tabRHSId !== 'undefined' &&
+      typeof ancestorId !== 'undefined'
+    ) {
+      const tabRHS = this.openTabs[tabRHSId];
+      if (tabRHS && tabRHS.ancestor === ancestorId) {
+        return this.lastRHSDescendentIndex(rootIndex + 1, ancestorIndex);
+      }
+    }
+
+    return rootIndex + 1;
+  }
+
+  newWindowIndex(tab: TabPageTab): number | undefined {
+    const tabSortIndex = this.sorting.findIndex(
+      (webViewId) => webViewId === tab.id
+    );
+
+    if (tabSortIndex !== -1 && !(tabSortIndex + 1 >= this.sorting.length)) {
+      if (!tab.unRooted) {
+        return this.lastRHSDescendentIndex(tabSortIndex, tabSortIndex);
+      }
+      tab.unRooted = false;
+      Object.values(this.openTabs).forEach((openTab) => {
+        if (openTab.ancestor === tab.id) {
+          openTab.ancestor = undefined;
+        }
+      });
+      return tabSortIndex + 1;
+      // prune the parents
+      // root the tab
+      // return loc + 1
+    }
+
+    return undefined;
+
+    // if (!tab.unRooted) {
+    //   const tabSortIndex = this.sorting.findIndex(
+    //     (webViewId) => webViewId === tab.id
+    //   );
+    //   if (tabSortIndex !== -1) {
+    //     if (tabSortIndex + 1 >= this.sorting.length) {
+    //       return undefined;
+    //     }
+    //     return this.lastRHSDescendentIndex(tabSortIndex, tabSortIndex);
+    //     // return tabSortIndex + 1;
+    //   }
+    //   return undefined;
+    // }
+    // return undefined;
+  }
+
+  createTab(id: number, parentId?: number) {
     this.sorting.push(id);
+    if (typeof parentId !== 'undefined') {
+      const parentTab = this.openTabs[parentId];
+      if (parentTab) {
+        const newIndex = this.newWindowIndex(parentTab);
+        if (typeof newIndex !== 'undefined') {
+          this.reorderFromIndex(this.sorting.length - 1, newIndex);
+        }
+      }
+    }
     this.openTabs[id] = {
       id,
       lastAccessTime: new Date().getTime(),
@@ -325,6 +392,8 @@ export default class TabPageStore {
       openGraphInfo: null,
       canGoForward: false,
       canGoBack: false,
+      ancestor: undefined,
+      unRooted: false,
     };
   }
 
@@ -336,6 +405,22 @@ export default class TabPageStore {
     this.refreshFuse();
   }
 
+  reorderFromIndex(startIndex: number, endIndex: number) {
+    if (startIndex !== endIndex) {
+      const tabId = this.sorting[startIndex];
+      if (typeof tabId !== 'undefined') {
+        const tab = this.openTabs[tabId];
+        if (tab) {
+          tab.unRooted = true;
+        }
+      }
+    }
+
+    const [removed] = this.sorting.splice(startIndex, 1);
+
+    this.sorting.splice(endIndex, 0, removed);
+  }
+
   reorderTabs(result: DropResult) {
     // result.source.index,
     // result.destination.index
@@ -345,9 +430,7 @@ export default class TabPageStore {
       const startIndex = result.source.index;
       const endIndex = result.destination?.index;
 
-      const [removed] = this.sorting.splice(startIndex, 1);
-
-      this.sorting.splice(endIndex, 0, removed);
+      this.reorderFromIndex(startIndex, endIndex);
     }
 
     // const [removed] = result.splice(startIndex, 1);
@@ -519,6 +602,21 @@ export default class TabPageStore {
     this.navigatorTabModal = loc;
   }
 
+  findAncestorId(rootId: number): number {
+    // tabs are their own ancestors until a parent id is added
+    const tab = this.openTabs[rootId];
+    if (tab && typeof tab.ancestor !== 'undefined') {
+      return this.findAncestorId(tab.ancestor);
+    }
+    if (tab) {
+      if (typeof tab.ancestor !== 'undefined') {
+        return tab.ancestor;
+      }
+      return tab.id;
+    }
+    return rootId;
+  }
+
   constructor(
     workspaceStore: Instance<typeof WorkspaceStore>,
     keybindStore: Instance<typeof KeybindStore>
@@ -542,9 +640,23 @@ export default class TabPageStore {
         this.innerBounds = bounds;
       });
     });
-    ipcRenderer.on('tabView-created-with-id', (_, id) => {
+    ipcRenderer.on('set-tab-parent', (_, [rootId, parentId]) => {
       runInAction(() => {
-        this.createTab(id);
+        const tab = this.openTabs[rootId];
+        if (tab) {
+          const ancestorId = this.findAncestorId(parentId);
+          // if a tab thinks it is its own ancestor, swap use the parent id
+          if (typeof ancestorId === 'undefined' || ancestorId === tab.id) {
+            tab.ancestor = parentId;
+          } else {
+            tab.ancestor = ancestorId;
+          }
+        }
+      });
+    });
+    ipcRenderer.on('tabView-created-with-id', (_, [id, parentId]) => {
+      runInAction(() => {
+        this.createTab(id, parentId);
       });
     });
     ipcRenderer.on('tab-removed', (_, id) => {

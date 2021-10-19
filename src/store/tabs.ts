@@ -63,7 +63,7 @@ export default class TabStore {
     ipcRenderer.on('favicon-updated', (_, [id, faviconUrl]) => {
       this.tabs[this.getTabIndex(id)].faviconUrl = faviconUrl;
     });
-    ipcRenderer.on('tabView-created-with-id', (_, id) => {
+    ipcRenderer.on('tabView-created-with-id', (_, [id]) => {
       this.pushTab(id);
     });
     ipcRenderer.on('tab-was-set', (_, id) => {

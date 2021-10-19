@@ -148,10 +148,16 @@ function openWindow(
   wm: WindowManager,
   view: IWebView,
   url: string,
-  alertTargets: BrowserView[]
+  alertTargets: BrowserView[],
+  senderId?: number
 ) {
-  const newWindowId = wm.createNewTab();
+  const newWindowId = wm.createNewTab(senderId);
 
+  if (senderId) {
+    alertTargets.forEach((target) => {
+      target.webContents.send('set-tab-parent', [newWindowId, senderId]);
+    });
+  }
   const newWebView = wm.allWebViews[newWindowId];
   if (newWebView) {
     const padding = wm.padding();
@@ -471,7 +477,7 @@ export function addListeners(wm: WindowManager) {
     log(`${senderId} request-new-window for ${url}`);
     const webView = wm.allWebViews[senderId];
     if (webView && url) {
-      openWindow(wm, webView, url, [wm.tabPageView]);
+      openWindow(wm, webView, url, [wm.tabPageView], senderId);
     }
   });
   ipcMain.on('request-screenshot', (_, { webViewId }) => {
@@ -1184,7 +1190,7 @@ export default class WindowManager {
 
   // tabs
 
-  createNewTab(): number {
+  createNewTab(parentId?: number): number {
     const newTabView = this.createTabView(
       this.mainWindow,
       this.urlPeekView,
@@ -1192,7 +1198,10 @@ export default class WindowManager {
     );
     const { id } = newTabView;
     this.allWebViews[id] = newTabView;
-    this.tabPageView.webContents.send('tabView-created-with-id', id);
+    this.tabPageView.webContents.send('tabView-created-with-id', [
+      id,
+      parentId,
+    ]);
     return id;
   }
 

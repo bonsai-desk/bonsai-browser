@@ -16,7 +16,15 @@ export interface TabPageTab {
   openGraphInfo: OpenGraphInfo | null;
 
   canGoBack: false;
+
   canGoForward: false;
+
+  // un-rooted if user dragged this tab out of its position in the tab order
+  // don't care if it incidentally was re-ordered
+  unRooted: boolean;
+
+  // root web-view id in the chain of tabs where the links are open in new window
+  ancestor: number | undefined;
 }
 
 export interface ITab {
