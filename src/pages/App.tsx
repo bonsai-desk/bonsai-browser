@@ -58,7 +58,7 @@ const ButtonRow = styled.div`
 `;
 
 const TitleBar = observer(() => {
-  const { tabStore, historyStore } = useStore();
+  const { tabStore, historyStore, tabPageStore } = useStore();
 
   const urlBoxRef = useRef<HTMLInputElement>(null);
 
@@ -88,6 +88,10 @@ const TitleBar = observer(() => {
       <TitleBarBottom>
         <ButtonRow>
           <RoundButton
+            className="is-lowkey"
+            disabled={
+              !tabPageStore.tabCanGoBack(tabStore.activeTabId.toString())
+            }
             onClick={() => {
               ipcRenderer.send('go-back-from-floating');
             }}
@@ -95,6 +99,10 @@ const TitleBar = observer(() => {
             <ArrowBack />
           </RoundButton>
           <RoundButton
+            className="is-lowkey"
+            disabled={
+              !tabPageStore.tabCanGoForward(tabStore.activeTabId.toString())
+            }
             onClick={() => {
               goForward(historyStore);
             }}

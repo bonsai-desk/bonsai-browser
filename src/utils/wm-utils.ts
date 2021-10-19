@@ -81,12 +81,15 @@ export const updateWebContents = (
   view: BrowserView
 ) => {
   // todo verify that this is hooked up
-  titleBarView.webContents.send('web-contents-update', [
-    id,
-    view.webContents.canGoBack(),
-    view.webContents.canGoForward(),
-    view.webContents.getURL(),
-  ]);
+  if (view.webContents) {
+    const args = [
+      id,
+      view.webContents.canGoBack(),
+      view.webContents.canGoForward(),
+      view.webContents.getURL(),
+    ];
+    titleBarView.webContents.send('web-contents-update', args);
+  }
 };
 
 export function handleFindText(
@@ -183,6 +186,7 @@ export function resizeAsOverlayView(view: BrowserView, windowSize: number[]) {
 }
 
 export const updateContents = (webView: IWebView, tabPageView: BrowserView) => {
+  updateWebContents(tabPageView, webView.id, webView.view);
   const url = webView.view.webContents.getURL();
   const key = urlToMapKey(url);
   if (webView.historyEntry === null || webView.historyEntry.key !== key) {

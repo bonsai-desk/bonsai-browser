@@ -323,6 +323,8 @@ export default class TabPageStore {
       image: '',
       favicon: '',
       openGraphInfo: null,
+      canGoForward: false,
+      canGoBack: false,
     };
   }
 
@@ -378,6 +380,22 @@ export default class TabPageStore {
       return element.id === id;
     });
     return match === 0;
+  }
+
+  tabCanGoForward(id: string) {
+    const tab = this.openTabs[id];
+    if (tab) {
+      return tab.canGoForward;
+    }
+    return false;
+  }
+
+  tabCanGoBack(id: string) {
+    const tab = this.openTabs[id];
+    if (tab) {
+      return tab.canGoBack;
+    }
+    return false;
   }
 
   leftOfTab(id: number): number | null {
@@ -544,6 +562,13 @@ export default class TabPageStore {
         this.openTabs[id].title = title;
       });
     });
+    ipcRenderer.on(
+      'web-contents-update',
+      (_, [id, canGoBack, canGoForward]) => {
+        this.openTabs[id].canGoBack = canGoBack;
+        this.openTabs[id].canGoForward = canGoForward;
+      }
+    );
     ipcRenderer.on('access-tab', (_, id) => {
       runInAction(() => {
         this.openTabs[id].lastAccessTime = new Date().getTime();

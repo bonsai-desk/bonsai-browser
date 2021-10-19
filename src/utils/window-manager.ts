@@ -1426,7 +1426,10 @@ export default class WindowManager {
     if (!this.allWebViews[id]) {
       return;
     }
-    if (this.allWebViews[id].view.webContents.canGoBack()) {
+    if (
+      this.allWebViews[id].view.webContents &&
+      this.allWebViews[id].view.webContents.canGoBack()
+    ) {
       this.closeFind();
       goBack(this.allWebViews[id], [this.tabPageView]);
     }

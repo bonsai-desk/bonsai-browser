@@ -14,6 +14,9 @@ export interface TabPageTab {
   favicon: string;
 
   openGraphInfo: OpenGraphInfo | null;
+
+  canGoBack: false;
+  canGoForward: false;
 }
 
 export interface ITab {

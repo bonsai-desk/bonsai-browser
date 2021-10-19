@@ -92,6 +92,16 @@ export const Buttons = styled.button`
       cursor: default;
     }
   }
+
+  &.is-lowkey {
+    :disabled,
+    :disabled:active {
+      color: ${color('body-text-color', 'opacity-low')};
+      background-color: transparent;
+      cursor: default;
+    }
+  }
+
   &.is-error {
     color: ${color('error-color')};
     background-color: ${color('error-color', 'opacity-lower')};
