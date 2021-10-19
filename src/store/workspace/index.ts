@@ -33,10 +33,24 @@ function loadSnapshot(workspaceStore: Instance<typeof WorkspaceStore>) {
       if (workspaceJson !== '') {
         const workspaceSnapshot = JSON.parse(decrypt(workspaceJson));
         applySnapshot(workspaceStore, workspaceSnapshot);
+      } else {
+        ipcRenderer.send('mixpanel-track', 'workspace snapshot json empty');
       }
-    } catch {
-      //
+    } catch (e: any) {
+      if (e.name && e.message) {
+        ipcRenderer.send(
+          'mixpanel-track',
+          `workspace snapshot catch error: ${e.name} ${e.message}`
+        );
+      } else {
+        ipcRenderer.send(
+          'mixpanel-track',
+          `workspace snapshot catch error (no name/message included)`
+        );
+      }
     }
+  } else {
+    ipcRenderer.send('mixpanel-track', 'workspace snapshot no path');
   }
 }
 
