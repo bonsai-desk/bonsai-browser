@@ -1,5 +1,14 @@
 # Changelog
 
+## Bonsai 1.1.0 (October 20, 2021)
+
+- Normal URL box, tabs, and back/forward buttons cloned from Chrome
+- Removed tree history data structure and associated UI
+- Change the floating window icon to ‘Picture in Picture’
+- Fixed bug where pages opened in a new window would disappear if opened too quickly
+- Added more logging to workspace load function on startup to catch help catch bug where workspace data gets lost
+- Updated some macOS icons
+
 ## Bonsai 1.0.9 (October 12, 2021)
 
 - Linux version available at https://bonsaibrowser.com/
