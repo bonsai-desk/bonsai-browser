@@ -110,6 +110,8 @@ export default class TabPageStore {
 
   seenEmailForm: boolean | undefined = false;
 
+  urlBoxFocus = false;
+
   fuzzySelectedTab(): [boolean, TabPageTab | Instance<typeof Item>] | null {
     if (this.fuzzySelectionIndex[1] === 0) {
       const tab = this.filteredOpenTabs[this.fuzzySelectionIndex[0]];
@@ -189,7 +191,9 @@ export default class TabPageStore {
     }
 
     if (this.view === View.Navigator) {
-      return;
+      if (this.urlBoxFocus) {
+        return;
+      }
     }
 
     switch (e.key) {

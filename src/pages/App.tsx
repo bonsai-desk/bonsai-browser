@@ -8,6 +8,7 @@ import {
   ArrowBack,
   PictureInPicture,
 } from '@material-ui/icons';
+import { runInAction } from 'mobx';
 import { useStore } from '../store/tab-page-store';
 import { Buttons } from '../components/Buttons';
 import { goForward } from '../store/history-store';
@@ -143,8 +144,14 @@ const TitleBar = observer(() => {
               urlBoxRef.current.select();
             }
           }}
+          onFocus={() => {
+            runInAction(() => {
+              tabPageStore.urlBoxFocus = true;
+            });
+          }}
           onBlur={() => {
             setUrlFocus(false);
+            tabPageStore.urlBoxFocus = false;
             if (urlBoxRef.current != null) {
               urlBoxRef.current.blur();
               window.getSelection()?.removeAllRanges();
