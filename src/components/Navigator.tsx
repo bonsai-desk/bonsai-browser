@@ -46,6 +46,7 @@ const NavigatorPanel = styled.div`
   //border-style: solid;
   //border-width: 5px 5px 5px 0;
   //background: #ffdfb4;
+  position: absolute;
   border-radius: 10px;
   overflow: scroll;
   display: flex;
@@ -57,10 +58,12 @@ const NavigatorPanel = styled.div`
     margin-top: 10px;
   }
   ${({
+    top,
     width,
     height,
     direction,
   }: {
+    top: string;
     width: string;
     height: string;
     direction: Direction;
@@ -69,6 +72,7 @@ const NavigatorPanel = styled.div`
       direction === Direction.Back ? '0 10px 10px 0' : '10px 0 0 10px';
     const borRad = `border-radius: ${thing};`;
     return css`
+      top: ${top};
       height: ${height};
       width: ${width};
       ${borRad}
@@ -223,7 +227,7 @@ const NavigatorItemText = styled.div`
 interface Dimensions {
   width: number;
   height: number;
-  margin: number;
+  top: number;
 }
 
 function asPx(a: number): string {
@@ -364,7 +368,7 @@ const Panel = observer(
     children?: React.ReactNode;
     title?: string;
   }) => {
-    const { width, height } = dim;
+    const { width, height, top } = dim;
     const navigatorItems = items.map((item) => (
       <HistoryNavigatorItem
         parentDim={dim}
@@ -374,7 +378,12 @@ const Panel = observer(
       />
     ));
     return (
-      <NavigatorPanel direction={dir} width={asPx(width)} height={asPx(height)}>
+      <NavigatorPanel
+        direction={dir}
+        width={asPx(width)}
+        height={asPx(height)}
+        top={asPx(top)}
+      >
         <Title>{title}</Title>
         {navigatorItems}
         {children}
@@ -884,7 +893,7 @@ const Navigator = observer(() => {
   const margin = 20;
   const tabWidth = gutter - margin;
   // const tabMaxHeight = (9 / 16) * tabWidth;
-  const { height } = tabPageStore.innerBounds;
+  const { height, y: top } = tabPageStore.innerBounds;
   const head = historyStore.heads.get(historyStore.active);
   const matches = nodeInWorkspaces(head, workspaceStore);
   const [x, y] = tabPageStore.navigatorTabModal;
@@ -892,7 +901,7 @@ const Navigator = observer(() => {
 
   const tabsBarPos = {
     x: tabPageStore.innerBounds.x,
-    y: tabPageStore.innerBounds.y - 34,
+    y: tabPageStore.innerBounds.y,
     width: tabPageStore.innerBounds.width,
   };
   return (
@@ -909,7 +918,7 @@ const Navigator = observer(() => {
       <Panel
         dir={Direction.Back}
         items={[]}
-        dim={{ width: tabWidth, height, margin }}
+        dim={{ width: tabWidth, height, top }}
         title="Workspaces"
       >
         {matches.map((match) => (

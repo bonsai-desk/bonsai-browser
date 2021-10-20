@@ -189,6 +189,12 @@ const Footer = observer(({ onViewPage }: { onViewPage: boolean }) => {
       </>
     );
 
+  // ipcRenderer.send('log-data', [
+  //   { ...tabPageStore.screen },
+  //   { ...tabPageStore.innerBounds },
+  // ]);
+
+  const height = tabPageStore.innerBounds.y;
   return (
     <FooterParent
       id="footer"
@@ -196,9 +202,7 @@ const Footer = observer(({ onViewPage }: { onViewPage: boolean }) => {
         position: onViewPage ? 'absolute' : 'static',
         bottom: onViewPage ? '0px' : 'auto',
         zIndex: onViewPage ? 1 : 'auto',
-        height:
-          tabPageStore.screen.height -
-          (tabPageStore.innerBounds.y + tabPageStore.innerBounds.height),
+        height,
       }}
     >
       {footerContent}

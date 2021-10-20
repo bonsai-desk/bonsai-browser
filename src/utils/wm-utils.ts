@@ -10,6 +10,7 @@ import fs from 'fs';
 import { IWebView } from './interfaces';
 import { encrypt, urlToMapKey } from './utils';
 import { floatingWindowEdgeMargin } from './calculate-window-target';
+import { LOWER_BOUND } from '../constants';
 
 export const floatingTitleBarHeight = 37;
 export const floatingTitleBarSpacing = 10;
@@ -36,8 +37,11 @@ function innerRectangle(
   windowSize: [number, number],
   verticalPadding: number
 ): Electron.Rectangle {
-  const height = Math.max(windowSize[1], 0) - verticalPadding * 2;
+  // const height = Math.max(windowSize[1], 0) - verticalPadding * 2;
+  const height = Math.max(windowSize[1], 0) - verticalPadding - LOWER_BOUND;
+
   const width = Math.round(aspect * height);
+
   const xPadding = Math.round((windowSize[0] - width) / 2);
   return {
     x: xPadding,

@@ -9,6 +9,8 @@ const getAssetPath = (...paths: string[]): string => {
   return path.join(RESOURCES_PATH, ...paths);
 };
 
+export const LOWER_BOUND = 20;
+
 export const VIBRANCY = 'fullscreen-ui';
 
 export const URL_PEEK_HTML = `file://${__dirname}/url-peek.html`;
