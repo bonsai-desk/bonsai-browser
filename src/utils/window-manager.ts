@@ -305,6 +305,7 @@ export function addListeners(wm: WindowManager) {
     const id = wm.createNewTab();
     if (switchToTab) {
       wm.setTab(id);
+      wm.tabPageView.webContents.focus();
     }
   });
   ipcMain.on('remove-tab', (_, id) => {
