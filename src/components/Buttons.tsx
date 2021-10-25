@@ -127,7 +127,7 @@ export const Buttons = styled.button`
 `;
 
 export const ToggleButton = styled(Buttons)`
-  border-radius: 1000px;
+  border-radius: 50%;
   padding: 0.375rem 0.5rem;
   color: ${color('body-text-color', 'opacity-high')};
 `;

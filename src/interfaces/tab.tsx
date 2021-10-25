@@ -30,9 +30,12 @@ export interface TabPageTab {
 export interface ITab {
   tab: TabPageTab;
   hover: boolean;
-  selected: boolean;
+  active: boolean;
   callback?: () => void;
   disableButtons?: boolean;
+  style?: Record<string, string>;
+  width?: number;
+  selected?: boolean;
 }
 
 export interface TabPageColumn {

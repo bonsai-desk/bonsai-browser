@@ -1,11 +1,11 @@
 /* eslint-disable react/jsx-props-no-spreading */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import styled, { css } from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import { Instance } from 'mobx-state-tree';
 import { runInAction } from 'mobx';
-import { Public, Close, Add } from '@material-ui/icons';
+import { Add } from '@material-ui/icons';
 import {
   DragDropContext,
   Draggable,
@@ -18,9 +18,9 @@ import { IWorkSpaceStore } from '../store/workspace/workspace-store';
 import { Workspace } from '../store/workspace/workspace';
 import plusImg from '../../assets/plus.svg';
 import NavigatorTabModal from './NavigatorTabModal';
-import { color } from '../utils/jsutils';
-import { TabPageTab } from '../interfaces/tab';
 import TitleBar, { RoundButton } from '../pages/App';
+import { Tab, TabsParent } from './Tab';
+import { TabPageTab } from '../interfaces/tab';
 
 enum Direction {
   Back,
@@ -528,124 +528,25 @@ export function clickMain() {
   ipcRenderer.send('mixpanel-track', 'go to home from navigator border click');
 }
 
-const TabsParent = styled.div`
-  z-index: 1;
-  border-radius: 10px 10px 0 0;
-  //display: flex;
-  background-color: #d9dde2;
-  width: 500px;
-  //height: 34px;
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 70px;
-  border-bottom: 1px solid #dee1e6;
-  //border-bottom: 1px solid black;
-`;
-
-const TabParent = styled.div`
-  cursor: default !important;
-  width: ${({ width }: { width: number }) => `${width}px`};
-  padding: 0 0 0 13px;
-  height: 35px;
-  //flex-grow: 1;
-  display: flex;
-  flex-wrap: wrap;
-  align-content: center;
-  //max-width: calc(240px - 13px);
-  //margin: 0 0 -1px 0;
-  border-radius: 10px 10px 0 0;
-
-  background-color: transparent;
-
-  //transition-property: filter, background, color, opacity;
-  transition-duration: 0.1s;
-
-  :hover {
-    background-color: #eff1f3;
-    #tab-inner {
-      border-right: 1px solid transparent;
-    }
-  }
-
-  &.is-active {
-    background-color: white;
-    :hover {
-      background-color: white;
-    }
-    #tab-inner {
-      border-right: 1px solid transparent;
-    }
-  }
-
-  &:not(:first-child) {
-    margin: 0 0 0 -1px;
-  }
-`;
-
-export const TabButton = styled.div`
-  border-radius: 1000px;
-  width: 16px;
-  height: 16px;
-  // color: ${color('body-text-color', 'opacity-high')};
-
-  color: ${color('body-text-color')};
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-content: center;
-  svg {
-    font-size: 14px;
-  }
-
-  :hover {
-    background-color: ${color('body-text-color', 'opacity-lower')};
-  }
-
-  :active,
-  :hover:active,
-  &.is-active {
-    color: ${color('body-text-color')};
-    background-color: ${color('body-text-color', 'opacity-lower')};
-  }
-
-  :active,
-  :hover:active,
-  :active.is-active {
-    background-color: ${color('body-text-color', 'opacity-low')};
-  }
-`;
-
-// noinspection CssInvalidPropertyValue
-const Favicon = styled.div`
-  position: relative;
-  height: 16px;
-  width: 16px;
-  margin: 0 6px 0 0;
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: center center;
-  image-rendering: -webkit-optimize-contrast;
-`;
-
-const TabInner = styled.div`
-  width: calc(100%);
-  padding: 0 8px 0 0;
-  height: 19px;
-  border-right: 1px solid #808387;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-content: center;
-`;
-
 interface ITabsBar {
   x: number;
   y: number;
   width: number;
 }
 
-interface ITab {
+const ButtonContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  margin: 0 8px 0 8px;
+`;
+
+const TabsRow = styled.div`
+  display: flex;
+  height: 34px;
+`;
+
+interface ITabBarTab {
   active?: boolean;
   tab: TabPageTab;
   provided: DraggableProvided;
@@ -653,19 +554,9 @@ interface ITab {
   tabBarInfo: { x: number; width: number };
 }
 
-const FavTitle = styled.div`
-  position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  align-content: center;
-  font-size: 12px;
-  width: calc(100% - 16px);
-`;
-
-const Tab = observer(
-  ({ tabBarInfo, width, provided, tab, active = false }: ITab) => {
+export const TabBarTab = observer(
+  ({ tabBarInfo, width, provided, tab, active = false }: ITabBarTab) => {
     const { style } = provided.draggableProps;
-    const tabRef = useRef<HTMLDivElement>(null);
     if (style && style.transform) {
       if ('left' in style) {
         let x: number = parseInt(
@@ -687,9 +578,6 @@ const Tab = observer(
       }
     }
 
-    // todo
-    // const tabRef = provided.innerRef;
-
     // eslint-disable-next-line @typescript-eslint/naming-convention,no-underscore-dangle
     let _active = active;
     const { tabPageStore, historyStore } = useStore();
@@ -702,24 +590,19 @@ const Tab = observer(
       _active = parseInt(historyStore.active, 10) === tab.id;
     }
 
-    function handleAuxClick(e: MouseEvent) {
-      if (e.button === 1) {
-        tabPageStore.closeTab(tab.id, _active);
-        ipcRenderer.send('mixpanel-track', 'middle click remove tab in bar');
+    function clickTab() {
+      if (!_active) {
+        ipcRenderer.send('set-tab', tab.id);
+        ipcRenderer.send('mixpanel-track', 'click bar tab');
+        // tabPageStore.setUrlText('');
       }
     }
 
-    // todo
-    useEffect(() => {
-      if (tabRef && tabRef.current) {
-        tabRef.current.addEventListener('auxclick', handleAuxClick);
-        const cap = tabRef.current;
-        return () => {
-          cap?.removeEventListener('auxclick', handleAuxClick);
-        };
-      }
-      return () => {};
-    });
+    function clickClose(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
+      e.stopPropagation();
+      tabPageStore.closeTab(tab.id, _active);
+      ipcRenderer.send('mixpanel-track', 'click remove tab in bar');
+    }
 
     return (
       <div
@@ -727,82 +610,22 @@ const Tab = observer(
         {...provided.draggableProps}
         {...provided.dragHandleProps}
       >
-        <TabParent
-          ref={tabRef}
+        <Tab
+          title={title}
+          active={_active}
           width={width}
-          className={_active ? 'is-active' : ''}
-          onClick={() => {
-            if (!_active) {
-              ipcRenderer.send('set-tab', tab.id);
-              ipcRenderer.send('mixpanel-track', 'click bar tab');
-              // tabPageStore.setUrlText('');
-            }
+          tab={tab}
+          clickTab={() => {
+            clickTab();
           }}
-        >
-          <TabInner id="tab-inner">
-            <FavTitle>
-              <Favicon
-                style={{
-                  backgroundImage: `url(${tab.favicon})`,
-                }}
-              >
-                {tab.favicon ? (
-                  ''
-                ) : (
-                  <Public
-                    style={{
-                      position: 'absolute',
-                      left: 0,
-                      top: 0,
-                      width: '100%',
-                      height: '100%',
-                    }}
-                  />
-                )}
-              </Favicon>
-              <div
-                style={{
-                  height: '15px',
-                  margin: '-1px 0 0 0',
-                  width: 'calc(100% - 22px)',
-                  textOverflow: 'ellipsis',
-                  overflow: 'hidden',
-                  whiteSpace: 'nowrap',
-                  position: 'absolute',
-                  left: '22px',
-                }}
-              >
-                {title}
-              </div>
-            </FavTitle>
-            <TabButton
-              onClick={(e) => {
-                e.stopPropagation();
-                tabPageStore.closeTab(tab.id, _active);
-                ipcRenderer.send('mixpanel-track', 'click remove tab in bar');
-              }}
-            >
-              <Close />
-            </TabButton>
-          </TabInner>
-        </TabParent>
+          clickClose={(e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+            clickClose(e);
+          }}
+        />
       </div>
     );
   }
 );
-
-const ButtonContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-content: center;
-  margin: 0 8px 0 8px;
-`;
-
-const TabsRow = styled.div`
-  display: flex;
-  height: 34px;
-`;
-
 const TabsBar = observer(({ x, y, width }: ITabsBar) => {
   const { tabPageStore } = useStore();
   const tabs = tabPageStore.tabPageRow();
@@ -847,7 +670,7 @@ const TabsBar = observer(({ x, y, width }: ITabsBar) => {
                   >
                     {(provided0) => {
                       return (
-                        <Tab
+                        <TabBarTab
                           tabBarInfo={{ x, width }}
                           tab={tab}
                           provided={provided0}

@@ -35,6 +35,9 @@ export default class TabPageStore {
   }
 
   public set View(view: View) {
+    if (this.view === view) {
+      return;
+    }
     if (view === View.Tabs && this.view !== View.Tabs) {
       this.hoveringUrlInput = true;
     }
@@ -377,6 +380,7 @@ export default class TabPageStore {
 
   createTab(id: number, parentId?: number) {
     this.sorting.push(id);
+    this.newTabBumpOrder.push(id);
     if (typeof parentId !== 'undefined') {
       const parentTab = this.openTabs[parentId];
       if (parentTab) {
@@ -399,10 +403,14 @@ export default class TabPageStore {
       ancestor: undefined,
       unRooted: false,
     };
+    this.bumpTab(id);
   }
 
   deleteTab(idToRemove: number) {
     this.sorting = this.sorting.filter((id) => id !== idToRemove);
+    this.newTabBumpOrder = this.newTabBumpOrder.filter(
+      (id) => id !== idToRemove
+    );
     // this.sorting.
     delete this.openTabs[idToRemove];
     // todo: could filter the fuse instead if it was a property
@@ -453,12 +461,57 @@ export default class TabPageStore {
     // }
   }
 
-  tabPageRow(): TabPageTab[] {
-    const row = this.sorting.map((id) => this.openTabs[id]);
+  tabPageOrdered(sorting: number[]): TabPageTab[] {
+    const row = sorting.map((id) => this.openTabs[id]);
     row.filter((tab) => {
-      return typeof tab !== 'undefined';
+      return !!tab && typeof tab !== 'undefined';
     });
     return row;
+  }
+
+  tabPageRow(): TabPageTab[] {
+    return this.tabPageOrdered(this.sorting);
+  }
+
+  syncBumpOrder() {
+    let synced = true;
+    if (
+      this.newTabBumpOrder &&
+      this.newTabBumpOrder.length === this.tabBumpOrder.length
+    ) {
+      this.newTabBumpOrder.forEach((newId, index) => {
+        if (synced) {
+          synced = newId === this.tabBumpOrder[index];
+        }
+      });
+    } else {
+      synced = false;
+    }
+    if (!synced) {
+      if (typeof this.newTabBumpOrder !== 'undefined') {
+        this.tabBumpOrder = [...this.newTabBumpOrder];
+      }
+    }
+  }
+
+  tabBumpOrder: number[] = [];
+
+  newTabBumpOrder: number[] = [];
+
+  bumpTab(id: number) {
+    if (this.newTabBumpOrder[0] === id) {
+      return;
+    }
+    const idx = this.newTabBumpOrder.findIndex((openTabId) => openTabId === id);
+    if (typeof idx !== 'undefined') {
+      const [removed] = this.newTabBumpOrder.splice(idx, 1);
+      // ipcRenderer.send('log-data', ['bump', removed]);
+      this.newTabBumpOrder.unshift(removed);
+    }
+  }
+
+  imageBoardTabs(): TabPageTab[] {
+    return this.tabPageOrdered(this.tabBumpOrder);
   }
 
   isFirstTab(id: number) {
@@ -620,6 +673,8 @@ export default class TabPageStore {
     }
     return rootId;
   }
+
+  timeoutHandle = -1;
 
   constructor(
     workspaceStore: Instance<typeof WorkspaceStore>,
@@ -805,10 +860,15 @@ export default class TabPageStore {
         this.windowFloating = windowFloating;
       });
     });
-    ipcRenderer.on('will-navigate', () => {
+    ipcRenderer.on('gesture', (_, { id }) => {
+      // ipcRenderer.send('log-data', 'render-gesture');
+      this.bumpTab(id);
+    });
+    ipcRenderer.on('will-navigate', (_, { id }) => {
       runInAction(() => {
         this.navigatorTabModalSelectedNodeId = '';
         this.navigatorTabModal = [0, 0];
+        this.bumpTab(id);
       });
     });
     ipcRenderer.on('resize-work-area', (_, workSpaceRect) => {
@@ -828,6 +888,26 @@ export default class TabPageStore {
       }
       ipcRenderer.send('remove-tab', tabId);
       ipcRenderer.send('mixpanel-track', 'close tab with hotkey in webview');
+    });
+    ipcRenderer.on('tab-was-set', (_, id) => {
+      runInAction(() => {
+        if (this.timeoutHandle !== -1) {
+          clearTimeout(this.timeoutHandle);
+        }
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        this.timeoutHandle = setTimeout(() => {
+          this.bumpTab(id);
+          this.timeoutHandle = -1;
+        }, 5000);
+      });
+    });
+    ipcRenderer.on('unset-tab', (_, id) => {
+      if (typeof id !== 'undefined') {
+        this.bumpTab(id);
+      }
+      clearTimeout(this.timeoutHandle);
+      this.timeoutHandle = -1;
     });
   }
 }

@@ -468,6 +468,7 @@ export function addListeners(wm: WindowManager) {
   ipcMain.on('gesture', (event, data) => {
     log(`\n${event.sender.id} GESTURE ${data}`);
     wm.setGesture(event.sender.id, true);
+    wm.tabPageView.webContents.send('gesture', { id: event.sender.id });
   });
   ipcMain.on('dom-content-loaded', (event) => {
     log(`\n${event.sender.id} DOM LOADED`);
@@ -1212,15 +1213,24 @@ export default class WindowManager {
 
     const tabs = ids.map((id) => {
       const tabView = this.allWebViews[id];
+      if (typeof tabView !== 'undefined') {
+        return {
+          url:
+            tabView.unloadedUrl === ''
+              ? tabView.view.webContents.getURL()
+              : tabView.unloadedUrl,
+          title: tabView.title,
+          favicon: tabView.favicon,
+          imgString: tabView.imgString,
+          scrollHeight: tabView.scrollHeight,
+        };
+      }
       return {
-        url:
-          tabView.unloadedUrl === ''
-            ? tabView.view.webContents.getURL()
-            : tabView.unloadedUrl,
-        title: tabView.title,
-        favicon: tabView.favicon,
-        imgString: tabView.imgString,
-        scrollHeight: tabView.scrollHeight,
+        url: '',
+        title: '',
+        favicon: '',
+        imgString: '',
+        scrollHeight: 0,
       };
     });
     this.removedTabsStack.push(tabs);
@@ -1288,8 +1298,9 @@ export default class WindowManager {
     }
 
     // screenshot page if needed
+    let cachedId;
     if (shouldScreenshot && typeof oldTabView !== 'undefined') {
-      const cachedId = this.activeTabId;
+      cachedId = this.activeTabId;
       this.screenShotTab(cachedId, oldTabView, cleanupBrowser);
     } else {
       cleanupBrowser();
@@ -1299,6 +1310,7 @@ export default class WindowManager {
 
     // tell tab page that it is active
     this.tabPageView.webContents.send('set-active', true);
+    this.tabPageView.webContents.send('unset-tab', cachedId);
     // this.resize();
   }
 
@@ -1930,7 +1942,8 @@ export default class WindowManager {
   private removeTab(id: number) {
     const tabView = this.allWebViews[id];
     if (typeof tabView === 'undefined') {
-      throw new Error(`remove-tab: tab with id ${id} does not exist`);
+      log(`remove-tab: tab with id ${id} does not exist`);
+      return;
     }
     this.mainWindow.removeBrowserView(tabView.view);
     if (id === this.activeTabId) {

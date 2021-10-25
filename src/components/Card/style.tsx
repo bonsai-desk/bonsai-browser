@@ -1,6 +1,9 @@
 import styled, { css } from 'styled-components';
 
 export const TabParent = styled.div`
+  overflow: hidden;
+  background-color: white;
+  border-radius: 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -9,40 +12,64 @@ export const TabParent = styled.div`
   text-overflow: ellipsis;
   margin-bottom: 0.5rem;
 `;
+
+export const FaviconParent = styled.div`
+  width: 1em;
+  height: 1em;
+  background-color: black;
+`;
+
+export const TitleRow = styled.div`
+  background-color: lightgray;
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: flex-end;
+`;
+
+export const Description = styled.div`
+  width: 100%;
+  overflow: hidden;
+  font-size: 0.6rem;
+  font-weight: 600;
+  background-color: blue;
+`;
+
+export const Title = styled.div`
+  width: 50%;
+  overflow: hidden;
+  font-size: 0.6rem;
+  font-weight: 600;
+  background-color: blue;
+`;
+
 export const TabImageParent = styled.div`
+  position: relative;
   width: 100%;
   padding-top: 56.25%;
   background-size: cover; /* <------ */
   background-repeat: no-repeat;
-  position: relative; /* If you want text inside of it */
+  //position: relative; /* If you want text inside of it */
   z-index: 0;
-  border-radius: 10px;
-  border-width: 4px;
   display: flex;
   justify-content: center;
   overflow: hidden;
-  @media (prefers-color-scheme: dark) {
-    box-shadow: rgba(255, 255, 255, 0.16) 0 10px 36px 0,
-      rgba(0, 0, 0, 0.06) 0 0 0 1px;
-  }
-  @media (prefers-color-scheme: light) {
-    box-shadow: rgba(0, 0, 0, 0.16) 0 10px 36px 0, rgba(0, 0, 0, 0.06) 0 0 0 1px;
-  }
-  ${({ selected, img }: { selected: boolean; img: string }) => {
+
+  //@media (prefers-color-scheme: dark) {
+  //  box-shadow: rgba(255, 255, 255, 0.16) 0 10px 36px 0,
+  //    rgba(0, 0, 0, 0.06) 0 0 0 1px;
+  //}
+  //@media (prefers-color-scheme: light) {
+  //  box-shadow: rgba(0, 0, 0, 0.16) 0 10px 36px 0, rgba(0, 0, 0, 0.06) 0 0 0 1px;
+  //}
+
+  ${({ img }: { img: string }) => {
     let image = 'background-color: white;';
     if (img) {
       image = `background-image: ${img};`;
     }
-    if (selected) {
-      return css`
-        border-color: white;
-        border-style: solid;
-        border-width: 4px;
-        ${image}
-      `;
-    }
     return css`
-      margin: 4px;
       ${image}
     `;
   }}

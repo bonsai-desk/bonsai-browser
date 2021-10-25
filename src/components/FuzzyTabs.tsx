@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import { Instance } from 'mobx-state-tree';
 import { ipcRenderer } from 'electron';
 import { useStore } from '../store/tab-page-store';
-import Tab from './Tab';
+import Tab from './Card';
 import { Item } from '../store/workspace/item';
 import { TabPageTab } from '../interfaces/tab';
 
@@ -24,7 +24,7 @@ export const ColumnParent = styled.div`
   flex-direction: column;
   user-select: none;
   color: white;
-  width: 15rem;
+  width: 200px;
   margin: 0 1rem 0 1rem;
 `;
 
@@ -43,6 +43,10 @@ export function itemToTabPageTab(item: Instance<typeof Item>): TabPageTab {
     image: item.image,
     favicon: item.favicon,
     openGraphInfo: null,
+    canGoForward: false,
+    canGoBack: false,
+    unRooted: false,
+    ancestor: undefined,
   };
 }
 
@@ -56,9 +60,9 @@ const FuzzyTabs = observer(() => {
           const { item } = result;
           return (
             <Tab
-              disableButtons
               key={item.id}
               tab={item}
+              active
               selected={
                 idx === tabPageStore.fuzzySelectionIndex[0] &&
                 tabPageStore.fuzzySelectionIndex[1] === 0
@@ -81,6 +85,7 @@ const FuzzyTabs = observer(() => {
                 idx === tabPageStore.fuzzySelectionIndex[0] &&
                 tabPageStore.fuzzySelectionIndex[1] === 1
               }
+              active
               callback={() => {
                 ipcRenderer.send('open-workspace-url', item.url);
               }}
