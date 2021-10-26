@@ -1,5 +1,11 @@
 # Changelog
 
+## Bonsai 1.1.1 (October 26, 2021)
+- Tab home page is now bump ordered instead of grouped by domains in columns
+- New tab card styling on homepage & search
+- Fix: UI for small tabs when many are open and overflow behavior in tab row
+- Fix: new tab hotkey focuses the url box now
+
 ## Bonsai 1.1.0 (October 20, 2021)
 
 - Normal URL box, tabs, and back/forward buttons cloned from Chrome
