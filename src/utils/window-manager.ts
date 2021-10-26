@@ -1353,7 +1353,9 @@ export default class WindowManager {
     this.tabPageView.webContents.send('set-active', false);
     const tabView = this.allWebViews[id];
     if (typeof tabView === 'undefined') {
-      throw new Error(`setTab: tab with id ${id} does not exist`);
+      log(`setTab: tab with id ${id} does not exist`);
+      return;
+      // throw new Error();
     }
 
     const hh = this.headerHeight();

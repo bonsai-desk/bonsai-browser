@@ -75,7 +75,7 @@ const Card = observer(
     callback,
     disableButtons = false,
     style = {},
-    width = 200 - 13,
+    width = 200,
     selected = false,
   }: ITab) => {
     const { tabPageStore } = useStore();

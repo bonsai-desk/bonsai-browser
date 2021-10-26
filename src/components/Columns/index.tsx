@@ -63,7 +63,7 @@ const ImageBoard = observer(() => {
                       tab={tab}
                       hover
                       active
-                      width={200 - 13}
+                      width={200}
                     />
                   </div>
                 );

@@ -544,6 +544,7 @@ const ButtonContainer = styled.div`
 const TabsRow = styled.div`
   display: flex;
   height: 34px;
+  margin: 0 0 0 1px;
 `;
 
 interface ITabBarTab {
@@ -629,10 +630,20 @@ export const TabBarTab = observer(
 const TabsBar = observer(({ x, y, width }: ITabsBar) => {
   const { tabPageStore } = useStore();
   const tabs = tabPageStore.tabPageRow();
-  let tabWidth = (width - 45) / tabs.length - 12; // tabs have 13 pixel padding -1 margin
-  tabWidth = Math.min(tabWidth, 240 - 13);
+  let tabWidth = (width - 45) / tabs.length + 1; // tabs have 13 pixel padding -1 margin
+  tabWidth = Math.min(tabWidth, 240);
+  tabWidth = Math.max(tabWidth, 16);
 
-  let parentWidth: string | number = (tabWidth + 12) * tabs.length + 1;
+  const roundButtonSize = 8 + 28 + 8;
+  let parentWidth: string | number = (tabWidth - 1) * tabs.length;
+
+  let numToDrop = 0;
+  while (parentWidth + roundButtonSize > width) {
+    parentWidth -= tabWidth - 1;
+    numToDrop += 1;
+  }
+
+  // ipcRenderer.send('log-data', [parentWidth + roundButtonSize, width]);
   parentWidth = parentWidth < width ? `${parentWidth}px` : '100%';
   const TabsBarParentStyle = {
     zIndex: 1,
@@ -642,6 +653,10 @@ const TabsBar = observer(({ x, y, width }: ITabsBar) => {
     // overflow: 'hidden',
     width: parentWidth,
   };
+
+  // ipcRenderer.send('log-data', tabWidth);
+
+  const filteredTabs = tabs.slice(0, tabs.length - numToDrop);
 
   return (
     <TabsParent style={{ top: y, left: x, width: `${width}px` }}>
@@ -662,7 +677,7 @@ const TabsBar = observer(({ x, y, width }: ITabsBar) => {
                 {...provided.droppableProps}
                 style={TabsBarParentStyle}
               >
-                {tabs.map((tab, index) => (
+                {filteredTabs.map((tab, index) => (
                   <Draggable
                     key={tab.id}
                     draggableId={tab.id.toString()}
@@ -676,13 +691,6 @@ const TabsBar = observer(({ x, y, width }: ITabsBar) => {
                           provided={provided0}
                           width={tabWidth}
                         />
-                        // <span
-                        //   ref={provided.innerRef}
-                        //   {...provided.draggableProps}
-                        //   {...provided.dragHandleProps}
-                        // >
-                        //   woo
-                        // </span>
                       );
                     }}
                   </Draggable>

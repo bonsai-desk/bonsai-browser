@@ -89,6 +89,7 @@ function initMenu(wm: WindowManager) {
           if (wm.activeTabId !== -1) {
             const id = wm.createNewTab();
             wm.setTab(id);
+            wm.tabPageView.webContents.focus();
           }
         },
       },

@@ -98,7 +98,7 @@ export default class TabStore {
   }
 
   static requestAddTab() {
-    ipcRenderer.send('create-new-tab');
+    ipcRenderer.send('create-new-tab', true);
   }
 
   static removeTab(id: number) {
