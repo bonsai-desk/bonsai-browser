@@ -44,6 +44,9 @@ const ImageBoard = observer(() => {
   }, []);
 
   const Grid = SpringGrid;
+  if (tabPageStore.View !== View.Tabs) {
+    return <HomeParent />;
+  }
   return (
     <ImageBoardParent>
       <GridParent
