@@ -716,6 +716,12 @@ const TabsBar = observer(({ x, y, width }: ITabsBar) => {
   );
 });
 
+const WebpageBackground = styled.div`
+  background-color: white;
+  position: absolute;
+  border-radius: 20px 20px 0 0;
+`;
+
 const Navigator = observer(() => {
   const backRef = useRef(null);
   const { workspaceStore, tabPageStore, historyStore } = useStore();
@@ -757,6 +763,14 @@ const Navigator = observer(() => {
         ))}
         {head ? <AddToWorkspace node={head} /> : ''}
       </Panel>
+      <WebpageBackground
+        style={{
+          width: tabPageStore.innerBounds.width,
+          height: tabPageStore.innerBounds.height,
+          top: tabPageStore.innerBounds.y,
+          left: tabPageStore.innerBounds.x,
+        }}
+      />
     </NavigatorParent>
   );
 });
