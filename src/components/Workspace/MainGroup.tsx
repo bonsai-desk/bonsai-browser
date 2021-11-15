@@ -33,7 +33,7 @@ const MainGroup = observer(
     workspace: Instance<typeof Workspace>;
     group: Instance<typeof ItemGroup>;
   }) => {
-    const { tabPageStore } = useStore();
+    const { tabPageStore, workspaceStore } = useStore();
 
     const targetGroupSize = group.size();
     const lerpValue = easeOut(group.animationLerp);
@@ -181,7 +181,7 @@ const MainGroup = observer(
           }
 
           if (group.overTrash) {
-            workspace.deleteGroup(group);
+            workspace.deleteGroup(group, workspaceStore.dataPath);
             workspace.setAnyDragging(false);
             workspace.setAnyOverTrash(false);
             return;
@@ -305,7 +305,11 @@ const MainGroup = observer(
                 workspace.inboxGroup.itemArrangement.forEach((itemId) => {
                   const item = workspace.items.get(itemId);
                   if (typeof item !== 'undefined') {
-                    workspace.deleteItem(item, workspace.inboxGroup);
+                    workspace.deleteItem(
+                      item,
+                      workspace.inboxGroup,
+                      workspaceStore.dataPath
+                    );
                   }
                 });
               }}

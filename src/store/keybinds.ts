@@ -2,7 +2,7 @@ import { applySnapshot, getSnapshot, Instance, types } from 'mobx-state-tree';
 import { ipcRenderer } from 'electron';
 import path from 'path';
 import fs from 'fs';
-import { chord, decrypt, encrypt } from '../utils/utils';
+import { chord, tryDecrypt, encrypt } from '../utils/utils';
 import { myPlatform, Platform } from '../render-constants';
 
 function loadSnapshot(store: Instance<any>, encrypted = true) {
@@ -11,7 +11,7 @@ function loadSnapshot(store: Instance<any>, encrypted = true) {
       const snapshotPath = path.join(store.userDataPath, 'keybindSnapshot');
       const json = fs.readFileSync(snapshotPath, 'utf8');
       if (json !== '') {
-        const storeSnapshot = JSON.parse(encrypted ? decrypt(json) : json);
+        const storeSnapshot = JSON.parse(encrypted ? tryDecrypt(json) : json);
         applySnapshot(store, storeSnapshot);
       }
     } catch {

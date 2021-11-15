@@ -212,10 +212,14 @@ export function encrypt(text: string) {
   return encrypted.toString('hex');
 }
 
-export function decrypt(text: string) {
-  const encryptedText = Buffer.from(text, 'hex');
-  const decipher = createDecipheriv('aes-256-cbc', key, iv);
-  let decrypted = decipher.update(encryptedText);
-  decrypted = Buffer.concat([decrypted, decipher.final()]);
-  return decrypted.toString();
+export function tryDecrypt(text: string) {
+  try {
+    const encryptedText = Buffer.from(text, 'hex');
+    const decipher = createDecipheriv('aes-256-cbc', key, iv);
+    let decrypted = decipher.update(encryptedText);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    return decrypted.toString();
+  } catch {
+    return text;
+  }
 }

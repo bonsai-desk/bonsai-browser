@@ -13,6 +13,8 @@ const WorkspaceStore = types
   })
   .volatile(() => ({
     snapshotPath: '',
+    dataPath: '',
+    attemptedToLoadSnapshot: false,
     chooseWorkspaceX: 0,
     chooseWorkspaceY: 0,
     activeWorkspaceId: '',
@@ -43,6 +45,12 @@ const WorkspaceStore = types
     },
     setSnapshotPath(snapshotPath: string) {
       self.snapshotPath = snapshotPath;
+    },
+    setDataPath(dataPath: string) {
+      self.dataPath = dataPath;
+    },
+    setAttemptedToLoadSnapshot(attemptedToLoadSnapshot: boolean) {
+      self.attemptedToLoadSnapshot = attemptedToLoadSnapshot;
     },
     setChooseWorkspacePos(x: number, y: number) {
       self.chooseWorkspaceX = x;

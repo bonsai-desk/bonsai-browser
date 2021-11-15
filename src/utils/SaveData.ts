@@ -1,7 +1,7 @@
 import path from 'path';
 import { app } from 'electron';
 import fs from 'fs';
-import { decrypt, encrypt } from './utils';
+import { tryDecrypt, encrypt } from './utils';
 
 class SaveData {
   data: { finishedOnboarding?: boolean; seenEmailForm?: boolean };
@@ -15,7 +15,7 @@ class SaveData {
     try {
       const saveDataPath = path.join(app.getPath('userData'), 'saveData');
       const saveDataText = fs.readFileSync(saveDataPath, 'utf8');
-      this.data = JSON.parse(decrypt(saveDataText));
+      this.data = JSON.parse(tryDecrypt(saveDataText));
     } catch {
       //
     }

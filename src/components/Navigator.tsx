@@ -6,6 +6,7 @@ import { ipcRenderer } from 'electron';
 import { Instance } from 'mobx-state-tree';
 import { runInAction } from 'mobx';
 import { Add } from '@material-ui/icons';
+import { v4 as uuidv4 } from 'uuid';
 import {
   DragDropContext,
   Draggable,
@@ -21,6 +22,8 @@ import NavigatorTabModal from './NavigatorTabModal';
 import TitleBar, { RoundButton } from '../pages/App';
 import { Tab, TabsParent } from './Tab';
 import { TabPageTab } from '../interfaces/tab';
+import fs from 'fs';
+import path from 'path';
 
 enum Direction {
   Back,
@@ -495,6 +498,24 @@ const AddToWorkspace = observer(({ node }: { node: INode }) => {
                     favicon = tab.favicon;
                     image = tab.image;
                   }
+                }
+                if (image) {
+                  const workspaceImgName = uuidv4();
+                  const imagesDir = path.join(
+                    workspaceStore.dataPath,
+                    'images'
+                  );
+                  const tabImgPath = path.join(imagesDir, `${image}.jpg`);
+                  const workspaceImgPath = path.join(
+                    imagesDir,
+                    `${workspaceImgName}.jpg`
+                  );
+                  try {
+                    fs.copyFileSync(tabImgPath, workspaceImgPath);
+                  } catch {
+                    //
+                  }
+                  image = workspaceImgName;
                 }
                 workspace.createItem(
                   node.data.url,

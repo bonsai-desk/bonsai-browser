@@ -4,6 +4,8 @@
 import { destroy, Instance, types } from 'mobx-state-tree';
 import { v4 as uuidv4 } from 'uuid';
 import { mat4, vec3, vec4 } from 'gl-matrix';
+import path from 'path';
+import fs from 'fs';
 import {
   groupBorder,
   groupPadding,
@@ -311,7 +313,17 @@ export const Workspace = types
       group.itemArrangement.splice(0, 0, item.id);
       this.updateItemIndexes(group);
     },
-    deleteItem(item: Instance<typeof Item>, group: Instance<typeof ItemGroup>) {
+    deleteItem(
+      item: Instance<typeof Item>,
+      group: Instance<typeof ItemGroup>,
+      dataPath: string
+    ) {
+      try {
+        fs.rmSync(path.join(dataPath, 'images', `${item.image}.jpg`));
+      } catch {
+        //
+      }
+
       group.itemArrangement.splice(item.indexInGroup, 1);
       this.updateItemIndexes(group);
 
@@ -470,14 +482,14 @@ export const Workspace = types
       group.itemArrangement.splice(newIndex, 0, item.id);
       this.updateItemIndexes(group);
     },
-    deleteGroup(group: Instance<typeof ItemGroup>) {
+    deleteGroup(group: Instance<typeof ItemGroup>, dataPath: string) {
       group.itemArrangement.forEach((itemId) => {
         const item = self.items.get(itemId);
         if (typeof item !== 'undefined') {
           if (group.id !== 'hidden') {
             this.changeGroup(item, group, self.hiddenGroup);
           }
-          this.deleteItem(item, self.hiddenGroup);
+          this.deleteItem(item, self.hiddenGroup, dataPath);
         }
       });
 

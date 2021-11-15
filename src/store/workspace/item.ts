@@ -4,7 +4,7 @@
 import { types } from 'mobx-state-tree';
 
 export const itemWidth = 200;
-export const itemHeight = 112.5;
+export const itemHeight = 112;
 
 export const Item = types
   .model({

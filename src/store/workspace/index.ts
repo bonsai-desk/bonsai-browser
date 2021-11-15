@@ -4,53 +4,81 @@
 import { applySnapshot, getSnapshot, Instance } from 'mobx-state-tree';
 import { ipcRenderer } from 'electron';
 import fs from 'fs';
+import path from 'path';
 import { Item } from './item';
 import { ItemGroup } from './item-group';
 import WorkspaceStore from './workspace-store';
-import { decrypt, encrypt } from '../../utils/utils';
+import { tryDecrypt } from '../../utils/utils';
 
 const animationTime = 0.15;
 
 function saveSnapshot(workspaceStore: Instance<typeof WorkspaceStore>) {
+  if (!workspaceStore.attemptedToLoadSnapshot) {
+    return;
+  }
   if (workspaceStore.snapshotPath !== '') {
     try {
       const snapshot = getSnapshot(workspaceStore);
-      const snapshotString = JSON.stringify(snapshot);
-      fs.writeFileSync(workspaceStore.snapshotPath, encrypt(snapshotString));
+      const snapshotString = JSON.stringify(snapshot, null, '  ');
+      fs.writeFileSync(workspaceStore.snapshotPath, snapshotString);
     } catch {
       //
     }
   }
 }
 
+function JSONTryParse(JSONString: string) {
+  try {
+    const object = JSON.parse(JSONString);
+    return { success: true, object };
+  } catch {
+    //
+  }
+  return { success: false, object: {} };
+}
+
 function loadSnapshot(workspaceStore: Instance<typeof WorkspaceStore>) {
   if (workspaceStore.snapshotPath !== '') {
+    workspaceStore.setAttemptedToLoadSnapshot(true);
     try {
+      const exists = fs.existsSync(workspaceStore.snapshotPath);
+      if (!exists) {
+        return;
+      }
       const workspaceJson = fs.readFileSync(
         workspaceStore.snapshotPath,
         'utf8'
       );
       if (workspaceJson !== '') {
-        const workspaceSnapshot = JSON.parse(decrypt(workspaceJson));
+        const result1 = JSONTryParse(workspaceJson);
+        const result2 = JSONTryParse(tryDecrypt(workspaceJson));
+        if (!result1.success && !result2.success) {
+          fs.renameSync(
+            workspaceStore.snapshotPath,
+            `${workspaceStore.snapshotPath}${Date.now()}`
+          );
+          return;
+        }
+        const workspaceSnapshot = result1.success
+          ? result1.object
+          : result2.object;
         applySnapshot(workspaceStore, workspaceSnapshot);
-      } else {
-        ipcRenderer.send('mixpanel-track', 'workspace snapshot json empty');
+        return;
       }
-    } catch (e: any) {
-      if (e.name && e.message) {
-        ipcRenderer.send(
-          'mixpanel-track',
-          `workspace snapshot catch error: ${e.name} ${e.message}`
-        );
-      } else {
-        ipcRenderer.send(
-          'mixpanel-track',
-          `workspace snapshot catch error (no name/message included)`
-        );
-      }
+    } catch (e) {
+      ipcRenderer.send('log-data', `loadSnapshot error: ${e}`);
     }
-  } else {
-    ipcRenderer.send('mixpanel-track', 'workspace snapshot no path');
+    try {
+      const exists = fs.existsSync(workspaceStore.snapshotPath);
+      if (exists) {
+        fs.renameSync(
+          workspaceStore.snapshotPath,
+          `${workspaceStore.snapshotPath}${Date.now()}`
+        );
+      }
+    } catch {
+      //
+    }
   }
 }
 
@@ -115,10 +143,12 @@ function createWorkspaceStore(): Instance<typeof WorkspaceStore> {
 
   workspaceStore.createWorkspace('default');
 
-  ipcRenderer.send('request-snapshot-path');
+  ipcRenderer.send('request-data-path');
 
-  ipcRenderer.on('set-snapshot-path', (_, snapshotPath) => {
+  ipcRenderer.on('set-data-path', (_, dataPath) => {
+    const snapshotPath = path.join(dataPath, 'workspaceSnapshot');
     workspaceStore.setSnapshotPath(snapshotPath);
+    workspaceStore.setDataPath(dataPath);
     loadSnapshot(workspaceStore);
   });
 

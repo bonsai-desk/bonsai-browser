@@ -46,33 +46,16 @@ export const Title = styled.div`
 
 export const TabImageParent = styled.div`
   position: relative;
-  width: 100%;
-  padding-top: 56.25%;
-  background-size: cover; /* <------ */
-  background-repeat: no-repeat;
-  //position: relative; /* If you want text inside of it */
+  width: 200px;
+  height: 112px;
   z-index: 0;
-  display: flex;
-  justify-content: center;
   overflow: hidden;
-
-  //@media (prefers-color-scheme: dark) {
-  //  box-shadow: rgba(255, 255, 255, 0.16) 0 10px 36px 0,
-  //    rgba(0, 0, 0, 0.06) 0 0 0 1px;
-  //}
-  //@media (prefers-color-scheme: light) {
-  //  box-shadow: rgba(0, 0, 0, 0.16) 0 10px 36px 0, rgba(0, 0, 0, 0.06) 0 0 0 1px;
-  //}
-
-  ${({ img }: { img: string }) => {
-    let image = 'background-color: white;';
-    if (img) {
-      image = `background-image: ${img};`;
-    }
-    return css`
-      ${image}
-    `;
-  }}
+`;
+export const TabImg = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
 `;
 export const TitleParent = styled.div`
   font-size: 0.6rem;

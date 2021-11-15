@@ -3,10 +3,11 @@ import React, { useRef } from 'react';
 import { ipcRenderer } from 'electron';
 import styled from '@emotion/styled';
 import { OpenInBrowser } from '@material-ui/icons';
+import path from 'path';
 import { useStore } from '../../store/tab-page-store';
 import { ITab, TabPageTab } from '../../interfaces/tab';
 
-import { TabImageParent, TabParent } from './style';
+import { TabImageParent, TabImg, TabParent } from './style';
 import { Tab } from '../Tab';
 import { useMiddleClick } from '../../utils/effects';
 
@@ -37,8 +38,14 @@ const SelectedParent = styled.div`
 `;
 
 const TabImage = observer(({ imgUrl, selected }: ITabImage) => {
+  const { workspaceStore } = useStore();
+  const imgFileUrl = path.join(
+    workspaceStore.dataPath,
+    'images',
+    `${imgUrl}.jpg`
+  );
   return (
-    <TabImageParent img={`url(${imgUrl})`}>
+    <TabImageParent>
       {selected ? (
         <SelectedParent>
           <OpenInBrowser />
@@ -46,6 +53,7 @@ const TabImage = observer(({ imgUrl, selected }: ITabImage) => {
       ) : (
         ''
       )}
+      <TabImg src={`file://${imgFileUrl}`} />
     </TabImageParent>
   );
 });

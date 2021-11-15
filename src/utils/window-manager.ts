@@ -16,6 +16,7 @@ import BezierEasing from 'bezier-easing';
 import fs from 'fs';
 import Fuse from 'fuse.js';
 import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 import { headerHeight } from './tab-view';
 import {
   FIND_HTML,
@@ -26,7 +27,7 @@ import {
   VIBRANCY,
 } from '../constants';
 import {
-  decrypt,
+  tryDecrypt,
   encrypt,
   get16Favicon,
   parseMap,
@@ -431,12 +432,8 @@ export function addListeners(wm: WindowManager) {
     const userDataPath = app.getPath('userData');
     event.sender.send('user-data-path', userDataPath);
   });
-  ipcMain.on('request-snapshot-path', () => {
-    const snapshotPath = path.join(
-      app.getPath('userData'),
-      'workspaceSnapshot'
-    );
-    wm.tabPageView.webContents.send('set-snapshot-path', snapshotPath);
+  ipcMain.on('request-data-path', () => {
+    wm.tabPageView.webContents.send('set-data-path', app.getPath('userData'));
   });
   ipcMain.on('open-graph-data', (_, data: OpenGraphInfo) => {
     const tabView = wm.allWebViews[wm.activeTabId];
@@ -1866,9 +1863,37 @@ export default class WindowManager {
     tabView.view.webContents.send('get-scroll-height', tabId);
     const handleImage = (image: NativeImage) => {
       const jpgBuf = image.toJPEG(50);
-      const imgString = `data:image/jpg;base64, ${jpgBuf.toString('base64')}`;
-      tabView.imgString = imgString;
-      this.tabPageView.webContents.send('tab-image-native', [tabId, imgString]);
+      // const imgHash = createHash('sha256')
+      //   .update(jpgBuf)
+      //   .digest('hex')
+      //   .toUpperCase();
+      const tabImgName = uuidv4();
+      try {
+        const imagesDir = path.join(app.getPath('userData'), 'images');
+        fs.mkdirSync(imagesDir, { recursive: true });
+        const tabImgPath = path.join(imagesDir, `${tabImgName}.jpg`);
+        fs.writeFileSync(tabImgPath, jpgBuf);
+      } catch {
+        //
+      }
+      if (tabView.imgString) {
+        try {
+          fs.rmSync(
+            path.join(
+              app.getPath('userData'),
+              'images',
+              `${tabView.imgString}.jpg`
+            )
+          );
+        } catch {
+          //
+        }
+      }
+      tabView.imgString = tabImgName;
+      this.tabPageView.webContents.send('tab-image-native', [
+        tabId,
+        tabImgName,
+      ]);
       if (callback) {
         callback();
       }
@@ -1948,6 +1973,13 @@ export default class WindowManager {
       log(`remove-tab: tab with id ${id} does not exist`);
       return;
     }
+    try {
+      fs.rmSync(
+        path.join(app.getPath('userData'), 'images', `${tabView.imgString}.jpg`)
+      );
+    } catch {
+      //
+    }
     this.mainWindow.removeBrowserView(tabView.view);
     if (id === this.activeTabId) {
       this.unSetTab();
@@ -1982,7 +2014,7 @@ export default class WindowManager {
     try {
       const historySavePath = path.join(app.getPath('userData'), 'history');
       const saveString = fs.readFileSync(historySavePath, 'utf8');
-      const saveMap = parseMap(decrypt(saveString));
+      const saveMap = parseMap(tryDecrypt(saveString));
       if (
         saveMap === null ||
         typeof saveMap === 'undefined' ||
@@ -2018,7 +2050,7 @@ export default class WindowManager {
     try {
       const openTabsSavePath = path.join(app.getPath('userData'), 'openTabs');
       const saveString = fs.readFileSync(openTabsSavePath, 'utf8');
-      const saveData = JSON.parse(decrypt(saveString));
+      const saveData = JSON.parse(tryDecrypt(saveString));
 
       saveData.forEach((tab: TabInfo) => {
         this.loadTabFromTabInfo(tab);

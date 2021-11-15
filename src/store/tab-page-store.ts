@@ -736,8 +736,10 @@ export default class TabPageStore {
     ipcRenderer.on(
       'web-contents-update',
       (_, [id, canGoBack, canGoForward]) => {
-        this.openTabs[id].canGoBack = canGoBack;
-        this.openTabs[id].canGoForward = canGoForward;
+        runInAction(() => {
+          this.openTabs[id].canGoBack = canGoBack;
+          this.openTabs[id].canGoForward = canGoForward;
+        });
       }
     );
     ipcRenderer.on('access-tab', (_, id) => {

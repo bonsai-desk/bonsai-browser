@@ -4,6 +4,7 @@ import React from 'react';
 import { DraggableCore, DraggableData } from 'react-draggable';
 import { runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
+import path from 'path';
 import { useStore, View } from '../../store/tab-page-store';
 import { easeOut, getGroupBelowItem, overTrash } from './utils';
 import { lerp } from '../../utils/utils';
@@ -38,7 +39,7 @@ const MainItem = observer(
     group: Instance<typeof ItemGroup>;
     item: Instance<typeof MobxItem>;
   }) => {
-    const { tabPageStore } = useStore();
+    const { tabPageStore, workspaceStore } = useStore();
     const targetPos = workspace.placeholderPos(item, group);
     const [groupX, groupY] = workspace.worldToScreen(group.x, group.y);
     targetPos[0] += groupX;
@@ -56,6 +57,12 @@ const MainItem = observer(
 
     const [worldContainerDragPosX, worldContainerDragPosY] =
       workspace.worldToScreen(item.containerDragPosX, item.containerDragPosY);
+
+    const imgFileUrl = path.join(
+      workspaceStore.dataPath,
+      'images',
+      `${item.image}.jpg`
+    );
 
     return (
       <DraggableCore
@@ -191,14 +198,14 @@ const MainItem = observer(
                 typeof startGroup !== 'undefined' &&
                 startGroup.itemArrangement.length === 0
               ) {
-                workspace.deleteGroup(startGroup);
+                workspace.deleteGroup(startGroup, workspaceStore.dataPath);
               }
             }
             item.setDragStartGroup('');
             item.setBeingDragged(false);
 
             if (item.overTrash) {
-              workspace.deleteItem(item, group);
+              workspace.deleteItem(item, group, workspaceStore.dataPath);
               ipcRenderer.send(
                 'mixpanel-track',
                 'delete workspace item with trash'
@@ -253,7 +260,7 @@ const MainItem = observer(
             }}
           >
             <ItemShade />
-            <ItemImg img={`url(${item.image})`} />
+            <ItemImg src={`file://${imgFileUrl}`} />
             {item.favicon ? (
               <ItemFaviconParent>
                 <ItemFavicon img={`url(${item.favicon})`} />

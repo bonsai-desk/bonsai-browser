@@ -21,23 +21,12 @@ export const ItemContainer = styled.div`
       }
     `};
 `;
-export const ItemImg = styled.div`
+export const ItemImg = styled.img`
   height: 100%;
   width: 100%;
   object-fit: cover;
+  object-position: top center;
 
-  ${({ img }: { img: string }) => {
-    if (img) {
-      return css`
-        background-image: ${img};
-        background-size: cover;
-        background-repeat: no-repeat;
-      `;
-    }
-    return 'background-color: gray;';
-  }}
-
-  // :(
   -webkit-user-select: none;
   -moz-user-select: none;
   user-select: none;
