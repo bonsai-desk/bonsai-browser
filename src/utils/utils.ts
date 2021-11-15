@@ -140,7 +140,7 @@ function reviver(_: string, value: any) {
 }
 
 export function stringifyMap(map: Map<string, HistoryEntry>): string {
-  return JSON.stringify(map, replacer);
+  return JSON.stringify(map, replacer, '  ');
 }
 
 export function parseMap(jsonString: string): Map<string, HistoryEntry> {

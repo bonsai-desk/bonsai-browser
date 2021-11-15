@@ -8,7 +8,7 @@ import {
 import path from 'path';
 import fs from 'fs';
 import { IWebView } from './interfaces';
-import { encrypt, urlToMapKey } from './utils';
+import { parseMap, urlToMapKey } from './utils';
 import { floatingWindowEdgeMargin } from './calculate-window-target';
 import { LOWER_BOUND } from '../constants';
 
@@ -233,8 +233,8 @@ export function saveTabs(allWebViews: Record<number, IWebView>) {
         scrollHeight: tabView.scrollHeight,
       };
     });
-    const openTabsString = JSON.stringify(openTabsData);
-    fs.writeFileSync(savePath, encrypt(openTabsString));
+    const openTabsString = JSON.stringify(openTabsData, null, '  ');
+    fs.writeFileSync(savePath, openTabsString);
   } catch {
     //
   }
@@ -246,4 +246,22 @@ export function floatingSize(display: Display) {
   const floatingWidth = Math.floor(height * 0.85);
   const floatingHeight = Math.floor(height);
   return [floatingWidth, floatingHeight];
+}
+
+export function tryParseMap(jsonString: string) {
+  try {
+    return { success: true, map: parseMap(jsonString) };
+  } catch {
+    //
+  }
+  return { success: false, map: null };
+}
+
+export function tryParseJSON(jsonString: string) {
+  try {
+    return { success: true, object: JSON.parse(jsonString) };
+  } catch {
+    //
+  }
+  return { success: false, object: null };
 }

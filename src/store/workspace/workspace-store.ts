@@ -6,6 +6,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { Workspace } from './workspace';
 import { ItemGroup } from './item-group';
 import { TabPageTab } from '../../interfaces/tab';
+import fs from 'fs';
+import path from 'path';
 
 const WorkspaceStore = types
   .model({
@@ -63,6 +65,14 @@ const WorkspaceStore = types
       self.selectedTab = selectedTab;
     },
     deleteWorkspace(workspace: Instance<typeof Workspace>) {
+      // delete all item images
+      workspace.items.forEach((item) => {
+        try {
+          fs.rmSync(path.join(self.dataPath, 'images', `${item.image}.jpg`));
+        } catch {
+          //
+        }
+      });
       destroy(workspace);
     },
   }));

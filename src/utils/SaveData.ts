@@ -1,7 +1,8 @@
 import path from 'path';
 import { app } from 'electron';
 import fs from 'fs';
-import { tryDecrypt, encrypt } from './utils';
+import { tryDecrypt } from './utils';
+import { tryParseJSON } from './wm-utils';
 
 class SaveData {
   data: { finishedOnboarding?: boolean; seenEmailForm?: boolean };
@@ -15,7 +16,18 @@ class SaveData {
     try {
       const saveDataPath = path.join(app.getPath('userData'), 'saveData');
       const saveDataText = fs.readFileSync(saveDataPath, 'utf8');
-      this.data = JSON.parse(tryDecrypt(saveDataText));
+
+      const r1 = tryParseJSON(tryDecrypt(saveDataText));
+      if (r1.success) {
+        this.data = r1.object;
+      } else {
+        const r2 = tryParseJSON(saveDataText);
+        if (r2.success) {
+          this.data = r2.object;
+        } else {
+          // failed to load any data
+        }
+      }
     } catch {
       //
     }
@@ -24,7 +36,7 @@ class SaveData {
   save() {
     try {
       const saveDataPath = path.join(app.getPath('userData'), 'saveData');
-      const saveDataString = encrypt(JSON.stringify(this.data));
+      const saveDataString = JSON.stringify(this.data, null, '  ');
       fs.writeFileSync(saveDataPath, saveDataString);
     } catch {
       //

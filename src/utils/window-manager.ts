@@ -28,9 +28,7 @@ import {
 } from '../constants';
 import {
   tryDecrypt,
-  encrypt,
   get16Favicon,
-  parseMap,
   stringifyMap,
   stringToUrl,
   urlToMapKey,
@@ -52,6 +50,8 @@ import {
   resizeAsOverlayView,
   resizeAsPeekView,
   saveTabs,
+  tryParseJSON,
+  tryParseMap,
   updateContents,
   updateWebContents,
 } from './wm-utils';
@@ -712,7 +712,7 @@ export default class WindowManager {
     this.tabPageView.webContents.on('did-finish-load', () => {
       // we do this so hot reloading does not duplicate tabs
       Object.values(this.allWebViews).forEach((tabView) => {
-        this.removeTab(tabView.id);
+        this.removeTab(tabView.id, false);
       });
       this.loadHistory();
 
@@ -1513,7 +1513,7 @@ export default class WindowManager {
     try {
       const savePath = path.join(app.getPath('userData'), 'history');
       const historyString = stringifyMap(this.historyMap);
-      fs.writeFileSync(savePath, encrypt(historyString));
+      fs.writeFileSync(savePath, historyString);
       if (this.loadedOpenTabs) {
         saveTabs(this.allWebViews);
       }
@@ -1967,18 +1967,24 @@ export default class WindowManager {
     return pointInBounds(screen.getCursorScreenPoint(), bounds);
   }
 
-  private removeTab(id: number) {
+  private removeTab(id: number, deleteImageOnDisk = true) {
     const tabView = this.allWebViews[id];
     if (typeof tabView === 'undefined') {
       log(`remove-tab: tab with id ${id} does not exist`);
       return;
     }
-    try {
-      fs.rmSync(
-        path.join(app.getPath('userData'), 'images', `${tabView.imgString}.jpg`)
-      );
-    } catch {
-      //
+    if (deleteImageOnDisk) {
+      try {
+        fs.rmSync(
+          path.join(
+            app.getPath('userData'),
+            'images',
+            `${tabView.imgString}.jpg`
+          )
+        );
+      } catch {
+        //
+      }
     }
     this.mainWindow.removeBrowserView(tabView.view);
     if (id === this.activeTabId) {
@@ -2014,7 +2020,19 @@ export default class WindowManager {
     try {
       const historySavePath = path.join(app.getPath('userData'), 'history');
       const saveString = fs.readFileSync(historySavePath, 'utf8');
-      const saveMap = parseMap(tryDecrypt(saveString));
+      let saveMap;
+      const r1 = tryParseMap(tryDecrypt(saveString));
+      if (r1.success) {
+        saveMap = r1.map;
+      } else {
+        const r2 = tryParseMap(saveString);
+        if (r2.success) {
+          saveMap = r2.map;
+        } else {
+          this.loadTabs();
+          return;
+        }
+      }
       if (
         saveMap === null ||
         typeof saveMap === 'undefined' ||
@@ -2050,7 +2068,19 @@ export default class WindowManager {
     try {
       const openTabsSavePath = path.join(app.getPath('userData'), 'openTabs');
       const saveString = fs.readFileSync(openTabsSavePath, 'utf8');
-      const saveData = JSON.parse(tryDecrypt(saveString));
+      let saveData;
+
+      const r1 = tryParseJSON(tryDecrypt(saveString));
+      if (r1.success) {
+        saveData = r1.object;
+      } else {
+        const r2 = tryParseJSON(saveString);
+        if (r2.success) {
+          saveData = r2.object;
+        } else {
+          return;
+        }
+      }
 
       saveData.forEach((tab: TabInfo) => {
         this.loadTabFromTabInfo(tab);
