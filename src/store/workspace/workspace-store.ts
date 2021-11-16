@@ -3,14 +3,15 @@
 
 import { destroy, Instance, types } from 'mobx-state-tree';
 import { v4 as uuidv4 } from 'uuid';
+import fs from 'fs';
+import path from 'path';
 import { Workspace } from './workspace';
 import { ItemGroup } from './item-group';
 import { TabPageTab } from '../../interfaces/tab';
-import fs from 'fs';
-import path from 'path';
 
 const WorkspaceStore = types
   .model({
+    version: types.number,
     workspaces: types.map(Workspace),
   })
   .volatile(() => ({
@@ -44,6 +45,9 @@ const WorkspaceStore = types
       });
       self.workspaces.put(workspace);
       return workspace;
+    },
+    setVersion(version: number) {
+      self.version = version;
     },
     setSnapshotPath(snapshotPath: string) {
       self.snapshotPath = snapshotPath;

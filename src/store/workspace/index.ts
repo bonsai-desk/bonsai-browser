@@ -5,10 +5,11 @@ import { applySnapshot, getSnapshot, Instance } from 'mobx-state-tree';
 import { ipcRenderer } from 'electron';
 import fs from 'fs';
 import path from 'path';
+import { runInAction } from 'mobx';
 import { Item } from './item';
 import { ItemGroup } from './item-group';
 import WorkspaceStore from './workspace-store';
-import { tryDecrypt } from '../../utils/utils';
+import { base64ImgToDisk, tryDecrypt } from '../../utils/utils';
 
 const animationTime = 0.15;
 
@@ -37,6 +38,21 @@ function JSONTryParse(JSONString: string) {
   return { success: false, object: {} };
 }
 
+function updateStoreFromV1ToV2(
+  workspaceStore: Instance<typeof WorkspaceStore>
+) {
+  workspaceStore.workspaces.forEach((workspace) => {
+    workspace.items.forEach((item) => {
+      const imgName = base64ImgToDisk(
+        item.image,
+        path.join(workspaceStore.dataPath, 'images')
+      );
+      item.setImage(imgName);
+    });
+  });
+  workspaceStore.setVersion(2);
+}
+
 function loadSnapshot(workspaceStore: Instance<typeof WorkspaceStore>) {
   if (workspaceStore.snapshotPath !== '') {
     workspaceStore.setAttemptedToLoadSnapshot(true);
@@ -53,16 +69,37 @@ function loadSnapshot(workspaceStore: Instance<typeof WorkspaceStore>) {
         const result1 = JSONTryParse(workspaceJson);
         const result2 = JSONTryParse(tryDecrypt(workspaceJson));
         if (!result1.success && !result2.success) {
+          console.log('failed to parse snapshot. renaming file. (1)');
+          const dateString = new Date()
+            .toString()
+            .replace(/[/\\?%*:|"<>]/g, '-');
           fs.renameSync(
             workspaceStore.snapshotPath,
-            `${workspaceStore.snapshotPath}${Date.now()}`
+            `${workspaceStore.snapshotPath}(broken) ${dateString}`
           );
           return;
         }
         const workspaceSnapshot = result1.success
           ? result1.object
           : result2.object;
+
+        // if snapshot has no version, it was made before the version system, so we will call that version 1
+        // snapshots with the new version system start at 2 and up
+        if (typeof workspaceSnapshot.version === 'undefined') {
+          runInAction(() => {
+            workspaceSnapshot.version = 1;
+            // workspaceSnapshot.setVersion(1);
+          });
+        }
+
         applySnapshot(workspaceStore, workspaceSnapshot);
+
+        if (workspaceSnapshot.version === 1) {
+          ipcRenderer.send('log-data', 'snapshot being updated from V1 to V2');
+          updateStoreFromV1ToV2(workspaceStore);
+          saveSnapshot(workspaceStore);
+        }
+
         return;
       }
     } catch (e) {
@@ -71,9 +108,11 @@ function loadSnapshot(workspaceStore: Instance<typeof WorkspaceStore>) {
     try {
       const exists = fs.existsSync(workspaceStore.snapshotPath);
       if (exists) {
+        console.log('failed to parse snapshot. renaming file. (2)');
+        const dateString = new Date().toString().replace(/[/\\?%*:|"<>]/g, '-');
         fs.renameSync(
           workspaceStore.snapshotPath,
-          `${workspaceStore.snapshotPath}${Date.now()}`
+          `${workspaceStore.snapshotPath}(broken) ${dateString}`
         );
       }
     } catch {
@@ -138,6 +177,7 @@ function update(
 
 function createWorkspaceStore(): Instance<typeof WorkspaceStore> {
   const workspaceStore = WorkspaceStore.create({
+    version: 2, // this number is the version for new stores. old stores loaded in will override the version and will need to be updated
     workspaces: {},
   });
 

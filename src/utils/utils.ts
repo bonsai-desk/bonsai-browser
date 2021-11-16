@@ -1,7 +1,10 @@
 import { BrowserView, BrowserWindow } from 'electron';
 import { createCipheriv, createDecipheriv } from 'crypto';
-import { HistoryEntry } from './interfaces';
+import { v4 as uuidv4 } from 'uuid';
+import path from 'path';
+import fs from 'fs';
 import { get } from './jsutils';
+import { HistoryEntry } from './interfaces';
 
 export const windowHasView = (
   window: BrowserWindow,
@@ -222,4 +225,22 @@ export function tryDecrypt(text: string) {
   } catch {
     return text;
   }
+}
+
+export function base64ImgToDisk(
+  base64ImageString: string,
+  saveDirPath: string
+) {
+  const imgPrefixLength = 'data:image/jpg;base64, '.length;
+  const base64Img = base64ImageString.substr(imgPrefixLength);
+  const imgBuffer = Buffer.from(base64Img, 'base64');
+  const imgName = uuidv4();
+  const imgPath = path.join(saveDirPath, `${imgName}.jpg`);
+  try {
+    fs.mkdirSync(saveDirPath, { recursive: true });
+    fs.writeFileSync(imgPath, imgBuffer);
+  } catch {
+    //
+  }
+  return imgName;
 }

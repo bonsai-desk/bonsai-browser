@@ -49,4 +49,7 @@ export const Item = types
     setAnimationLerp(animationLerp: number) {
       self.animationLerp = animationLerp;
     },
+    setImage(image: string) {
+      self.image = image;
+    },
   }));

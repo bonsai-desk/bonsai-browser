@@ -27,10 +27,11 @@ import {
   VIBRANCY,
 } from '../constants';
 import {
-  tryDecrypt,
+  base64ImgToDisk,
   get16Favicon,
   stringifyMap,
   stringToUrl,
+  tryDecrypt,
   urlToMapKey,
   windowHasView,
 } from './utils';
@@ -2083,6 +2084,16 @@ export default class WindowManager {
       }
 
       saveData.forEach((tab: TabInfo) => {
+        const isUUID =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+            tab.imgString
+          );
+        if (!isUUID) {
+          tab.imgString = base64ImgToDisk(
+            tab.imgString,
+            path.join(app.getPath('userData'), 'images')
+          );
+        }
         this.loadTabFromTabInfo(tab);
       });
     } catch {
