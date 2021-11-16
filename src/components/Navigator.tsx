@@ -790,6 +790,7 @@ const Navigator = observer(() => {
           height: tabPageStore.innerBounds.height,
           top: tabPageStore.innerBounds.y,
           left: tabPageStore.innerBounds.x,
+          display: process.platform === 'darwin' ? 'none' : 'block',
         }}
       />
     </NavigatorParent>
