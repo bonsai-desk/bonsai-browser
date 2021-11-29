@@ -6,7 +6,6 @@ import {
   BrowserWindow,
   Display,
   globalShortcut,
-  HandlerDetails,
   ipcMain,
   IpcMainEvent,
   NativeImage,
@@ -14,6 +13,7 @@ import {
 } from 'electron';
 import BezierEasing from 'bezier-easing';
 import fs from 'fs';
+import { vec2 } from 'gl-matrix';
 import Fuse from 'fuse.js';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
@@ -38,536 +38,44 @@ import {
 import calculateWindowTarget from './calculate-window-target';
 import {
   currentWindowSize,
+  dragThresholdSquared,
   floatingPadding,
   floatingSize,
   floatingTitleBarHeight,
   floatingTitleBarSpacing,
+  genHandleWindowOpen,
+  goBack,
+  handleDidNavigate,
   handleFindText,
+  handleGoForward,
+  handleInPageNavigateWithoutGesture,
+  handleWillNavigate,
   innerBounds,
+  log,
+  makeOnboardingWindow,
   makeView,
   pointInBounds,
   reloadTab,
-  resizeAsFindView,
-  resizeAsOverlayView,
-  resizeAsPeekView,
+  resizeFindView,
+  resizeOverlayView,
+  resizePeekView,
   saveTabs,
+  showOnboardingWindow,
+  tagSideBarWidth,
+  translateKeys,
   tryParseJSON,
   tryParseMap,
   updateContents,
   updateWebContents,
 } from './wm-utils';
-import {
-  HistoryEntry,
-  INavigateData,
-  IWebView,
-  OpenGraphInfo,
-  TabInfo,
-} from './interfaces';
-import { INode } from '../store/history-store';
+import { HistoryEntry, IWebView, OpenGraphInfo, TabInfo } from './interfaces';
 import MixpanelManager from './mixpanel-manager';
 import SaveData from './SaveData';
-
-const glMatrix = require('gl-matrix');
-
-const easeOut = BezierEasing(0, 0, 0.5, 1);
-
-const DEBUG = false;
-
-function log(str: string) {
-  if (DEBUG) {
-    console.log(str);
-  }
-}
-
-function handleInPageNavigateWithoutGesture(
-  view: IWebView,
-  url: string,
-  alertTargets: BrowserView[]
-) {
-  log(`${view.id} will-navigate-no-gesture ${url}`);
-  alertTargets.forEach((target) => {
-    target.webContents.send('will-navigate-no-gesture', { id: view.id, url });
-  });
-}
-
-function handleWillNavigate(
-  view: IWebView,
-  url: string,
-  alertTargets: BrowserView[]
-) {
-  log(`${view.id} will-navigate ${url}`);
-  view.forwardUrl = undefined;
-  view.forwardUrls = [];
-  alertTargets.forEach((target) => {
-    target.webContents.send('will-navigate', { id: view.id, url });
-  });
-}
-
-function handleDidNavigate(
-  view: IWebView,
-  data: INavigateData,
-  alertTargets: BrowserView[]
-) {
-  alertTargets.forEach((target) => {
-    target.webContents.send('did-navigate', { id: view.id, ...data });
-  });
-}
-
-function goBack(webView: IWebView, alertTargets: BrowserView[]) {
-  webView.forwardUrl = webView.view.webContents.getURL();
-  webView.forwardUrls.push(webView.view.webContents.getURL());
-  webView.view.webContents.goBack();
-  alertTargets.forEach((target) => {
-    target.webContents.send('go-back', { id: webView.id });
-  });
-}
-
-function handleGoForward(webView: IWebView, alertTargets: BrowserView[]) {
-  log(`${webView.id} request go forward [${webView.forwardUrls}]`);
-  const forwardUrl = webView.forwardUrls[webView.forwardUrls.length - 1];
-
-  webView.forwardUrls.pop();
-  webView.view.webContents.goForward();
-  alertTargets.forEach((target) => {
-    target.webContents.send('go-forward', { id: webView.id, forwardUrl });
-  });
-}
-
-function handleGoBack(wm: WindowManager, senderId: string) {
-  log(`${senderId} request go back`);
-  const webView = wm.allWebViews[parseInt(senderId, 10)];
-  if (webView) {
-    if (webView.view.webContents.canGoBack()) {
-      log(`${senderId} can go back`);
-      goBack(webView, [wm.tabPageView]);
-    }
-  } else {
-    log(`Failed to find webView for ${senderId}`);
-  }
-}
-
-function openWindow(
-  wm: WindowManager,
-  view: IWebView,
-  url: string,
-  alertTargets: BrowserView[],
-  senderId?: number
-) {
-  const newWindowId = wm.createNewTab(senderId);
-
-  if (senderId) {
-    alertTargets.forEach((target) => {
-      target.webContents.send('set-tab-parent', [newWindowId, senderId]);
-    });
-  }
-  const newWebView = wm.allWebViews[newWindowId];
-  if (newWebView) {
-    const padding = wm.padding();
-    const bounds = innerBounds(wm.mainWindow, padding);
-    const windowSize = currentWindowSize(wm.mainWindow);
-    const hiddenBounds = {
-      x: bounds.x,
-      y: bounds.y + windowSize[1] + 1,
-      width: bounds.width,
-      height: bounds.height,
-    };
-    // wm.resizeWebView(newWebView, hiddenBounds);
-
-    log(`og bounds are ${JSON.stringify(newWebView.view.getBounds())}`);
-    newWebView.view.setBounds(hiddenBounds);
-    log(`set bounds as ${JSON.stringify(hiddenBounds)}`);
-    log(`bounds are now ${JSON.stringify(newWebView.view.getBounds())}`);
-    if (!windowHasView(wm.mainWindow, newWebView.view)) {
-      wm.mainWindow.addBrowserView(newWebView.view);
-    }
-  }
-
-  let didScreenshot = false;
-
-  const loadedUrlCallback = () => {
-    log(
-      `url loaded and bounds are ${JSON.stringify(newWebView.view.getBounds())}`
-    );
-    if (didScreenshot) {
-      return;
-    }
-    didScreenshot = true;
-    if (windowHasView(wm.mainWindow, newWebView.view)) {
-      const screenshotCallback = () => {
-        if (wm.activeTabId !== newWebView.id) {
-          wm.mainWindow.removeBrowserView(newWebView.view);
-          log(
-            `remove ${view.id} after loaded ${url} with bounds ${JSON.stringify(
-              newWebView.view.getBounds()
-            )}`
-          );
-        }
-      };
-      wm.screenShotTab(newWebView.id, newWebView, screenshotCallback);
-    }
-  };
-
-  setTimeout(() => {
-    loadedUrlCallback();
-  }, 750);
-
-  wm.loadUrlInTab(newWindowId, url, false, 0, loadedUrlCallback);
-  alertTargets.forEach((target) => {
-    target.webContents.send('new-window', {
-      senderId: view.id,
-      receiverId: newWindowId,
-      url,
-    });
-  });
-}
-
-const keyMap: Record<string, string> = {
-  Comma: ',',
-  Period: '.',
-  Slash: '/',
-  Semicolon: ';',
-  Quote: '"',
-  Meta: 'Cmd',
-  BracketLeft: '[',
-  BracketRight: ']',
-  Backslash: '\\',
-  Backquote: '`',
-  Minus: '-',
-  Equal: '=',
-  Digit0: '0',
-  Digit1: '1',
-  Digit2: '2',
-  Digit3: '3',
-  Digit4: '4',
-  Digit5: '5',
-  Digit6: '6',
-  Digit7: '7',
-  Digit8: '8',
-  Digit9: '9',
-  KeyA: 'A',
-  KeyB: 'B',
-  KeyC: 'C',
-  KeyD: 'D',
-  KeyE: 'E',
-  KeyF: 'F',
-  KeyG: 'G',
-  KeyH: 'H',
-  KeyI: 'I',
-  KeyJ: 'J',
-  KeyK: 'K',
-  KeyL: 'L',
-  KeyM: 'M',
-  KeyN: 'N',
-  KeyO: 'O',
-  KeyP: 'P',
-  KeyQ: 'Q',
-  KeyR: 'R',
-  KeyS: 'S',
-  KeyT: 'T',
-  KeyU: 'U',
-  KeyV: 'V',
-  KeyW: 'W',
-  KeyX: 'X',
-  KeyY: 'Y',
-  KeyZ: 'Z',
-  Numpad0: 'num0',
-  Numpad1: 'num1',
-  Numpad2: 'num2',
-  Numpad3: 'num3',
-  Numpad4: 'num4',
-  Numpad5: 'num5',
-  Numpad6: 'num6',
-  Numpad7: 'num7',
-  Numpad8: 'num8',
-  Numpad9: 'num9',
-  NumpadDecimal: 'numdec',
-  NumpadAdd: 'numadd',
-  NumpadSubtract: 'numsub',
-  NumpadMultiply: 'nummult',
-  NumpadDivide: 'numdiv',
-};
-
-function translateKey(jsKey: string) {
-  if (keyMap[jsKey]) {
-    return keyMap[jsKey];
-  }
-
-  return jsKey;
-}
-
-function translateKeys(jsKeys: string[]) {
-  if (jsKeys) {
-    return jsKeys.map(translateKey);
-  }
-  return jsKeys;
-}
-
-export function addListeners(wm: WindowManager) {
-  ipcMain.on('create-new-tab', (_, switchToTab = false) => {
-    const id = wm.createNewTab();
-    if (switchToTab) {
-      wm.setTab(id);
-      wm.tabPageView.webContents.focus();
-    }
-  });
-  ipcMain.on('remove-tab', (_, id) => {
-    wm.removeTabs([id]);
-  });
-  ipcMain.on('remove-tabs', (_, ids) => {
-    wm.removeTabs(ids);
-  });
-  ipcMain.on('set-tab', (_, id) => {
-    wm.setTab(id);
-  });
-  ipcMain.on('load-url-in-tab', (_, [id, url]) => {
-    wm.loadUrlInTab(id, url);
-  });
-  ipcMain.on('tab-back', (_, id) => {
-    wm.tabBack(id);
-  });
-  ipcMain.on('tab-forward', (_, id) => {
-    wm.tabForward(id);
-  });
-  ipcMain.on('tab-refresh', (_, id) => {
-    wm.tabRefresh(id);
-  });
-  ipcMain.on('close-find', () => {
-    wm.closeFind();
-  });
-  ipcMain.on('find-text-change', (_, boxText) => {
-    wm.findTextChange(boxText);
-  });
-  ipcMain.on('find-previous', () => {
-    wm.findPrevious();
-  });
-  ipcMain.on('find-next', () => {
-    wm.findNext();
-  });
-  ipcMain.on('windowMoving', (_, { mouseX, mouseY }) => {
-    wm.handleWindowMoving(mouseX, mouseY);
-  });
-  ipcMain.on('windowMoved', () => {
-    wm.handleWindowMoved();
-  });
-  ipcMain.on('wheel', (_, [deltaX, deltaY]) => {
-    const activeTabView = wm.allWebViews[wm.activeTabId];
-    if (activeTabView !== null) {
-      activeTabView.view.webContents
-        .executeJavaScript(
-          `
-        {
-          window.scrollBy(${deltaX}, ${deltaY});
-        }
-      `,
-          true
-        )
-        .catch(console.log);
-    }
-  });
-  ipcMain.on('search-url', (_, url) => {
-    wm.tabPageView.webContents.send('close-history-modal');
-    const newTabId = wm.createNewTab();
-    wm.loadUrlInTab(newTabId, url);
-    wm.setTab(newTabId);
-  });
-  ipcMain.on('history-search', (_, query) => {
-    if (query === '') {
-      wm.tabPageView.webContents.send('history-search-result', null);
-    } else {
-      const result = wm.historyFuse.search(query, { limit: 50 });
-      wm.tabPageView.webContents.send(
-        'history-search-result',
-        result.map((entry: { item: HistoryEntry }) => {
-          return entry.item;
-        })
-      );
-    }
-  });
-  ipcMain.on('history-modal-active-update', (_, historyModalActive) => {
-    wm.historyModalActive = historyModalActive;
-  });
-  ipcMain.on('clear-history', () => {
-    wm.clearHistory();
-  });
-  ipcMain.on('toggle-pin', () => {
-    wm.setPinned(!wm.isPinned);
-  });
-  ipcMain.on('float', () => {
-    wm.float();
-  });
-  ipcMain.on('toggle', () => {
-    wm.toggle(true);
-  });
-  ipcMain.on('click-main', () => {
-    if (wm.webBrowserViewActive()) {
-      wm.unSetTab();
-    }
-  });
-  ipcMain.on('unset-tab', () => {
-    if (wm.webBrowserViewActive()) {
-      wm.unSetTab(true, false);
-    }
-  });
-  ipcMain.on('open-workspace-url', (_, url) => {
-    wm.tabPageView.webContents.send('close-history-modal');
-
-    const baseUrl = url.split('#')[0];
-    let tabExists = false;
-
-    Object.values(wm.allWebViews).forEach((tabView) => {
-      const tabUrl = tabView.view.webContents.getURL();
-      const tabBaseUrl = tabUrl.split('#')[0];
-      if (tabBaseUrl === baseUrl) {
-        wm.setTab(tabView.id);
-        tabExists = true;
-      }
-    });
-
-    if (!tabExists) {
-      const newTabId = wm.createNewTab();
-      wm.loadUrlInTab(newTabId, url);
-      wm.setTab(newTabId);
-    }
-  });
-  ipcMain.on('request-user-data-path', (event) => {
-    const userDataPath = app.getPath('userData');
-    event.sender.send('user-data-path', userDataPath);
-  });
-  ipcMain.on('request-data-path', () => {
-    wm.tabPageView.webContents.send('set-data-path', app.getPath('userData'));
-  });
-  ipcMain.on('open-graph-data', (_, data: OpenGraphInfo) => {
-    const tabView = wm.allWebViews[wm.activeTabId];
-    if (typeof tabView !== 'undefined') {
-      if (tabView.historyEntry?.openGraphData.title === 'null') {
-        tabView.historyEntry.openGraphData = data;
-        wm.addHistoryEntry(tabView.historyEntry);
-      }
-    }
-  });
-  ipcMain.on('scroll-height', (_, [id, height]) => {
-    const tabView = wm.allWebViews[id];
-    if (typeof tabView !== 'undefined') {
-      tabView.scrollHeight = height;
-    }
-  });
-  ipcMain.on('go-back', (_, data) => {
-    const { senderId }: { senderId: string; backTo: INode } = data;
-    handleGoBack(wm, senderId);
-  });
-  ipcMain.on('go-forward', (_, eventData) => {
-    const { senderId } = eventData;
-    // const { data: historyData }: INode = forwardTo;
-    // const { url }: Instance<typeof HistoryData> = historyData;
-    const webView = wm.allWebViews[senderId];
-    if (webView) {
-      handleGoForward(webView, [wm.tabPageView]);
-    }
-  });
-  ipcMain.on('gesture', (event, data) => {
-    log(`\n${event.sender.id} GESTURE ${data}`);
-    wm.setGesture(event.sender.id, true);
-    wm.tabPageView.webContents.send('gesture', { id: event.sender.id });
-  });
-  ipcMain.on('dom-content-loaded', (event) => {
-    log(`\n${event.sender.id} DOM LOADED`);
-    wm.setGesture(event.sender.id, false);
-  });
-  ipcMain.on('request-new-window', (_, { senderId, url }) => {
-    log(`${senderId} request-new-window for ${url}`);
-    const webView = wm.allWebViews[senderId];
-    if (webView && url) {
-      openWindow(wm, webView, url, [wm.tabPageView], senderId);
-    }
-  });
-  ipcMain.on('request-screenshot', (_, { webViewId }) => {
-    const webView = wm.allWebViews[webViewId];
-    if (webView) {
-      log(`taking screenshot of ${webViewId} by request`);
-      wm.screenShotTab(webViewId, webView);
-    }
-  });
-  ipcMain.on('mixpanel-track', (_, eventName) => {
-    wm.mixpanelManager.track(eventName);
-  });
-  ipcMain.on('mixpanel-track-with-properties', (_, [eventName, properties]) => {
-    wm.mixpanelManager.track(eventName, properties);
-  });
-  ipcMain.on('log-data', (_, data) => {
-    console.log(data);
-  });
-  ipcMain.on('disable-hotkeys', () => {
-    wm.disableHotkeys();
-  });
-  ipcMain.on('enable-hotkeys', () => {
-    wm.enableHotkeys();
-  });
-  ipcMain.on('rebind-hotkey', (sender, { hotkeyId, newBind }) => {
-    const electronBind = translateKeys(newBind).join('+');
-    switch (hotkeyId) {
-      case 'toggle-app':
-        wm.bindToggleShortcut(electronBind);
-        if (sender.processId !== wm.tabPageView.webContents.id) {
-          wm.tabPageView.webContents.send('update-toggle-app-hotkey', newBind);
-        }
-        break;
-      default:
-        break;
-    }
-  });
-  ipcMain.on('unfloat-button', () => {
-    if (wm.windowFloating) {
-      wm.mixpanelManager.track('unfloat window by clicking button');
-      wm.unFloat();
-    }
-  });
-  ipcMain.on('go-back-from-floating', () => {
-    wm.tabPageView.webContents.send('go-back-from-floating');
-  });
-  ipcMain.on('dismiss-email-notification', () => {
-    wm.saveData.data.seenEmailForm = true;
-    wm.saveData.save();
-    wm.tabPageView.webContents.send('set-seenEmailForm', true);
-  });
-  ipcMain.on('set-email', (_, email) => {
-    wm.mixpanelManager.mixpanel.people.set(wm.mixpanelManager.userId, {
-      email,
-    });
-  });
-}
-
-interface IAction {
-  action: 'deny';
-}
-
-function genHandleWindowOpen(view: IWebView, alertTargets: BrowserView[]) {
-  return (details: HandlerDetails): IAction => {
-    alertTargets.forEach((target) => {
-      target.webContents.send('new-window-intercept', {
-        senderId: view.id,
-        details,
-      });
-    });
-    return { action: 'deny' };
-  };
-}
+import { INode } from '../store/history-store';
 
 export default class WindowManager {
-  static dragThresholdSquared = 5 * 5;
-
+  // region variables
   windowFloating = false;
-
-  setWindowFloating(windowFloating: boolean) {
-    if (process.platform === 'darwin') {
-      if (windowFloating) {
-        this.mainWindow.setVibrancy(null);
-      } else {
-        this.mainWindow.setVibrancy(VIBRANCY);
-      }
-    }
-    this.windowFloating = windowFloating;
-    this.tabPageView.webContents.send('set-window-floating', windowFloating);
-  }
 
   allWebViews: Record<number, IWebView> = {};
 
@@ -579,13 +87,11 @@ export default class WindowManager {
 
   mixpanelManager: MixpanelManager;
 
-  // titleBarView: BrowserView;
-
   tabPageView: BrowserView;
 
-  windowPosition = glMatrix.vec2.create();
+  windowPosition = vec2.create();
 
-  windowVelocity = glMatrix.vec2.create();
+  windowVelocity = vec2.create();
 
   historyFuse = new Fuse<HistoryEntry>([], {
     keys: ['url', 'title', 'openGraphData.title'],
@@ -601,41 +107,21 @@ export default class WindowManager {
 
   lastTime = 0;
 
-  targetWindowPosition = glMatrix.vec2.create();
+  targetWindowPosition = vec2.create();
 
   windowSize = { width: 0, height: 0 };
 
   display: Display;
 
-  setDisplay(display: Display) {
-    this.display = display;
+  saveData: SaveData;
 
-    this.tabPageView.webContents.send('resize-work-area', display.workArea);
+  onboardingWindow: BrowserWindow | null;
 
-    const windowSize = currentWindowSize(this.mainWindow);
-    const padding = this.browserPadding(false);
-    const bounds = innerBounds(this.mainWindow, padding);
-    this.tabPageView.webContents.send('inner-bounds', {
-      screen: { width: windowSize[0], height: windowSize[1] },
-      bounds,
-    });
-  }
+  onboardingWindowReady = false;
 
-  webBrowserViewActive(): boolean {
-    return this.activeTabId !== -1;
-  }
+  mainWindowReady = false;
 
-  browserPadding(noWebPageOpen?: boolean): number {
-    let noPageOpen = noWebPageOpen;
-    if (typeof noWebPageOpen === 'undefined') {
-      noPageOpen = this.noWebPageOpen();
-    }
-    if (this.display !== null) {
-      const ratio = noPageOpen ? 50 : 15;
-      return Math.floor(this.display.workAreaSize.height / ratio);
-    }
-    return 35;
-  }
+  easeOut = BezierEasing(0, 0, 0.5, 1);
 
   private readonly urlPeekView: BrowserView;
 
@@ -664,21 +150,15 @@ export default class WindowManager {
   private lastValidFloatingClickPoint: Electron.Point = { x: 0, y: 0 };
 
   private windowSpeeds: number[][] = [];
+  // endregion
 
-  saveData: SaveData;
-
-  onboardingWindow: BrowserWindow | null;
-
-  constructor(
-    mainWindow: BrowserWindow,
-    mixpanelManager: MixpanelManager,
-    saveData: SaveData,
-    onboardingWindow: BrowserWindow | null
-  ) {
+  constructor(mainWindow: BrowserWindow, mixpanelManager: MixpanelManager) {
+    this.saveData = new SaveData();
     this.mainWindow = mainWindow;
     this.mixpanelManager = mixpanelManager;
-    this.saveData = saveData;
-    this.onboardingWindow = onboardingWindow;
+    this.onboardingWindow = this.saveData.data.loggedIn
+      ? null
+      : this.initOnboardingWindow();
 
     const displays = screen.getAllDisplays();
     if (displays.length === 0) {
@@ -692,10 +172,6 @@ export default class WindowManager {
     this.mainWindow.on('resize', () => {
       this.handleResize();
     });
-    // this.mainWindow.webContents.openDevTools({ mode: 'detach' });
-
-    // this.titleBarView = makeView(INDEX_HTML);
-    // this.titleBarView.webContents.openDevTools({ mode: 'detach' });
 
     this.urlPeekView = makeView(URL_PEEK_HTML);
     // this.urlPeekView.webContents.openDevTools({ mode: 'detach' });
@@ -781,6 +257,10 @@ export default class WindowManager {
           } else {
             this.mixpanelManager.track('escape while mouse not in inner');
           }
+          // console.log(this.mouseInInner());
+          // const bounds = innerBounds(this.mainWindow);
+          // console.log(bounds);
+          // console.log(screen.getCursorScreenPoint());
           this.toggle(!this.mouseInInner());
         });
       } else if (
@@ -799,31 +279,11 @@ export default class WindowManager {
       }
     }, 10);
 
-    addListeners(this);
+    this.addListeners();
 
     mainWindow.webContents.on('did-finish-load', () => {
       const mousePoint = screen.getCursorScreenPoint();
       this.setDisplay(screen.getDisplayNearestPoint(mousePoint));
-      this.mainWindow.webContents.send(
-        'set-padding',
-        this.browserPadding.toString()
-      );
-      // mainWindow?.show();
-      // wm.unFloat(display.activeDisplay);
-      // setTimeout(() => {
-      //   wm.unSetTab();
-      // }, 10);
-    });
-
-    // todo this breaks macOS dock
-    mainWindow.on('blur', () => {
-      if (
-        !this.windowFloating &&
-        this.mainWindow.isVisible() &&
-        !this.isPinned
-      ) {
-        // this.hideWindow();
-      }
     });
 
     mainWindow.on('minimize', (e: Event) => {
@@ -842,6 +302,8 @@ export default class WindowManager {
     this.hideWindow();
     this.handleResize();
     this.bindToggleShortcut('Alt+Space');
+
+    this.initBoot();
   }
 
   setTargetNoVelocity() {
@@ -1047,7 +509,7 @@ export default class WindowManager {
         clearInterval(handle);
         this.hideWindowNoAnimation();
       }
-      this.mainWindow.setOpacity(easeOut(opacity));
+      this.mainWindow.setOpacity(this.easeOut(opacity));
     }, 10);
   }
 
@@ -1140,7 +602,7 @@ export default class WindowManager {
     //     opacity = 1.0;
     //     clearInterval(handle);
     //   }
-    //   this.mainWindow.setOpacity(easeOut(opacity));
+    //   this.mainWindow.setOpacity(this.easeOut(opacity));
     // }, 10);
   }
 
@@ -1310,7 +772,6 @@ export default class WindowManager {
     // tell tab page that it is active
     this.tabPageView.webContents.send('set-active', true);
     this.tabPageView.webContents.send('unset-tab', cachedId);
-    // this.resize();
   }
 
   setTab(_id: number | string, shouldScreenshot = true) {
@@ -1356,13 +817,6 @@ export default class WindowManager {
       // throw new Error();
     }
 
-    const hh = this.headerHeight();
-    const windowSize = currentWindowSize(this.mainWindow);
-    const padding = this.padding();
-    const bounds = innerBounds(this.mainWindow, padding);
-
-    // this.resizeWebView(tabView, bounds);
-
     // add the live page to the main window and focus it a little bit later
     this.mainWindow.addBrowserView(tabView.view);
     setTimeout(() => {
@@ -1390,15 +844,7 @@ export default class WindowManager {
     // this updates the access time
     this.tabPageView.webContents.send('access-tab', id);
 
-    // set the padding
-    this.tabPageView.webContents.send('set-padding', padding.toString());
-
-    // this.resize();
-
-    resizeAsPeekView(this.urlPeekView, bounds);
-    resizeAsFindView(this.findView, hh, bounds);
-    resizeAsOverlayView(this.overlayView, windowSize);
-    this.resizeActiveWebView();
+    this.handleResize();
   }
 
   loadUrlInTab(
@@ -1596,10 +1042,7 @@ export default class WindowManager {
     const yDif = this.startMouseY - y;
     const distSquared = xDif * xDif + yDif * yDif;
 
-    if (
-      distSquared > WindowManager.dragThresholdSquared ||
-      !this.validFloatingClick
-    ) {
+    if (distSquared > dragThresholdSquared || !this.validFloatingClick) {
       if (this.validFloatingClick) {
         this.startMouseX = xDif;
         this.startMouseY = yDif;
@@ -1633,8 +1076,8 @@ export default class WindowManager {
         );
 
       if (firstTarget === null && valid) {
-        firstTarget = target;
-        firstVelocity = windowVelocity;
+        firstTarget = [target[0], target[1]];
+        firstVelocity = [windowVelocity[0], windowVelocity[1]];
       }
 
       if (valid && hasVelocity) {
@@ -1681,7 +1124,7 @@ export default class WindowManager {
       const distSquared = xDist * xDist + yDist * yDist;
       if (
         now - this.lastValidFloatingClickTime < 0.5 &&
-        distSquared < WindowManager.dragThresholdSquared
+        distSquared < dragThresholdSquared
       ) {
         if (this.windowFloating) {
           // used to be: "unfloat window by clicking"
@@ -1745,97 +1188,69 @@ export default class WindowManager {
     this.windowSize.height = floatingHeight;
     this.windowVelocity[0] = 0;
     this.windowVelocity[1] = 0;
-    this.resizeActiveWebView();
+    this.handleResize();
     this.updateMainWindowBounds();
     this.setTargetNoVelocity();
   }
 
-  resizeWebViewForNonFloating(tabView: IWebView, bounds: Electron.Rectangle) {
-    const windowSize = currentWindowSize(this.mainWindow);
+  handleResize() {
+    const window = this.mainWindow;
+
+    // update renderer inner bounds
+    const bounds = innerBounds(window);
+    const windowSize = currentWindowSize(window);
     this.tabPageView.webContents.send('inner-bounds', {
-      screen: { width: windowSize[0], height: windowSize[1] },
+      windowSize: { width: windowSize[0], height: windowSize[1] },
       bounds,
     });
-    const urlHeight = this.headerHeight();
-    tabView.view.setBounds({
-      x: bounds.x,
-      y: bounds.y + urlHeight,
-      width: bounds.width,
-      height: bounds.height - urlHeight,
+
+    resizeFindView(this.findView, this.headerHeight(), bounds);
+    resizePeekView(this.urlPeekView, bounds);
+    resizeOverlayView(this.overlayView, windowSize);
+
+    // resize tab page view
+    this.tabPageView.setBounds({
+      x: 0,
+      y: 0,
+      width: windowSize[0],
+      height: windowSize[1],
     });
-  }
 
-  resizeWebViewForFloating(tabView: IWebView) {
-    const [floatingWidth, floatingHeight] = floatingSize(this.display);
-    const bounds = {
-      x: floatingPadding,
-      y: floatingPadding + floatingTitleBarHeight + floatingTitleBarSpacing,
-      width: floatingWidth - floatingPadding * 2,
-      height:
-        floatingHeight -
-        floatingPadding * 2 -
-        floatingTitleBarHeight -
-        floatingTitleBarSpacing,
-    };
-    tabView.view.setBounds(bounds);
-  }
-
-  resizeWebView(tabView: IWebView) {
-    if (this.windowFloating) {
-      this.resizeWebViewForFloating(tabView);
-    } else {
-      const padding = this.padding();
-      const bounds = innerBounds(this.mainWindow, padding);
-      this.resizeWebViewForNonFloating(tabView, bounds);
-    }
-  }
-
-  resizeActiveWebView() {
+    // resize active web view
     const activeView = this.allWebViews[this.activeTabId];
     if (activeView) {
-      this.resizeWebView(activeView);
-    }
-  }
-
-  handleResizeNonFloating() {
-    const hh = this.headerHeight();
-    const windowSize = currentWindowSize(this.mainWindow);
-    const padding = this.padding();
-    const bounds = innerBounds(this.mainWindow, padding);
-
-    resizeAsPeekView(this.urlPeekView, bounds);
-    resizeAsFindView(this.findView, hh, bounds);
-    resizeAsOverlayView(this.overlayView, windowSize);
-    this.resizeTabPageView();
-    this.resizeActiveWebView();
-  }
-
-  handleResizeFloating() {
-    const windowSize = currentWindowSize(this.mainWindow);
-
-    resizeAsOverlayView(this.overlayView, windowSize);
-    this.resizeTabPageView();
-    this.resizeActiveWebView();
-  }
-
-  handleResize() {
-    if (this.windowFloating) {
-      this.handleResizeFloating();
-    } else {
-      this.handleResizeNonFloating();
+      if (this.windowFloating) {
+        const [floatingWidth, floatingHeight] = floatingSize(this.display);
+        activeView.view.setBounds({
+          x: floatingPadding,
+          y: floatingPadding + floatingTitleBarHeight + floatingTitleBarSpacing,
+          width: floatingWidth - floatingPadding * 2,
+          height:
+            floatingHeight -
+            floatingPadding * 2 -
+            floatingTitleBarHeight -
+            floatingTitleBarSpacing,
+        });
+      } else {
+        const urlHeight = this.headerHeight();
+        activeView.view.setBounds({
+          x: bounds.x + tagSideBarWidth,
+          y: bounds.y + urlHeight,
+          width: bounds.width - tagSideBarWidth,
+          height: bounds.height - urlHeight,
+        });
+      }
     }
   }
 
   toggle(mouseInBorder: boolean) {
     if (this.windowFloating) {
       this.hideWindow();
-      // this.hideMainWindow();
     } else if (this.noWebPageOpen()) {
       if (this.historyModalActive) {
         this.tabPageView.webContents.send('close-history-modal');
       } else {
         this.hideWindow();
-        // this.hideMainWindow();
       }
     } else if (this.activeTabId !== -1) {
       const findIsActive = windowHasView(this.mainWindow, this.findView);
@@ -1913,6 +1328,8 @@ export default class WindowManager {
 
   hotkeysDisabled = false;
 
+  viewedToggleAppPageInOnboarding = false;
+
   disableHotkeys() {
     globalShortcut.unregister(this.toggleAppShortcut);
     this.hotkeysDisabled = true;
@@ -1939,8 +1356,12 @@ export default class WindowManager {
       return;
     }
     globalShortcut.register(shortCut, () => {
-      if (!this.saveData.data.finishedOnboarding) {
-        this.saveData.data.finishedOnboarding = true;
+      if (!this.saveData.data.loggedIn) {
+        if (!this.viewedToggleAppPageInOnboarding) {
+          return;
+        }
+        this.saveData.data.loggedIn = true;
+        this.saveData.data.toggledOnce = true;
         this.saveData.save();
         this.onboardingWindow?.destroy();
         this.onboardingWindow = null;
@@ -1964,7 +1385,11 @@ export default class WindowManager {
   }
 
   private mouseInInner() {
-    const bounds = innerBounds(this.mainWindow, this.padding());
+    // console.log(screen.getCursorScreenPoint());
+
+    const bounds = innerBounds(this.mainWindow);
+    // bounds.x -= this.mainWindow.getBounds().x;
+    // bounds.y -= this.mainWindow.getBounds().y;
     return pointInBounds(screen.getCursorScreenPoint(), bounds);
   }
 
@@ -2130,20 +1555,7 @@ export default class WindowManager {
       }, 100);
     }
 
-    const hh = this.headerHeight();
-    const windowSize = currentWindowSize(this.mainWindow);
-    const padding = this.padding();
-
-    if (this.noWebPageOpen()) {
-      this.resizeTabPageView();
-    } else {
-      const bounds = innerBounds(this.mainWindow, padding);
-
-      resizeAsPeekView(this.urlPeekView, bounds);
-      resizeAsFindView(this.findView, hh, bounds);
-      resizeAsOverlayView(this.overlayView, windowSize);
-      this.resizeActiveWebView();
-    }
+    this.handleResize();
 
     if (!this.windowFloating) {
       return;
@@ -2154,8 +1566,6 @@ export default class WindowManager {
     if (windowHasView(this.mainWindow, this.overlayView)) {
       this.mainWindow?.removeBrowserView(this.overlayView);
     }
-
-    this.mainWindow.webContents.send('set-padding', padding.toString());
 
     this.handleResize();
   }
@@ -2172,13 +1582,452 @@ export default class WindowManager {
     return this.windowFloating ? 0 : headerHeight;
   }
 
-  resizeTabPageView() {
-    const windowSize = currentWindowSize(this.mainWindow);
-    this.tabPageView.setBounds({
-      x: 0,
-      y: 0,
-      width: windowSize[0],
-      height: windowSize[1],
+  handleAppActivate() {
+    if (this.saveData.data.loggedIn) {
+      this.showWindow();
+    } else if (this.onboardingWindow && !this.onboardingWindow.isDestroyed()) {
+      this.onboardingWindow.show();
+    } else {
+      this.onboardingWindow = this.initOnboardingWindow();
+    }
+  }
+
+  handleAppBeforeQuit() {
+    this.mainWindow?.destroy();
+  }
+
+  handleGoBack(senderId: string) {
+    log(`${senderId} request go back`);
+    const webView = this.allWebViews[parseInt(senderId, 10)];
+    if (webView) {
+      if (webView.view.webContents.canGoBack()) {
+        log(`${senderId} can go back`);
+        goBack(webView, [this.tabPageView]);
+      }
+    } else {
+      log(`Failed to find webView for ${senderId}`);
+    }
+  }
+
+  openWindow(
+    view: IWebView,
+    url: string,
+    alertTargets: BrowserView[],
+    senderId?: number
+  ) {
+    const newWindowId = this.createNewTab(senderId);
+
+    if (senderId) {
+      alertTargets.forEach((target) => {
+        target.webContents.send('set-tab-parent', [newWindowId, senderId]);
+      });
+    }
+    const newWebView = this.allWebViews[newWindowId];
+    if (newWebView) {
+      const bounds = innerBounds(this.mainWindow);
+      const windowSize = currentWindowSize(this.mainWindow);
+      const hiddenBounds = {
+        x: bounds.x,
+        y: bounds.y + windowSize[1] + 1,
+        width: bounds.width,
+        height: bounds.height,
+      };
+      // wm.resizeWebView(newWebView, hiddenBounds);
+
+      log(`og bounds are ${JSON.stringify(newWebView.view.getBounds())}`);
+      newWebView.view.setBounds(hiddenBounds);
+      log(`set bounds as ${JSON.stringify(hiddenBounds)}`);
+      log(`bounds are now ${JSON.stringify(newWebView.view.getBounds())}`);
+      if (!windowHasView(this.mainWindow, newWebView.view)) {
+        this.mainWindow.addBrowserView(newWebView.view);
+      }
+    }
+
+    let didScreenshot = false;
+
+    const loadedUrlCallback = () => {
+      log(
+        `url loaded and bounds are ${JSON.stringify(
+          newWebView.view.getBounds()
+        )}`
+      );
+      if (didScreenshot) {
+        return;
+      }
+      didScreenshot = true;
+      if (windowHasView(this.mainWindow, newWebView.view)) {
+        const screenshotCallback = () => {
+          if (this.activeTabId !== newWebView.id) {
+            this.mainWindow.removeBrowserView(newWebView.view);
+            log(
+              `remove ${
+                view.id
+              } after loaded ${url} with bounds ${JSON.stringify(
+                newWebView.view.getBounds()
+              )}`
+            );
+          }
+        };
+        this.screenShotTab(newWebView.id, newWebView, screenshotCallback);
+      }
+    };
+
+    setTimeout(() => {
+      loadedUrlCallback();
+    }, 750);
+
+    this.loadUrlInTab(newWindowId, url, false, 0, loadedUrlCallback);
+    alertTargets.forEach((target) => {
+      target.webContents.send('new-window', {
+        senderId: view.id,
+        receiverId: newWindowId,
+        url,
+      });
+    });
+  }
+
+  logOut() {
+    this.viewedToggleAppPageInOnboarding = false;
+    this.removeTabs(Object.values(this.allWebViews).map((tab) => tab.id));
+    saveTabs(this.allWebViews);
+    this.saveData.data.session = undefined;
+    this.saveData.data.loggedIn = false;
+    this.saveData.save();
+    /// todo maybe reloading this is sketchy?
+    this.tabPageView.webContents.loadURL(TAB_PAGE);
+    setTimeout(() => {
+      this.hideWindow();
+      this.onboardingWindow = this.initOnboardingWindow();
+    }, 250);
+  }
+
+  setWindowFloating(windowFloating: boolean) {
+    if (process.platform === 'darwin') {
+      if (windowFloating) {
+        this.mainWindow.setVibrancy(null);
+      } else {
+        this.mainWindow.setVibrancy(VIBRANCY);
+      }
+    }
+    this.windowFloating = windowFloating;
+    this.tabPageView.webContents.send('set-window-floating', windowFloating);
+  }
+
+  setDisplay(display: Display) {
+    this.display = display;
+    // this function used to update data in renderer, but now it does nothing. for now it will stay, maybe delete later
+  }
+
+  webBrowserViewActive(): boolean {
+    return this.activeTabId !== -1;
+  }
+
+  browserPadding(noWebPageOpen?: boolean): number {
+    let noPageOpen = noWebPageOpen;
+    if (typeof noWebPageOpen === 'undefined') {
+      noPageOpen = this.noWebPageOpen();
+    }
+    if (this.display !== null) {
+      const ratio = noPageOpen ? 50 : 15;
+      return Math.floor(this.display.workAreaSize.height / ratio);
+    }
+    return 35;
+  }
+
+  initOnboardingWindow() {
+    const onboardingWindow = makeOnboardingWindow();
+    onboardingWindow.webContents.on('did-finish-load', () => {
+      this.onboardingWindowReady = true;
+      const route = this.saveData.data.toggledOnce ? 'login' : 'create-account';
+      this.onboardingWindow?.webContents.send('history-push', route);
+      if (this.saveData.data.toggledOnce) {
+        this.onboardingWindow?.webContents.send('toggled-once');
+      }
+      if (this.mainWindowReady) {
+        showOnboardingWindow(onboardingWindow);
+      }
+    });
+    return onboardingWindow;
+  }
+
+  initBoot() {
+    let booted = false;
+    const boot = () => {
+      if (!booted) {
+        booted = true;
+        this.mainWindowReady = true;
+        if (this.onboardingWindowReady) {
+          showOnboardingWindow(this.onboardingWindow);
+        }
+        if (!this.saveData.data.loggedIn) {
+          return;
+        }
+        this.showWindow();
+      }
+    };
+    this.tabPageView.webContents.on('did-finish-load', boot);
+    setTimeout(boot, 15000);
+  }
+
+  addListeners() {
+    ipcMain.on('create-new-tab', (_, switchToTab = false) => {
+      const id = this.createNewTab();
+      if (switchToTab) {
+        this.setTab(id);
+        this.tabPageView.webContents.focus();
+      }
+    });
+    ipcMain.on('remove-tab', (_, id) => {
+      this.removeTabs([id]);
+    });
+    ipcMain.on('remove-tabs', (_, ids) => {
+      this.removeTabs(ids);
+    });
+    ipcMain.on('set-tab', (_, id) => {
+      this.setTab(id);
+    });
+    ipcMain.on('load-url-in-tab', (_, [id, url]) => {
+      this.loadUrlInTab(id, url);
+    });
+    ipcMain.on('tab-back', (_, id) => {
+      this.tabBack(id);
+    });
+    ipcMain.on('tab-forward', (_, id) => {
+      this.tabForward(id);
+    });
+    ipcMain.on('tab-refresh', (_, id) => {
+      this.tabRefresh(id);
+    });
+    ipcMain.on('close-find', () => {
+      this.closeFind();
+    });
+    ipcMain.on('find-text-change', (_, boxText) => {
+      this.findTextChange(boxText);
+    });
+    ipcMain.on('find-previous', () => {
+      this.findPrevious();
+    });
+    ipcMain.on('find-next', () => {
+      this.findNext();
+    });
+    ipcMain.on('windowMoving', (_, { mouseX, mouseY }) => {
+      this.handleWindowMoving(mouseX, mouseY);
+    });
+    ipcMain.on('windowMoved', () => {
+      this.handleWindowMoved();
+    });
+    ipcMain.on('wheel', (_, [deltaX, deltaY]) => {
+      const activeTabView = this.allWebViews[this.activeTabId];
+      if (activeTabView !== null) {
+        activeTabView.view.webContents
+          .executeJavaScript(
+            `
+        {
+          window.scrollBy(${deltaX}, ${deltaY});
+        }
+      `,
+            true
+          )
+          .catch(console.log);
+      }
+    });
+    ipcMain.on('search-url', (_, url) => {
+      this.tabPageView.webContents.send('close-history-modal');
+      const newTabId = this.createNewTab();
+      this.loadUrlInTab(newTabId, url);
+      this.setTab(newTabId);
+    });
+    ipcMain.on('history-search', (_, query) => {
+      if (query === '') {
+        this.tabPageView.webContents.send('history-search-result', null);
+      } else {
+        const result = this.historyFuse.search(query, { limit: 50 });
+        this.tabPageView.webContents.send(
+          'history-search-result',
+          result.map((entry: { item: HistoryEntry }) => {
+            return entry.item;
+          })
+        );
+      }
+    });
+    ipcMain.on('history-modal-active-update', (_, historyModalActive) => {
+      this.historyModalActive = historyModalActive;
+    });
+    ipcMain.on('clear-history', () => {
+      this.clearHistory();
+    });
+    ipcMain.on('toggle-pin', () => {
+      this.setPinned(!this.isPinned);
+    });
+    ipcMain.on('float', () => {
+      this.float();
+    });
+    ipcMain.on('toggle', () => {
+      this.toggle(true);
+    });
+    ipcMain.on('click-main', () => {
+      if (this.webBrowserViewActive()) {
+        this.unSetTab();
+      }
+    });
+    ipcMain.on('unset-tab', () => {
+      if (this.webBrowserViewActive()) {
+        this.unSetTab(true, false);
+      }
+    });
+    ipcMain.on('open-workspace-url', (_, url) => {
+      this.tabPageView.webContents.send('close-history-modal');
+
+      const baseUrl = url.split('#')[0];
+      let tabExists = false;
+
+      Object.values(this.allWebViews).forEach((tabView) => {
+        const tabUrl = tabView.view.webContents.getURL();
+        const tabBaseUrl = tabUrl.split('#')[0];
+        if (tabBaseUrl === baseUrl) {
+          this.setTab(tabView.id);
+          tabExists = true;
+        }
+      });
+
+      if (!tabExists) {
+        const newTabId = this.createNewTab();
+        this.loadUrlInTab(newTabId, url);
+        this.setTab(newTabId);
+      }
+    });
+    ipcMain.on('request-user-data-path', (event) => {
+      const userDataPath = app.getPath('userData');
+      event.sender.send('user-data-path', userDataPath);
+    });
+    ipcMain.on('request-data-path', () => {
+      this.tabPageView.webContents.send(
+        'set-data-path',
+        app.getPath('userData')
+      );
+    });
+    ipcMain.on('open-graph-data', (_, data: OpenGraphInfo) => {
+      const tabView = this.allWebViews[this.activeTabId];
+      if (typeof tabView !== 'undefined') {
+        if (tabView.historyEntry?.openGraphData.title === 'null') {
+          tabView.historyEntry.openGraphData = data;
+          this.addHistoryEntry(tabView.historyEntry);
+        }
+      }
+    });
+    ipcMain.on('scroll-height', (_, [id, height]) => {
+      const tabView = this.allWebViews[id];
+      if (typeof tabView !== 'undefined') {
+        tabView.scrollHeight = height;
+      }
+    });
+    ipcMain.on('go-back', (_, data) => {
+      const { senderId }: { senderId: string; backTo: INode } = data;
+      this.handleGoBack(senderId);
+    });
+    ipcMain.on('go-forward', (_, eventData) => {
+      const { senderId } = eventData;
+      // const { data: historyData }: INode = forwardTo;
+      // const { url }: Instance<typeof HistoryData> = historyData;
+      const webView = this.allWebViews[senderId];
+      if (webView) {
+        handleGoForward(webView, [this.tabPageView]);
+      }
+    });
+    ipcMain.on('gesture', (event, data) => {
+      log(`\n${event.sender.id} GESTURE ${data}`);
+      this.setGesture(event.sender.id, true);
+      this.tabPageView.webContents.send('gesture', { id: event.sender.id });
+    });
+    ipcMain.on('dom-content-loaded', (event) => {
+      log(`\n${event.sender.id} DOM LOADED`);
+      this.setGesture(event.sender.id, false);
+    });
+    ipcMain.on('request-new-window', (_, { senderId, url }) => {
+      log(`${senderId} request-new-window for ${url}`);
+      const webView = this.allWebViews[senderId];
+      if (webView && url) {
+        this.openWindow(webView, url, [this.tabPageView], senderId);
+      }
+    });
+    ipcMain.on('request-screenshot', (_, { webViewId }) => {
+      const webView = this.allWebViews[webViewId];
+      if (webView) {
+        log(`taking screenshot of ${webViewId} by request`);
+        this.screenShotTab(webViewId, webView);
+      }
+    });
+    ipcMain.on('mixpanel-track', (_, eventName) => {
+      this.mixpanelManager.track(eventName);
+    });
+    ipcMain.on(
+      'mixpanel-track-with-properties',
+      (_, [eventName, properties]) => {
+        this.mixpanelManager.track(eventName, properties);
+      }
+    );
+    ipcMain.on('log-data', (_, data) => {
+      console.log(data);
+    });
+    ipcMain.on('disable-hotkeys', () => {
+      this.disableHotkeys();
+    });
+    ipcMain.on('enable-hotkeys', () => {
+      this.enableHotkeys();
+    });
+    ipcMain.on('rebind-hotkey', (sender, { hotkeyId, newBind }) => {
+      const electronBind = translateKeys(newBind).join('+');
+      switch (hotkeyId) {
+        case 'toggle-app':
+          this.bindToggleShortcut(electronBind);
+          if (sender.processId !== this.tabPageView.webContents.id) {
+            this.tabPageView.webContents.send(
+              'update-toggle-app-hotkey',
+              newBind
+            );
+          }
+          break;
+        default:
+          break;
+      }
+    });
+    ipcMain.on('unfloat-button', () => {
+      if (this.windowFloating) {
+        this.mixpanelManager.track('unfloat window by clicking button');
+        this.unFloat();
+      }
+    });
+    ipcMain.on('go-back-from-floating', () => {
+      this.tabPageView.webContents.send('go-back-from-floating');
+    });
+    ipcMain.on('dismiss-email-notification', () => {
+      this.saveData.data.seenEmailForm = true;
+      this.saveData.save();
+      this.tabPageView.webContents.send('set-seenEmailForm', true);
+    });
+    ipcMain.on('set-email', (_, email) => {
+      this.mixpanelManager.mixpanel.people.set(this.mixpanelManager.userId, {
+        email,
+      });
+    });
+    ipcMain.on('sign-in-session', (_, session) => {
+      this.tabPageView.webContents.send('session', session);
+      this.saveData.data.session = session;
+      this.saveData.save();
+    });
+    ipcMain.on('clear-session', () => {
+      this.logOut();
+    });
+    ipcMain.on('request-session', () => {
+      if (this.saveData.data.session) {
+        this.tabPageView.webContents.send(
+          'session',
+          this.saveData.data.session
+        );
+      }
+    });
+    ipcMain.on('viewed-toggle-page', () => {
+      this.viewedToggleAppPageInOnboarding = true;
     });
   }
 }

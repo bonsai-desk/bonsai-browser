@@ -1,20 +1,35 @@
+/* eslint-disable no-console */
 import {
   app,
   BrowserView,
   BrowserWindow,
   Display,
+  HandlerDetails,
   WebContents,
 } from 'electron';
 import path from 'path';
 import fs from 'fs';
-import { IWebView } from './interfaces';
+import { INavigateData, IWebView } from './interfaces';
 import { parseMap, urlToMapKey } from './utils';
 import { floatingWindowEdgeMargin } from './calculate-window-target';
-import { LOWER_BOUND } from '../constants';
+import { LOWER_BOUND, ONBOARDING_HTML } from '../constants';
+import { ICON_SMALL_PNG } from '../main_constants';
 
 export const floatingTitleBarHeight = 37;
 export const floatingTitleBarSpacing = 10;
 export const floatingPadding = 10;
+
+export const tagSideBarWidth = 0;
+
+export const dragThresholdSquared = 5 * 5;
+
+const DEBUG = false;
+
+export function log(str: string) {
+  if (DEBUG) {
+    console.log(str);
+  }
+}
 
 function pointInBounds(
   mousePoint: Electron.Point,
@@ -64,6 +79,30 @@ export function makeWebContentsSafe(webContents: WebContents) {
       return { action: 'deny' };
     });
   }
+}
+
+export function makeOnboardingWindow(): BrowserWindow {
+  const onboardingWindow: BrowserWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    minWidth: 800,
+    minHeight: 600,
+    maxWidth: 800,
+    maxHeight: 600,
+    show: false,
+    icon: ICON_SMALL_PNG,
+    fullscreen: false,
+    webPreferences: {
+      nodeIntegration: true,
+      devTools: false,
+      contextIsolation: false,
+    },
+  });
+  onboardingWindow.webContents.openDevTools({ mode: 'detach' });
+  // todo let the window know if did finish onboarding
+  makeWebContentsSafe(onboardingWindow.webContents);
+  onboardingWindow.webContents.loadURL(ONBOARDING_HTML);
+  return onboardingWindow;
 }
 
 export function makeView(loadURL: string) {
@@ -134,7 +173,7 @@ export function resizeAsTitleBar(
   view.setBounds(titleBarBounds);
 }
 
-export function resizeAsPeekView(
+export function resizePeekView(
   view: BrowserView,
   pageInnerBounds: Electron.Rectangle
 ) {
@@ -148,7 +187,7 @@ export function resizeAsPeekView(
   });
 }
 
-export function resizeAsFindView(
+export function resizeFindView(
   view: BrowserView,
   headerHeight: number,
   pageInnerBounds: Electron.Rectangle
@@ -173,14 +212,13 @@ export function currentWindowSize(window: BrowserWindow): [number, number] {
   return [x, y];
 }
 
-export function innerBounds(
-  mainWindow: BrowserWindow,
-  padding: number
-): Electron.Rectangle {
-  return innerRectangle(4 / 3, currentWindowSize(mainWindow), padding);
+export function innerBounds(window: BrowserWindow): Electron.Rectangle {
+  const ratio = 15;
+  const padding = Math.floor(window.getBounds().height / ratio);
+  return innerRectangle(4 / 3, currentWindowSize(window), padding);
 }
 
-export function resizeAsOverlayView(view: BrowserView, windowSize: number[]) {
+export function resizeOverlayView(view: BrowserView, windowSize: number[]) {
   view.setBounds({
     x: 0,
     y: 0,
@@ -248,6 +286,12 @@ export function floatingSize(display: Display) {
   return [floatingWidth, floatingHeight];
 }
 
+export function showOnboardingWindow(onboardingWindow: BrowserWindow | null) {
+  onboardingWindow?.show();
+  onboardingWindow?.focus();
+  onboardingWindow?.webContents.focus();
+}
+
 export function tryParseMap(jsonString: string) {
   try {
     return { success: true, map: parseMap(jsonString) };
@@ -264,4 +308,161 @@ export function tryParseJSON(jsonString: string) {
     //
   }
   return { success: false, object: null };
+}
+
+export function goBack(webView: IWebView, alertTargets: BrowserView[]) {
+  webView.forwardUrl = webView.view.webContents.getURL();
+  webView.forwardUrls.push(webView.view.webContents.getURL());
+  webView.view.webContents.goBack();
+  alertTargets.forEach((target) => {
+    target.webContents.send('go-back', { id: webView.id });
+  });
+}
+
+export function handleGoForward(
+  webView: IWebView,
+  alertTargets: BrowserView[]
+) {
+  log(`${webView.id} request go forward [${webView.forwardUrls}]`);
+  const forwardUrl = webView.forwardUrls[webView.forwardUrls.length - 1];
+
+  webView.forwardUrls.pop();
+  webView.view.webContents.goForward();
+  alertTargets.forEach((target) => {
+    target.webContents.send('go-forward', { id: webView.id, forwardUrl });
+  });
+}
+
+const keyMap: Record<string, string> = {
+  Comma: ',',
+  Period: '.',
+  Slash: '/',
+  Semicolon: ';',
+  Quote: '"',
+  Meta: 'Cmd',
+  BracketLeft: '[',
+  BracketRight: ']',
+  Backslash: '\\',
+  Backquote: '`',
+  Minus: '-',
+  Equal: '=',
+  Digit0: '0',
+  Digit1: '1',
+  Digit2: '2',
+  Digit3: '3',
+  Digit4: '4',
+  Digit5: '5',
+  Digit6: '6',
+  Digit7: '7',
+  Digit8: '8',
+  Digit9: '9',
+  KeyA: 'A',
+  KeyB: 'B',
+  KeyC: 'C',
+  KeyD: 'D',
+  KeyE: 'E',
+  KeyF: 'F',
+  KeyG: 'G',
+  KeyH: 'H',
+  KeyI: 'I',
+  KeyJ: 'J',
+  KeyK: 'K',
+  KeyL: 'L',
+  KeyM: 'M',
+  KeyN: 'N',
+  KeyO: 'O',
+  KeyP: 'P',
+  KeyQ: 'Q',
+  KeyR: 'R',
+  KeyS: 'S',
+  KeyT: 'T',
+  KeyU: 'U',
+  KeyV: 'V',
+  KeyW: 'W',
+  KeyX: 'X',
+  KeyY: 'Y',
+  KeyZ: 'Z',
+  Numpad0: 'num0',
+  Numpad1: 'num1',
+  Numpad2: 'num2',
+  Numpad3: 'num3',
+  Numpad4: 'num4',
+  Numpad5: 'num5',
+  Numpad6: 'num6',
+  Numpad7: 'num7',
+  Numpad8: 'num8',
+  Numpad9: 'num9',
+  NumpadDecimal: 'numdec',
+  NumpadAdd: 'numadd',
+  NumpadSubtract: 'numsub',
+  NumpadMultiply: 'nummult',
+  NumpadDivide: 'numdiv',
+};
+
+function translateKey(jsKey: string) {
+  if (keyMap[jsKey]) {
+    return keyMap[jsKey];
+  }
+
+  return jsKey;
+}
+
+export function translateKeys(jsKeys: string[]) {
+  if (jsKeys) {
+    return jsKeys.map(translateKey);
+  }
+  return jsKeys;
+}
+
+export function handleInPageNavigateWithoutGesture(
+  view: IWebView,
+  url: string,
+  alertTargets: BrowserView[]
+) {
+  log(`${view.id} will-navigate-no-gesture ${url}`);
+  alertTargets.forEach((target) => {
+    target.webContents.send('will-navigate-no-gesture', { id: view.id, url });
+  });
+}
+
+export function handleWillNavigate(
+  view: IWebView,
+  url: string,
+  alertTargets: BrowserView[]
+) {
+  log(`${view.id} will-navigate ${url}`);
+  view.forwardUrl = undefined;
+  view.forwardUrls = [];
+  alertTargets.forEach((target) => {
+    target.webContents.send('will-navigate', { id: view.id, url });
+  });
+}
+
+export function handleDidNavigate(
+  view: IWebView,
+  data: INavigateData,
+  alertTargets: BrowserView[]
+) {
+  alertTargets.forEach((target) => {
+    target.webContents.send('did-navigate', { id: view.id, ...data });
+  });
+}
+
+export interface IAction {
+  action: 'deny';
+}
+
+export function genHandleWindowOpen(
+  view: IWebView,
+  alertTargets: BrowserView[]
+) {
+  return (details: HandlerDetails): IAction => {
+    alertTargets.forEach((target) => {
+      target.webContents.send('new-window-intercept', {
+        senderId: view.id,
+        details,
+      });
+    });
+    return { action: 'deny' };
+  };
 }

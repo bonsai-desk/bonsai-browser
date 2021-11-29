@@ -1,11 +1,17 @@
 import path from 'path';
 import { app } from 'electron';
 import fs from 'fs';
+import { Session } from '@supabase/supabase-js';
 import { tryDecrypt } from './utils';
 import { tryParseJSON } from './wm-utils';
 
 class SaveData {
-  data: { finishedOnboarding?: boolean; seenEmailForm?: boolean };
+  data: {
+    loggedIn?: boolean;
+    seenEmailForm?: boolean;
+    toggledOnce?: boolean;
+    session?: Session;
+  };
 
   constructor() {
     this.data = {};

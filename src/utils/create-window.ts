@@ -15,17 +15,11 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import { setInterval } from 'timers';
 import WindowManager from './window-manager';
-import {
-  ICON_PNG,
-  ICON_PNG_2,
-  ICON_SMALL_PNG,
-  ONBOARDING_HTML,
-} from '../constants';
 import windowFixedUpdate from './calculate-window-physics';
 import { windowHasView } from './utils';
 import { floatingSize, makeWebContentsSafe } from './wm-utils';
 import MixpanelManager from './mixpanel-manager';
-import SaveData from './SaveData';
+import { ICON_PNG, ICON_PNG_2, ICON_SMALL_PNG } from '../main_constants';
 
 function updateIfNeeded() {
   // eslint-disable-next-line global-require
@@ -33,12 +27,6 @@ function updateIfNeeded() {
   autoUpdater.logger = log;
   autoUpdater.checkForUpdatesAndNotify();
 }
-
-// function initUpdater() {
-//   // Remove this if your app does not use auto updates
-//   // eslint-disable-next-line
-//   new AppUpdater();
-// }
 
 function initMenu(wm: WindowManager) {
   const edit: MenuItemConstructorOptions = {
@@ -237,34 +225,6 @@ function initFixedUpdate(wm: WindowManager) {
   setInterval(update, 1);
 }
 
-let onboardingWindowReady = false;
-let mainWindowReady = false;
-
-function showOnboardingWindow(onboardingWindow: BrowserWindow | null) {
-  onboardingWindow?.show();
-  onboardingWindow?.focus();
-  onboardingWindow?.webContents.focus();
-}
-
-function initBoot(wm: WindowManager, onboardingWindow: BrowserWindow | null) {
-  let booted = false;
-  const boot = () => {
-    if (!booted) {
-      booted = true;
-      mainWindowReady = true;
-      if (onboardingWindowReady) {
-        showOnboardingWindow(onboardingWindow);
-      }
-      if (!wm.saveData.data.finishedOnboarding) {
-        return;
-      }
-      wm.showWindow();
-    }
-  };
-  wm.tabPageView.webContents.on('did-finish-load', boot);
-  setTimeout(boot, 15000);
-}
-
 function initWindow(): BrowserWindow {
   app.on('web-contents-created', (_, contents) => {
     contents.on('will-attach-webview', (event, webPreferences) => {
@@ -305,56 +265,6 @@ function initWindow(): BrowserWindow {
   return mainWindow;
 }
 
-function initOnboardingWindow(): BrowserWindow {
-  const onboardingWindow: BrowserWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
-    minWidth: 800,
-    minHeight: 600,
-    maxWidth: 800,
-    maxHeight: 600,
-    show: false,
-    icon: ICON_SMALL_PNG,
-    fullscreen: false,
-    webPreferences: {
-      nodeIntegration: true,
-      devTools: false,
-      contextIsolation: false,
-    },
-  });
-  makeWebContentsSafe(onboardingWindow.webContents);
-  onboardingWindow.webContents.loadURL(ONBOARDING_HTML);
-  onboardingWindow.webContents.on('did-finish-load', () => {
-    onboardingWindowReady = true;
-    if (mainWindowReady) {
-      showOnboardingWindow(onboardingWindow);
-    }
-  });
-  return onboardingWindow;
-}
-
-// function initShortcuts(wm: WindowManager) {
-//   let shortCut = 'Alt+Space';
-//   if (process.env.NODE_ENV === 'development') {
-//     shortCut = 'Ctrl+Alt+Space';
-//   }
-//   globalShortcut.register(shortCut, () => {
-//     if (!wm.saveData.data.finishedOnboarding) {
-//       wm.saveData.data.finishedOnboarding = true;
-//       wm.saveData.save();
-//       wm.onboardingWindow?.destroy();
-//       wm.onboardingWindow = null;
-//     }
-//     if (!wm.mainWindow?.isVisible()) {
-//       wm.mixpanelManager.track('show with global shortcut');
-//       wm.showWindow();
-//     } else {
-//       wm.mixpanelManager.track('hide with global shortcut');
-//       wm.hideWindow();
-//     }
-//   });
-// }
-
 function initApp(wm: WindowManager) {
   app.on('window-all-closed', () => {
     // Respect the OSX convention of having the application in memory even
@@ -369,17 +279,11 @@ function initApp(wm: WindowManager) {
   }
 
   app.on('activate', () => {
-    if (wm.saveData.data.finishedOnboarding) {
-      wm.showWindow();
-    } else if (wm.onboardingWindow && !wm.onboardingWindow.isDestroyed()) {
-      wm.onboardingWindow.show();
-    } else {
-      wm.onboardingWindow = initOnboardingWindow();
-    }
+    wm.handleAppActivate();
   });
 
   app.on('before-quit', () => {
-    wm.mainWindow?.destroy();
+    wm.handleAppBeforeQuit();
   });
 }
 
@@ -467,25 +371,11 @@ export const createWindow = async () => {
 
   const mixpanelManager = new MixpanelManager(userId);
 
-  const saveData = new SaveData();
-  const onboardingWindow = saveData.data.finishedOnboarding
-    ? null
-    : initOnboardingWindow();
-
-  const wm = new WindowManager(
-    initWindow(),
-    mixpanelManager,
-    saveData,
-    onboardingWindow
-  );
+  const wm = new WindowManager(initWindow(), mixpanelManager);
 
   initTray(ICON_SMALL_PNG, wm);
 
-  initBoot(wm, onboardingWindow);
-
   initFixedUpdate(wm);
-
-  // initShortcuts(wm);
 
   initMenu(wm);
 

@@ -1,5 +1,7 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import { ipcRenderer, Rectangle } from 'electron';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { User, Session } from '@supabase/gotrue-js';
+import { ipcRenderer } from 'electron';
 import { RefObject, createContext, useContext } from 'react';
 import Fuse from 'fuse.js';
 import { Instance } from 'mobx-state-tree';
@@ -15,6 +17,7 @@ import WorkspaceStore from './workspace/workspace-store';
 import packageInfo from '../package.json';
 import { Bind, KeybindStore } from './keybinds';
 import TabStore from './tabs';
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from '../constants';
 
 export enum View {
   None,
@@ -55,8 +58,6 @@ export default class TabPageStore {
     }
   }
 
-  workAreaRect: Rectangle;
-
   navigatorTabModal = [0, 0];
 
   navigatorTabModalSelectedNodeId = '';
@@ -77,8 +78,6 @@ export default class TabPageStore {
 
   historyText = '';
 
-  padding = '35';
-
   isPinned = false;
 
   urlBoxRef: RefObject<HTMLInputElement> | null = null;
@@ -93,7 +92,7 @@ export default class TabPageStore {
 
   fuzzySelectionIndex: [number, number] = [0, 0];
 
-  screen: { width: number; height: number };
+  windowSize: { width: number; height: number };
 
   innerBounds: { x: number; y: number; width: number; height: number };
 
@@ -674,6 +673,38 @@ export default class TabPageStore {
     return rootId;
   }
 
+  session: Session | null = null;
+
+  supaClient: SupabaseClient;
+
+  refreshSession(session: Session | null) {
+    console.log('refreshSession', session);
+    if (!session || !session.refresh_token) {
+      this.clearSession();
+      return;
+    }
+    this.supaClient.auth
+      .setSession(session.refresh_token)
+      .then((data) => {
+        const { session: liveSession } = data;
+        this.session = liveSession;
+        ipcRenderer.send('refresh-session', liveSession);
+        return 0;
+      })
+      .catch((error) => {
+        ipcRenderer.send('log-data', error);
+        this.clearSession();
+      });
+  }
+
+  clearSession() {
+    console.log('sign out');
+    this.user = null;
+    this.session = null;
+    this.supaClient.auth.signOut();
+    ipcRenderer.send('clear-session');
+  }
+
   timeoutHandle = -1;
 
   constructor(
@@ -682,9 +713,22 @@ export default class TabPageStore {
   ) {
     makeAutoObservable(this);
 
+    this.supaClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    ipcRenderer.send('request-session');
+
+    ipcRenderer.on('session', (_, session) => {
+      console.log('got session');
+      this.refreshSession(session);
+    });
+
+    setTimeout(() => {
+      console.log('refresh');
+      this.refreshSession(this.session);
+    }, 1000 * 60 * 60);
+
     this.versionString = packageInfo.version;
-    this.workAreaRect = { x: 0, y: 0, width: 1, height: 1 };
-    this.screen = { width: 200, height: 200 };
+    this.windowSize = { width: 200, height: 200 };
     this.innerBounds = { x: 0, y: 0, width: 100, height: 100 };
     this.workspaceStore = workspaceStore;
 
@@ -693,9 +737,9 @@ export default class TabPageStore {
     this.filteredOpenTabs = [];
     this.filteredWorkspaceTabs = [];
 
-    ipcRenderer.on('inner-bounds', (_, { screen, bounds }) => {
+    ipcRenderer.on('inner-bounds', (_, { windowSize, bounds }) => {
       runInAction(() => {
-        this.screen = screen;
+        this.windowSize = windowSize;
         this.innerBounds = bounds;
       });
     });
@@ -827,11 +871,6 @@ export default class TabPageStore {
         }
       });
     });
-    ipcRenderer.on('set-padding', (_, newPadding) => {
-      runInAction(() => {
-        this.padding = newPadding;
-      });
-    });
     ipcRenderer.on('set-active', (_, newIsActive) => {
       runInAction(() => {
         if (newIsActive && this.View !== View.Navigator) {
@@ -871,11 +910,6 @@ export default class TabPageStore {
         this.navigatorTabModalSelectedNodeId = '';
         this.navigatorTabModal = [0, 0];
         this.bumpTab(id);
-      });
-    });
-    ipcRenderer.on('resize-work-area', (_, workSpaceRect) => {
-      runInAction(() => {
-        this.workAreaRect = workSpaceRect;
       });
     });
     ipcRenderer.on('set-seenEmailForm', (_, seenEmailForm) => {

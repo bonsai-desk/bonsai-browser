@@ -93,6 +93,29 @@ export const Buttons = styled.button`
     }
   }
 
+  &.is-primary-lowkey {
+    color: ${color('link-color')};
+    background-color: transparent;
+
+    :hover {
+      background-color: ${color('link-color', 'opacity-low')};
+    }
+
+    :active,
+    :hover:active,
+    &.is-active {
+      color: white;
+      background-color: ${color('link-color')};
+    }
+
+    :disabled,
+    :disabled:active {
+      color: ${color('body-text-color', 'opacity-low')};
+      background-color: ${color('body-text-color', 'opacity-lower')};
+      cursor: default;
+    }
+  }
+
   &.is-lowkey {
     :disabled,
     :disabled:active {

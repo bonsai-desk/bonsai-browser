@@ -3,6 +3,25 @@ import React, { useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
+import { ExitToApp } from '@material-ui/icons';
+import {
+  Avatar,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Divider,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Stack,
+  Typography,
+} from '@material-ui/core';
 import GenericModal from './GenericModal';
 import { useStore, View } from '../store/tab-page-store';
 import MiniGenericModal from './MiniGenericModal';
@@ -19,6 +38,7 @@ import refreshIcon from '../../assets/refresh.svg';
 import { bindEquals, globalKeybindValid, showKeys } from '../store/keybinds';
 import { ButtonRow, Buttons } from './Buttons';
 import { color } from '../utils/jsutils';
+import { validateEmail } from '../utils/utils';
 
 const SettingsParent = styled.div`
   display: flex;
@@ -236,11 +256,92 @@ const EmailInput = styled.input`
   width: auto;
 `;
 
-function validateEmail(email: string) {
-  const re =
-    /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-  return re.test(String(email).toLowerCase());
+function ConfirmLogout() {
+  const [open, setOpen] = React.useState(false);
+
+  const { tabPageStore } = useStore();
+
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  const handleClickLogout = () => {
+    tabPageStore.clearSession();
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <ListItem disablePadding>
+        <ListItemButton onClick={handleClickOpen}>
+          <ListItemIcon>
+            <ExitToApp />
+          </ListItemIcon>
+          <ListItemText primary="Log Out" />
+        </ListItemButton>
+      </ListItem>
+
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">Log Out?</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            You will need to log back in.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Cancel</Button>
+          <Button onClick={handleClickLogout} autoFocus>
+            Log Out
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
 }
+
+const Account = observer(() => {
+  const { tabPageStore } = useStore();
+  let email = 'email@address.com';
+
+  let user = null;
+  const { session } = tabPageStore;
+  if (session && session.user) {
+    user = session.user;
+  }
+  if (!!user && user.email) {
+    email = user.email;
+  }
+
+  console.log(session, user);
+
+  return (
+    <Box sx={{ width: '100%', maxWidth: 360, bgcolor: 'background.paper' }}>
+      <nav aria-label="secondary mailbox folders">
+        <div style={{ padding: '2rem 0 2rem 0' }}>
+          <Stack spacing={2} justifyContent="center" alignItems="center">
+            <Avatar>{email[0].toUpperCase()}</Avatar>
+            <Typography>{email}</Typography>
+          </Stack>
+        </div>
+      </nav>
+      <Divider />
+      <nav aria-label="main mailbox folders">
+        <List>
+          <ConfirmLogout />
+        </List>
+      </nav>
+    </Box>
+  );
+});
 
 const SettingsModal = observer(() => {
   const { tabPageStore } = useStore();
@@ -253,6 +354,9 @@ const SettingsModal = observer(() => {
       <GenericModal view={View.Settings}>
         <SettingsParent>
           <Settings>
+            <Title>Account</Title>
+            <Account />
+
             <Title>Settings</Title>
 
             <EmailContainer>

@@ -1,14 +1,3 @@
-import { app } from 'electron';
-import path from 'path';
-
-const RESOURCES_PATH = app.isPackaged
-  ? path.join(process.resourcesPath, 'assets')
-  : path.join(__dirname, '../assets');
-
-const getAssetPath = (...paths: string[]): string => {
-  return path.join(RESOURCES_PATH, ...paths);
-};
-
 export const LOWER_BOUND = 20;
 
 export const VIBRANCY = 'fullscreen-ui';
@@ -25,12 +14,9 @@ export const TAB_PAGE = `file://${__dirname}/tab-page.html`;
 
 export const ONBOARDING_HTML = `file://${__dirname}/onboarding.html`;
 
-export const ICON_PNG = getAssetPath('icon.png');
-
-export const ICON_PNG_2 = getAssetPath('icons/128x128@1x.png');
-
-export const ICON_SMALL_PNG = getAssetPath('/icons/24x24-tray@2x.png');
-
 export const PRELOAD = `${__dirname}/utils/preload.js`;
 
-export default RESOURCES_PATH;
+export const SUPABASE_URL = 'https://mxwuygijohmfakerdlfz.supabase.co';
+
+export const SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTYzNjgzNDE5MywiZXhwIjoxOTUyNDEwMTkzfQ.SpYlL8rJZG6Ij6OHczyb1p6wuVl3Cl-n-dblTrYFs1Q';

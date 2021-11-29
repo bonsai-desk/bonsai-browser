@@ -38,16 +38,18 @@ const Header = observer(({ onViewPage }: { onViewPage: boolean }) => {
   useEffect(() => {
     tabPageStore.urlBoxRef = urlBoxRef;
   });
+
+  const titleBarHeight = 0; // for regular window mode when it's added
+
   return (
     <URLBoxParent
       id="header"
       style={{
         position: onViewPage ? 'absolute' : 'static',
         top: onViewPage ? '0' : 'auto',
-        // position: 'absolute',
-        // top: 10,
         zIndex: onViewPage ? 1 : 'auto',
-        height: tabPageStore.innerBounds.y,
+        height: tabPageStore.innerBounds.y - titleBarHeight,
+        marginTop: titleBarHeight,
       }}
       onMouseOver={() => {
         runInAction(() => {

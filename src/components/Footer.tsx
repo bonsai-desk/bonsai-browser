@@ -14,6 +14,7 @@ const FooterParent = styled.div`
   justify-content: center;
   align-items: center;
   flex-shrink: 0;
+  height: 70px;
 `;
 
 const BottomButtonRow = styled(ButtonRow)`
@@ -132,20 +133,14 @@ const WorkspaceButtons = observer(() => {
   );
 });
 
-const Footer = observer(({ onViewPage }: { onViewPage: boolean }) => {
+const Footer = observer(() => {
   const { tabPageStore } = useStore();
 
   const footerContent =
     tabPageStore.View === View.Navigator ? null : (
       <>
         <WorkspaceButtons />
-        <RightButtons
-        // style={{
-        //   height:
-        //     tabPageStore.screen.height -
-        //     (tabPageStore.innerBounds.y + tabPageStore.innerBounds.height),
-        // }}
-        >
+        <RightButtons>
           <Buttons
             className={tabPageStore.View === View.History ? 'is-active' : ''}
             onClick={() => {
@@ -189,25 +184,7 @@ const Footer = observer(({ onViewPage }: { onViewPage: boolean }) => {
       </>
     );
 
-  // ipcRenderer.send('log-data', [
-  //   { ...tabPageStore.screen },
-  //   { ...tabPageStore.innerBounds },
-  // ]);
-
-  const height = tabPageStore.innerBounds.y;
-  return (
-    <FooterParent
-      id="footer"
-      style={{
-        position: onViewPage ? 'absolute' : 'static',
-        bottom: onViewPage ? '0px' : 'auto',
-        zIndex: onViewPage ? 1 : 'auto',
-        height,
-      }}
-    >
-      {footerContent}
-    </FooterParent>
-  );
+  return <FooterParent id="footer">{footerContent}</FooterParent>;
 });
 
 export default Footer;

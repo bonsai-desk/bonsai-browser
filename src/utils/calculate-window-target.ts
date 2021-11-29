@@ -1,6 +1,5 @@
 import { Display } from 'electron';
-
-const glMatrix = require('gl-matrix');
+import { vec2 } from 'gl-matrix';
 
 export const floatingWindowEdgeMargin = 25;
 
@@ -12,36 +11,36 @@ export default function calculateWindowTarget(
   lastX: number,
   lastY: number,
   windowSize: { width: number; height: number },
-  windowPosition: number[],
+  windowPosition: vec2,
   activeDisplay: Display
   // valid, hasVelocity, target vec2s
-): [boolean, boolean, number[], number[]] {
+): [boolean, boolean, vec2, vec2] {
   const deltaTime = currentTime - lastTime;
   const multiple = 1 / deltaTime;
   const augment = 0.75;
-  const windowVelocity = glMatrix.vec2.fromValues(
+  const windowVelocity = vec2.fromValues(
     (x - lastX) * multiple * augment,
     (y - lastY) * multiple * augment
   );
   const maxSpeed = 5000;
-  if (glMatrix.vec2.len(windowVelocity) > maxSpeed) {
-    glMatrix.vec2.normalize(windowVelocity, windowVelocity);
-    glMatrix.vec2.scale(windowVelocity, windowVelocity, maxSpeed);
+  if (vec2.len(windowVelocity) > maxSpeed) {
+    vec2.normalize(windowVelocity, windowVelocity);
+    vec2.scale(windowVelocity, windowVelocity, maxSpeed);
   }
 
   const padding = floatingWindowEdgeMargin;
 
   const targets = [
-    glMatrix.vec2.fromValues(padding, padding),
-    glMatrix.vec2.fromValues(
+    vec2.fromValues(padding, padding),
+    vec2.fromValues(
       activeDisplay.workAreaSize.width - windowSize.width - padding,
       padding
     ),
-    glMatrix.vec2.fromValues(
+    vec2.fromValues(
       activeDisplay.workAreaSize.width - windowSize.width - padding,
       activeDisplay.workAreaSize.height - windowSize.height - padding
     ),
-    glMatrix.vec2.fromValues(
+    vec2.fromValues(
       padding,
       activeDisplay.workAreaSize.height - windowSize.height - padding
     ),
@@ -53,10 +52,10 @@ export default function calculateWindowTarget(
   });
 
   const toTargets = [
-    glMatrix.vec2.create(),
-    glMatrix.vec2.create(),
-    glMatrix.vec2.create(),
-    glMatrix.vec2.create(),
+    vec2.create(),
+    vec2.create(),
+    vec2.create(),
+    vec2.create(),
   ];
 
   const angles = [0, 0, 0, 0];
@@ -64,23 +63,23 @@ export default function calculateWindowTarget(
   const radToDeg = 180 / Math.PI;
 
   for (let i = 0; i < toTargets.length; i += 1) {
-    glMatrix.vec2.sub(toTargets[i], targets[i], windowPosition);
-    angles[i] = glMatrix.vec2.angle(windowVelocity, toTargets[i]) * radToDeg;
+    vec2.sub(toTargets[i], targets[i], windowPosition);
+    angles[i] = vec2.angle(windowVelocity, toTargets[i]) * radToDeg;
   }
 
   const indexOfClosestAngle = angles.indexOf(Math.min(...angles));
   let indexOfClosest = 0;
   let smallestSqrDist = 100000000;
   for (let i = 0; i < targets.length; i += 1) {
-    const sqrDist = glMatrix.vec2.sqrDist(targets[i], windowPosition);
+    const sqrDist = vec2.sqrDist(targets[i], windowPosition);
     if (sqrDist < smallestSqrDist) {
       smallestSqrDist = sqrDist;
       indexOfClosest = i;
     }
   }
 
-  const target = glMatrix.vec2.create();
-  const windowSpeed = glMatrix.vec2.len(windowVelocity);
+  const target = vec2.create();
+  const windowSpeed = vec2.len(windowVelocity);
   if (
     // typeof targetWindowPosition !== 'undefined' &&
     typeof targets[indexOfClosest] !== 'undefined' &&

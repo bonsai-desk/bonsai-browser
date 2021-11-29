@@ -1,34 +1,19 @@
 /* eslint-disable react/jsx-props-no-spreading */
-import React, { useRef, useState } from 'react';
-import styled, { css } from 'styled-components';
+import React, { useRef } from 'react';
+import styled from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
-import { Instance } from 'mobx-state-tree';
-import { runInAction } from 'mobx';
 import { Add } from '@material-ui/icons';
-import { v4 as uuidv4 } from 'uuid';
 import {
   DragDropContext,
   Draggable,
   DraggableProvided,
   Droppable,
 } from 'react-beautiful-dnd';
-import { useStore, View } from '../store/tab-page-store';
-import { goBack, goForward, headsOnNode, INode } from '../store/history-store';
-import { IWorkSpaceStore } from '../store/workspace/workspace-store';
-import { Workspace } from '../store/workspace/workspace';
-import plusImg from '../../assets/plus.svg';
-import NavigatorTabModal from './NavigatorTabModal';
+import { useStore } from '../store/tab-page-store';
 import TitleBar, { RoundButton } from '../pages/App';
 import { Tab, TabsParent } from './Tab';
 import { TabPageTab } from '../interfaces/tab';
-import fs from 'fs';
-import path from 'path';
-
-enum Direction {
-  Back,
-  Forward,
-}
 
 const NavigatorParent = styled.div`
   position: absolute;
@@ -41,508 +26,6 @@ const NavigatorParent = styled.div`
   align-content: center;
   justify-content: space-between;
 `;
-
-const NavigatorPanel = styled.div`
-  background: rgba(0, 0, 0, 0.25);
-  //background-color: gray;
-  //border: #936943;
-  //border-style: solid;
-  //border-width: 5px 5px 5px 0;
-  //background: #ffdfb4;
-  position: absolute;
-  border-radius: 10px;
-  overflow: scroll;
-  display: flex;
-  flex-direction: column;
-  ::-webkit-scrollbar {
-    display: none;
-  }
-  #NavItem + #NavItem {
-    margin-top: 10px;
-  }
-  ${({
-    top,
-    width,
-    height,
-    direction,
-  }: {
-    top: string;
-    width: string;
-    height: string;
-    direction: Direction;
-  }) => {
-    const thing =
-      direction === Direction.Back ? '0 10px 10px 0' : '10px 0 0 10px';
-    const borRad = `border-radius: ${thing};`;
-    return css`
-      top: ${top};
-      height: ${height};
-      width: ${width};
-      ${borRad}
-    `;
-  }}
-`;
-
-const ButtonParent = styled.div`
-  padding: 0.5rem;
-  margin: 1rem 0 1rem 0;
-  background-color: rgba(0, 0, 0, 0.25);
-  border-radius: 50%;
-  transition-duration: 0.25s;
-  :hover {
-    background-color: rgba(0, 0, 0, 0.5);
-  }
-`;
-
-const Plus = styled.div`
-  width: 1rem;
-  height: 1rem;
-  background-image: url(${plusImg});
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: center center;
-`;
-
-const AddToWorkspaceParent = styled.div`
-  user-select: none;
-  cursor: default;
-  font-size: 0.75rem;
-  color: white;
-  width: 100%;
-  white-space: nowrap;
-  text-align: center;
-  #BacklinkToWorkspace + #BacklinkToWorkspace {
-    margin: 1rem 0 1rem 0;
-  }
-`;
-
-const Title = styled.div`
-  margin: 1rem 0 1rem 0.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  //color: #483526;
-  color: white;
-`;
-
-const NavigatorHover = styled.div`
-  ${({ active }: { active: boolean }) => {
-    if (active) {
-      return css`
-        background-color: rgba(0, 0, 0, 0.7);
-      `;
-    }
-    return css`
-      background-color: rgba(0, 0, 0, 0.1);
-    `;
-  }}
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  transition-duration: 0.25s;
-`;
-
-const AddToWorkspaceButtonParent = styled.div`
-  transition-duration: 0.25s;
-  width: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  align-content: center;
-  justify-content: center;
-  height: 3rem;
-  background-color: rgba(0, 0, 0, 0.5);
-  :hover {
-    background-color: rgba(0, 0, 0, 0.75);
-  }
-`;
-
-const NavigatorItemParent = styled.div`
-  --bor: 255;
-
-  overflow: hidden;
-  border-radius: 5px;
-
-  min-height: 3rem;
-
-  --bw: 5px;
-  width: calc(100% - 3 * var(--bw));
-  border-style: solid;
-
-  flex-grow: 1;
-  position: relative;
-  background-size: cover; /* <------ */
-  background-repeat: no-repeat;
-  ${({
-    img,
-    maxHeight = '5rem',
-    direction = Direction.Forward,
-    borderActive = false,
-  }: {
-    img: string;
-    maxHeight?: string;
-    direction?: Direction;
-    borderActive?: boolean;
-  }) => {
-    let border = css`
-      border-width: 0 0 0 var(--bw);
-      margin: 0 0 0 var(--bw);
-    `;
-    if (direction === Direction.Back) {
-      border = css`
-        border-width: 0 var(--bw) 0 0;
-        margin: 0 0 0 var(--bw);
-      `;
-    }
-    const maxHeightLine = `max-height: ${maxHeight};`;
-    const imgCss = css`
-      background-image: ${img};
-      ${maxHeightLine}
-    `;
-    return css`
-      border-color: ${borderActive ? 'white' : 'black'};
-      ${maxHeightLine}
-      ${border}
-      ${img ? imgCss : ''}
-    `;
-  }}
-  user-select: none;
-  cursor: default;
-  font-size: 0.6rem;
-  color: white;
-`;
-
-const NavigatorItemText = styled.div`
-  position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
-  width: calc(100% - 1rem);
-  height: 2rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box !important;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  white-space: normal;
-  z-index: 10;
-`;
-
-interface Dimensions {
-  width: number;
-  height: number;
-  top: number;
-}
-
-function asPx(a: number): string {
-  return `${a}px`;
-}
-
-const NavigatorItem = observer(
-  ({
-    img,
-    text,
-    onClick,
-    maxHeight,
-    active = true,
-    dir = Direction.Forward,
-    borderActive = false,
-    contextMenuCallback,
-  }: {
-    img: string;
-    text: string;
-    onClick?: () => void;
-    active?: boolean;
-    maxHeight?: string;
-    dir?: Direction;
-    borderActive?: boolean;
-    contextMenuCallback?: (e: any) => void;
-  }) => {
-    return (
-      <NavigatorItemParent
-        onContextMenu={contextMenuCallback}
-        borderActive={borderActive}
-        direction={dir}
-        maxHeight={maxHeight}
-        id="NavItem"
-        img={img}
-        onClick={onClick}
-      >
-        <NavigatorItemText>{text}</NavigatorItemText>
-        <NavigatorHover active={active} />
-      </NavigatorItemParent>
-    );
-  }
-);
-
-const HistoryNavigatorItem = observer(
-  ({
-    node,
-    dir,
-    parentDim,
-  }: {
-    parentDim: Dimensions;
-    node: INode;
-    dir: Direction;
-  }) => {
-    const { historyStore, tabPageStore } = useStore();
-    let img = '';
-    const heads = headsOnNode(historyStore, node);
-
-    const maxHeight = `${(9 / 16) * parentDim.width}px`;
-    const headIsOnNode = heads.length > 0;
-
-    if (headIsOnNode) {
-      const tab = tabPageStore.openTabs[heads[0][0]];
-      if (tab && tab.image) {
-        img = `url(${tab.image})`;
-      }
-    }
-
-    const title = node.data.title ? node.data.title : node.data.url;
-    return (
-      <NavigatorItem
-        contextMenuCallback={(e) => {
-          if (dir === Direction.Forward) {
-            const { pageX, pageY } = e;
-            tabPageStore.setNavigatorTabModal([pageX, pageY]);
-            runInAction(() => {
-              tabPageStore.navigatorTabModalSelectedNodeId = node.id;
-            });
-          }
-        }}
-        borderActive={headIsOnNode}
-        dir={dir}
-        maxHeight={maxHeight}
-        img={img}
-        onClick={() => {
-          // tabPageStore.setNavigatorTabModal([0, 0]);
-          if (dir === Direction.Back) {
-            goBack(historyStore);
-            ipcRenderer.send('mixpanel-track', 'click go back in navigator');
-          }
-          if (dir === Direction.Forward) {
-            goForward(historyStore);
-            ipcRenderer.send('mixpanel-track', 'click go forward in navigator');
-          }
-        }}
-        text={title}
-      />
-    );
-  }
-);
-
-const WorkspaceItem = observer(({ data }: { data: IItemPath }) => {
-  const { tabPageStore, workspaceStore } = useStore();
-  return (
-    <NavigatorItem
-      dir={Direction.Back}
-      borderActive
-      maxHeight="3rem"
-      img=""
-      onClick={() => {
-        workspaceStore.setActiveWorkspaceId(data.workspaceId);
-        tabPageStore.View = View.WorkSpace;
-        const workspace = workspaceStore.workspaces.get(data.workspaceId);
-        if (typeof workspace !== 'undefined') {
-          workspace.centerCameraOnItem(data.itemId);
-        }
-        ipcRenderer.send(
-          'mixpanel-track',
-          'click backlink to workspace in navigator'
-        );
-        ipcRenderer.send('click-main');
-      }}
-      text={`${data.workspaceName} / ${data.groupName}`}
-    />
-  );
-});
-
-const Panel = observer(
-  ({
-    items,
-    dim,
-    dir,
-    children,
-    title = 'Panel',
-  }: {
-    items: INode[];
-    dim: Dimensions;
-    dir: Direction;
-    children?: React.ReactNode;
-    title?: string;
-  }) => {
-    const { width, height, top } = dim;
-    const navigatorItems = items.map((item) => (
-      <HistoryNavigatorItem
-        parentDim={dim}
-        key={item.id}
-        node={item}
-        dir={dir}
-      />
-    ));
-    return (
-      <NavigatorPanel
-        direction={dir}
-        width={asPx(width)}
-        height={asPx(height)}
-        top={asPx(top)}
-      >
-        <Title>{title}</Title>
-        {navigatorItems}
-        {children}
-      </NavigatorPanel>
-    );
-  }
-);
-
-interface IItemPath {
-  workspaceId: string;
-  groupId: string;
-  itemId: string;
-  workspaceName: string;
-  groupName: string;
-}
-
-function nodeInWorkspaces(
-  node: INode | undefined,
-  workspaceStore: IWorkSpaceStore
-): IItemPath[] {
-  if (node) {
-    const matches: IItemPath[] = [];
-    Array.from(workspaceStore.workspaces.values()).forEach((workspace) => {
-      Array.from(workspace.items.values()).forEach((item) => {
-        const baseUrl = item.url.split('#')[0];
-        const nodeBaseUrl = node.data.url.split('#')[0];
-        const match = baseUrl === nodeBaseUrl;
-        if (match) {
-          const workspaceId = workspace.id;
-          const { groupId } = item;
-          const group = workspace.groups.get(groupId);
-          const itemId = item.id;
-          const workspaceName = workspace.name;
-          const groupName = group ? group.title : 'Inbox';
-          matches.push({
-            workspaceId,
-            groupId,
-            itemId,
-            workspaceName,
-            groupName,
-          });
-        }
-      });
-    });
-    return matches;
-  }
-  return [];
-}
-
-const AddToWorkspaceButton = observer(
-  ({
-    ws,
-    callback,
-  }: {
-    ws: Instance<typeof Workspace>;
-    callback: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
-  }) => {
-    return (
-      <AddToWorkspaceButtonParent id="BacklinkToWorkspace" onClick={callback}>
-        {ws.name}
-      </AddToWorkspaceButtonParent>
-    );
-  }
-);
-
-const AddToWorkspace = observer(({ node }: { node: INode }) => {
-  const [open, setOpen] = useState(false);
-  const { workspaceStore, tabPageStore, historyStore } = useStore();
-  const ws = Array.from(workspaceStore.workspaces.values());
-
-  let webViewId: string | null = null;
-  const heads = headsOnNode(historyStore, node);
-  if (heads.length > 0) {
-    // eslint-disable-next-line prefer-destructuring
-    webViewId = heads[0][0];
-  }
-
-  return (
-    <AddToWorkspaceParent
-      onClick={() => {
-        if (!open) {
-          if (webViewId) {
-            ipcRenderer.send('request-screenshot', { webViewId });
-          }
-          setOpen(true);
-        } else {
-          setOpen(false);
-        }
-      }}
-    >
-      <>
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <ButtonParent>
-            <Plus />
-          </ButtonParent>
-        </div>
-        {open
-          ? ws.map((workspace) => {
-              const callback = (
-                e: React.MouseEvent<HTMLDivElement, MouseEvent>
-              ) => {
-                e.stopPropagation();
-                const title = node.data.title ? node.data.title : 'Untitled';
-                let favicon = '';
-                let image = '';
-                if (webViewId) {
-                  const tab = tabPageStore.openTabs[webViewId];
-                  if (tab) {
-                    favicon = tab.favicon;
-                    image = tab.image;
-                  }
-                }
-                if (image) {
-                  const workspaceImgName = uuidv4();
-                  const imagesDir = path.join(
-                    workspaceStore.dataPath,
-                    'images'
-                  );
-                  const tabImgPath = path.join(imagesDir, `${image}.jpg`);
-                  const workspaceImgPath = path.join(
-                    imagesDir,
-                    `${workspaceImgName}.jpg`
-                  );
-                  try {
-                    fs.copyFileSync(tabImgPath, workspaceImgPath);
-                  } catch {
-                    //
-                  }
-                  image = workspaceImgName;
-                }
-                workspace.createItem(
-                  node.data.url,
-                  title,
-                  image,
-                  favicon,
-                  workspace.inboxGroup
-                );
-                ipcRenderer.send(
-                  'mixpanel-track',
-                  'create backlink to workspace from navigator'
-                );
-                setOpen(false);
-              };
-              return (
-                <AddToWorkspaceButton
-                  key={workspace.id}
-                  ws={workspace}
-                  callback={callback}
-                />
-              );
-            })
-          : ''}
-      </>
-    </AddToWorkspaceParent>
-  );
-});
 
 export function clickMain() {
   ipcRenderer.send('click-main');
@@ -743,25 +226,15 @@ const WebpageBackground = styled.div`
   border-radius: 20px 20px 0 0;
 `;
 
+const TagSideBar = styled.div`
+  position: absolute;
+  background-color: white;
+`;
+
 const Navigator = observer(() => {
   const backRef = useRef(null);
-  const { workspaceStore, tabPageStore, historyStore } = useStore();
-  const gutter =
-    (tabPageStore.screen.width - tabPageStore.innerBounds.width) / 2;
-  const margin = 20;
-  const tabWidth = gutter - margin;
-  // const tabMaxHeight = (9 / 16) * tabWidth;
-  const { height, y: top } = tabPageStore.innerBounds;
-  const head = historyStore.heads.get(historyStore.active);
-  const matches = nodeInWorkspaces(head, workspaceStore);
-  const [x, y] = tabPageStore.navigatorTabModal;
-  const tabModalInactive = x === 0 && y === 0;
+  const { tabPageStore } = useStore();
 
-  const tabsBarPos = {
-    x: tabPageStore.innerBounds.x,
-    y: tabPageStore.innerBounds.y,
-    width: tabPageStore.innerBounds.width,
-  };
   return (
     <NavigatorParent
       ref={backRef}
@@ -771,19 +244,20 @@ const Navigator = observer(() => {
         }
       }}
     >
-      <TabsBar x={tabsBarPos.x} y={tabsBarPos.y} width={tabsBarPos.width} />
-      {!tabModalInactive ? <NavigatorTabModal /> : ''}
-      <Panel
-        dir={Direction.Back}
-        items={[]}
-        dim={{ width: tabWidth, height, top }}
-        title="Workspaces"
-      >
-        {matches.map((match) => (
-          <WorkspaceItem key={match.itemId} data={match} />
-        ))}
-        {head ? <AddToWorkspace node={head} /> : ''}
-      </Panel>
+      <TabsBar
+        x={tabPageStore.innerBounds.x}
+        y={tabPageStore.innerBounds.y}
+        width={tabPageStore.innerBounds.width}
+      />
+      <TagSideBar
+        style={{
+          width: tabPageStore.innerBounds.x,
+          height: tabPageStore.innerBounds.height,
+          top: tabPageStore.innerBounds.y,
+          left: 0,
+          display: 'none',
+        }}
+      />
       <WebpageBackground
         style={{
           width: tabPageStore.innerBounds.width,
