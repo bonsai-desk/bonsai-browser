@@ -7,7 +7,6 @@ import { useStore, View } from '../store/tab-page-store';
 import Header from '../components/URLBox';
 import FuzzyTabs from '../components/FuzzyTabs';
 import ClickerParent from '../components/Clicker';
-import Background from '../components/Background';
 import HistoryModal from '../components/History';
 import Columns from '../components/Columns';
 import Footer from '../components/Footer';
@@ -156,66 +155,6 @@ const DebugModal = observer(() => {
   );
 });
 
-const Canvas = styled.canvas`
-  position: absolute;
-  z-index: -1;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-`;
-
-function useWindowSize(
-  w: number,
-  h: number
-): { width: number; height: number } {
-  // Initialize state with undefined width/height so server and client renders match
-  // Learn more here: https://joshwcomeau.com/react/the-perils-of-rehydration/
-  const [windowSize, setWindowSize] = useState({
-    width: w,
-    height: h,
-  });
-  useEffect(() => {
-    // Handler to call on window resize
-    function handleResize() {
-      // Set window width/height to state
-      setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    }
-    // Add event listener
-    window.addEventListener('resize', handleResize);
-    // Call handler right away so state gets updated with initial window size
-    handleResize();
-    // Remove event listener on cleanup
-    return () => window.removeEventListener('resize', handleResize);
-  }, []); // Empty array ensures that effect is only run on mount
-  return windowSize;
-}
-
-function paintVignette(
-  ws: { width: number; height: number },
-  canvas: HTMLCanvasElement
-) {
-  const context = canvas.getContext('2d');
-  if (context) {
-    const { width } = ws;
-    canvas.width = width;
-    const { height } = ws;
-    canvas.height = height;
-    const grd = context.createLinearGradient(0, 0, canvas.width, canvas.height);
-
-    grd.addColorStop(0, 'rgb(76,89,199)');
-    grd.addColorStop(1, 'rgb(97,151,219)');
-
-    // grd.addColorStop(0, 'rgb(76,89,199)');
-    // grd.addColorStop(1, 'rgb(0,0,0)');
-    context.fillStyle = grd;
-    context.fillRect(0, 0, canvas.width, canvas.height);
-  }
-}
-
 const FloatingShadow = styled.div`
   position: fixed;
   top: 0;
@@ -230,19 +169,16 @@ const FloatingShadow = styled.div`
   margin: 57px 10px 10px 10px;
 `;
 
+const Background = styled.div`
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  overflow: hidden;
+  background-color: #e5e1e7;
+`;
+
 const Home = observer(() => {
   const { tabPageStore } = useStore();
-
-  const ws = useWindowSize(window.innerWidth, window.innerHeight);
-
-  const canvasRef = useCallback(
-    (node: HTMLCanvasElement) => {
-      if (node !== null) {
-        paintVignette(ws, node);
-      }
-    },
-    [ws]
-  );
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -289,7 +225,6 @@ const Home = observer(() => {
       <HistoryModal />
       <DebugModal />
       <SettingsModal />
-      <Canvas ref={canvasRef} />
     </Background>
   );
 });
