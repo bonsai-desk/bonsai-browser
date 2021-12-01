@@ -2,10 +2,10 @@ import styled from 'styled-components';
 import React, { useEffect, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
 import { runInAction } from 'mobx';
-import { ipcRenderer } from 'electron';
 import { tagSideBarWidth } from '../constants';
-import { useStore, View } from '../store/tab-page-store';
+import { useStore } from '../store/tab-page-store';
 import { baseUrl } from '../utils/utils';
+import WorkspaceContent from './WorkspaceContent';
 
 const Bounds = styled.div`
   position: absolute;
@@ -81,7 +81,7 @@ const Tag = styled.div`
   }
 `;
 
-const TagSidebar = observer(() => {
+const TagContent = observer(() => {
   const { tabPageStore, historyStore, workspaceStore } = useStore();
 
   const tab = tabPageStore.openTabs[historyStore.active];
@@ -97,11 +97,74 @@ const TagSidebar = observer(() => {
     tabPageStore.tagBoxRef = tagBoxRef;
   }, [tabPageStore]);
 
+  return (
+    <>
+      <PageTitle>{title === '' ? 'New Tab' : title}</PageTitle>
+      <Divider />
+      <Title>Add Tag:</Title>
+      <TagSearch
+        ref={tagBoxRef}
+        onFocus={() => {
+          runInAction(() => {
+            tabPageStore.tagBoxFocus = true;
+          });
+        }}
+        onBlur={() => {
+          runInAction(() => {
+            tabPageStore.tagBoxFocus = false;
+          });
+        }}
+      />
+      <AddTagButton
+        onClick={() => {
+          if (tagBoxRef.current) {
+            const tag = tagBoxRef.current.value.trim();
+            if (tag !== '') {
+              workspaceStore.addTag(tabBaseUrl, tag);
+            }
+          }
+        }}
+      >
+        Add Tag
+      </AddTagButton>
+      <Divider />
+      <Title>Tags:</Title>
+      {/* {tags.map((tag) => { */}
+      {/*  return ( */}
+      {/*    <div key={tag}> */}
+      {/*      <Tag */}
+      {/*        onClick={() => { */}
+      {/*          tabPageStore.View = View.Tag; */}
+      {/*          ipcRenderer.send('click-main'); */}
+      {/*        }} */}
+      {/*      > */}
+      {/*        {tag} */}
+      {/*      </Tag> */}
+      {/*      <AddTagButton */}
+      {/*        style={{ marginLeft: 30, marginTop: 2 }} */}
+      {/*        onClick={() => { */}
+      {/*          workspaceStore.removeTag(tabBaseUrl, tag); */}
+      {/*        }} */}
+      {/*      > */}
+      {/*        X */}
+      {/*      </AddTagButton> */}
+      {/*    </div> */}
+      {/*  ); */}
+      {/* })} */}
+      <Divider />
+      <Title>Related Tags:</Title>
+    </>
+  );
+});
+
+const TagSidebar = observer(() => {
   // const tagsMap = workspaceStore.tags.get(tabBaseUrl);
   // let tags: string[] = [];
   // if (tagsMap) {
   //   tags = Array.from(tagsMap.keys());
   // }
+
+  const { tabPageStore } = useStore();
 
   return (
     <Bounds
@@ -113,60 +176,7 @@ const TagSidebar = observer(() => {
       }}
     >
       <Border>
-        <PageTitle>{title === '' ? 'New Tab' : title}</PageTitle>
-        <Divider />
-        <Title>Add Tag:</Title>
-        <TagSearch
-          ref={tagBoxRef}
-          onFocus={() => {
-            runInAction(() => {
-              tabPageStore.tagBoxFocus = true;
-            });
-          }}
-          onBlur={() => {
-            runInAction(() => {
-              tabPageStore.tagBoxFocus = false;
-            });
-          }}
-        />
-        <AddTagButton
-          onClick={() => {
-            if (tagBoxRef.current) {
-              const tag = tagBoxRef.current.value.trim();
-              if (tag !== '') {
-                workspaceStore.addTag(tabBaseUrl, tag);
-              }
-            }
-          }}
-        >
-          Add Tag
-        </AddTagButton>
-        <Divider />
-        <Title>Tags:</Title>
-        {/* {tags.map((tag) => { */}
-        {/*  return ( */}
-        {/*    <div key={tag}> */}
-        {/*      <Tag */}
-        {/*        onClick={() => { */}
-        {/*          tabPageStore.View = View.Tag; */}
-        {/*          ipcRenderer.send('click-main'); */}
-        {/*        }} */}
-        {/*      > */}
-        {/*        {tag} */}
-        {/*      </Tag> */}
-        {/*      <AddTagButton */}
-        {/*        style={{ marginLeft: 30, marginTop: 2 }} */}
-        {/*        onClick={() => { */}
-        {/*          workspaceStore.removeTag(tabBaseUrl, tag); */}
-        {/*        }} */}
-        {/*      > */}
-        {/*        X */}
-        {/*      </AddTagButton> */}
-        {/*    </div> */}
-        {/*  ); */}
-        {/* })} */}
-        <Divider />
-        <Title>Related Tags:</Title>
+        <WorkspaceContent />
       </Border>
     </Bounds>
   );
