@@ -152,7 +152,9 @@ const TitleBar = observer(() => {
           }}
           onBlur={() => {
             setUrlFocus(false);
-            tabPageStore.urlBoxFocus = false;
+            runInAction(() => {
+              tabPageStore.urlBoxFocus = false;
+            });
             if (urlBoxRef.current != null) {
               urlBoxRef.current.blur();
               window.getSelection()?.removeAllRanges();

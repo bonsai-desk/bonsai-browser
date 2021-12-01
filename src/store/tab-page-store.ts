@@ -29,6 +29,7 @@ export enum View {
   Navigator,
   NavigatorDebug,
   Settings,
+  Tag,
 }
 
 export default class TabPageStore {
@@ -39,13 +40,16 @@ export default class TabPageStore {
   }
 
   public set View(view: View) {
+    // return if view is the same as before
     if (this.view === view) {
       return;
     }
-    if (view === View.Tabs && this.view !== View.Tabs) {
+
+    this.view = view;
+
+    if (view === View.Tabs) {
       this.hoveringUrlInput = true;
     }
-    this.view = view;
     if (this.activeGroupBoxRef !== null) {
       this.activeGroupBoxRef.current?.blur();
       this.activeGroupBoxRef = null;
@@ -85,6 +89,8 @@ export default class TabPageStore {
 
   historyBoxRef: RefObject<HTMLInputElement> | null = null;
 
+  tagBoxRef: RefObject<HTMLInputElement> | null = null;
+
   activeGroupBoxRef: RefObject<HTMLInputElement> | null = null;
 
   editingGroupId = '';
@@ -114,6 +120,8 @@ export default class TabPageStore {
   seenEmailForm: boolean | undefined = false;
 
   urlBoxFocus = false;
+
+  tagBoxFocus = false;
 
   fuzzySelectedTab(): [boolean, TabPageTab | Instance<typeof Item>] | null {
     if (this.fuzzySelectionIndex[1] === 0) {
@@ -194,7 +202,7 @@ export default class TabPageStore {
     }
 
     if (this.view === View.Navigator) {
-      if (this.urlBoxFocus) {
+      if (this.urlBoxFocus || this.tagBoxFocus) {
         return;
       }
     }
@@ -688,8 +696,9 @@ export default class TabPageStore {
       .setSession(session.refresh_token)
       .then((data) => {
         const { session: liveSession } = data;
-        this.session = liveSession;
-        // console.log('refreshed', liveSession);
+        runInAction(() => {
+          this.session = liveSession;
+        });
         ipcRenderer.send('refresh-session', liveSession);
         return 0;
       })

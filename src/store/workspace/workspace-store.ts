@@ -9,10 +9,25 @@ import { Workspace } from './workspace';
 import { ItemGroup } from './item-group';
 import { TabPageTab } from '../../interfaces/tab';
 
+// const Tag = types.model({
+//   id: types.identifier,
+//   title: types.string,
+// });
+//
+// const Page = types.model({
+//   id: types.identifier,
+//   url: types.string,
+//   tags: types.map(types.reference(Tag)),
+// });
+
 const WorkspaceStore = types
   .model({
     version: types.number,
     workspaces: types.map(Workspace),
+
+    // tags: types.map(Tag),
+    // pages: types.map(Page),
+    // tags: types.map(types.map(types.boolean)),
   })
   .volatile(() => ({
     snapshotPath: '',
@@ -78,6 +93,18 @@ const WorkspaceStore = types
         }
       });
       destroy(workspace);
+    },
+    addTag(baseUrl: string, tag: string) {
+      // if (!self.tags.has(baseUrl)) {
+      //   self.tags.set(baseUrl, {});
+      // }
+      // self.tags.get(baseUrl)?.set(tag, true);
+    },
+    removeTag(baseUrl: string, tag: string) {
+      // if (!self.tags.has(baseUrl)) {
+      //   return;
+      // }
+      // self.tags.get(baseUrl)?.delete(tag);
     },
   }));
 

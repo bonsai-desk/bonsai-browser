@@ -19,7 +19,7 @@ import windowFixedUpdate from './calculate-window-physics';
 import { windowHasView } from './utils';
 import { floatingSize, makeWebContentsSafe } from './wm-utils';
 import MixpanelManager from './mixpanel-manager';
-import { ICON_PNG, ICON_PNG_2, ICON_SMALL_PNG } from '../main_constants';
+import { ICON_PNG, ICON_PNG_2, ICON_SMALL_PNG } from '../main-constants';
 
 function updateIfNeeded() {
   // eslint-disable-next-line global-require

@@ -20,3 +20,13 @@ export const SUPABASE_URL = 'https://mxwuygijohmfakerdlfz.supabase.co';
 
 export const SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTYzNjgzNDE5MywiZXhwIjoxOTUyNDEwMTkzfQ.SpYlL8rJZG6Ij6OHczyb1p6wuVl3Cl-n-dblTrYFs1Q';
+
+export const floatingTitleBarHeight = 37;
+export const floatingTitleBarSpacing = 10;
+export const floatingPadding = 10;
+
+export const headerHeight = 71;
+
+export const tagSideBarWidth = 300;
+
+export const dragThresholdSquared = 5 * 5;

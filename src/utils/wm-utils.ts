@@ -12,16 +12,14 @@ import fs from 'fs';
 import { INavigateData, IWebView } from './interfaces';
 import { parseMap, urlToMapKey } from './utils';
 import { floatingWindowEdgeMargin } from './calculate-window-target';
-import { LOWER_BOUND, ONBOARDING_HTML } from '../constants';
-import { ICON_SMALL_PNG } from '../main_constants';
-
-export const floatingTitleBarHeight = 37;
-export const floatingTitleBarSpacing = 10;
-export const floatingPadding = 10;
-
-export const tagSideBarWidth = 0;
-
-export const dragThresholdSquared = 5 * 5;
+import {
+  floatingPadding,
+  floatingTitleBarHeight,
+  floatingTitleBarSpacing,
+  LOWER_BOUND,
+  ONBOARDING_HTML,
+} from '../constants';
+import { ICON_SMALL_PNG } from '../main-constants';
 
 const DEBUG = false;
 
@@ -191,7 +189,7 @@ export function resizePeekView(
 
 export function resizeFindView(
   view: BrowserView,
-  headerHeight: number,
+  yOffset: number,
   pageInnerBounds: Electron.Rectangle
 ) {
   const findViewWidth = 350;
@@ -203,7 +201,7 @@ export function resizeFindView(
       pageInnerBounds.width -
       findViewWidth -
       findViewMarginRight,
-    y: pageInnerBounds.y + headerHeight,
+    y: pageInnerBounds.y + yOffset,
     width: findViewWidth,
     height: findViewHeight,
   });
@@ -215,9 +213,20 @@ export function currentWindowSize(window: BrowserWindow): [number, number] {
 }
 
 export function innerBounds(window: BrowserWindow): Electron.Rectangle {
-  const ratio = 15;
-  const padding = Math.floor(window.getBounds().height / ratio);
-  return innerRectangle(4 / 3, currentWindowSize(window), padding);
+  // const ratio = 15;
+  // const padding = Math.floor(window.getBounds().height / ratio);
+  // return innerRectangle(4 / 3, currentWindowSize(window), padding);
+
+  const windowBounds = window.getBounds();
+  const topPadding = 70;
+  const padding = 50;
+
+  return {
+    x: padding,
+    y: topPadding,
+    width: windowBounds.width - padding * 2,
+    height: windowBounds.height - topPadding - padding,
+  };
 }
 
 export function resizeOverlayView(view: BrowserView, windowSize: number[]) {

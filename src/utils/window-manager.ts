@@ -17,17 +17,23 @@ import { vec2 } from 'gl-matrix';
 import Fuse from 'fuse.js';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { headerHeight } from './tab-view';
 import {
+  dragThresholdSquared,
   FIND_HTML,
+  floatingPadding,
+  floatingTitleBarHeight,
+  floatingTitleBarSpacing,
+  headerHeight,
   OVERLAY_HTML,
   PRELOAD,
   TAB_PAGE,
+  tagSideBarWidth,
   URL_PEEK_HTML,
   VIBRANCY,
 } from '../constants';
 import {
   base64ImgToDisk,
+  baseUrl,
   get16Favicon,
   stringifyMap,
   stringToUrl,
@@ -38,11 +44,7 @@ import {
 import calculateWindowTarget from './calculate-window-target';
 import {
   currentWindowSize,
-  dragThresholdSquared,
-  floatingPadding,
   floatingSize,
-  floatingTitleBarHeight,
-  floatingTitleBarSpacing,
   genHandleWindowOpen,
   goBack,
   handleDidNavigate,
@@ -61,7 +63,6 @@ import {
   resizePeekView,
   saveTabs,
   showOnboardingWindow,
-  tagSideBarWidth,
   translateKeys,
   tryParseJSON,
   tryParseMap,
@@ -257,10 +258,6 @@ export default class WindowManager {
           } else {
             this.mixpanelManager.track('escape while mouse not in inner');
           }
-          // console.log(this.mouseInInner());
-          // const bounds = innerBounds(this.mainWindow);
-          // console.log(bounds);
-          // console.log(screen.getCursorScreenPoint());
           this.toggle(!this.mouseInInner());
         });
       } else if (
@@ -1385,12 +1382,14 @@ export default class WindowManager {
   }
 
   private mouseInInner() {
-    // console.log(screen.getCursorScreenPoint());
-
     const bounds = innerBounds(this.mainWindow);
-    // bounds.x -= this.mainWindow.getBounds().x;
-    // bounds.y -= this.mainWindow.getBounds().y;
-    return pointInBounds(screen.getCursorScreenPoint(), bounds);
+    const mousePos = screen.getCursorScreenPoint();
+    const windowBounds = this.mainWindow.getBounds();
+
+    mousePos.x -= windowBounds.x;
+    mousePos.y -= windowBounds.y;
+
+    return pointInBounds(mousePos, bounds);
   }
 
   private removeTab(id: number, deleteImageOnDisk = true) {
@@ -1876,13 +1875,11 @@ export default class WindowManager {
     ipcMain.on('open-workspace-url', (_, url) => {
       this.tabPageView.webContents.send('close-history-modal');
 
-      const baseUrl = url.split('#')[0];
       let tabExists = false;
 
       Object.values(this.allWebViews).forEach((tabView) => {
         const tabUrl = tabView.view.webContents.getURL();
-        const tabBaseUrl = tabUrl.split('#')[0];
-        if (tabBaseUrl === baseUrl) {
+        if (baseUrl(tabUrl) === baseUrl(url)) {
           this.setTab(tabView.id);
           tabExists = true;
         }

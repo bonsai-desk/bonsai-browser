@@ -14,6 +14,8 @@ import { useStore } from '../store/tab-page-store';
 import TitleBar, { RoundButton } from '../pages/App';
 import { Tab, TabsParent } from './Tab';
 import { TabPageTab } from '../interfaces/tab';
+import TagSidebar from './TagSidebar';
+import { tagSideBarWidth } from '../constants';
 
 const NavigatorParent = styled.div`
   position: absolute;
@@ -227,11 +229,6 @@ const WebpageBackground = styled.div`
   box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
 `;
 
-const TagSideBar = styled.div`
-  position: absolute;
-  background-color: white;
-`;
-
 const Navigator = observer(() => {
   const backRef = useRef(null);
   const { tabPageStore } = useStore();
@@ -239,26 +236,18 @@ const Navigator = observer(() => {
   return (
     <NavigatorParent
       ref={backRef}
-      onClick={(e) => {
+      onMouseDown={(e) => {
         if (backRef.current && e.target === backRef.current) {
           clickMain();
         }
       }}
     >
       <TabsBar
-        x={tabPageStore.innerBounds.x}
+        x={tabPageStore.innerBounds.x + tagSideBarWidth}
         y={tabPageStore.innerBounds.y}
-        width={tabPageStore.innerBounds.width}
+        width={tabPageStore.innerBounds.width - tagSideBarWidth}
       />
-      <TagSideBar
-        style={{
-          width: tabPageStore.innerBounds.x,
-          height: tabPageStore.innerBounds.height,
-          top: tabPageStore.innerBounds.y,
-          left: 0,
-          display: 'none',
-        }}
-      />
+      <TagSidebar />
       <WebpageBackground
         style={{
           width: tabPageStore.innerBounds.width,

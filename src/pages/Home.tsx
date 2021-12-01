@@ -20,28 +20,6 @@ import SettingsModal from '../components/SettingsModal';
 import GlobalStyle from '../GlobalStyle';
 import Storyboard from '../components/StoryBoard';
 
-// const THEME_DARK = {
-//   'link-color': '#2399E7',
-//   'highlight-color': '#FBBE63',
-//   'text-highlight-color': '#FBBE63',
-//   'warning-color': '#DE3C21',
-//   'confirmation-color': '#189E36',
-//   'header-text-color': '#BABABA',
-//   'body-text-color': '#AAAAAA',
-//   'border-color': 'hsla(32, 81%, 90%, 0.08)',
-//   'background-minus-1': '#151515',
-//   'background-minus-2': '#111',
-//   'background-color': '#1A1A1A',
-//   'background-plus-1': '#222',
-//   'background-plus-2': '#333',
-//   'graph-control-bg': '#272727',
-//   'graph-control-color': 'white',
-//   'graph-node-normal': '#909090',
-//   'graph-node-hlt': '#FBBE63',
-//   'graph-link-normal': '#323232',
-//   'error-color': '#fd5243',
-// };
-
 const BackHomeButtonParent = styled.div`
   width: 2rem;
   height: 2rem;
@@ -197,7 +175,7 @@ const Home = observer(() => {
 
   return (
     <Background
-      onClick={(e) => {
+      onMouseDown={(e) => {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         const { id } = e.target;

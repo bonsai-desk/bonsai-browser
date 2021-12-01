@@ -13,7 +13,7 @@ import World from '../../../assets/world.svg';
 export const TabsParent = styled.div`
   overflow: hidden;
   z-index: 1;
-  border-radius: 10px 10px 0 0;
+  border-radius: 0 10px 0 0;
   background-color: #d9dde2;
   width: 500px;
   position: absolute;
