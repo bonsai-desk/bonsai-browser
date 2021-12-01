@@ -2,6 +2,7 @@ import { observer } from 'mobx-react-lite';
 // import { runInAction } from 'mobx';
 import React from 'react';
 import styled, { css } from 'styled-components';
+import { Modal } from '@material-ui/core';
 // import { useStore } from '../store/tab-page-store';
 
 export interface IMiniModal {
@@ -65,14 +66,15 @@ const MiniGenericModal = observer(
     // const { tabPageStore } = useStore();
 
     return (
-      <MiniModalParent active={active}>
-        <MiniModalBackground
-          onClick={() => {
-            if (closeCallback) {
-              closeCallback();
-            }
-          }}
-        >
+      <Modal
+        open={active}
+        onClose={() => {
+          if (closeCallback) {
+            closeCallback();
+          }
+        }}
+      >
+        <MiniModalBackground>
           <MiniModalSheet
             onClick={(e) => {
               e.stopPropagation();
@@ -81,7 +83,7 @@ const MiniGenericModal = observer(
             {children}
           </MiniModalSheet>
         </MiniModalBackground>
-      </MiniModalParent>
+      </Modal>
     );
   }
 );

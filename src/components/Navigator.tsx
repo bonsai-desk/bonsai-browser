@@ -224,6 +224,7 @@ const WebpageBackground = styled.div`
   background-color: white;
   position: absolute;
   border-radius: 20px 20px 0 0;
+  box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
 `;
 
 const TagSideBar = styled.div`

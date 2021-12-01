@@ -7,7 +7,6 @@ import { tryParseJSON } from './wm-utils';
 
 class SaveData {
   data: {
-    loggedIn?: boolean;
     seenEmailForm?: boolean;
     toggledOnce?: boolean;
     session?: Session;

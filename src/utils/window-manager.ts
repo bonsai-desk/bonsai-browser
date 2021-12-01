@@ -156,7 +156,7 @@ export default class WindowManager {
     this.saveData = new SaveData();
     this.mainWindow = mainWindow;
     this.mixpanelManager = mixpanelManager;
-    this.onboardingWindow = this.saveData.data.loggedIn
+    this.onboardingWindow = this.saveData.data.session
       ? null
       : this.initOnboardingWindow();
 
@@ -183,7 +183,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -852,7 +852,7 @@ export default class WindowManager {
     url: string,
     dontActuallyLoadUrl = false,
     scrollHeight = 0,
-    callback?: () => void
+    handleLoaded?: () => void
   ) {
     if (id === -1 || url === '') {
       return;
@@ -870,7 +870,7 @@ export default class WindowManager {
       if (!dontActuallyLoadUrl) {
         await tabView.view.webContents
           .loadURL(fullUrl)
-          .then(callback)
+          .then(handleLoaded)
           .catch(() => {
             // failed to load url
             // todo: handle this
@@ -1356,11 +1356,11 @@ export default class WindowManager {
       return;
     }
     globalShortcut.register(shortCut, () => {
-      if (!this.saveData.data.loggedIn) {
+      if (this.saveData.data.session && this.onboardingWindow) {
         if (!this.viewedToggleAppPageInOnboarding) {
           return;
         }
-        this.saveData.data.loggedIn = true;
+        // this.saveData.data.loggedIn = true;
         this.saveData.data.toggledOnce = true;
         this.saveData.save();
         this.onboardingWindow?.destroy();
@@ -1583,7 +1583,7 @@ export default class WindowManager {
   }
 
   handleAppActivate() {
-    if (this.saveData.data.loggedIn) {
+    if (this.saveData.data.session) {
       this.showWindow();
     } else if (this.onboardingWindow && !this.onboardingWindow.isDestroyed()) {
       this.onboardingWindow.show();
@@ -1691,7 +1691,6 @@ export default class WindowManager {
     this.removeTabs(Object.values(this.allWebViews).map((tab) => tab.id));
     saveTabs(this.allWebViews);
     this.saveData.data.session = undefined;
-    this.saveData.data.loggedIn = false;
     this.saveData.save();
     /// todo maybe reloading this is sketchy?
     this.tabPageView.webContents.loadURL(TAB_PAGE);
@@ -1759,10 +1758,9 @@ export default class WindowManager {
         if (this.onboardingWindowReady) {
           showOnboardingWindow(this.onboardingWindow);
         }
-        if (!this.saveData.data.loggedIn) {
-          return;
+        if (this.saveData.data.session) {
+          this.showWindow();
         }
-        this.showWindow();
       }
     };
     this.tabPageView.webContents.on('did-finish-load', boot);
@@ -2012,6 +2010,10 @@ export default class WindowManager {
     });
     ipcMain.on('sign-in-session', (_, session) => {
       this.tabPageView.webContents.send('session', session);
+      this.saveData.data.session = session;
+      this.saveData.save();
+    });
+    ipcMain.on('refresh-session', (_, session) => {
       this.saveData.data.session = session;
       this.saveData.save();
     });

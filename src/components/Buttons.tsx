@@ -149,6 +149,21 @@ export const Buttons = styled.button`
   }
 `;
 
+export const BigButton = styled(Buttons)`
+  height: 3rem;
+  width: 3rem;
+  border-radius: 50%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  color: ${color('body-text-color', 'opacity-high')};
+
+  svg {
+    color: ${color('body-text-color', 'opacity-high')};
+    font-size: 30px;
+  }
+`;
+
 export const ToggleButton = styled(Buttons)`
   border-radius: 50%;
   padding: 0.375rem 0.5rem;

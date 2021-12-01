@@ -82,19 +82,21 @@ export function makeWebContentsSafe(webContents: WebContents) {
 }
 
 export function makeOnboardingWindow(): BrowserWindow {
+  const w = 1000;
+  const h = 600;
   const onboardingWindow: BrowserWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
-    minWidth: 800,
-    minHeight: 600,
-    maxWidth: 800,
-    maxHeight: 600,
+    width: w,
+    height: h,
+    minWidth: w,
+    minHeight: h,
+    maxWidth: w,
+    maxHeight: h,
     show: false,
     icon: ICON_SMALL_PNG,
     fullscreen: false,
     webPreferences: {
       nodeIntegration: true,
-      devTools: false,
+      devTools: true,
       contextIsolation: false,
     },
   });

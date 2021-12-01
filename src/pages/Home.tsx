@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import { runInAction } from 'mobx';
@@ -13,12 +13,12 @@ import Footer from '../components/Footer';
 import Container from '../components/Container';
 import Workspace from '../components/Workspace';
 import Navigator, { clickMain } from '../components/Navigator';
-import NavigatorDebug from '../components/NavigatorDebug';
 import redX from '../../assets/x-letter.svg';
 import home from '../../assets/home.svg';
 import GenericModal from '../components/GenericModal';
 import SettingsModal from '../components/SettingsModal';
 import GlobalStyle from '../GlobalStyle';
+import Storyboard from '../components/StoryBoard';
 
 // const THEME_DARK = {
 //   'link-color': '#2399E7',
@@ -150,7 +150,7 @@ const DebugModal = observer(() => {
 
   return (
     <GenericModal view={View.NavigatorDebug}>
-      <NavigatorDebug />
+      <Storyboard />
     </GenericModal>
   );
 });

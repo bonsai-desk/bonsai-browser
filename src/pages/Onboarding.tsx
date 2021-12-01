@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { ipcRenderer } from 'electron';
@@ -12,14 +13,18 @@ import {
 import { createClient } from '@supabase/supabase-js';
 import {
   Box,
+  Checkbox,
   CircularProgress,
+  Container,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
   Divider,
+  FormControlLabel,
   FormHelperText,
+  Grid,
   IconButton,
   InputAdornment,
   Stack,
@@ -120,6 +125,14 @@ const BonsaiLogoFocus = styled.div`
   background-position: center center;
 `;
 
+const BonsaiLogoFocusAlt = styled.div`
+  background-image: url(${BonsaiFocusedImg});
+  height: 100%;
+  width: 100%;
+  background-repeat: no-repeat;
+  background-position: center center;
+`;
+
 const LoginArea = styled.div`
   //background-color: gray;
   //background-color: #21252a;
@@ -138,9 +151,9 @@ const ButtonRow = styled.div`
   margin: 0 0 1rem 0;
 `;
 
-const Logo = styled.h1`
-  font-size: 6rem;
-  margin: 0 0 -0.5rem 0;
+const Logo = styled.div`
+  ${'' /* font-size: 6rem; */}
+  ${'' /* background: blue; */}
   &:before {
     display: inline-block;
     width: 0.7em;
@@ -160,6 +173,8 @@ const Center = styled.div`
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+  align-content: center;
+  height: 100%;
 `;
 
 enum Image {
@@ -527,13 +542,14 @@ const CreateAccountPage = () => {
     });
   };
 
+  // todo this is janky
   useEffect(() => {
     if (submitted) {
       setTimeout(() => {
         setValues({ ...values, loginDisabled: false });
       }, 4000);
     }
-  }, [submitted]);
+  }, [submitted, values]);
 
   async function clickLogin() {
     if (!values.loginDisabled) {
@@ -546,8 +562,7 @@ const CreateAccountPage = () => {
           password: values.password,
         });
         if (error) {
-          // setValues({ ...values, loading: false });
-          const msg = error.error_description || error.message;
+          const msg = error.message;
           // setFormError(msg);
           onboardingStore.setFormError(msg);
           history.push('/login');
@@ -565,7 +580,8 @@ const CreateAccountPage = () => {
         }
       } catch (error) {
         // setValues({ ...values, loading: false });
-        const msg = error.error_description || error.message;
+        const u = error as { error_description: string; message: string };
+        const msg = u.error_description || u.message;
         onboardingStore.setFormError(msg);
         history.push('/login');
         // setFormError(msg);
@@ -636,7 +652,9 @@ const CreateAccountPage = () => {
       }
     } catch (error) {
       setValues({ ...values, loading: false });
-      const msg = error.error_description || error.message;
+
+      const u = error as { error_description: string; message: string };
+      const msg = u.error_description || u.message;
       setFormError(msg);
       // alert(error.error_description || error.message);
     } finally {
@@ -652,125 +670,142 @@ const CreateAccountPage = () => {
   };
   return (
     <LoginArea>
-      <Box
-        component="form"
-        sx={{
-          width: 400,
-        }}
-        noValidate
-        autoComplete="off"
-        onSubmit={(e) => {
-          e.preventDefault();
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-          }
-        }}
-      >
-        <Stack spacing={2}>
-          <Typography variant="h5" component="div" gutterBottom>
-            Create your Bonsai Account
-          </Typography>
-          {formError.length > 0 ? (
-            <FormHelperText error>{formError}</FormHelperText>
-          ) : (
-            ''
-          )}
+      <Container>
+        <Grid container spacing={2}>
+          <Grid sx={{ height: '100vh', background: 'transparent' }} item xs={6}>
+            <Center>
+              <Box
+                component="form"
+                sx={{
+                  width: 400,
+                }}
+                noValidate
+                autoComplete="off"
+                onSubmit={(e: React.FormEvent) => {
+                  e.preventDefault();
+                }}
+                onKeyDown={(e: React.KeyboardEvent<HTMLFormElement>) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                  }
+                }}
+              >
+                <Stack spacing={2}>
+                  <Typography variant="h5" component="div" gutterBottom>
+                    Create an account
+                  </Typography>
+                  {formError.length > 0 ? (
+                    <FormHelperText error>{formError}</FormHelperText>
+                  ) : (
+                    ''
+                  )}
 
-          <TextField
-            value={values.email}
-            fullWidth
-            error={values.emailError.length > 0}
-            helperText={values.emailError}
-            label="Email"
-            onChange={(e) => {
-              setValues({
-                ...values,
-                email: e.target.value,
-                emailError: '',
-              });
-            }}
-            onBlur={() => {
-              if (!validateEmail(values.email)) {
-                setValues({
-                  ...values,
-                  emailError: 'Invalid email format',
-                });
-              } else {
-                setValues({ ...values, emailError: '' });
-              }
-            }}
-          />
-          <TextField
-            value={values.password}
-            fullWidth
-            label="Password"
-            variant="outlined"
-            type={values.showPassword ? 'text' : 'password'}
-            onChange={(e) => {
-              setValues({ ...values, password: e.target.value });
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                submit(e);
-              }
-            }}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label="toggle password visibility"
-                    onClick={handleClickShowPassword}
-                    // onMouseDown={handleMouseDownPassword}
-                    edge="end"
-                  >
-                    {values.showPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-          <ButtonRow>
-            <Buttons
-              className="is-primary-lowkey"
-              onClick={(e) => {
-                e.preventDefault();
-                history.push('login');
-              }}
-            >
-              Sign in instead
-            </Buttons>
-            <LoadyButton
-              onClick={() => {
-                submit();
-              }}
-              loading={values.loading}
-            >
-              Continue
-            </LoadyButton>
-          </ButtonRow>
-        </Stack>
-      </Box>
+                  <TextField
+                    value={values.email}
+                    fullWidth
+                    error={values.emailError.length > 0}
+                    helperText={values.emailError}
+                    label="Email"
+                    onChange={(e) => {
+                      setValues({
+                        ...values,
+                        email: e.target.value,
+                        emailError: '',
+                      });
+                    }}
+                    onBlur={() => {
+                      if (!validateEmail(values.email)) {
+                        setValues({
+                          ...values,
+                          emailError: 'Invalid email format',
+                        });
+                      } else {
+                        setValues({ ...values, emailError: '' });
+                      }
+                    }}
+                  />
+                  <TextField
+                    value={values.password}
+                    fullWidth
+                    label="Password"
+                    variant="outlined"
+                    type={values.showPassword ? 'text' : 'password'}
+                    onChange={(e) => {
+                      setValues({ ...values, password: e.target.value });
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        submit();
+                      }
+                    }}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label="toggle password visibility"
+                            onClick={handleClickShowPassword}
+                            // onMouseDown={handleMouseDownPassword}
+                            edge="end"
+                          >
+                            {values.showPassword ? (
+                              <VisibilityOff />
+                            ) : (
+                              <Visibility />
+                            )}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                  <FormControlLabel
+                    value="end"
+                    control={<Checkbox />}
+                    label="Subscribe to updates about Bonsai Browser."
+                    labelPlacement="end"
+                  />
+                  <ButtonRow>
+                    <Buttons
+                      className="is-primary-lowkey"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        history.push('login');
+                      }}
+                    >
+                      Sign in instead
+                    </Buttons>
+                    <LoadyButton
+                      onClick={() => {
+                        submit();
+                      }}
+                      loading={values.loading}
+                    >
+                      Continue
+                    </LoadyButton>
+                  </ButtonRow>
+                </Stack>
+              </Box>
+            </Center>
+          </Grid>
+          <Grid sx={{ background: 'transparent' }} item xs={6}>
+            <Center>
+              <div style={{ height: '100%', width: '90%' }}>
+                <BonsaiLogoFocusAlt />
+              </div>
+            </Center>
+          </Grid>
+        </Grid>
+      </Container>
     </LoginArea>
   );
 };
 
-const VerifyPage = () => {
-  return (
-    <LoginArea>
-      <Stack spacing={2}>
-        <Typography variant="h5" component="div" gutterBottom>
-          Sign in
-        </Typography>
-        <ButtonRow>
-          <Buttons className="is-primary-lowkey">Back</Buttons>
-          <Buttons className="is-primary">Back</Buttons>
-        </ButtonRow>
-      </Stack>
-    </LoginArea>
-  );
-};
+const LogoSquare = styled.div`
+  background-image: url(https://cloudbrowser.io/bonsai-logo.svg);
+  background-repeat: no-repeat;
+  background-size: contain;
+  width: 100%;
+  height: 100%;
+`;
 
 const LoginPage = observer(() => {
   const [values, setValues] = React.useState({
@@ -834,7 +869,7 @@ const LoginPage = observer(() => {
       });
       if (error) {
         setValues({ ...values, loading: false });
-        const msg = error.error_description || error.message;
+        const msg = error.message;
         onboardingStore.setFormError(msg);
       } else {
         console.log(user, session);
@@ -843,9 +878,10 @@ const LoginPage = observer(() => {
         const route = onboardingStore.toggledOnce ? 'toggle' : 'is-a-dashboard';
         history.push(route);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       setValues({ ...values, loading: false });
-      const msg = error.error_description || error.message;
+      const u = error as { error_description: string; message: string };
+      const msg = u.error_description || u.message || ' ';
       onboardingStore.setFormError(msg);
       // alert(error.error_description || error.message);
     } finally {
@@ -862,30 +898,47 @@ const LoginPage = observer(() => {
         }}
         noValidate
         autoComplete="off"
-        onSubmit={(e) => {
+        onSubmit={(e: React.FormEvent) => {
           e.preventDefault();
         }}
-        onKeyDown={(e) => {
+        onKeyDown={(e: React.KeyboardEvent<HTMLFormElement>) => {
           if (e.key === 'Enter') {
             e.preventDefault();
           }
         }}
       >
         <Stack spacing={2}>
-          <div>
-            <Center>
-              <Logo>bonsai</Logo>
-            </Center>
-            <Center>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div style={{ width: '100%', position: 'relative' }}>
               <Typography variant="h5" component="div" gutterBottom>
                 Sign in
               </Typography>
-            </Center>
-            <Center>
-              <Typography variant="h6" component="div" gutterBottom>
-                Use your Bonsai Account
+              <Typography
+                variant="h6"
+                component="div"
+                color="text.secondary"
+                gutterBottom
+              >
+                Welcome back!
               </Typography>
-            </Center>
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  height: '4rem',
+                  width: '4rem',
+                }}
+              >
+                <LogoSquare />
+              </div>
+            </div>
           </div>
           {onboardingStore.formError.length > 0 ? (
             <FormHelperText error>{onboardingStore.formError}</FormHelperText>
@@ -1076,11 +1129,54 @@ const Root = () => {
     setTimeout(() => {
       setView(true);
     }, 250);
-  }, []);
+  }, [history]);
   if (view) {
     return <NotFound />;
   }
   return <div />;
+};
+
+const HeaderParent = styled.div`
+  position: absolute;
+  top: 0;
+  width: 100%;
+`;
+
+const HeaderInner = styled.div`
+  padding: 0.5rem 0 0.5rem 0;
+  ${'' /* background: blue; */}
+`;
+
+const HeaderText = styled(Typography)`
+  ${'' /* background: blue; */}
+  ${'' /* font-size: 6rem; */}
+  ${'' /* background: blue; */}
+  &:before {
+    display: inline-block;
+    width: 0.7em;
+    height: 0.7em;
+    content: '';
+    background-image: url(https://cloudbrowser.io/bonsai-logo.svg);
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: 50% 50%;
+    position: relative;
+    top: 0.0025em;
+    left: -0.1em;
+  }
+`;
+
+const LogoHeader = () => {
+  return (
+    <HeaderParent>
+      <Container>
+        <HeaderInner>
+          <HeaderText variant="h2">bonsai</HeaderText>
+        </HeaderInner>
+        <Divider />
+      </Container>
+    </HeaderParent>
+  );
 };
 
 const Onboarding = () => {

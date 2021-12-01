@@ -43,11 +43,12 @@ export const RoundButton = styled(Buttons)`
 
 const URLBox = styled.input`
   flex-grow: 1;
-  border-radius: 10px;
+  height: 28px;
+  border-radius: 99999px;
+  border: none;
+  background-color: #eff1f2;
   outline: none;
-  border: 2px solid rgba(0, 0, 0, 0.25);
   padding-left: 10px;
-  height: 22px;
   margin: 0 10px 0 10px;
 `;
 

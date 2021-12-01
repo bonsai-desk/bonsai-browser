@@ -19,7 +19,8 @@ const ImageBoardParent = styled(HomeParent)`
   //background-color: darkgray;
   justify-content: center;
   //background-color: red;
-  margin-top: 2rem;
+  margin-top: calc(2rem - 10px);
+  padding-top: 10px;
 `;
 
 // const FakeTab = styled.div`
@@ -61,13 +62,7 @@ const ImageBoard = observer(() => {
               if (tab) {
                 return (
                   <div key={tab.id}>
-                    <Tab
-                      style={{ width: '200px' }}
-                      tab={tab}
-                      hover
-                      active
-                      width={200}
-                    />
+                    <Tab tab={tab} hover active width={200} />
                   </div>
                 );
               }

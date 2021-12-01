@@ -1,6 +1,7 @@
+/* eslint-disable no-console */
 import { makeAutoObservable, runInAction } from 'mobx';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { User, Session } from '@supabase/gotrue-js';
+import { Session } from '@supabase/gotrue-js';
 import { ipcRenderer } from 'electron';
 import { RefObject, createContext, useContext } from 'react';
 import Fuse from 'fuse.js';
@@ -678,7 +679,7 @@ export default class TabPageStore {
   supaClient: SupabaseClient;
 
   refreshSession(session: Session | null) {
-    console.log('refreshSession', session);
+    // console.log('refreshSession', session);
     if (!session || !session.refresh_token) {
       this.clearSession();
       return;
@@ -688,10 +689,12 @@ export default class TabPageStore {
       .then((data) => {
         const { session: liveSession } = data;
         this.session = liveSession;
+        // console.log('refreshed', liveSession);
         ipcRenderer.send('refresh-session', liveSession);
         return 0;
       })
       .catch((error) => {
+        // console.log('refresh error', error);
         ipcRenderer.send('log-data', error);
         this.clearSession();
       });
@@ -699,7 +702,6 @@ export default class TabPageStore {
 
   clearSession() {
     console.log('sign out');
-    this.user = null;
     this.session = null;
     this.supaClient.auth.signOut();
     ipcRenderer.send('clear-session');
@@ -718,11 +720,11 @@ export default class TabPageStore {
     ipcRenderer.send('request-session');
 
     ipcRenderer.on('session', (_, session) => {
-      console.log('got session');
+      // console.log('got session');
       this.refreshSession(session);
     });
 
-    setTimeout(() => {
+    setInterval(() => {
       console.log('refresh');
       this.refreshSession(this.session);
     }, 1000 * 60 * 60);

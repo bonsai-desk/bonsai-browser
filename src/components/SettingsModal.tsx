@@ -1,12 +1,18 @@
 import { observer } from 'mobx-react-lite';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
-import { ExitToApp } from '@material-ui/icons';
 import {
+  ExitToApp,
+  Dashboard,
+  AccountBox,
+  Comment,
+  Keyboard,
+} from '@material-ui/icons';
+import {
+  Toolbar,
   Avatar,
-  Box,
   Button,
   Dialog,
   DialogActions,
@@ -21,6 +27,9 @@ import {
   ListItemText,
   Stack,
   Typography,
+  Grid,
+  Paper,
+  Container,
 } from '@material-ui/core';
 import GenericModal from './GenericModal';
 import { useStore, View } from '../store/tab-page-store';
@@ -36,41 +45,11 @@ import {
 } from './StretchButton';
 import refreshIcon from '../../assets/refresh.svg';
 import { bindEquals, globalKeybindValid, showKeys } from '../store/keybinds';
-import { ButtonRow, Buttons } from './Buttons';
-import { color } from '../utils/jsutils';
-import { validateEmail } from '../utils/utils';
-
-const SettingsParent = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-content: center;
-  justify-content: center;
-`;
-
-const Settings = styled.div`
-  color: rgb(50, 50, 50);
-  width: 50rem;
-  background-color: rgba(0, 0, 0, 0.05);
-  border-radius: 10px;
-  padding: 1rem;
-`;
+import Storyboard from './StoryBoard';
 
 const Title = styled.div`
   font-size: 2rem;
   font-weight: bold;
-`;
-
-const SubTitle = styled.div`
-  color: rgb(50, 50, 50);
-  //font-size: 2rem;
-  font-weight: bold;
-`;
-
-const SettingsSection = styled.div`
-  margin: 1rem 0 0 0;
-  #settings-row {
-    margin: 0.4rem 0 0 0;
-  }
 `;
 
 export const Row = styled.div`
@@ -127,14 +106,6 @@ export const ResetButton = styled(ButtonBase)`
 
 export const ResetButtonIcon = styled.img`
   -webkit-user-drag: none;
-`;
-
-const Message = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  height: 2rem;
-  width: 100%;
 `;
 
 export interface IRebindModal {
@@ -246,16 +217,6 @@ const KeyBindButton = observer(({ id, clickable = false }: IKeyBindButton) => {
   return <StretchButtonInert>{bind?.showCode()}</StretchButtonInert>;
 });
 
-const EmailContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-`;
-
-const EmailInput = styled.input`
-  width: auto;
-`;
-
 function ConfirmLogout() {
   const [open, setOpen] = React.useState(false);
 
@@ -308,7 +269,7 @@ function ConfirmLogout() {
   );
 }
 
-const Account = observer(() => {
+const AccountInfo = observer(() => {
   const { tabPageStore } = useStore();
   let email = 'email@address.com';
 
@@ -321,10 +282,8 @@ const Account = observer(() => {
     email = user.email;
   }
 
-  console.log(session, user);
-
   return (
-    <Box sx={{ width: '100%', maxWidth: 360, bgcolor: 'background.paper' }}>
+    <Paper sx={{ width: '20rem' }}>
       <nav aria-label="secondary mailbox folders">
         <div style={{ padding: '2rem 0 2rem 0' }}>
           <Stack spacing={2} justifyContent="center" alignItems="center">
@@ -339,117 +298,90 @@ const Account = observer(() => {
           <ConfirmLogout />
         </List>
       </nav>
-    </Box>
+    </Paper>
   );
 });
 
-const SettingsModal = observer(() => {
-  const { tabPageStore } = useStore();
+const AccountPage = observer(() => {
+  return (
+    <Stack spacing={2}>
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+        }}
+      >
+        <AccountInfo />
+      </div>
+      <Divider />
+      <div>woo</div>
+    </Stack>
+  );
+});
 
-  const emailBoxRef = useRef<HTMLInputElement>(null);
-  const emailErrorRef = useRef<HTMLDivElement>(null);
+interface IMenuItem {
+  Icon: React.ReactNode;
+  title: Page;
+  Page: React.ReactNode;
+  selected?: boolean;
+}
+
+interface IMenuList {
+  menuItems: IMenuItem[];
+  setActivePage: (name: Page) => void;
+}
+
+const MenuList = observer(({ menuItems, setActivePage }: IMenuList) => {
+  return (
+    <Paper sx={{ height: '100%' }}>
+      <Toolbar />
+      <Divider />
+      <List>
+        {menuItems.map(({ Icon, title, selected }) => (
+          <ListItemButton
+            selected={selected}
+            key={title}
+            onClick={() => {
+              setActivePage(title);
+            }}
+          >
+            <ListItemIcon>{Icon}</ListItemIcon>
+            <ListItemText primary={title} />
+          </ListItemButton>
+        ))}
+      </List>
+      <Divider />
+    </Paper>
+  );
+});
+
+const PaddedPaper = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <Paper>
+      <Container sx={{ padding: '1rem 0 1rem 0' }}>{children}</Container>
+    </Paper>
+  );
+};
+
+const Settings = observer(() => {
+  // const { tabPageStore } = useStore();
 
   return (
-    <>
-      <GenericModal view={View.Settings}>
-        <SettingsParent>
-          <Settings>
-            <Title>Account</Title>
-            <Account />
+    <div>
+      <Stack spacing={4}>
+        <div>
+          <h4>General</h4>
+          <PaddedPaper>
+            Toggle app <KeyBindButton id="toggle-app" clickable />
+          </PaddedPaper>
+        </div>
 
-            <Title>Settings</Title>
+        <div>
+          <h4>Web Page</h4>
 
-            <EmailContainer>
-              <SettingsSection
-                style={{
-                  width: '50%',
-                  position: 'relative',
-                  padding: '0.75rem',
-                  borderRadius: '10px',
-                  backgroundColor: tabPageStore.seenEmailForm
-                    ? color('background-minus-2')
-                    : color('link-color', 'opacity-lower'),
-                }}
-              >
-                <SubTitle>Mailing List</SubTitle>
-                <Message ref={emailErrorRef} />
-                <div>
-                  <div
-                    style={{
-                      padding: '0 0 2rem 0',
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <ButtonRow>
-                      <SubTitle>Email:</SubTitle>
-                      <EmailInput
-                        type="email"
-                        ref={emailBoxRef}
-                        onInput={() => {
-                          if (emailErrorRef.current !== null) {
-                            emailErrorRef.current.innerHTML = '';
-                          }
-                        }}
-                      />
-                      <Buttons
-                        className="is-primary"
-                        onClick={() => {
-                          if (
-                            emailBoxRef.current !== null &&
-                            emailErrorRef.current !== null
-                          ) {
-                            if (validateEmail(emailBoxRef.current.value)) {
-                              ipcRenderer.send(
-                                'set-email',
-                                emailBoxRef.current.value
-                              );
-                              emailBoxRef.current.value = '';
-                              emailErrorRef.current.innerHTML =
-                                'email submitted';
-                            } else {
-                              emailErrorRef.current.innerHTML = 'invalid email';
-                            }
-                          }
-                        }}
-                      >
-                        Submit
-                      </Buttons>
-                    </ButtonRow>
-                  </div>
-                  <ButtonRow
-                    style={{
-                      justifyContent: 'flex-end',
-                    }}
-                  >
-                    <Buttons
-                      className="is-error"
-                      style={{
-                        display: tabPageStore.seenEmailForm
-                          ? 'none'
-                          : 'inline-flex',
-                      }}
-                      onClick={() => {
-                        ipcRenderer.send('dismiss-email-notification');
-                      }}
-                    >
-                      Clear Notification
-                    </Buttons>
-                  </ButtonRow>
-                </div>
-              </SettingsSection>
-            </EmailContainer>
-
-            <SettingsSection>
-              <SubTitle>General</SubTitle>
-              <div>
-                Toggle app <KeyBindButton id="toggle-app" clickable />
-              </div>
-            </SettingsSection>
-
-            <SettingsSection>
-              <SubTitle>Web Page</SubTitle>
+          <PaddedPaper>
+            <Stack spacing={1}>
               <div id="settings-row">
                 Search is always focused when you toggle{' '}
                 <KeyBindButton id="toggle-app" /> into an active web page.
@@ -471,20 +403,19 @@ const SettingsModal = observer(() => {
               <div id="settings-row">
                 Close web page <KeyBindButton id="close-web-page" />
               </div>
-            </SettingsSection>
-
-            <SettingsSection>
-              <SubTitle>Search</SubTitle>
+            </Stack>
+          </PaddedPaper>
+        </div>
+        <div>
+          <h4>Search</h4>
+          <PaddedPaper>
+            <Stack spacing={1}>
               <div id="settings-row">
                 Clear search: <KeyBindButton id="clear-fuzzy-search" />
               </div>
               <div id="settings-row">
                 {' '}
                 You can select results in fuzzy search with keyboard.
-              </div>
-              <div id="settings-row">
-                Left <KeyBindButton id="fuzzy-left-arrow" /> or{' '}
-                <KeyBindButton id="fuzzy-left" clickable />
               </div>
               <div id="settings-row">
                 Down <KeyBindButton id="fuzzy-down-arrow" /> or{' '}
@@ -495,25 +426,87 @@ const SettingsModal = observer(() => {
                 <KeyBindButton id="fuzzy-up" clickable />
               </div>
               <div id="settings-row">
+                Left <KeyBindButton id="fuzzy-left-arrow" /> or{' '}
+                <KeyBindButton id="fuzzy-left" clickable />
+              </div>
+              <div id="settings-row">
                 Right <KeyBindButton id="fuzzy-right-arrow" /> or{' '}
                 <KeyBindButton id="fuzzy-right" clickable />
               </div>
               <div id="settings-row">
                 Open page: <KeyBindButton id="select-fuzzy-result" />
               </div>
-            </SettingsSection>
+            </Stack>
+          </PaddedPaper>
+        </div>
 
-            <SettingsSection>
-              <SubTitle>Home</SubTitle>
+        <div>
+          <h4>Home</h4>
+          <PaddedPaper>
+            <Stack spacing={1}>
               <div>
                 Toggle workspace <KeyBindButton id="toggle-workspace" />
               </div>
               <div id="settings-row">
                 Hide <KeyBindButton id="hide-from-home" />
               </div>
-            </SettingsSection>
-          </Settings>
-        </SettingsParent>
+            </Stack>
+          </PaddedPaper>
+        </div>
+      </Stack>
+    </div>
+  );
+});
+
+enum Page {
+  Account = 'Account',
+  KeyBinds = 'Speed Hacks',
+  StoryBoard = 'Story Board',
+  Feedback = 'Feedback',
+}
+
+function getActivePage(activePage: Page, menuItems: IMenuItem[]) {
+  let page: React.ReactNode = <div>not found</div>;
+  menuItems.forEach((item) => {
+    if (activePage === item.title) {
+      page = item.Page;
+    }
+  });
+  return page;
+}
+
+const SettingsModal = observer(() => {
+  const { tabPageStore } = useStore();
+
+  const [activePage, setActivePage] = useState<Page>(Page.Account);
+
+  let menuItems: IMenuItem[] = [
+    { Icon: <AccountBox />, title: Page.Account, Page: <AccountPage /> },
+    { Icon: <Keyboard />, title: Page.KeyBinds, Page: <Settings /> },
+    { Icon: <Dashboard />, title: Page.StoryBoard, Page: <Storyboard /> },
+    { Icon: <Comment />, title: Page.Feedback, Page: <div>Feedback</div> },
+  ];
+
+  menuItems = menuItems.map((item) => {
+    return { ...item, selected: activePage === item.title };
+  });
+
+  const setActive = (name: Page) => {
+    setActivePage(name);
+  };
+
+  const ActivePage = getActivePage(activePage, menuItems);
+  return (
+    <>
+      <GenericModal view={View.Settings}>
+        <Grid sx={{ height: '100%' }} container spacing={0}>
+          <Grid item xs={3}>
+            <MenuList menuItems={menuItems} setActivePage={setActive} />
+          </Grid>
+          <Grid sx={{ height: '100%', overflowY: 'auto' }} item xs={9}>
+            <Container>{ActivePage}</Container>
+          </Grid>
+        </Grid>
       </GenericModal>
 
       <RebindModal active={!!tabPageStore.rebindModalId} />

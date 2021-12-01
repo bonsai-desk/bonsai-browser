@@ -59,6 +59,7 @@ const TabImage = observer(({ imgUrl, selected }: ITabImage) => {
 });
 
 const CardTabParent = styled(TabParent)`
+  box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
   background-color: #d9dde2;
   #tab-inner {
     border-right: none;
