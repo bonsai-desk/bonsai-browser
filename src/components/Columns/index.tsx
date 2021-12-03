@@ -1,18 +1,13 @@
 import { observer } from 'mobx-react-lite';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import styled from 'styled-components';
 // import { Grid } from '@material-ui/core';
 import { SpringGrid } from 'react-stonecutter';
-import { useStore, View } from '../../store/tab-page-store';
+import { TabViewType, useStore, View } from '../../store/tab-page-store';
 import Column from './Column';
 import SelectWorkspaceModal from './SelectWorkspaceModal';
-import HomeParent from '../Home';
+import HomeParent, { HomeParentScrollBars } from '../Home';
 import Tab from '../Card';
-
-enum HomeStyle {
-  Columns,
-  ImageBoard,
-}
 
 const ImageBoardParent = styled(HomeParent)`
   //align-items: center;
@@ -82,25 +77,24 @@ const ImageBoard = observer(() => {
   );
 });
 
-const Columns = observer(() => {
+const HomePageTabs = observer(() => {
   const { tabPageStore } = useStore();
-  const [homeStyle] = useState(HomeStyle.ImageBoard);
 
-  switch (homeStyle) {
-    case HomeStyle.Columns:
+  switch (tabPageStore.TabView) {
+    case TabViewType.Column:
       return (
-        <HomeParent>
+        <HomeParentScrollBars>
           {tabPageStore.tabPageColumns().map((column) => {
             return <Column column={column} key={column.domain} />;
           })}
           <SelectWorkspaceModal />
-        </HomeParent>
+        </HomeParentScrollBars>
       );
-    case HomeStyle.ImageBoard:
+    case TabViewType.Grid:
       return <ImageBoard />;
     default:
-      return <HomeParent>default</HomeParent>;
+      return <HomeParent>Invalid tabView</HomeParent>;
   }
 });
 
-export default Columns;
+export default HomePageTabs;

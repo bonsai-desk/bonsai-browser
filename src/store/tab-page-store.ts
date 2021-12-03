@@ -32,6 +32,11 @@ export enum View {
   Tag,
 }
 
+export enum TabViewType {
+  Grid,
+  Column,
+}
+
 export default class TabPageStore {
   private view: View = View.Tabs;
 
@@ -61,6 +66,17 @@ export default class TabPageStore {
     if (view !== View.FuzzySearch) {
       this.urlText = '';
     }
+  }
+
+  private tabView = TabViewType.Grid;
+
+  public get TabView() {
+    return this.tabView;
+  }
+
+  public set TabView(tabView: TabViewType) {
+    this.tabView = tabView;
+    ipcRenderer.send('update-tab-view', tabView);
   }
 
   navigatorTabModal = [0, 0];
@@ -955,6 +971,11 @@ export default class TabPageStore {
       }
       clearTimeout(this.timeoutHandle);
       this.timeoutHandle = -1;
+    });
+    ipcRenderer.on('set-tabview', (_, tabView) => {
+      runInAction(() => {
+        this.tabView = tabView;
+      });
     });
   }
 }

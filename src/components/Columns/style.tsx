@@ -7,7 +7,7 @@ export const ColumnParent = styled.div`
   flex-direction: column;
   user-select: none;
   color: white;
-  width: 10rem;
+  width: 200px;
   padding: 0 0.5rem 0 0.5rem;
 `;
 export const ColumnHeaderParent = styled.div`

@@ -198,6 +198,12 @@ export default class WindowManager {
         'set-seenEmailForm',
         this.saveData.data.seenEmailForm
       );
+      if (this.saveData.data.tabView) {
+        this.tabPageView.webContents.send(
+          'set-tabview',
+          this.saveData.data.tabView
+        );
+      }
 
       this.setDisplay(this.display);
     });
@@ -2027,6 +2033,10 @@ export default class WindowManager {
     });
     ipcMain.on('viewed-toggle-page', () => {
       this.viewedToggleAppPageInOnboarding = true;
+    });
+    ipcMain.on('update-tab-view', (_, tabView) => {
+      this.saveData.data.tabView = tabView;
+      this.saveData.save();
     });
   }
 }

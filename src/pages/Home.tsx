@@ -8,7 +8,7 @@ import Header from '../components/URLBox';
 import FuzzyTabs from '../components/FuzzyTabs';
 import ClickerParent from '../components/Clicker';
 import HistoryModal from '../components/History';
-import Columns from '../components/Columns';
+import HomePageTabs from '../components/Columns';
 import Footer from '../components/Footer';
 import Container from '../components/Container';
 import Workspace from '../components/Workspace';
@@ -91,7 +91,7 @@ const MainContent = observer(() => {
   if (tabPageStore.View === View.FuzzySearch) {
     return <FuzzyTabs />;
   }
-  return <Columns />;
+  return <HomePageTabs />;
 });
 
 const Content = observer(() => {

@@ -10,6 +10,7 @@ class SaveData {
     seenEmailForm?: boolean;
     toggledOnce?: boolean;
     session?: Session;
+    tabView?: number;
   };
 
   constructor() {

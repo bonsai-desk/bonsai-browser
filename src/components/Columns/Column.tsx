@@ -20,7 +20,7 @@ const Column = observer(({ column }: { column: TabPageColumn }) => {
     >
       <ColumnHeader column={column} />
       {column.tabs.map((tab) => {
-        return <Card width={201} key={tab.id} tab={tab} hover active={false} />;
+        return <Card width={200} key={tab.id} tab={tab} hover active />;
       })}
     </ColumnParent>
   );
