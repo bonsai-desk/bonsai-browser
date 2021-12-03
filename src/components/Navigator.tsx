@@ -15,7 +15,7 @@ import TitleBar, { RoundButton } from '../pages/App';
 import { Tab, TabsParent } from './Tab';
 import { TabPageTab } from '../interfaces/tab';
 import TagSidebar from './TagSidebar';
-import { tagSideBarWidth } from '../constants';
+import { headerHeight, tagSideBarWidth } from '../constants';
 
 const NavigatorParent = styled.div`
   position: absolute;
@@ -225,8 +225,6 @@ const TabsBar = observer(({ x, y, width }: ITabsBar) => {
 const WebpageBackground = styled.div`
   background-color: white;
   position: absolute;
-  border-radius: 20px 20px 0 0;
-  box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
 `;
 
 const Navigator = observer(() => {
@@ -250,10 +248,10 @@ const Navigator = observer(() => {
       <TagSidebar />
       <WebpageBackground
         style={{
-          width: tabPageStore.innerBounds.width,
-          height: tabPageStore.innerBounds.height,
-          top: tabPageStore.innerBounds.y,
-          left: tabPageStore.innerBounds.x,
+          left: tabPageStore.innerBounds.x + tagSideBarWidth,
+          top: tabPageStore.innerBounds.y + headerHeight,
+          width: tabPageStore.innerBounds.width - tagSideBarWidth,
+          height: tabPageStore.innerBounds.height - headerHeight,
           display: process.platform === 'darwin' ? 'none' : 'block',
         }}
       />
