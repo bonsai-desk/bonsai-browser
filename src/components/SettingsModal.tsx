@@ -1,36 +1,53 @@
 import { observer } from 'mobx-react-lite';
+import TimeAgo from 'javascript-time-ago';
+import en from 'javascript-time-ago/locale/en.json';
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
+import * as crypto from 'crypto';
 import {
-  ExitToApp,
-  Dashboard,
   AccountBox,
+  Backup,
+  CloudDownload,
   Comment,
+  Dashboard,
+  Delete,
+  ExitToApp,
   Keyboard,
 } from '@material-ui/icons';
 import {
-  Toolbar,
+  Alert,
   Avatar,
+  Box,
   Button,
+  Card,
+  CardActions,
+  CardContent,
+  CircularProgress,
+  Container,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
   Divider,
+  Fab,
+  Grid,
+  IconButton,
+  LinearProgress,
   List,
   ListItem,
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Stack,
-  Typography,
-  Grid,
+  Modal,
   Paper,
-  Container,
+  Stack,
+  Tooltip,
+  Typography,
 } from '@material-ui/core';
+import { applySnapshot, getSnapshot } from 'mobx-state-tree';
 import GenericModal from './GenericModal';
 import { useStore, View } from '../store/tab-page-store';
 import MiniGenericModal from './MiniGenericModal';
@@ -46,8 +63,21 @@ import {
 import refreshIcon from '../../assets/refresh.svg';
 import { bindEquals, globalKeybindValid, showKeys } from '../store/keybinds';
 import Storyboard from './StoryBoard';
+import HeaderText from './HeaderText';
+import SettingsPage from './SettingsPage';
+import { color } from '../utils/jsutils';
 
-const Title = styled.div`
+TimeAgo.addDefaultLocale(en);
+const timeAgo = new TimeAgo('en-US');
+
+interface ISnapshot {
+  id: number;
+  data: any;
+  inserted_at: string;
+  user_id: string;
+}
+
+const RebindTitle = styled.div`
   font-size: 2rem;
   font-weight: bold;
 `;
@@ -108,6 +138,22 @@ export const ResetButtonIcon = styled.img`
   -webkit-user-drag: none;
 `;
 
+const CenterModalBox = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <Box
+      sx={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        minWidth: 275,
+      }}
+    >
+      {children}
+    </Box>
+  );
+};
+
 export interface IRebindModal {
   active: boolean;
   closeCallback?: () => void;
@@ -133,7 +179,7 @@ const RebindModal = observer(({ active }: IRebindModal) => {
     <MiniGenericModal active={active}>
       <RebindContainer>
         <Row>
-          <Title>Shortcut: {bind ? bind.name : '?'}</Title>
+          <RebindTitle>Shortcut: {bind ? bind.name : '?'}</RebindTitle>
         </Row>
         <Row style={{ justifyContent: 'center' }}>
           <div>
@@ -302,21 +348,494 @@ const AccountInfo = observer(() => {
   );
 });
 
-const AccountPage = observer(() => {
+function hashNumber(num: number): string {
+  return crypto
+    .createHash('sha1')
+    .update(num.toString())
+    .digest('hex')
+    .slice(0, 4);
+}
+
+interface IAccountPageValues {
+  snapshots: ISnapshot[];
+  loading: boolean;
+  error: string;
+}
+
+const CreateNewBackupCard = observer(
+  ({
+    handleClose,
+    handleCreate,
+  }: {
+    handleCreate: (snapshot: ISnapshot) => void;
+    handleClose: () => void;
+  }) => {
+    const { tabPageStore, workspaceStore } = useStore();
+    const [values, setValues] = useState<{
+      loading: boolean;
+      snapshot?: ISnapshot;
+    }>({
+      loading: false,
+      snapshot: undefined,
+    });
+    const myId = tabPageStore.session?.user?.id;
+    function submit() {
+      const snapshotData = getSnapshot(workspaceStore);
+      console.log(snapshotData);
+      setValues({ ...values, loading: true });
+      // eslint-disable-next-line promise/catch-or-return
+      tabPageStore.supaClient
+        .from('wssnapshot')
+        .insert([{ data: snapshotData, user_id: myId }])
+        .then(({ data, error }) => {
+          if (error) {
+            console.log(error);
+          } else if (data) {
+            const row = data[0];
+            handleCreate(row);
+            setValues({ ...values, loading: false, snapshot: row });
+          } else {
+            console.log('fail');
+          }
+          return 0;
+        });
+    }
+    return (
+      <Card>
+        {values.loading ? <LinearProgress /> : ''}
+        <CardContent>
+          <Typography gutterBottom variant="h5" component="div">
+            Create New Backup?
+          </Typography>
+
+          <Stack spacing={1}>
+            {values.snapshot ? (
+              <Alert>Backup ({hashNumber(values.snapshot.id)}) Created!</Alert>
+            ) : (
+              ''
+            )}
+            <Alert severity="info">
+              You can use your backups on other devices!
+            </Alert>
+          </Stack>
+        </CardContent>
+        <CardActions>
+          <Button
+            size="small"
+            onClick={() => {
+              handleClose();
+            }}
+          >
+            {values.snapshot ? 'Done' : 'Cancel'}
+          </Button>
+          {values.snapshot ? (
+            ''
+          ) : (
+            <Button
+              onClick={() => {
+                submit();
+              }}
+              disabled={values.loading}
+              color="primary"
+              size="small"
+            >
+              Upload
+            </Button>
+          )}
+        </CardActions>
+      </Card>
+    );
+  }
+);
+
+const DeleteSnapshotCard = observer(
+  ({
+    handleClose,
+    snapshot,
+    deleteCallback,
+  }: {
+    handleClose: () => void;
+    snapshot: ISnapshot;
+    deleteCallback: (id: number) => void;
+  }) => {
+    const { tabPageStore } = useStore();
+    const title = hashNumber(snapshot.id);
+    const [values, setValues] = useState({ loading: false, error: '' });
+    const submit = () => {
+      // eslint-disable-next-line promise/catch-or-return
+      tabPageStore.supaClient
+        .from('wssnapshot')
+        .delete()
+        .eq('id', snapshot.id)
+        // eslint-disable-next-line promise/always-return
+        .then(({ error }) => {
+          // console.log(error, data);
+          if (error) {
+            setValues({ ...values, error: error.message });
+          } else {
+            deleteCallback(snapshot.id);
+            handleClose();
+          }
+          return 0;
+        });
+    };
+    return (
+      <Card>
+        {values.loading ? <LinearProgress /> : ''}
+        <CardContent>
+          <Typography gutterBottom variant="h5" component="div">
+            Delete Backup ({title})?
+          </Typography>
+          {values.error ? <Alert severity="error">{values.error}</Alert> : ''}
+          <Alert severity="warning">This can not be reversed!</Alert>
+        </CardContent>
+        <CardActions>
+          <Button
+            size="small"
+            onClick={() => {
+              handleClose();
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              submit();
+            }}
+            disabled={values.loading}
+            color="error"
+            size="small"
+          >
+            Delete
+          </Button>
+        </CardActions>
+      </Card>
+    );
+  }
+);
+
+const ApplyBackupCard = observer(
+  ({
+    snapshot,
+    handleClose,
+  }: {
+    snapshot: ISnapshot;
+    handleClose: () => void;
+  }) => {
+    const title = hashNumber(snapshot.id);
+    const [values, setValues] = useState({ loading: false, done: false });
+    const { tabPageStore, workspaceStore } = useStore();
+    async function submit() {
+      setValues({ ...values, loading: true });
+      const { data, error } = await tabPageStore.supaClient
+        .from('wssnapshot')
+        .select('data')
+        .eq('id', snapshot.id);
+      if (error) {
+        setValues({ ...values, loading: false });
+      } else if (data && data[0]) {
+        applySnapshot(workspaceStore, data[0].data);
+        setValues({ ...values, loading: false, done: true });
+      }
+    }
+    return (
+      <Card>
+        {values.loading ? <LinearProgress /> : ''}
+        <CardContent>
+          <Typography gutterBottom variant="h5" component="div">
+            Apply Backup ({title})?
+          </Typography>
+          <Stack spacing={1}>
+            {values.done ? (
+              <Alert severity="success">Backup Applied.</Alert>
+            ) : (
+              ''
+            )}
+            <Alert severity="warning">
+              This will overwrite your current workspace data.
+            </Alert>
+          </Stack>
+        </CardContent>
+        <CardActions>
+          <Button
+            size="small"
+            onClick={() => {
+              handleClose();
+            }}
+          >
+            {values.done ? 'Done' : 'Cancel'}
+          </Button>
+          {!values.done ? (
+            <Button
+              disabled={values.loading}
+              onClick={() => {
+                submit();
+              }}
+              color="primary"
+              size="small"
+            >
+              Apply
+            </Button>
+          ) : (
+            ''
+          )}
+        </CardActions>
+      </Card>
+    );
+  }
+);
+
+const WorkspaceSnapshot = ({
+  data,
+  deleteCallback,
+}: {
+  deleteCallback: (id: number) => void;
+  data: ISnapshot;
+}) => {
+  const [values, setValues] = useState({
+    deleteOpen: false,
+    downloadOpen: false,
+  });
+
+  const [timeAgoStr, setTimeAgoStr] = useState('');
+
+  const title = hashNumber(data.id);
+
+  function setTime() {
+    const date = Date.parse(data.inserted_at);
+    const timeStr = timeAgo.format(date);
+    if (typeof timeStr === 'string') {
+      setTimeAgoStr(timeStr);
+    }
+  }
+
+  useEffect(() => {
+    const handle = setInterval(() => {
+      setTime();
+    }, 5000);
+    setTime();
+    return () => {
+      clearInterval(handle);
+    };
+  });
+
   return (
-    <Stack spacing={2}>
+    <Paper>
       <div
         style={{
+          padding: '1rem',
           display: 'flex',
           flexWrap: 'wrap',
-          justifyContent: 'center',
+          justifyContent: 'space-between',
         }}
       >
-        <AccountInfo />
+        <span>
+          <Typography color={color('header-text-color')} variant="h6">
+            Backup ({title})
+          </Typography>
+          <Typography
+            variant="body1"
+            color={color('body-text-color', 'opacity-high')}
+          >
+            {timeAgoStr}
+          </Typography>
+        </span>
+        <Stack alignItems="center" direction="row" spacing={1}>
+          <div>
+            <Tooltip title="Apply Snapshot">
+              <IconButton
+                onClick={() => {
+                  setValues({ ...values, downloadOpen: true });
+                }}
+              >
+                <CloudDownload />
+              </IconButton>
+            </Tooltip>
+          </div>
+          <div>
+            <Tooltip title="Delete">
+              <IconButton>
+                <Delete
+                  onClick={() => {
+                    setValues({ ...values, deleteOpen: true });
+                  }}
+                />
+              </IconButton>
+            </Tooltip>
+          </div>
+        </Stack>
       </div>
-      <Divider />
-      <div>woo</div>
-    </Stack>
+      <Modal
+        open={values.downloadOpen}
+        onClose={() => {
+          setValues({ ...values, downloadOpen: false });
+        }}
+      >
+        <CenterModalBox>
+          <ApplyBackupCard
+            snapshot={data}
+            handleClose={() => {
+              setValues({ ...values, downloadOpen: false });
+            }}
+          />
+        </CenterModalBox>
+      </Modal>
+      <Modal
+        open={values.deleteOpen}
+        onClose={() => {
+          setValues({ ...values, deleteOpen: false });
+        }}
+      >
+        <CenterModalBox>
+          <DeleteSnapshotCard
+            snapshot={data}
+            deleteCallback={deleteCallback}
+            handleClose={() => {
+              setValues({ ...values, deleteOpen: false });
+            }}
+          />
+        </CenterModalBox>
+      </Modal>
+    </Paper>
+  );
+};
+
+const AccountPage = observer(() => {
+  const [values, setValues] = useState<IAccountPageValues>({
+    snapshots: [],
+    loading: true,
+    error: '',
+  });
+  const [createOpen, setCreateOpen] = useState(false);
+  const { tabPageStore } = useStore();
+
+  const myId = tabPageStore.session?.user?.id;
+
+  const fetchSnapshots = () => {
+    if (!myId) {
+      console.log('No user id');
+    } else {
+      // interface ISnapshot {
+      //   id: number;
+      //   data: any;
+      //   inserted_at: string;
+      //   user_id: string;
+      // }
+
+      // eslint-disable-next-line promise/catch-or-return
+      tabPageStore.supaClient
+        .from('wssnapshot')
+        .select('id, inserted_at, user_id')
+        .eq('user_id', myId)
+        .order('inserted_at', { ascending: false })
+        .then(({ error, data }) => {
+          // eslint-disable-next-line promise/always-return
+          if (error) {
+            console.log(error);
+            setValues({ ...values, loading: false, error: error.message });
+          } else if (data) {
+            setValues({ ...values, loading: false, snapshots: data });
+          }
+        });
+    }
+  };
+
+  const handleCreate = (snapshot: ISnapshot) => {
+    console.log('snapshot created', snapshot);
+    fetchSnapshots();
+  };
+
+  useEffect(() => {
+    setValues({ ...values, loading: true });
+    const handle = setInterval(() => {
+      fetchSnapshots();
+    }, 3000);
+    fetchSnapshots();
+    return () => {
+      clearInterval(handle);
+    };
+  }, []);
+
+  const deleteCallback = (snapshotId: number) => {
+    const newSnapshots = values.snapshots.filter(
+      (snapshot) => snapshot.id !== snapshotId
+    );
+    setValues({ ...values, snapshots: newSnapshots });
+  };
+
+  return (
+    <SettingsPage title="Account & Backup">
+      <Stack spacing={4}>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            padding: '2rem 0 2rem 0',
+          }}
+        >
+          <AccountInfo />
+        </div>
+        <Divider />
+        <Stack spacing={4}>
+          <Grid container direction="row" justifyContent="space-between">
+            <Typography variant="h6">Cloud Workspace Backups</Typography>
+            <Stack direction="row" spacing={2}>
+              <div>
+                <Fab
+                  color="primary"
+                  variant="extended"
+                  onClick={() => {
+                    setCreateOpen(true);
+                  }}
+                >
+                  <Backup sx={{ mr: 1 }} />
+                  Backup Current Data
+                </Fab>
+              </div>
+            </Stack>
+          </Grid>
+          {values.loading ? (
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+              }}
+            >
+              <CircularProgress />
+            </div>
+          ) : (
+            <Stack spacing={1}>
+              {values.snapshots.map((snapshot) => {
+                return (
+                  <WorkspaceSnapshot
+                    deleteCallback={deleteCallback}
+                    key={snapshot.id}
+                    data={snapshot}
+                  />
+                );
+              })}
+            </Stack>
+          )}
+        </Stack>
+      </Stack>
+      <Modal
+        open={createOpen}
+        onClose={() => {
+          setCreateOpen(false);
+        }}
+      >
+        <CenterModalBox>
+          <CreateNewBackupCard
+            handleClose={() => {
+              setCreateOpen(false);
+            }}
+            handleCreate={handleCreate}
+          />
+        </CenterModalBox>
+      </Modal>
+    </SettingsPage>
   );
 });
 
@@ -335,9 +854,20 @@ interface IMenuList {
 const MenuList = observer(({ menuItems, setActivePage }: IMenuList) => {
   return (
     <Paper sx={{ height: '100%' }}>
-      <Toolbar />
-      <Divider />
       <List>
+        <ListItem>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              width: '100%',
+            }}
+          >
+            <HeaderText variant="h3">bonsai</HeaderText>
+          </div>
+        </ListItem>
+        <Divider component="li" />
         {menuItems.map(({ Icon, title, selected }) => (
           <ListItemButton
             selected={selected}
@@ -367,18 +897,26 @@ const PaddedPaper = ({ children }: { children: React.ReactNode }) => {
 const Settings = observer(() => {
   // const { tabPageStore } = useStore();
 
+  const Title = ({ children }: { children: React.ReactNode }) => {
+    return (
+      <Typography gutterBottom variant="h6">
+        {children}
+      </Typography>
+    );
+  };
+
   return (
-    <div>
+    <SettingsPage title="Key Binds">
       <Stack spacing={4}>
         <div>
-          <h4>General</h4>
+          <Title>General</Title>
           <PaddedPaper>
             Toggle app <KeyBindButton id="toggle-app" clickable />
           </PaddedPaper>
         </div>
 
         <div>
-          <h4>Web Page</h4>
+          <Title>Web Page</Title>
 
           <PaddedPaper>
             <Stack spacing={1}>
@@ -407,7 +945,7 @@ const Settings = observer(() => {
           </PaddedPaper>
         </div>
         <div>
-          <h4>Search</h4>
+          <Title>Search</Title>
           <PaddedPaper>
             <Stack spacing={1}>
               <div id="settings-row">
@@ -441,7 +979,7 @@ const Settings = observer(() => {
         </div>
 
         <div>
-          <h4>Home</h4>
+          <Title>Home</Title>
           <PaddedPaper>
             <Stack spacing={1}>
               <div>
@@ -454,13 +992,13 @@ const Settings = observer(() => {
           </PaddedPaper>
         </div>
       </Stack>
-    </div>
+    </SettingsPage>
   );
 });
 
 enum Page {
   Account = 'Account',
-  KeyBinds = 'Speed Hacks',
+  KeyBinds = 'Key Binds',
   StoryBoard = 'Story Board',
   Feedback = 'Feedback',
 }
@@ -475,6 +1013,10 @@ function getActivePage(activePage: Page, menuItems: IMenuItem[]) {
   return page;
 }
 
+const FeedbackPage = observer(() => {
+  return <SettingsPage title="Feedback">woo</SettingsPage>;
+});
+
 const SettingsModal = observer(() => {
   const { tabPageStore } = useStore();
 
@@ -484,7 +1026,7 @@ const SettingsModal = observer(() => {
     { Icon: <AccountBox />, title: Page.Account, Page: <AccountPage /> },
     { Icon: <Keyboard />, title: Page.KeyBinds, Page: <Settings /> },
     { Icon: <Dashboard />, title: Page.StoryBoard, Page: <Storyboard /> },
-    { Icon: <Comment />, title: Page.Feedback, Page: <div>Feedback</div> },
+    { Icon: <Comment />, title: Page.Feedback, Page: <FeedbackPage /> },
   ];
 
   menuItems = menuItems.map((item) => {
@@ -499,7 +1041,7 @@ const SettingsModal = observer(() => {
   return (
     <>
       <GenericModal view={View.Settings}>
-        <Grid sx={{ height: '100%' }} container spacing={0}>
+        <Grid sx={{ width: '1000px', height: '100%' }} container spacing={0}>
           <Grid item xs={3}>
             <MenuList menuItems={menuItems} setActivePage={setActive} />
           </Grid>

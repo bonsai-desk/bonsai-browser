@@ -98,7 +98,7 @@ export function makeOnboardingWindow(): BrowserWindow {
       contextIsolation: false,
     },
   });
-  onboardingWindow.webContents.openDevTools({ mode: 'detach' });
+  // onboardingWindow.webContents.openDevTools({ mode: 'detach' });
   // todo let the window know if did finish onboarding
   makeWebContentsSafe(onboardingWindow.webContents);
   onboardingWindow.webContents.loadURL(ONBOARDING_HTML);
@@ -219,7 +219,7 @@ export function innerBounds(window: BrowserWindow): Electron.Rectangle {
 
   const windowBounds = window.getBounds();
   const topPadding = 70;
-  const padding = 50;
+  const padding = 20;
 
   return {
     x: padding,

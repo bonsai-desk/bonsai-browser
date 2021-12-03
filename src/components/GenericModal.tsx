@@ -15,10 +15,9 @@ const ModalPaper = styled.div`
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -80%);
+  transform: translate(-50%, -50%);
   background: ${color('background-color')};
-  width: 1000px;
-  height: 50%;
+  height: 80%;
   overflow: hidden;
   border-radius: 5px;
 `;

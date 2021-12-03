@@ -4,6 +4,7 @@ import { observer } from 'mobx-react-lite';
 import { runInAction } from 'mobx';
 import { MoreHoriz } from '@material-ui/icons';
 import { Stack } from '@material-ui/core';
+import { ipcRenderer } from 'electron';
 import { useStore, View } from '../../store/tab-page-store';
 import { BigButton } from '../Buttons';
 
@@ -64,7 +65,11 @@ const Header = observer(({ onViewPage }: { onViewPage: boolean }) => {
         <div>
           <BigButton
             className="is-active"
+            // disabled
             onClick={() => {
+              if (tabPageStore.View === View.Navigator) {
+                ipcRenderer.send('click-main');
+              }
               runInAction(() => {
                 tabPageStore.View = View.Settings;
               });

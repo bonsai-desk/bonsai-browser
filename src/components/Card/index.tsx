@@ -53,7 +53,7 @@ const TabImage = observer(({ imgUrl, selected }: ITabImage) => {
       ) : (
         ''
       )}
-      <TabImg src={`file://${imgFileUrl}`} />
+      <TabImg draggable={false} src={`file://${imgFileUrl}`} />
     </TabImageParent>
   );
 });

@@ -267,6 +267,7 @@
     "fuse.js": "^6.4.6",
     "gl-matrix": "^3.3.0",
     "history": "^5.0.0",
+    "javascript-time-ago": "^2.3.10",
     "lodash": "^4.17.21",
     "mixpanel": "^0.13.0",
     "mobx": "^6.3.2",

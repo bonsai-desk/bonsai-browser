@@ -9,16 +9,16 @@ import WorkspaceContent from './WorkspaceContent';
 
 const Bounds = styled.div`
   position: absolute;
-  background-color: white;
+  //background-color: white;
   z-index: 1;
-  border-radius: 10px 0 0 0;
-  color: black;
+  //border-radius: 10px 0 0 0;
+  //color: black;
 `;
 
 const Border = styled.div`
   width: calc(100% - 1px);
   height: 100%;
-  border-right: 1px solid gray;
+  //border-right: 1px solid gray;
 `;
 
 const PageTitle = styled.div`

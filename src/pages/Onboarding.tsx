@@ -2,13 +2,13 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { ipcRenderer } from 'electron';
-import { User, Session } from '@supabase/gotrue-js';
+import { Session, User } from '@supabase/gotrue-js';
 import {
-  useLocation,
-  Switch,
-  Route,
   MemoryRouter as Router,
+  Route,
+  Switch,
   useHistory,
+  useLocation,
 } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 import {
@@ -38,8 +38,8 @@ import BonsaiLogoImg from '../../assets/bonsai-logo.svg';
 import BonsaiLogoExcitedImg from '../../assets/bonsai-logo-excited.svg';
 import BonsaiFocusedImg from '../../assets/bonsai-focused.svg';
 import {
-  KeyBindBox,
   DynamicKeyBindBox,
+  KeyBindBox,
   ResetButton,
   ResetButtonIcon,
   Row,
@@ -48,13 +48,14 @@ import { bindEquals, globalKeybindValid, showKeys } from '../store/keybinds';
 import refreshIcon from '../../assets/refresh.svg';
 import { chord, validateEmail } from '../utils/utils';
 import {
-  Button as GrayButton,
   BlueButton,
+  Button as GrayButton,
   InertButtonStyle,
 } from '../components/StretchButton';
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from '../constants';
 import { Buttons } from '../components/Buttons';
 import GlobalStyle from '../GlobalStyle';
+import HeaderText from '../components/HeaderText';
 
 const Header = styled.div`
   font-weight: bold;
@@ -872,8 +873,8 @@ const LoginPage = observer(() => {
         const msg = error.message;
         onboardingStore.setFormError(msg);
       } else {
-        console.log(user, session);
-        // ipcRenderer.send('sign-in-user', user);
+        console.log(user, session, error);
+        ipcRenderer.send('sign-in-user', user);
         ipcRenderer.send('sign-in-session', session);
         const route = onboardingStore.toggledOnce ? 'toggle' : 'is-a-dashboard';
         history.push(route);
@@ -1145,25 +1146,6 @@ const HeaderParent = styled.div`
 const HeaderInner = styled.div`
   padding: 0.5rem 0 0.5rem 0;
   ${'' /* background: blue; */}
-`;
-
-const HeaderText = styled(Typography)`
-  ${'' /* background: blue; */}
-  ${'' /* font-size: 6rem; */}
-  ${'' /* background: blue; */}
-  &:before {
-    display: inline-block;
-    width: 0.7em;
-    height: 0.7em;
-    content: '';
-    background-image: url(https://cloudbrowser.io/bonsai-logo.svg);
-    background-repeat: no-repeat;
-    background-size: contain;
-    background-position: 50% 50%;
-    position: relative;
-    top: 0.0025em;
-    left: -0.1em;
-  }
 `;
 
 const LogoHeader = () => {
