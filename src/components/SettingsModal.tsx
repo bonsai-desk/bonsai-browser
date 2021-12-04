@@ -69,6 +69,7 @@ import Storyboard from './StoryBoard';
 import HeaderText from './HeaderText';
 import SettingsPage from './SettingsPage';
 import { color } from '../utils/jsutils';
+import { version } from '../package.json';
 
 TimeAgo.addDefaultLocale(en);
 const timeAgo = new TimeAgo('en-US');
@@ -757,7 +758,7 @@ const AccountPage = observer(() => {
     return () => {
       clearInterval(handle);
     };
-  }, []);
+  }, [values, fetchSnapshots]);
 
   const deleteCallback = (snapshotId: number) => {
     const newSnapshots = values.snapshots.filter(
@@ -1036,13 +1037,13 @@ const FeedbackPage = observer(() => {
     done: false,
   });
   const myId = tabPageStore.session?.user?.id;
+  const email = tabPageStore.session?.user?.email || 'email@address.com';
   async function submit() {
     setValues({ ...values, loading: true });
-    const email = tabPageStore.session?.user?.email || 'email@address.com';
     if (myId) {
       const { error } = await tabPageStore.supaClient
         .from('feedback')
-        .insert([{ data: values.feedback, user_id: myId, email }]);
+        .insert([{ data: values.feedback, user_id: myId, email, version }]);
       if (error) {
         console.log(error);
       } else {
@@ -1056,59 +1057,86 @@ const FeedbackPage = observer(() => {
   }
   return (
     <SettingsPage title="Feedback">
-      <Card>
-        {values.loading ? <LinearProgress /> : ''}
-        <CardContent>
-          {!values.done ? (
-            <div>
-              <Typography
-                gutterBottom
-                color={color('body-text-color', 'opacity-high')}
+      <Stack spacing={2}>
+        <div>
+          <Card>
+            <CardContent>
+              <Stack
+                direction="row"
+                spacing={2}
+                justifyContent="center"
+                alignItems="center"
               >
-                All thoughts are appreciated 😊
-              </Typography>
-              <TextField
-                value={values.feedback}
-                onChange={(e) => {
-                  setValues({ ...values, feedback: e.target.value });
+                <Avatar>{email[0].toUpperCase()}</Avatar>
+                <div>
+                  <Typography color={color('header-text-color')} variant="h6">
+                    {email}
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    color={color('body-text-color', 'opacity-high')}
+                  >
+                    v{version}
+                  </Typography>
+                </div>
+              </Stack>
+            </CardContent>
+          </Card>
+        </div>
+        <Card>
+          {values.loading ? <LinearProgress /> : ''}
+          <CardContent>
+            {!values.done ? (
+              <div>
+                <Typography
+                  gutterBottom
+                  color={color('body-text-color', 'opacity-high')}
+                >
+                  All thoughts are appreciated 😊
+                </Typography>
+                <TextField
+                  value={values.feedback}
+                  onChange={(e) => {
+                    setValues({ ...values, feedback: e.target.value });
+                  }}
+                  fullWidth
+                  multiline
+                  rows={4}
+                />
+              </div>
+            ) : (
+              <div>
+                <Alert severity="success">Feedback sent!</Alert>
+              </div>
+            )}
+          </CardContent>
+          <CardActions>
+            {!values.done ? (
+              <Button
+                disabled={values.loading || !values.feedback}
+                onClick={() => {
+                  submit();
                 }}
-                fullWidth
-                multiline
-                rows={4}
-              />
-            </div>
-          ) : (
-            <div>
-              <Alert severity="success">Feedback sent!</Alert>
-            </div>
-          )}
-        </CardContent>
-        <CardActions>
-          {!values.done ? (
-            <Button
-              disabled={values.loading || !values.feedback}
-              onClick={() => {
-                submit();
-              }}
-            >
-              Send Feedback
-            </Button>
-          ) : (
-            <Button
-              onClick={() => {
-                setValues({
-                  ...values,
-                  loading: false,
-                  done: false,
-                  feedback: '',
-                });
-              }}
-            >
-              Done
-            </Button>
-          )}
-        </CardActions>
-      </Card>
+              >
+                Send Feedback
+              </Button>
+            ) : (
+              <Button
+                onClick={() => {
+                  setValues({
+                    ...values,
+                    loading: false,
+                    done: false,
+                    feedback: '',
+                  });
+                }}
+              >
+                Done
+              </Button>
+            )}
+          </CardActions>
+        </Card>
+      </Stack>
     </SettingsPage>
   );
 });
