@@ -44,6 +44,7 @@ import {
   Modal,
   Paper,
   Stack,
+  TextField,
   Tooltip,
   Typography,
 } from '@material-ui/core';
@@ -654,12 +655,12 @@ const WorkspaceSnapshot = ({
           </div>
           <div>
             <Tooltip title="Delete">
-              <IconButton>
-                <Delete
-                  onClick={() => {
-                    setValues({ ...values, deleteOpen: true });
-                  }}
-                />
+              <IconButton
+                onClick={() => {
+                  setValues({ ...values, deleteOpen: true });
+                }}
+              >
+                <Delete />
               </IconButton>
             </Tooltip>
           </div>
@@ -1014,7 +1015,88 @@ function getActivePage(activePage: Page, menuItems: IMenuItem[]) {
 }
 
 const FeedbackPage = observer(() => {
-  return <SettingsPage title="Feedback">woo</SettingsPage>;
+  const { tabPageStore } = useStore();
+  const [values, setValues] = useState({
+    loading: false,
+    feedback: '',
+    done: false,
+  });
+  const myId = tabPageStore.session?.user?.id;
+  async function submit() {
+    setValues({ ...values, loading: true });
+    const email = tabPageStore.session?.user?.email || 'email@address.com';
+    if (myId) {
+      const { error } = await tabPageStore.supaClient
+        .from('feedback')
+        .insert([{ data: values.feedback, user_id: myId, email }]);
+      if (error) {
+        console.log(error);
+      } else {
+        setValues({ ...values, loading: false, done: true });
+      }
+    }
+
+    setTimeout(() => {
+      setValues({ ...values, done: true });
+    });
+  }
+  return (
+    <SettingsPage title="Feedback">
+      <Card>
+        {values.loading ? <LinearProgress /> : ''}
+        <CardContent>
+          {!values.done ? (
+            <div>
+              <Typography
+                gutterBottom
+                color={color('body-text-color', 'opacity-high')}
+              >
+                All thoughts are appreciated 😊
+              </Typography>
+              <TextField
+                value={values.feedback}
+                onChange={(e) => {
+                  setValues({ ...values, feedback: e.target.value });
+                }}
+                fullWidth
+                multiline
+                rows={4}
+              />
+            </div>
+          ) : (
+            <div>
+              <Alert severity="success">Feedback sent!</Alert>
+            </div>
+          )}
+        </CardContent>
+        <CardActions>
+          {!values.done ? (
+            <Button
+              disabled={values.loading || !values.feedback}
+              onClick={() => {
+                submit();
+              }}
+            >
+              Send Feedback
+            </Button>
+          ) : (
+            <Button
+              onClick={() => {
+                setValues({
+                  ...values,
+                  loading: false,
+                  done: false,
+                  feedback: '',
+                });
+              }}
+            >
+              Done
+            </Button>
+          )}
+        </CardActions>
+      </Card>
+    </SettingsPage>
+  );
 });
 
 const SettingsModal = observer(() => {
