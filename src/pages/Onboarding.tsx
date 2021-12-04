@@ -1022,7 +1022,7 @@ const LoginPage = observer(() => {
                 submit();
               }}
             >
-              Continue
+              Sign In
             </LoadyButton>
           </ButtonRow>
           <Divider />
