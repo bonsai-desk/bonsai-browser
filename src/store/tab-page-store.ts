@@ -262,11 +262,18 @@ export default class TabPageStore {
         break;
       case 'Tab':
         if (this.View === View.Tabs) {
-          ipcRenderer.send(
-            'mixpanel-track',
-            'toggle on workspace with tab key'
-          );
-          this.View = View.WorkSpace;
+          // ipcRenderer.send(
+          //   'mixpanel-track',
+          //   'toggle on workspace with tab key'
+          // );
+          // this.View = View.WorkSpace;
+          runInAction(() => {
+            if (this.tabView === TabViewType.Grid) {
+              this.tabView = TabViewType.Column;
+            } else {
+              this.tabView = TabViewType.Grid;
+            }
+          });
         } else if (this.View === View.WorkSpace) {
           ipcRenderer.send(
             'mixpanel-track',
@@ -274,6 +281,7 @@ export default class TabPageStore {
           );
           this.View = View.Tabs;
         }
+        e.preventDefault();
         break;
       case 'ArrowUp':
         this.fuzzyUp(e);
