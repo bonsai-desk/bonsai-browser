@@ -1121,9 +1121,16 @@ const SettingsModal = observer(() => {
   let menuItems: IMenuItem[] = [
     { Icon: <AccountBox />, title: Page.Account, Page: <AccountPage /> },
     { Icon: <Keyboard />, title: Page.KeyBinds, Page: <Settings /> },
-    { Icon: <Dashboard />, title: Page.StoryBoard, Page: <Storyboard /> },
     { Icon: <Comment />, title: Page.Feedback, Page: <FeedbackPage /> },
   ];
+
+  if (process.env.NODE_ENV === 'development') {
+    menuItems.push({
+      Icon: <Dashboard />,
+      title: Page.StoryBoard,
+      Page: <Storyboard />,
+    });
+  }
 
   menuItems = menuItems.map((item) => {
     return { ...item, selected: activePage === item.title };
