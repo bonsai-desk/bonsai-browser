@@ -677,14 +677,16 @@ const WorkspaceSnapshot = ({
           setValues({ ...values, downloadOpen: false });
         }}
       >
-        <CenterModalBox>
-          <ApplyBackupCard
-            snapshot={data}
-            handleClose={() => {
-              setValues({ ...values, downloadOpen: false });
-            }}
-          />
-        </CenterModalBox>
+        <Box>
+          <CenterModalBox>
+            <ApplyBackupCard
+              snapshot={data}
+              handleClose={() => {
+                setValues({ ...values, downloadOpen: false });
+              }}
+            />
+          </CenterModalBox>
+        </Box>
       </Modal>
       <Modal
         open={values.deleteOpen}
@@ -692,15 +694,17 @@ const WorkspaceSnapshot = ({
           setValues({ ...values, deleteOpen: false });
         }}
       >
-        <CenterModalBox>
-          <DeleteSnapshotCard
-            snapshot={data}
-            deleteCallback={deleteCallback}
-            handleClose={() => {
-              setValues({ ...values, deleteOpen: false });
-            }}
-          />
-        </CenterModalBox>
+        <Box>
+          <CenterModalBox>
+            <DeleteSnapshotCard
+              snapshot={data}
+              deleteCallback={deleteCallback}
+              handleClose={() => {
+                setValues({ ...values, deleteOpen: false });
+              }}
+            />
+          </CenterModalBox>
+        </Box>
       </Modal>
     </Paper>
   );
@@ -845,14 +849,16 @@ const AccountPage = observer(() => {
           setCreateOpen(false);
         }}
       >
-        <CenterModalBox>
-          <CreateNewBackupCard
-            handleClose={() => {
-              setCreateOpen(false);
-            }}
-            handleCreate={handleCreate}
-          />
-        </CenterModalBox>
+        <Box>
+          <CenterModalBox>
+            <CreateNewBackupCard
+              handleClose={() => {
+                setCreateOpen(false);
+              }}
+              handleCreate={handleCreate}
+            />
+          </CenterModalBox>
+        </Box>
       </Modal>
     </SettingsPage>
   );
