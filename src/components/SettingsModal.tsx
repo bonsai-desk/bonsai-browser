@@ -1008,7 +1008,7 @@ const Settings = observer(() => {
           <PaddedPaper>
             <Stack spacing={1}>
               <div>
-                Toggle workspace <KeyBindButton id="toggle-workspace" />
+                Toggle tabs layout <KeyBindButton id="toggle-workspace" />
               </div>
               <div id="settings-row">
                 Hide <KeyBindButton id="hide-from-home" />
