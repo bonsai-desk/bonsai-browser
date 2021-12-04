@@ -69,7 +69,9 @@ import Storyboard from './StoryBoard';
 import HeaderText from './HeaderText';
 import SettingsPage from './SettingsPage';
 import { color } from '../utils/jsutils';
-import { version } from '../package.json';
+import pkg from '../package.json';
+
+const { version } = pkg;
 
 TimeAgo.addDefaultLocale(en);
 const timeAgo = new TimeAgo('en-US');
@@ -749,6 +751,7 @@ const AccountPage = observer(() => {
     fetchSnapshots();
   };
 
+  // todo figure out how to do this better
   useEffect(() => {
     setValues({ ...values, loading: true });
     const handle = setInterval(() => {
@@ -758,7 +761,7 @@ const AccountPage = observer(() => {
     return () => {
       clearInterval(handle);
     };
-  }, [values, fetchSnapshots]);
+  }, []);
 
   const deleteCallback = (snapshotId: number) => {
     const newSnapshots = values.snapshots.filter(
