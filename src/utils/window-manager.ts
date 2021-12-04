@@ -1359,6 +1359,9 @@ export default class WindowManager {
       return;
     }
     globalShortcut.register(shortCut, () => {
+      if (!this.saveData.data.session && this.onboardingWindow) {
+        return;
+      }
       if (this.saveData.data.session && this.onboardingWindow) {
         if (!this.viewedToggleAppPageInOnboarding) {
           return;
