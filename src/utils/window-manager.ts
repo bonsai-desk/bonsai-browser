@@ -713,7 +713,8 @@ export default class WindowManager {
       return;
     }
 
-    this.tabPageView.webContents.send('close-history-modal');
+    // this.tabPageView.webContents.send('close-history-modal');
+
     for (let i = 0; i < tabs.length; i += 1) {
       this.loadTabFromTabInfo(tabs[i]);
     }

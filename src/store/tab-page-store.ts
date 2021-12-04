@@ -772,6 +772,12 @@ export default class TabPageStore {
     this.filteredOpenTabs = [];
     this.filteredWorkspaceTabs = [];
 
+    ipcRenderer.on('tabView-created-with-id', () => {
+      this.syncBumpOrder();
+      // if (this.view === View.Tabs) {
+      // }
+    });
+
     ipcRenderer.on('inner-bounds', (_, { windowSize, bounds }) => {
       runInAction(() => {
         this.windowSize = windowSize;
