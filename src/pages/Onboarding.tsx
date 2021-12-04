@@ -537,6 +537,17 @@ const CreateAccountPage = () => {
 
   const history = useHistory();
 
+  function handleSignInInstead() {
+    if (!onboardingStore.email && !onboardingStore.password) {
+      if (values.email) {
+        onboardingStore.setEmail(values.email);
+      }
+      if (values.email && values.password) {
+        onboardingStore.setPassword(values.password);
+      }
+    }
+    history.push('login');
+  }
   const handleClickShowPassword = () => {
     setValues({
       ...values,
@@ -670,6 +681,7 @@ const CreateAccountPage = () => {
   const submit = () => {
     handleLogin();
   };
+
   return (
     <LoginArea>
       <Container>
@@ -770,7 +782,7 @@ const CreateAccountPage = () => {
                       className="is-primary-lowkey"
                       onClick={(e) => {
                         e.preventDefault();
-                        history.push('login');
+                        handleSignInInstead();
                       }}
                     >
                       Sign in instead
