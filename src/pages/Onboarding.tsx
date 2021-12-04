@@ -556,13 +556,18 @@ const CreateAccountPage = () => {
     });
   };
 
-  // todo this is janky
   useEffect(() => {
+    let handle: undefined | NodeJS.Timeout;
     if (submitted) {
-      setTimeout(() => {
+      handle = setTimeout(() => {
         setValues({ ...values, loginDisabled: false });
       }, 4000);
     }
+    return () => {
+      if (typeof handle !== 'undefined') {
+        clearTimeout(handle);
+      }
+    };
   }, [submitted, values]);
 
   async function clickLogin() {
