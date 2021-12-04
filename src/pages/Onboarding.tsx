@@ -530,6 +530,7 @@ const CreateAccountPage = () => {
     password: '',
     showPassword: false,
     loginDisabled: true,
+    subscribe: false,
   });
 
   const [formError, setFormError] = useState('');
@@ -653,10 +654,17 @@ const CreateAccountPage = () => {
   const handleLogin = async () => {
     try {
       setValues({ ...values, loading: true });
-      const { user, session, error } = await supabase.auth.signUp({
-        email: values.email,
-        password: values.password,
-      });
+      const { user, session, error } = await supabase.auth.signUp(
+        {
+          email: values.email,
+          password: values.password,
+        },
+        {
+          data: {
+            subscribe: values.subscribe,
+          },
+        }
+      );
       console.log(user, session, error);
       if (error) {
         setFormError(error.message);
@@ -773,9 +781,13 @@ const CreateAccountPage = () => {
                   />
                   <FormControlLabel
                     value="end"
+                    checked={values.subscribe}
                     control={<Checkbox />}
                     label="Subscribe to updates about Bonsai Browser."
                     labelPlacement="end"
+                    onChange={() => {
+                      setValues({ ...values, subscribe: !values.subscribe });
+                    }}
                   />
                   <ButtonRow>
                     <Buttons
