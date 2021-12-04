@@ -6,6 +6,7 @@ import { MoreHoriz } from '@material-ui/icons';
 import { Stack } from '@material-ui/core';
 import { ipcRenderer } from 'electron';
 import { GridView, ViewColumnOutlined } from '@mui/icons-material';
+import { Tooltip } from '@mui/material';
 import { TabViewType, useStore, View } from '../../store/tab-page-store';
 import { BigButton } from '../Buttons';
 
@@ -103,24 +104,32 @@ const Header = observer(({ onViewPage }: { onViewPage: boolean }) => {
           }}
         />
         <div>
-          <BigButton
-            className="is-active"
-            onClick={() => {
-              runInAction(() => {
-                if (tabPageStore.TabView === TabViewType.Grid) {
-                  tabPageStore.TabView = TabViewType.Column;
-                } else {
-                  tabPageStore.TabView = TabViewType.Grid;
-                }
-              });
-            }}
+          <Tooltip
+            title={
+              tabPageStore.TabView === TabViewType.Grid
+                ? 'Tab Columns'
+                : 'Tab Grid'
+            }
           >
-            {tabPageStore.TabView === TabViewType.Column ? (
-              <GridView />
-            ) : (
-              <ViewColumnOutlined />
-            )}
-          </BigButton>
+            <BigButton
+              className="is-active"
+              onClick={() => {
+                runInAction(() => {
+                  if (tabPageStore.TabView === TabViewType.Grid) {
+                    tabPageStore.TabView = TabViewType.Column;
+                  } else {
+                    tabPageStore.TabView = TabViewType.Grid;
+                  }
+                });
+              }}
+            >
+              {tabPageStore.TabView === TabViewType.Column ? (
+                <GridView />
+              ) : (
+                <ViewColumnOutlined />
+              )}
+            </BigButton>
+          </Tooltip>
         </div>
       </Stack>
     </URLBoxParent>
