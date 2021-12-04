@@ -14,6 +14,7 @@ import {
   Dashboard,
   Delete,
   ExitToApp,
+  Info,
   Keyboard,
 } from '@material-ui/icons';
 import {
@@ -24,6 +25,7 @@ import {
   Card,
   CardActions,
   CardContent,
+  Chip,
   CircularProgress,
   Container,
   Dialog,
@@ -643,7 +645,7 @@ const WorkspaceSnapshot = ({
         </span>
         <Stack alignItems="center" direction="row" spacing={1}>
           <div>
-            <Tooltip title="Apply Snapshot">
+            <Tooltip title="Apply Backup">
               <IconButton
                 onClick={() => {
                   setValues({ ...values, downloadOpen: true });
@@ -808,15 +810,27 @@ const AccountPage = observer(() => {
             </div>
           ) : (
             <Stack spacing={1}>
-              {values.snapshots.map((snapshot) => {
-                return (
-                  <WorkspaceSnapshot
-                    deleteCallback={deleteCallback}
-                    key={snapshot.id}
-                    data={snapshot}
-                  />
-                );
-              })}
+              {values.snapshots.length > 0 ? (
+                values.snapshots.map((snapshot) => {
+                  return (
+                    <WorkspaceSnapshot
+                      deleteCallback={deleteCallback}
+                      key={snapshot.id}
+                      data={snapshot}
+                    />
+                  );
+                })
+              ) : (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Chip icon={<Info />} label="Nothing Here" />
+                </div>
+              )}
             </Stack>
           )}
         </Stack>

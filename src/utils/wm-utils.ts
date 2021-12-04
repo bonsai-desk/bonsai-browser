@@ -94,11 +94,10 @@ export function makeOnboardingWindow(): BrowserWindow {
     fullscreen: false,
     webPreferences: {
       nodeIntegration: true,
-      devTools: true,
       contextIsolation: false,
     },
   });
-  // onboardingWindow.webContents.openDevTools({ mode: 'detach' });
+  onboardingWindow.webContents.openDevTools({ mode: 'detach' });
   // todo let the window know if did finish onboarding
   makeWebContentsSafe(onboardingWindow.webContents);
   onboardingWindow.webContents.loadURL(ONBOARDING_HTML);
