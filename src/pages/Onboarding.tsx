@@ -34,6 +34,7 @@ import {
 import { Visibility, VisibilityOff } from '@material-ui/icons';
 import { makeAutoObservable } from 'mobx';
 import { observer } from 'mobx-react-lite';
+import { LinearProgress } from '@mui/material';
 import BonsaiLogoImg from '../../assets/bonsai-logo.svg';
 import BonsaiLogoExcitedImg from '../../assets/bonsai-logo-excited.svg';
 import BonsaiFocusedImg from '../../assets/bonsai-focused.svg';
@@ -821,11 +822,13 @@ const LoginPage = observer(() => {
   const [resetEmail, setResetEmail] = useState('');
   const [resetComplete, setResetComplete] = useState(false);
   const [resetError, setResetError] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
   const handleClose = () => {
     setResetOpen(false);
   };
 
   const handleResetPassword = () => {
+    setResetLoading(true);
     if (!validateEmail(resetEmail)) {
       setResetError('Please enter a valid email');
       return;
@@ -838,10 +841,14 @@ const LoginPage = observer(() => {
           setResetError(error.message);
         } else {
           setResetComplete(true);
+          setResetLoading(false);
         }
         return 0;
       })
-      .catch(console.log);
+      .catch((err) => {
+        console.log(err);
+        setResetLoading(false);
+      });
   };
 
   useEffect(() => {
@@ -1046,6 +1053,7 @@ const LoginPage = observer(() => {
               aria-describedby="alert-dialog-description"
               fullWidth
             >
+              {resetLoading ? <LinearProgress /> : ''}
               {resetComplete ? (
                 <>
                   <DialogTitle id="alert-dialog-title">
@@ -1059,8 +1067,11 @@ const LoginPage = observer(() => {
                       className="is-primary"
                       onClick={() => {
                         setResetOpen(false);
-                        setResetComplete(false);
-                        setResetEmail('');
+                        // this fades out so just wait to change things
+                        setTimeout(() => {
+                          setResetComplete(false);
+                          setResetEmail('');
+                        }, 200);
                       }}
                     >
                       Done
