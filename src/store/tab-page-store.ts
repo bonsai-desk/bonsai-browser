@@ -711,6 +711,7 @@ export default class TabPageStore {
   supaClient: SupabaseClient;
 
   handleRefreshError(error: string) {
+    console.log(error);
     const expiresAt = this.supaClient.auth.session()?.expires_at;
 
     if (typeof expiresAt === 'undefined') {
@@ -731,8 +732,7 @@ export default class TabPageStore {
       ipcRenderer.send('mixpanel-track-prop', {
         eventName: 'no session when refreshing',
       });
-
-      // this.clearSession();
+      this.clearSession();
       return;
     }
 
@@ -766,10 +766,13 @@ export default class TabPageStore {
 
   timeoutHandle = -1;
 
+  refreshHandle: NodeJS.Timeout | null;
+
   constructor(
     workspaceStore: Instance<typeof WorkspaceStore>,
     keybindStore: Instance<typeof KeybindStore>
   ) {
+    this.refreshHandle = null;
     makeAutoObservable(this);
 
     this.supaClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -777,14 +780,16 @@ export default class TabPageStore {
     ipcRenderer.send('request-session');
 
     ipcRenderer.on('session', (_, session) => {
-      // console.log('got session');
+      if (this.refreshHandle) {
+        clearInterval(this.refreshHandle);
+      }
+      this.session = session;
       this.refreshSession(session);
+      this.refreshHandle = setInterval(() => {
+        console.log('refresh');
+        this.refreshSession(this.session);
+      }, 1000 * 5);
     });
-
-    setInterval(() => {
-      // console.log('refresh');
-      this.refreshSession(this.session);
-    }, 1000 * 5);
 
     this.versionString = packageInfo.version;
     this.windowSize = { width: 200, height: 200 };
