@@ -11,7 +11,7 @@ import { TabPageColumn, TabPageTab } from '../interfaces/tab';
 import { getRootDomain } from '../utils/data';
 import { Item } from './workspace/item';
 import { Direction } from '../render-constants';
-import { chord, clamp } from '../utils/utils';
+import { chord, clamp, unixNow } from '../utils/utils';
 import { HistoryEntry } from '../utils/interfaces';
 import { HistoryStore } from './history-store';
 import WorkspaceStore from './workspace/workspace-store';
@@ -710,26 +710,50 @@ export default class TabPageStore {
 
   supaClient: SupabaseClient;
 
-  refreshSession(session: Session | null) {
-    // console.log('refreshSession', session);
-    if (!session || !session.refresh_token) {
+  handleRefreshError(error: string) {
+    const expiresAt = this.supaClient.auth.session()?.expires_at;
+
+    if (typeof expiresAt === 'undefined') {
       this.clearSession();
       return;
     }
+
+    const delta = expiresAt - unixNow();
+    if (delta <= 0) {
+      this.clearSession();
+    }
+  }
+
+  refreshSession(session: Session | null) {
+    // console.log('refreshSession', session, this.session);
+    if (!session || !session.refresh_token) {
+      ipcRenderer.send('log-data', ['clear session', session]);
+      ipcRenderer.send('mixpanel-track-prop', {
+        eventName: 'no session when refreshing',
+      });
+
+      // this.clearSession();
+      return;
+    }
+
     this.supaClient.auth
       .setSession(session.refresh_token)
       .then((data) => {
-        const { session: liveSession } = data;
-        runInAction(() => {
-          this.session = liveSession;
-        });
-        ipcRenderer.send('refresh-session', liveSession);
+        const { session: liveSession, error } = data;
+        if (error) {
+          this.handleRefreshError(JSON.stringify(error));
+        } else {
+          // console.log('refresh then ', error, liveSession);
+          runInAction(() => {
+            this.session = liveSession;
+          });
+          ipcRenderer.send('refresh-session', liveSession);
+        }
         return 0;
       })
       .catch((error) => {
-        // console.log('refresh error', error);
-        ipcRenderer.send('log-data', error);
-        this.clearSession();
+        // console.log('refresh catch', error);
+        this.handleRefreshError(JSON.stringify(error));
       });
   }
 
@@ -758,9 +782,9 @@ export default class TabPageStore {
     });
 
     setInterval(() => {
-      console.log('refresh');
+      // console.log('refresh');
       this.refreshSession(this.session);
-    }, 1000 * 60 * 60);
+    }, 1000 * 5);
 
     this.versionString = packageInfo.version;
     this.windowSize = { width: 200, height: 200 };

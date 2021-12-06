@@ -254,3 +254,7 @@ export function validateEmail(email: string) {
 export function baseUrl(url: string) {
   return url.split('#')[0];
 }
+
+export function unixNow(): number {
+  return Math.floor(Date.now() / 1000);
+}

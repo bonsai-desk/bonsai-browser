@@ -744,7 +744,12 @@ const AccountPage = observer(() => {
             console.log(error);
             setValues({ ...values, loading: false, error: error.message });
           } else if (data) {
-            setValues({ ...values, loading: false, snapshots: data });
+            setValues({
+              ...values,
+              loading: false,
+              snapshots: data,
+              error: '',
+            });
           }
         });
     }
@@ -806,6 +811,7 @@ const AccountPage = observer(() => {
               </div>
             </Stack>
           </Grid>
+          {values.error ? <Alert severity="error">{values.error}</Alert> : ''}
           {values.loading ? (
             <div
               style={{

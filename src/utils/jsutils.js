@@ -2,6 +2,8 @@
 
 // yoinked from https://github.com/takanopontaro/node-parse-hosts/blob/master/lib/main.js
 
+import { ipcRenderer } from 'electron';
+
 const _ = require('lodash');
 
 const fs = require('fs');
@@ -146,4 +148,8 @@ export function color(variable, alpha) {
     return `var(--${variable})`;
   }
   return `var(--${variable}---${alpha})`;
+}
+
+export function mixpanelTrack(eventName, properties = {}) {
+  ipcRenderer.send('mixpanel-track-prop', { eventName, properties });
 }
