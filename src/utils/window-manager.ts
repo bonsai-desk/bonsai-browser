@@ -1705,7 +1705,9 @@ export default class WindowManager {
     this.tabPageView.webContents.loadURL(TAB_PAGE);
     setTimeout(() => {
       this.hideWindow();
-      this.onboardingWindow = this.initOnboardingWindow();
+      if (!this.onboardingWindow) {
+        this.onboardingWindow = this.initOnboardingWindow();
+      }
     }, 250);
   }
 
