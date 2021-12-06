@@ -1050,25 +1050,25 @@ const FeedbackPage = observer(() => {
     loading: false,
     feedback: '',
     done: false,
+    error: '',
   });
   const myId = tabPageStore.session?.user?.id;
   const email = tabPageStore.session?.user?.email || 'email@address.com';
   async function submit() {
-    setValues({ ...values, loading: true });
+    setValues({ ...values, loading: true, error: '' });
     if (myId) {
       const { error } = await tabPageStore.supaClient
         .from('feedback')
         .insert([{ data: values.feedback, user_id: myId, email, version }]);
       if (error) {
-        console.log(error);
+        setValues({
+          ...values,
+          error: error.message,
+        });
       } else {
         setValues({ ...values, loading: false, done: true });
       }
     }
-
-    setTimeout(() => {
-      setValues({ ...values, done: true });
-    });
   }
   return (
     <SettingsPage title="Feedback">
@@ -1098,6 +1098,7 @@ const FeedbackPage = observer(() => {
             </CardContent>
           </Card>
         </div>
+        {values.error ? <Alert severity="error">{values.error}</Alert> : ''}
         <Card>
           {values.loading ? <LinearProgress /> : ''}
           <CardContent>
