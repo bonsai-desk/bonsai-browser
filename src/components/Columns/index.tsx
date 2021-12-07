@@ -93,7 +93,9 @@ const HomePageTabs = observer(() => {
     case TabViewType.Grid:
       return <ImageBoard />;
     default:
-      return <HomeParent>Invalid tabView</HomeParent>;
+      return (
+        <HomeParent>{`Invalid tabView: ${tabPageStore.TabView}`}</HomeParent>
+      );
   }
 });
 

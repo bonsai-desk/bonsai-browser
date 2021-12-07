@@ -107,13 +107,14 @@ const AddToWorkspace = observer(({ node }: { node: INode }) => {
               image = tab.image;
             }
           }
-          workspace.createItem(
+          const item = workspace.createItem(
             node.data.url,
             title,
             image,
             favicon,
             workspace.inboxGroup
           );
+          ipcRenderer.send('created-workspace-item', [item.id, workspace.id]);
           ipcRenderer.send(
             'mixpanel-track',
             'create backlink to workspace from navigator'

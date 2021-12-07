@@ -1279,7 +1279,13 @@ export default class WindowManager {
   }
 
   // todo remove the tabid params since its in webview
-  screenShotTab(tabId: number, tabView: IWebView, callback?: () => void) {
+  screenShotTab(
+    tabId: number,
+    tabView: IWebView,
+    callback?: () => void,
+    forItemWithId = '',
+    workspaceId = ''
+  ) {
     tabView.view.webContents.send('get-scroll-height', tabId);
     const handleImage = (image: NativeImage) => {
       const jpgBuf = image.toJPEG(50);
@@ -1296,24 +1302,32 @@ export default class WindowManager {
       } catch {
         //
       }
-      if (tabView.imgString) {
-        try {
-          fs.rmSync(
-            path.join(
-              app.getPath('userData'),
-              'images',
-              `${tabView.imgString}.jpg`
-            )
-          );
-        } catch {
-          //
+      if (!forItemWithId) {
+        if (tabView.imgString) {
+          try {
+            fs.rmSync(
+              path.join(
+                app.getPath('userData'),
+                'images',
+                `${tabView.imgString}.jpg`
+              )
+            );
+          } catch {
+            //
+          }
         }
+        tabView.imgString = tabImgName;
+        this.tabPageView.webContents.send('tab-image-native', [
+          tabId,
+          tabImgName,
+        ]);
+      } else {
+        this.tabPageView.webContents.send('got-screenshot-for-item', {
+          itemId: forItemWithId,
+          workspaceId,
+          imgName: tabImgName,
+        });
       }
-      tabView.imgString = tabImgName;
-      this.tabPageView.webContents.send('tab-image-native', [
-        tabId,
-        tabImgName,
-      ]);
       if (callback) {
         callback();
       }
@@ -1962,6 +1976,18 @@ export default class WindowManager {
       if (webView) {
         log(`taking screenshot of ${webViewId} by request`);
         this.screenShotTab(webViewId, webView);
+      }
+    });
+    ipcMain.on('created-workspace-item', (_, [itemId, workspaceId]) => {
+      const webView = this.allWebViews[this.activeTabId];
+      if (webView) {
+        this.screenShotTab(
+          this.activeTabId,
+          webView,
+          () => {},
+          itemId,
+          workspaceId
+        );
       }
     });
     ipcMain.on('mixpanel-track', (_, eventName) => {

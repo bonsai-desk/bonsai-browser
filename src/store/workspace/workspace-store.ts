@@ -94,18 +94,18 @@ const WorkspaceStore = types
       });
       destroy(workspace);
     },
-    addTag(baseUrl: string, tag: string) {
-      // if (!self.tags.has(baseUrl)) {
-      //   self.tags.set(baseUrl, {});
-      // }
-      // self.tags.get(baseUrl)?.set(tag, true);
-    },
-    removeTag(baseUrl: string, tag: string) {
-      // if (!self.tags.has(baseUrl)) {
-      //   return;
-      // }
-      // self.tags.get(baseUrl)?.delete(tag);
-    },
+    // addTag(baseUrl: string, tag: string) {
+    //   // if (!self.tags.has(baseUrl)) {
+    //   //   self.tags.set(baseUrl, {});
+    //   // }
+    //   // self.tags.get(baseUrl)?.set(tag, true);
+    // },
+    // removeTag(baseUrl: string, tag: string) {
+    //   // if (!self.tags.has(baseUrl)) {
+    //   //   return;
+    //   // }
+    //   // self.tags.get(baseUrl)?.delete(tag);
+    // },
   }));
 
 export type IWorkSpaceStore = Instance<typeof WorkspaceStore>;

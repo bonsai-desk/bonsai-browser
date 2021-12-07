@@ -179,7 +179,7 @@ function createWorkspaceStore(): Instance<typeof WorkspaceStore> {
   const workspaceStore = WorkspaceStore.create({
     version: 2, // this number is the version for new stores. old stores loaded in will override the version and will need to be updated
     workspaces: {},
-    tags: {},
+    // tags: {},
   });
 
   workspaceStore.createWorkspace('default');
@@ -192,6 +192,19 @@ function createWorkspaceStore(): Instance<typeof WorkspaceStore> {
     workspaceStore.setDataPath(dataPath);
     loadSnapshot(workspaceStore);
   });
+
+  ipcRenderer.on(
+    'got-screenshot-for-item',
+    (_, { itemId, workspaceId, imgName }) => {
+      const item = workspaceStore.workspaces
+        .get(workspaceId)
+        ?.items.get(itemId);
+      if (item) {
+        item.setImage(imgName);
+        saveSnapshot(workspaceStore);
+      }
+    }
+  );
 
   ipcRenderer.on('save-snapshot', () => {
     saveSnapshot(workspaceStore);

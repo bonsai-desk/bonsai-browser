@@ -842,7 +842,7 @@ const AccountPage = observer(() => {
                     justifyContent: 'center',
                   }}
                 >
-                  <Chip icon={<Info />} label="Nothing Here" />
+                  <Chip icon={<Info />} label="No Backups Found" />
                 </div>
               )}
             </Stack>

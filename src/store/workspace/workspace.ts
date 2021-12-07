@@ -312,6 +312,8 @@ export const Workspace = types
       group.itemArrangement.splice(item.indexInGroup, 1);
       group.itemArrangement.splice(0, 0, item.id);
       this.updateItemIndexes(group);
+
+      return item;
     },
     deleteItem(
       item: Instance<typeof Item>,
