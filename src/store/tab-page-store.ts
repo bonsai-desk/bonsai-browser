@@ -795,7 +795,7 @@ export default class TabPageStore {
       this.refreshHandle = setInterval(() => {
         // console.log('refresh');
         this.refreshSession(this.session);
-      }, 1000 * 5);
+      }, 1000 * 60 * 60);
     });
 
     this.versionString = packageInfo.version;
