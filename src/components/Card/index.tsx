@@ -109,7 +109,12 @@ const Card = observer(
         callback();
       } else {
         ipcRenderer.send('set-tab', tab.id);
-        ipcRenderer.send('mixpanel-track', 'click home tab');
+        ipcRenderer.send('mixpanel-track-with-props', [
+          'click home tab',
+          {
+            pageType: tabPageStore.TabView,
+          },
+        ]);
         tabPageStore.setUrlText('');
       }
     }

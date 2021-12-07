@@ -33,9 +33,14 @@ export enum View {
 }
 
 export enum TabViewType {
-  Grid,
-  Column,
+  Grid = 'Grid',
+  Column = 'Column',
 }
+
+// export const TabViewType = {
+//   Grid: 'Grid',
+//   Column: 'Column',
+// };
 
 export default class TabPageStore {
   private view: View = View.Tabs;
