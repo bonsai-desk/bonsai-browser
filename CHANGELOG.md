@@ -1,5 +1,18 @@
 # Changelog
 
+## Bonsai 1.1.2 (December 07, 2021)
+
+### Features
+- Data backup and sync to Bonsai account
+- New UI style
+- Toggle between tab columns and bump-ordered grid on home page
+- Feedback page
+
+### Fixes 
+- Improved performance of workspaces
+- Better tab image handling to reduce latency of home & search
+- Undo closed tab(s) with ctrl+shift+t is no longer broken
+
 ## Bonsai 1.1.1 (October 26, 2021)
 - Tab home page is now bump ordered instead of grouped by domains in columns
 - New tab card styling on homepage & search
