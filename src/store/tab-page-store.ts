@@ -37,11 +37,6 @@ export enum TabViewType {
   Column = 'Column',
 }
 
-// export const TabViewType = {
-//   Grid: 'Grid',
-//   Column: 'Column',
-// };
-
 export default class TabPageStore {
   private view: View = View.Tabs;
 
@@ -185,17 +180,24 @@ export default class TabPageStore {
 
   handleKeyBind(e: KeyboardEvent) {
     if (this.view === View.FuzzySearch) {
-      if (this.keybindStore.isBind(e, Bind.FuzzyUp)) {
+      const fu = this.keybindStore.isBind(e, Bind.FuzzyUp);
+      const fd = this.keybindStore.isBind(e, Bind.FuzzyDown);
+      const fl = this.keybindStore.isBind(e, Bind.FuzzyLeft);
+      const fr = this.keybindStore.isBind(e, Bind.FuzzyRight);
+      if (fu) {
         this.fuzzyUp(e);
       }
-      if (this.keybindStore.isBind(e, Bind.FuzzyDown)) {
+      if (fd) {
         this.fuzzyDown(e);
       }
-      if (this.keybindStore.isBind(e, Bind.FuzzyLeft)) {
+      if (fl) {
         this.fuzzyLeft(e);
       }
-      if (this.keybindStore.isBind(e, Bind.FuzzyRight)) {
+      if (fr) {
         this.fuzzyRight(e);
+      }
+      if (!fu && !fd && !fl && !fr) {
+        this.fuzzySelectionIndex = [-1, -1];
       }
     } else if (this.view !== View.Settings) {
       this.setFocus();
