@@ -151,5 +151,5 @@ export function color(variable, alpha) {
 }
 
 export function mixpanelTrack(eventName, properties = {}) {
-  ipcRenderer.send('mixpanel-track-prop', { eventName, properties });
+  ipcRenderer.send('mixpanel-track-with-props', [eventName, properties]);
 }

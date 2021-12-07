@@ -1967,15 +1967,18 @@ export default class WindowManager {
     ipcMain.on('mixpanel-track', (_, eventName) => {
       this.mixpanelManager.track(eventName);
     });
-    ipcMain.on('mixpanel-track-prop', (_, { eventName, properties = {} }) => {
-      this.mixpanelManager.track(eventName, properties);
-    });
     ipcMain.on(
-      'mixpanel-track-with-properties',
-      (_, [eventName, properties]) => {
+      'mixpanel-track-with-props',
+      (_, [eventName, properties = {}]) => {
         this.mixpanelManager.track(eventName, properties);
       }
     );
+    // ipcMain.on(
+    //   'mixpanel-track-with-properties',
+    //   (_, [eventName, properties]) => {
+    //     this.mixpanelManager.track(eventName, properties);
+    //   }
+    // );
     ipcMain.on('log-data', (_, data) => {
       console.log(data);
     });
@@ -2015,21 +2018,23 @@ export default class WindowManager {
       this.saveData.save();
       this.tabPageView.webContents.send('set-seenEmailForm', true);
     });
-    ipcMain.on('set-email', (_, email) => {
-      this.mixpanelManager.mixpanel.people.set(this.mixpanelManager.userId, {
-        email,
-      });
-    });
+    // ipcMain.on('set-email', (_, email) => {
+    //   this.mixpanelManager.mixpanel.people.set(this.mixpanelManager.userId, {
+    //     email,
+    //   });
+    // });
     ipcMain.on('sign-in-session', (_, session) => {
       this.tabPageView.webContents.send('session', session);
       this.saveData.data.session = session;
       this.saveData.save();
     });
     ipcMain.on('refresh-session', (_, session) => {
+      this.mixpanelManager.loggedIn(session);
       this.saveData.data.session = session;
       this.saveData.save();
     });
     ipcMain.on('clear-session', () => {
+      this.mixpanelManager.loggedOut();
       this.logOut();
     });
     ipcMain.on('request-session', () => {

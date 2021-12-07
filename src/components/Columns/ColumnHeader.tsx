@@ -30,7 +30,7 @@ const ColumnHeader = observer(({ column }: { column: TabPageColumn }) => {
             onClick={(e) => {
               e.stopPropagation();
               const keys = Object.keys(tabPageStore.openTabs);
-              ipcRenderer.send('mixpanel-track-with-properties', [
+              ipcRenderer.send('mixpanel-track-with-props', [
                 'click remove column in home',
                 { num_tabs: keys.length },
               ]);

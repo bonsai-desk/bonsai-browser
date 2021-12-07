@@ -56,7 +56,12 @@ import {
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from '../constants';
 import { Buttons } from '../components/Buttons';
 import GlobalStyle from '../GlobalStyle';
-import HeaderText from '../components/HeaderText';
+
+const useTrack = (eventName: string) => {
+  useEffect(() => {
+    ipcRenderer.send('mixpanel-track', eventName);
+  }, []);
+};
 
 const Header = styled.div`
   font-weight: bold;
@@ -151,24 +156,6 @@ const ButtonRow = styled.div`
   flex-wrap: wrap;
   justify-content: space-between;
   margin: 0 0 1rem 0;
-`;
-
-const Logo = styled.div`
-  ${'' /* font-size: 6rem; */}
-  ${'' /* background: blue; */}
-  &:before {
-    display: inline-block;
-    width: 0.7em;
-    height: 0.7em;
-    content: '';
-    background-image: url(https://cloudbrowser.io/bonsai-logo.svg);
-    background-repeat: no-repeat;
-    background-size: contain;
-    background-position: 50% 50%;
-    position: relative;
-    top: 0.0025em;
-    left: -0.1em;
-  }
 `;
 
 const Center = styled.div`
@@ -301,6 +288,8 @@ const InfoPage = ({ PageInfo, nextPage, logo }: IInfoPage) => {
 };
 
 const IsADashboard = () => {
+  useTrack('load onboarding (is a dashboard) page');
+
   const PageText = (
     <div style={{ textAlign: 'end', width: '100%' }}>
       Is a dashboard web browser
@@ -316,6 +305,7 @@ const IsADashboard = () => {
 };
 
 const YouCanTogglePage = () => {
+  useTrack('load onboarding (you can toggle) page');
   const PageText = (
     <div key="even-fullscreen" style={{ width: '100%', textAlign: 'end' }}>
       <div>You can bring it up anywhere</div>
@@ -329,6 +319,8 @@ const YouCanTogglePage = () => {
 };
 
 const TogglePage = () => {
+  useTrack('load onboarding (toggle) page');
+
   const defaultBind = ['Alt', 'Space'];
   const [bind, setBind] = useState<string[]>(defaultBind);
   const [rebind, setRebind] = useState(false);
@@ -523,6 +515,8 @@ const LoadyButton = ({
 const CreateAccountPage = () => {
   // const passwordTextRef = useRef<HTMLInputElement>(null);
   // const emailTextRef = useRef<HTMLInputElement>(null);
+  useTrack('load onboarding create account page');
+
   const [values, setValues] = React.useState({
     loading: false,
     email: '',
@@ -581,11 +575,20 @@ const CreateAccountPage = () => {
           password: values.password,
         });
         if (error) {
+          ipcRenderer.send('mixpanel-track-with-props', [
+            'onboarding (create account page): login error',
+            { message: error.message },
+          ]);
           const msg = error.message;
           // setFormError(msg);
           onboardingStore.setFormError(msg);
           history.push('/login');
         } else {
+          ipcRenderer.send(
+            'mixpanel-track',
+            'onboarding (create account page): login success'
+          );
+
           console.log(user, session);
           // ipcRenderer.send('sign-in-user', user);
           ipcRenderer.send('sign-in-session', session);
@@ -601,6 +604,12 @@ const CreateAccountPage = () => {
         // setValues({ ...values, loading: false });
         const u = error as { error_description: string; message: string };
         const msg = u.error_description || u.message;
+
+        ipcRenderer.send('mixpanel-track-with-props', [
+          'onboarding (create account page): login error',
+          { message: msg },
+        ]);
+
         onboardingStore.setFormError(msg);
         history.push('/login');
         // setFormError(msg);
@@ -839,6 +848,8 @@ const LogoSquare = styled.div`
 `;
 
 const LoginPage = observer(() => {
+  useTrack('load onboarding login page');
+
   const [values, setValues] = React.useState({
     loading: false,
     // email: '',
@@ -907,11 +918,17 @@ const LoginPage = observer(() => {
       if (error) {
         setValues({ ...values, loading: false });
         const msg = error.message;
+        ipcRenderer.send('mixpanel-track-with-props', [
+          'onboarding (login): error',
+          { message: msg },
+        ]);
         onboardingStore.setFormError(msg);
       } else {
+        ipcRenderer.send('mixpanel-track', 'onboarding: log in success');
         console.log(user, session, error);
         ipcRenderer.send('sign-in-user', user);
         ipcRenderer.send('sign-in-session', session);
+        // ipcRenderer.send('mixpanel-track', 'success');
         const route = onboardingStore.toggledOnce ? 'toggle' : 'is-a-dashboard';
         history.push(route);
       }
@@ -919,6 +936,10 @@ const LoginPage = observer(() => {
       setValues({ ...values, loading: false });
       const u = error as { error_description: string; message: string };
       const msg = u.error_description || u.message || ' ';
+      ipcRenderer.send('mixpanel-track-with-props', [
+        'onboarding (login): error',
+        { message: msg },
+      ]);
       onboardingStore.setFormError(msg);
       // alert(error.error_description || error.message);
     } finally {
@@ -1175,30 +1196,6 @@ const Root = () => {
     return <NotFound />;
   }
   return <div />;
-};
-
-const HeaderParent = styled.div`
-  position: absolute;
-  top: 0;
-  width: 100%;
-`;
-
-const HeaderInner = styled.div`
-  padding: 0.5rem 0 0.5rem 0;
-  ${'' /* background: blue; */}
-`;
-
-const LogoHeader = () => {
-  return (
-    <HeaderParent>
-      <Container>
-        <HeaderInner>
-          <HeaderText variant="h2">bonsai</HeaderText>
-        </HeaderInner>
-        <Divider />
-      </Container>
-    </HeaderParent>
-  );
 };
 
 const Onboarding = () => {

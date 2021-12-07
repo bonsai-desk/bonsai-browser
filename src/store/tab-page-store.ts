@@ -786,7 +786,7 @@ export default class TabPageStore {
       this.session = session;
       this.refreshSession(session);
       this.refreshHandle = setInterval(() => {
-        console.log('refresh');
+        // console.log('refresh');
         this.refreshSession(this.session);
       }, 1000 * 5);
     });
