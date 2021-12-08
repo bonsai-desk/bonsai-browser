@@ -7,12 +7,14 @@
       <excludeFolder url="file://$MODULE_DIR$/tmp" />
       <excludeFolder url="file://$MODULE_DIR$/release" />
       <excludeFolder url="file://$MODULE_DIR$/src/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/.erb/dll" />
       <excludePattern pattern="main.prod.js" />
       <excludePattern pattern="renderer.dev.dll.js" />
       <excludePattern pattern="package-lock.json" />
       <excludePattern pattern="yarn.lock" />
       <excludePattern pattern="yarn-error.log" />
       <excludePattern pattern=".eslintcache" />
+      <excludePattern pattern="README.md" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

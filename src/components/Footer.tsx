@@ -22,11 +22,6 @@ const BottomButtonRow = styled(ButtonRow)`
   border-radius: 0.25rem;
 `;
 
-const RightButtons = styled(BottomButtonRow)`
-  position: absolute;
-  right: 10px;
-`;
-
 const MiddleButtons = styled(BottomButtonRow)`
   position: relative;
 `;
@@ -35,13 +30,6 @@ const PlusButton = styled(ToggleButton)`
   position: absolute;
   right: -2rem;
   top: 0;
-`;
-
-const SettingsParent = styled.div`
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 `;
 
 const WorkspaceButtons = observer(() => {
