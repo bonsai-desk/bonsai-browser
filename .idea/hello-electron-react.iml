@@ -5,6 +5,14 @@
       <excludeFolder url="file://$MODULE_DIR$/temp" />
       <excludeFolder url="file://$MODULE_DIR$/.tmp" />
       <excludeFolder url="file://$MODULE_DIR$/tmp" />
+      <excludeFolder url="file://$MODULE_DIR$/release" />
+      <excludeFolder url="file://$MODULE_DIR$/src/dist" />
+      <excludePattern pattern="main.prod.js" />
+      <excludePattern pattern="renderer.dev.dll.js" />
+      <excludePattern pattern="package-lock.json" />
+      <excludePattern pattern="yarn.lock" />
+      <excludePattern pattern="yarn-error.log" />
+      <excludePattern pattern=".eslintcache" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
