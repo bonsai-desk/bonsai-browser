@@ -258,3 +258,7 @@ export function baseUrl(url: string) {
 export function unixNow(): number {
   return Math.floor(Date.now() / 1000);
 }
+
+export function search(pattern: string, query: string) {
+  return pattern.replace('%s', encodeURIComponent(query));
+}

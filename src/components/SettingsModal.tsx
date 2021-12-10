@@ -55,6 +55,10 @@ import {
   ToggleButton,
   InputAdornment,
   Switch,
+  FormControl,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
 } from '@mui/material';
 import { Palette } from '@mui/icons-material';
 import { applySnapshot, getSnapshot } from 'mobx-state-tree';
@@ -954,7 +958,7 @@ const Settings = observer(() => {
   };
 
   return (
-    <SettingsPage title="Key Binds">
+    <SettingsPage title="Keyboard">
       <Stack spacing={4}>
         <div>
           <Title>General</Title>
@@ -1046,10 +1050,10 @@ const Settings = observer(() => {
 
 enum Page {
   Account = 'Account',
-  KeyBinds = 'Key Binds',
+  KeyBinds = 'Keyboard',
   StoryBoard = 'Story Board',
   Feedback = 'Feedback',
-  Theme = 'Theme',
+  Other = 'Other',
 }
 
 function getActivePage(activePage: Page, menuItems: IMenuItem[]) {
@@ -1175,92 +1179,130 @@ const FeedbackPage = observer(() => {
   );
 });
 
-const PalettePage = observer(() => {
+const OtherPage = observer(() => {
   const { keybindStore } = useStore();
   const { theme } = keybindStore.settings;
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    let search: 'google' | 'duckduckgo' = 'google';
+    if (
+      event.target.value === 'google' ||
+      event.target.value === 'duckduckgo'
+    ) {
+      search = event.target.value;
+    }
+    keybindStore.setSearch(search);
+  };
+
   return (
-    <SettingsPage title="Theme">
-      <PaddedPaper>
-        <Stack spacing={2}>
-          <div>
-            <Typography
-              gutterBottom
-              variant="h6"
-              color="var(--header-text-color)"
-            >
-              Style
-            </Typography>
-            <ToggleButtonGroup
-              // value={alignment}
-              exclusive
-              // onChange={handleAlignment}
-              aria-label="text alignment"
-            >
-              <ToggleButton
-                selected={theme === 'system'}
-                onClick={() => {
-                  keybindStore.setTheme('system');
-                }}
-                value="left"
-                aria-label="left aligned"
-              >
-                System
-              </ToggleButton>
-              <ToggleButton
-                onClick={() => {
-                  keybindStore.setTheme('dark');
-                }}
-                selected={theme === 'dark'}
-                value="center"
-                aria-label="centered"
-              >
-                Dark
-              </ToggleButton>
-              <ToggleButton
-                onClick={() => {
-                  keybindStore.setTheme('light');
-                }}
-                selected={theme === 'light'}
-                value="right"
-                aria-label="right aligned"
-              >
-                Light
-              </ToggleButton>
-            </ToggleButtonGroup>
-          </div>
-          <div>
-            <Typography
-              gutterBottom
-              variant="h6"
-              color="var(--header-text-color)"
-            >
-              Custom Background
-            </Typography>
-            <Stack direction="row" spacing={1}>
-              <Switch
-                checked={keybindStore.settings.backgroundEnabled}
-                onChange={() => {
-                  keybindStore.setBackgroundEnabled(
-                    !keybindStore.settings.backgroundEnabled
-                  );
-                }}
-              />
-              <TextField
-                disabled={!keybindStore.settings.backgroundEnabled}
-                value={keybindStore.settings.background}
-                onChange={(e) => {
-                  keybindStore.setBackground(e.target.value);
-                }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">#</InputAdornment>
-                  ),
-                }}
-              />
+    <SettingsPage title="Other">
+      <Stack spacing={4}>
+        <div>
+          <Typography variant="h6" gutterBottom>
+            Theme
+          </Typography>
+          <PaddedPaper>
+            <Stack spacing={2}>
+              <div>
+                <ToggleButtonGroup
+                  // value={alignment}
+                  exclusive
+                  // onChange={handleAlignment}
+                  aria-label="text alignment"
+                >
+                  <ToggleButton
+                    selected={theme === 'system'}
+                    onClick={() => {
+                      keybindStore.setTheme('system');
+                    }}
+                    value="left"
+                    aria-label="left aligned"
+                  >
+                    System
+                  </ToggleButton>
+                  <ToggleButton
+                    onClick={() => {
+                      keybindStore.setTheme('dark');
+                    }}
+                    selected={theme === 'dark'}
+                    value="center"
+                    aria-label="centered"
+                  >
+                    Dark
+                  </ToggleButton>
+                  <ToggleButton
+                    onClick={() => {
+                      keybindStore.setTheme('light');
+                    }}
+                    selected={theme === 'light'}
+                    value="right"
+                    aria-label="right aligned"
+                  >
+                    Light
+                  </ToggleButton>
+                </ToggleButtonGroup>
+              </div>
+              <div>
+                <Typography
+                  gutterBottom
+                  variant="h6"
+                  color="var(--header-text-color)"
+                >
+                  Custom Background
+                </Typography>
+                <Stack direction="row" spacing={1}>
+                  <Switch
+                    checked={keybindStore.settings.backgroundEnabled}
+                    onChange={() => {
+                      keybindStore.setBackgroundEnabled(
+                        !keybindStore.settings.backgroundEnabled
+                      );
+                    }}
+                  />
+                  <TextField
+                    disabled={!keybindStore.settings.backgroundEnabled}
+                    value={keybindStore.settings.background}
+                    onChange={(e) => {
+                      keybindStore.setBackground(e.target.value);
+                    }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">#</InputAdornment>
+                      ),
+                    }}
+                  />
+                </Stack>
+              </div>
             </Stack>
-          </div>
-        </Stack>
-      </PaddedPaper>
+          </PaddedPaper>
+        </div>
+        <div>
+          <Typography variant="h6" gutterBottom>
+            Search Engine
+          </Typography>
+          <PaddedPaper>
+            <FormControl component="fieldset">
+              <RadioGroup
+                aria-label="gender"
+                name="controlled-radio-buttons-group"
+                value={keybindStore.settings.selectedSearch}
+                onChange={handleChange}
+              >
+                {Array.from(keybindStore.settings.search.keys()).map((key) => {
+                  return (
+                    <FormControlLabel
+                      key={key}
+                      value={key}
+                      control={<Radio />}
+                      label={key}
+                    />
+                  );
+                })}
+              </RadioGroup>
+            </FormControl>
+          </PaddedPaper>
+        </div>
+      </Stack>
     </SettingsPage>
   );
 });
@@ -1273,7 +1315,7 @@ const SettingsModal = observer(() => {
   let menuItems: IMenuItem[] = [
     { Icon: <AccountBox />, title: Page.Account, Page: <AccountPage /> },
     { Icon: <Keyboard />, title: Page.KeyBinds, Page: <Settings /> },
-    { Icon: <Palette />, title: Page.Theme, Page: <PalettePage /> },
+    { Icon: <Palette />, title: Page.Other, Page: <OtherPage /> },
     { Icon: <Comment />, title: Page.Feedback, Page: <FeedbackPage /> },
   ];
 

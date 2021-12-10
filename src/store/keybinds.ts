@@ -5,6 +5,9 @@ import fs from 'fs';
 import { chord, tryDecrypt, encrypt } from '../utils/utils';
 import { myPlatform, Platform } from '../render-constants';
 
+const GOOG_STRING = 'https://www.google.com/search?q=%s';
+const DUCK_STRING = 'https://duckduckgo.com/?q=%s';
+
 function loadSnapshot(store: Instance<any>, encrypted = true) {
   if (store.userDataPath !== '') {
     try {
@@ -147,6 +150,8 @@ const Settings = types.model({
   theme: types.enumeration('theme', ['system', 'dark', 'light']),
   backgroundEnabled: types.boolean,
   background: types.string,
+  search: types.map(types.string),
+  selectedSearch: types.enumeration('search', ['google', 'duckduckgo']),
 });
 
 export const KeybindStore = types
@@ -155,6 +160,10 @@ export const KeybindStore = types
     userDataPath: '',
   }))
   .actions((self) => ({
+    setSearch(search: 'google' | 'duckduckgo') {
+      self.settings.selectedSearch = search;
+      saveSnapshot(self, false);
+    },
     setTheme(theme: 'system' | 'dark' | 'light') {
       self.settings.theme = theme;
       saveSnapshot(self, false);
@@ -189,6 +198,11 @@ export const KeybindStore = types
     },
   }))
   .views((self) => ({
+    searchString(): string {
+      return (
+        self.settings.search.get(self.settings.selectedSearch) || GOOG_STRING
+      );
+    },
     isBind(e: KeyboardEvent, bind: Bind): boolean {
       // ipcRenderer.send('log-data', { bind });
       // ipcRenderer.send('log-data', getSnapshot(self.binds));
@@ -212,6 +226,11 @@ export function defaultKeybindStore(): Instance<typeof KeybindStore> {
       theme: 'system',
       background: 'fcba03',
       backgroundEnabled: false,
+      selectedSearch: 'google',
+      search: {
+        google: GOOG_STRING,
+        duckduckgo: DUCK_STRING,
+      },
     },
     binds: {
       'toggle-floating-window': {
