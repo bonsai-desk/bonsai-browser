@@ -151,7 +151,7 @@ const Settings = types.model({
   backgroundEnabled: types.boolean,
   background: types.string,
   search: types.map(types.string),
-  selectedSearch: types.enumeration('search', ['google', 'duckduckgo']),
+  selectedSearch: types.enumeration('search', ['Google', 'DuckDuckGo']),
 });
 
 export const KeybindStore = types
@@ -160,7 +160,7 @@ export const KeybindStore = types
     userDataPath: '',
   }))
   .actions((self) => ({
-    setSearch(search: 'google' | 'duckduckgo') {
+    setSearch(search: 'Google' | 'DuckDuckGo') {
       self.settings.selectedSearch = search;
       saveSnapshot(self, false);
     },
@@ -226,10 +226,10 @@ export function defaultKeybindStore(): Instance<typeof KeybindStore> {
       theme: 'system',
       background: 'fcba03',
       backgroundEnabled: false,
-      selectedSearch: 'google',
+      selectedSearch: 'Google',
       search: {
-        google: GOOG_STRING,
-        duckduckgo: DUCK_STRING,
+        Google: GOOG_STRING,
+        DuckDuckGo: DUCK_STRING,
       },
     },
     binds: {

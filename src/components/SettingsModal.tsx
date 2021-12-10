@@ -60,7 +60,7 @@ import {
   FormControlLabel,
   Radio,
 } from '@mui/material';
-import { Palette } from '@mui/icons-material';
+import { Palette, Settings as SettingsIcon } from '@mui/icons-material';
 import { applySnapshot, getSnapshot } from 'mobx-state-tree';
 import GenericModal from './GenericModal';
 import { useStore, View } from '../store/tab-page-store';
@@ -958,7 +958,7 @@ const Settings = observer(() => {
   };
 
   return (
-    <SettingsPage title="Keyboard">
+    <SettingsPage title="Shortcuts">
       <Stack spacing={4}>
         <div>
           <Title>General</Title>
@@ -1050,10 +1050,10 @@ const Settings = observer(() => {
 
 enum Page {
   Account = 'Account',
-  KeyBinds = 'Keyboard',
+  Shortcuts = 'Shortcuts',
   StoryBoard = 'Story Board',
   Feedback = 'Feedback',
-  Other = 'Other',
+  Config = 'Config',
 }
 
 function getActivePage(activePage: Page, menuItems: IMenuItem[]) {
@@ -1179,15 +1179,15 @@ const FeedbackPage = observer(() => {
   );
 });
 
-const OtherPage = observer(() => {
+const ConfigPage = observer(() => {
   const { keybindStore } = useStore();
   const { theme } = keybindStore.settings;
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    let search: 'google' | 'duckduckgo' = 'google';
+    let search: 'Google' | 'DuckDuckGo' = 'Google';
     if (
-      event.target.value === 'google' ||
-      event.target.value === 'duckduckgo'
+      event.target.value === 'Google' ||
+      event.target.value === 'DuckDuckGo'
     ) {
       search = event.target.value;
     }
@@ -1195,7 +1195,7 @@ const OtherPage = observer(() => {
   };
 
   return (
-    <SettingsPage title="Other">
+    <SettingsPage title="Config">
       <Stack spacing={4}>
         <div>
           <Typography variant="h6" gutterBottom>
@@ -1314,8 +1314,8 @@ const SettingsModal = observer(() => {
 
   let menuItems: IMenuItem[] = [
     { Icon: <AccountBox />, title: Page.Account, Page: <AccountPage /> },
-    { Icon: <Keyboard />, title: Page.KeyBinds, Page: <Settings /> },
-    { Icon: <Palette />, title: Page.Other, Page: <OtherPage /> },
+    { Icon: <Keyboard />, title: Page.Shortcuts, Page: <Settings /> },
+    { Icon: <SettingsIcon />, title: Page.Config, Page: <ConfigPage /> },
     { Icon: <Comment />, title: Page.Feedback, Page: <FeedbackPage /> },
   ];
 
