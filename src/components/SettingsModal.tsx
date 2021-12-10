@@ -46,10 +46,17 @@ import {
   Modal,
   Paper,
   Stack,
-  TextField,
   Tooltip,
-  Typography,
 } from '@material-ui/core';
+import {
+  Typography,
+  TextField,
+  ToggleButtonGroup,
+  ToggleButton,
+  InputAdornment,
+  Switch,
+} from '@mui/material';
+import { Palette } from '@mui/icons-material';
 import { applySnapshot, getSnapshot } from 'mobx-state-tree';
 import GenericModal from './GenericModal';
 import { useStore, View } from '../store/tab-page-store';
@@ -60,8 +67,6 @@ import {
   Button as BonsaiButton,
   ButtonBase,
   InertButtonStyle,
-  StretchButton,
-  StretchButtonInert,
 } from './StretchButton';
 import refreshIcon from '../../assets/refresh.svg';
 import { bindEquals, globalKeybindValid, showKeys } from '../store/keybinds';
@@ -250,23 +255,35 @@ interface IKeyBindButton {
 const KeyBindButton = observer(({ id, clickable = false }: IKeyBindButton) => {
   const { tabPageStore, keybindStore } = useStore();
   const bind = keybindStore.binds.get(id);
-  if (clickable) {
-    return (
-      <StretchButton
-        onClick={() => {
-          if (clickable) {
-            runInAction(() => {
-              tabPageStore.rebindModalId = id;
-              tabPageStore.bindKeys = bind ? bind.currentBind : [];
-            });
-          }
-        }}
-      >
-        {bind?.showCode()}
-      </StretchButton>
-    );
-  }
-  return <StretchButtonInert>{bind?.showCode()}</StretchButtonInert>;
+
+  // const KeyButton = styled(Button)`
+  //   color: red;
+  //   background-color: red;
+  //   &:disabled {
+  //     color: red;
+  //     background-color: red;
+  //   }
+  // `;
+
+  return (
+    <Button
+      sx={{
+        '&:disabled': { color: 'var(--body-text-color)' },
+      }}
+      variant="contained"
+      disabled={!clickable}
+      onClick={() => {
+        if (clickable) {
+          runInAction(() => {
+            tabPageStore.rebindModalId = id;
+            tabPageStore.bindKeys = bind ? bind.currentBind : [];
+          });
+        }
+      }}
+    >
+      {bind?.showCode()}
+    </Button>
+  );
 });
 
 function ConfirmLogout() {
@@ -1032,6 +1049,7 @@ enum Page {
   KeyBinds = 'Key Binds',
   StoryBoard = 'Story Board',
   Feedback = 'Feedback',
+  Theme = 'Theme',
 }
 
 function getActivePage(activePage: Page, menuItems: IMenuItem[]) {
@@ -1157,6 +1175,96 @@ const FeedbackPage = observer(() => {
   );
 });
 
+const PalettePage = observer(() => {
+  const { keybindStore } = useStore();
+  const { theme } = keybindStore.settings;
+  return (
+    <SettingsPage title="Theme">
+      <PaddedPaper>
+        <Stack spacing={2}>
+          <div>
+            <Typography
+              gutterBottom
+              variant="h6"
+              color="var(--header-text-color)"
+            >
+              Style
+            </Typography>
+            <ToggleButtonGroup
+              // value={alignment}
+              exclusive
+              // onChange={handleAlignment}
+              aria-label="text alignment"
+            >
+              <ToggleButton
+                selected={theme === 'system'}
+                onClick={() => {
+                  keybindStore.setTheme('system');
+                }}
+                value="left"
+                aria-label="left aligned"
+              >
+                System
+              </ToggleButton>
+              <ToggleButton
+                onClick={() => {
+                  keybindStore.setTheme('dark');
+                }}
+                selected={theme === 'dark'}
+                value="center"
+                aria-label="centered"
+              >
+                Dark
+              </ToggleButton>
+              <ToggleButton
+                onClick={() => {
+                  keybindStore.setTheme('light');
+                }}
+                selected={theme === 'light'}
+                value="right"
+                aria-label="right aligned"
+              >
+                Light
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </div>
+          <div>
+            <Typography
+              gutterBottom
+              variant="h6"
+              color="var(--header-text-color)"
+            >
+              Custom Background
+            </Typography>
+            <Stack direction="row" spacing={1}>
+              <Switch
+                checked={keybindStore.settings.backgroundEnabled}
+                onChange={() => {
+                  keybindStore.setBackgroundEnabled(
+                    !keybindStore.settings.backgroundEnabled
+                  );
+                }}
+              />
+              <TextField
+                disabled={!keybindStore.settings.backgroundEnabled}
+                value={keybindStore.settings.background}
+                onChange={(e) => {
+                  keybindStore.setBackground(e.target.value);
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">#</InputAdornment>
+                  ),
+                }}
+              />
+            </Stack>
+          </div>
+        </Stack>
+      </PaddedPaper>
+    </SettingsPage>
+  );
+});
+
 const SettingsModal = observer(() => {
   const { tabPageStore } = useStore();
 
@@ -1165,6 +1273,7 @@ const SettingsModal = observer(() => {
   let menuItems: IMenuItem[] = [
     { Icon: <AccountBox />, title: Page.Account, Page: <AccountPage /> },
     { Icon: <Keyboard />, title: Page.KeyBinds, Page: <Settings /> },
+    { Icon: <Palette />, title: Page.Theme, Page: <PalettePage /> },
     { Icon: <Comment />, title: Page.Feedback, Page: <FeedbackPage /> },
   ];
 

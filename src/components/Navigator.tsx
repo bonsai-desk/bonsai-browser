@@ -155,7 +155,7 @@ const TabsBar = observer(({ x, y, width }: ITabsBar) => {
     zIndex: 1,
     borderRadius: '10px 10px 0 0',
     display: 'flex',
-    backgroundColor: '#d9dde2',
+    // backgroundColor: '#d9dde2',
     // overflow: 'hidden',
     width: parentWidth,
   };

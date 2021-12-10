@@ -57,7 +57,7 @@ const ImageBoard = observer(() => {
               if (tab) {
                 return (
                   <div key={tab.id}>
-                    <Tab tab={tab} hover active width={200} />
+                    <Tab tab={tab} hover active width={201} />
                   </div>
                 );
               }

@@ -55,7 +55,7 @@ import {
 } from '../components/StretchButton';
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from '../constants';
 import { Buttons } from '../components/Buttons';
-import GlobalStyle from '../GlobalStyle';
+import { GlobalLight } from '../GlobalStyle';
 
 const useTrack = (eventName: string) => {
   useEffect(() => {
@@ -1201,7 +1201,7 @@ const Root = () => {
 const Onboarding = () => {
   return (
     <Router>
-      <GlobalStyle />
+      <GlobalLight />
       <Switch>
         <Route exact path="/" component={Root} />
         <Route exact path="/create-account" component={CreateAccountPage} />

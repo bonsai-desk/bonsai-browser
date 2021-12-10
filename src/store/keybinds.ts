@@ -143,12 +143,30 @@ const KeyBind = types
     },
   }));
 
+const Settings = types.model({
+  theme: types.enumeration('theme', ['system', 'dark', 'light']),
+  backgroundEnabled: types.boolean,
+  background: types.string,
+});
+
 export const KeybindStore = types
-  .model({ binds: types.map(KeyBind) })
+  .model({ binds: types.map(KeyBind), settings: Settings })
   .volatile(() => ({
     userDataPath: '',
   }))
   .actions((self) => ({
+    setTheme(theme: 'system' | 'dark' | 'light') {
+      self.settings.theme = theme;
+      saveSnapshot(self, false);
+    },
+    setBackgroundEnabled(enabled: boolean) {
+      self.settings.backgroundEnabled = enabled;
+      saveSnapshot(self, false);
+    },
+    setBackground(background: string) {
+      self.settings.background = background;
+      saveSnapshot(self, false);
+    },
     addBind(id: string, data: IKeyBind) {
       self.binds.set(id, data);
       saveSnapshot(self, false);
@@ -190,6 +208,11 @@ export const KeybindStore = types
 
 export function defaultKeybindStore(): Instance<typeof KeybindStore> {
   return KeybindStore.create({
+    settings: {
+      theme: 'system',
+      background: 'fcba03',
+      backgroundEnabled: false,
+    },
     binds: {
       'toggle-floating-window': {
         name: 'Toggle Floating Window',

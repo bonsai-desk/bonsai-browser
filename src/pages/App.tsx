@@ -15,12 +15,13 @@ import { goForward } from '../store/history-store';
 
 const TitleBarFull = styled.div`
   font-family: sans-serif;
+  //background-color: white;
 `;
 
 const TitleBarBottom = styled.div`
   width: calc(100% - 20px);
   height: 36px;
-  background-color: white;
+  background-color: var(--canvas-color);
   border-bottom: 1px solid #dee1e6;
   display: flex;
   align-items: center;
@@ -46,10 +47,11 @@ const URLBox = styled.input`
   height: 28px;
   border-radius: 99999px;
   border: none;
-  background-color: #eff1f2;
+  background-color: var(--search-color);
   outline: none;
   padding-left: 10px;
   margin: 0 10px 0 10px;
+  color: var(--body-text-color);
 `;
 
 const ButtonRow = styled.div`

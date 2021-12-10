@@ -2,7 +2,6 @@ import styled, { css } from 'styled-components';
 
 export const TabParent = styled.div`
   overflow: hidden;
-  background-color: white;
   border-radius: 10px;
   display: flex;
   flex-direction: column;

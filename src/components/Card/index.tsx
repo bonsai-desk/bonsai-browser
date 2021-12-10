@@ -1,5 +1,5 @@
 import { observer } from 'mobx-react-lite';
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { ipcRenderer } from 'electron';
 import styled from '@emotion/styled';
 import { OpenInBrowser } from '@material-ui/icons';
@@ -39,13 +39,19 @@ const SelectedParent = styled.div`
 
 const TabImage = observer(({ imgUrl, selected }: ITabImage) => {
   const { workspaceStore } = useStore();
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
   const imgFileUrl = path.join(
     workspaceStore.dataPath,
     'images',
     `${imgUrl}.jpg`
   );
   return (
-    <TabImageParent>
+    <TabImageParent
+      style={{
+        backgroundColor: loaded ? 'transparent' : 'var(--canvas-color)',
+      }}
+    >
       {selected ? (
         <SelectedParent>
           <OpenInBrowser />
@@ -53,14 +59,32 @@ const TabImage = observer(({ imgUrl, selected }: ITabImage) => {
       ) : (
         ''
       )}
-      <TabImg draggable={false} src={`file://${imgFileUrl}`} />
+      {imgFileUrl ? (
+        <TabImg
+          alt=""
+          style={{
+            display: error ? 'none' : '',
+          }}
+          draggable={false}
+          src={imgFileUrl ? `file://${imgFileUrl}` : ''}
+          onLoad={() => {
+            setLoaded(true);
+          }}
+          onError={() => {
+            setError(true);
+          }}
+        />
+      ) : (
+        ''
+      )}
     </TabImageParent>
   );
 });
 
 const CardTabParent = styled(TabParent)`
   box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
-  background-color: #d9dde2;
+  //background-color: var(--canvas-color);
+  //background-color: white;
   #tab-inner {
     border-right: none;
   }
@@ -159,7 +183,7 @@ const Card = observer(
         />
         <div
           style={{
-            borderBottom: '1px solid #dee1e6',
+            borderBottom: '1px solid var(--canvas-border-color)',
             width: '100%',
           }}
         />
