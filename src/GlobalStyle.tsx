@@ -71,7 +71,6 @@ const head = `
     line-height: 1.5;
     color: ${color('body-text-color')};
     font-size: 16px;
-    background-color: var(--background-color);
   }
 `;
 
