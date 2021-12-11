@@ -60,7 +60,7 @@ import {
   FormControlLabel,
   Radio,
 } from '@mui/material';
-import { Palette, Settings as SettingsIcon } from '@mui/icons-material';
+import { Settings as SettingsIcon } from '@mui/icons-material';
 import { applySnapshot, getSnapshot } from 'mobx-state-tree';
 import GenericModal from './GenericModal';
 import { useStore, View } from '../store/tab-page-store';
@@ -259,15 +259,6 @@ interface IKeyBindButton {
 const KeyBindButton = observer(({ id, clickable = false }: IKeyBindButton) => {
   const { tabPageStore, keybindStore } = useStore();
   const bind = keybindStore.binds.get(id);
-
-  // const KeyButton = styled(Button)`
-  //   color: red;
-  //   background-color: red;
-  //   &:disabled {
-  //     color: red;
-  //     background-color: red;
-  //   }
-  // `;
 
   return (
     <Button

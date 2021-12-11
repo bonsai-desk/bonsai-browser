@@ -8,19 +8,28 @@ import { myPlatform, Platform } from '../render-constants';
 const GOOG_STRING = 'https://www.google.com/search?q=%s';
 const DUCK_STRING = 'https://duckduckgo.com/?q=%s';
 
-function loadSnapshot(store: Instance<any>, encrypted = true) {
+function loadSnapshot(store: Instance<any>, encrypted = true): any {
   if (store.userDataPath !== '') {
     try {
       const snapshotPath = path.join(store.userDataPath, 'keybindSnapshot');
       const json = fs.readFileSync(snapshotPath, 'utf8');
       if (json !== '') {
         const storeSnapshot = JSON.parse(encrypted ? tryDecrypt(json) : json);
-        applySnapshot(store, storeSnapshot);
+        try {
+          applySnapshot(store, storeSnapshot);
+        } catch (err) {
+          console.log('err load snap');
+          console.log(err);
+        }
+        return storeSnapshot;
       }
-    } catch {
+    } catch (err) {
+      console.log('err load snap');
+      console.log(err);
       //
     }
   }
+  return {};
 }
 
 function saveSnapshot(store: Instance<any>, encrypted = true) {
@@ -50,6 +59,7 @@ export function bindEquals(a: string[], b: string[]) {
 
 const keyMap: Record<string, string | Record<string, string>> = {
   Control: 'Ctrl',
+  CmdOrCtrl: { Win: 'Ctrl', Mac: '⌘' },
   Meta: { Win: 'Win', Mac: '⌘' },
   Alt: { Win: 'Alt', Mac: '⌥' },
   Backslash: '\\',
@@ -108,6 +118,7 @@ export interface IKeyBind {
   name: string;
   defaultBind: string[];
   currentBind: string[];
+  version: number;
 }
 
 export enum Bind {
@@ -123,6 +134,7 @@ const KeyBind = types
     name: types.string,
     defaultBind: types.array(types.string),
     currentBind: types.array(types.string),
+    version: types.number,
   })
   .actions((self) => ({
     setCurrentBind(newBind: string[]) {
@@ -234,94 +246,112 @@ export function defaultKeybindStore(): Instance<typeof KeybindStore> {
     },
     binds: {
       'toggle-floating-window': {
+        version: 4,
         name: 'Toggle Floating Window',
-        defaultBind: ['Meta', 'Backslash'],
-        currentBind: ['Meta', 'Backslash'],
+        defaultBind: ['CmdOrCtrl', 'Backslash'],
+        currentBind: ['CmdOrCtrl', 'Backslash'],
       },
       'toggle-app': {
+        version: 1,
         name: 'Toggle App',
         defaultBind: ['Alt', 'Space'],
         currentBind: ['Alt', 'Space'],
       },
       'fuzzy-left': {
+        version: 1,
         name: 'Fuzzy Left',
         defaultBind: ['Control', 'KeyH'],
         currentBind: ['Control', 'KeyH'],
       },
       'fuzzy-right': {
+        version: 1,
         name: 'Fuzzy Right',
         defaultBind: ['Control', 'KeyL'],
         currentBind: ['Control', 'KeyL'],
       },
       'fuzzy-up': {
+        version: 1,
         name: 'Fuzzy Up',
         defaultBind: ['Control', 'KeyK'],
         currentBind: ['Control', 'KeyK'],
       },
       'fuzzy-down': {
+        version: 1,
         name: 'Fuzzy Down',
         defaultBind: ['Control', 'KeyJ'],
         currentBind: ['Control', 'KeyJ'],
       },
       'fuzzy-left-arrow': {
+        version: 1,
         name: 'Fuzzy Left Arrow',
         defaultBind: ['ArrowLeft'],
         currentBind: ['ArrowLeft'],
       },
       'fuzzy-right-arrow': {
+        version: 1,
         name: 'Fuzzy Right Arrow',
         defaultBind: ['ArrowRight'],
         currentBind: ['ArrowRight'],
       },
       'fuzzy-up-arrow': {
+        version: 1,
         name: 'Fuzzy Up Arrow',
         defaultBind: ['ArrowUp'],
         currentBind: ['ArrowUp'],
       },
       'fuzzy-down-arrow': {
+        version: 1,
         name: 'Fuzzy Down Arrow',
         defaultBind: ['ArrowDown'],
         currentBind: ['ArrowDown'],
       },
       'select-fuzzy-result': {
+        version: 1,
         name: 'Select Fuzzy Result',
         defaultBind: ['Enter'],
         currentBind: ['Enter'],
       },
       'clear-fuzzy-search': {
+        version: 1,
         name: 'Clear Fuzzy Search',
         defaultBind: ['Escape'],
         currentBind: ['Escape'],
       },
       'select-search-box': {
+        version: 2,
         name: 'Select Search Box',
-        defaultBind: ['Meta', 'KeyL'],
-        currentBind: ['Meta', 'KeyL'],
+        defaultBind: ['CmdOrCtrl', 'KeyL'],
+        currentBind: ['CmdOrCtrl', 'KeyL'],
       },
       'home-from-webpage': {
+        version: 2,
         name: 'Back to Home',
-        defaultBind: ['Meta', 'KeyE'],
-        currentBind: ['Meta', 'KeyE'],
+        defaultBind: ['CmdOrCtrl', 'KeyE'],
+        currentBind: ['CmdOrCtrl', 'KeyE'],
       },
       'toggle-workspace': {
+        version: 1,
         name: 'Toggle Workspace',
         defaultBind: ['Tab'],
         currentBind: ['Tab'],
       },
       'hide-from-home': {
+        version: 1,
         name: 'Hide from Home',
         defaultBind: ['Escape'],
         currentBind: ['Escape'],
       },
       'close-web-page': {
+        version: 2,
         name: 'Close Web Page',
-        defaultBind: ['Meta', 'W'],
-        currentBind: ['Meta', 'W'],
+        defaultBind: ['CmdOrCtrl', 'W'],
+        currentBind: ['CmdOrCtrl', 'W'],
       },
       'new-tab': {
+        version: 2,
         name: 'New Tab',
-        defaultBind: ['Meta', 'KeyT'],
-        currentBind: ['Meta', 'KeyT'],
+        defaultBind: ['CmdOrCtrl', 'KeyT'],
+        currentBind: ['CmdOrCtrl', 'KeyT'],
       },
     },
   });
@@ -379,13 +409,24 @@ export function createAndLoadKeybindStore(): Instance<typeof KeybindStore> {
 
   ipcRenderer.on('user-data-path', (_, userDataPath) => {
     keybindStore.setUserDataPath(userDataPath);
-    loadSnapshot(keybindStore, false);
+    const json = loadSnapshot(keybindStore, false);
 
     // loading from file overwrites new keybinds so add the defaults back here if they don't exist
-    Object.entries(defaultSnapshot.binds).forEach(([key, bind]) => {
-      const newBind = keybindStore.binds.get(key);
-      if (!newBind) {
-        keybindStore.addBind(key, bind);
+    // we also update the data if there is new version but keep the user custom keybind
+    Object.entries(defaultSnapshot.binds).forEach(([key, defaultBind]) => {
+      // const customBind = keybindStore.binds.get(key);
+      const customBinds = json.binds;
+      if (customBinds) {
+        const customBind = customBinds[key];
+        if (!customBind) {
+          keybindStore.addBind(key, defaultBind);
+        } else if (
+          !customBind.version ||
+          defaultBind.version > customBind.version
+        ) {
+          keybindStore.addBind(key, defaultBind);
+          // keybindStore.setBind(key, customBind.currentBind);
+        }
       }
     });
 
