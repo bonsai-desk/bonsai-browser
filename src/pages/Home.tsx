@@ -170,10 +170,6 @@ const Home = observer(() => {
     };
   }, [tabPageStore]);
 
-  if (tabPageStore.windowFloating) {
-    return <FloatingShadow />;
-  }
-
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
 
   const mode =
@@ -203,6 +199,10 @@ const Home = observer(() => {
       }),
     [mode]
   );
+
+  if (tabPageStore.windowFloating) {
+    return <FloatingShadow />;
+  }
 
   const backgroundColor = keybindStore.settings.backgroundEnabled
     ? `#${keybindStore.settings.background}`
