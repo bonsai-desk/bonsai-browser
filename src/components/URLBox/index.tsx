@@ -32,19 +32,37 @@ const Input = styled.input`
   ::placeholder {
     color: rgba(255, 255, 255, 0.8);
   }
+  :focus {
+    outline: var(--link-color) solid 2px;
+    background-color: white;
+    color: black;
+  }
 `;
 
 const Header = observer(({ onViewPage }: { onViewPage: boolean }) => {
   const { tabPageStore } = useStore();
 
-  const urlBoxRef = useRef<HTMLInputElement>(null);
-  const [urlFocus, setUrlFocus] = useState(false);
+  const bonsaiBoxRef = useRef<HTMLInputElement>(null);
+  const [bonsaiBoxFocus, setBonsaiBoxFocus] = useState(false);
 
   useEffect(() => {
-    tabPageStore.urlBoxRef = urlBoxRef;
+    tabPageStore.bonsaiBoxRef = bonsaiBoxRef;
   });
 
   const titleBarHeight = 0; // for regular window mode when it's added
+
+  const activeStyle = {
+    outline: 'var(--link-color) solid 2px',
+    backgroundColor: 'white',
+    color: 'black',
+  };
+
+  useEffect(() => {
+    if (!tabPageStore.bonsaiBoxFocus && tabPageStore.urlText) {
+      // tabPageStore.setFocus()
+      tabPageStore.bonsaiBoxRef?.current?.focus();
+    }
+  }, [tabPageStore.urlText]);
 
   return (
     <URLBoxParent
@@ -83,22 +101,31 @@ const Header = observer(({ onViewPage }: { onViewPage: boolean }) => {
         <Input
           type="text"
           spellCheck={false}
-          ref={urlBoxRef}
+          ref={bonsaiBoxRef}
+          style={tabPageStore.urlText ? activeStyle : {}}
           placeholder="Search"
           value={tabPageStore.urlText}
           onInput={(e) => {
             tabPageStore.setUrlText(e.currentTarget.value);
           }}
           onClick={() => {
-            if (urlBoxRef.current != null && !urlFocus) {
-              setUrlFocus(true);
-              urlBoxRef.current.select();
+            if (bonsaiBoxRef.current != null && !bonsaiBoxFocus) {
+              setBonsaiBoxFocus(true);
+              bonsaiBoxRef.current.select();
             }
           }}
+          onFocus={() => {
+            runInAction(() => {
+              tabPageStore.bonsaiBoxFocus = true;
+            });
+          }}
           onBlur={() => {
-            setUrlFocus(false);
-            if (urlBoxRef.current != null) {
-              urlBoxRef.current.blur();
+            runInAction(() => {
+              tabPageStore.bonsaiBoxFocus = false;
+            });
+            setBonsaiBoxFocus(false);
+            if (bonsaiBoxRef.current != null) {
+              bonsaiBoxRef.current.blur();
               window.getSelection()?.removeAllRanges();
             }
           }}

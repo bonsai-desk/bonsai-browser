@@ -37,6 +37,36 @@ export enum TabViewType {
   Column = 'Column',
 }
 
+const NOT_TEXT = [
+  'ShiftLeft',
+  'ControlLeft',
+  'MetaLeft',
+  'AltLeft',
+  'ShiftRight',
+  'ControlRight',
+  'MetaRight',
+  'AltRight',
+  'Insert',
+  'Home',
+  'PageUp',
+  'Delete',
+  'End',
+  'PageDown',
+  'F1',
+  'F2',
+  'F3',
+  'F4',
+  'F5',
+  'F6',
+  'F7',
+  'F8',
+  'F9',
+  'F10',
+  'F11',
+  'F12',
+  'F13',
+];
+
 export default class TabPageStore {
   private view: View = View.Tabs;
 
@@ -101,7 +131,7 @@ export default class TabPageStore {
 
   isPinned = false;
 
-  urlBoxRef: RefObject<HTMLInputElement> | null = null;
+  bonsaiBoxRef: RefObject<HTMLInputElement> | null = null;
 
   historyBoxRef: RefObject<HTMLInputElement> | null = null;
 
@@ -136,6 +166,8 @@ export default class TabPageStore {
   seenEmailForm: boolean | undefined = false;
 
   urlBoxFocus = false;
+
+  bonsaiBoxFocus = false;
 
   tagBoxFocus = false;
 
@@ -200,7 +232,11 @@ export default class TabPageStore {
         this.fuzzySelectionIndex = [-1, -1];
       }
     } else if (this.view !== View.Settings) {
-      this.setFocus();
+      const mod = NOT_TEXT.includes(e.code);
+      console.log(e);
+      if (!mod) {
+        this.setFocus();
+      }
       this.fuzzySelectionIndex = [-1, -1];
     }
   }
@@ -254,6 +290,7 @@ export default class TabPageStore {
             ipcRenderer.send('mixpanel-track', 'search url from home');
           }
           this.setUrlText('');
+          this.bonsaiBoxRef?.current?.blur();
         }
         break;
       case 'Escape':
@@ -264,7 +301,8 @@ export default class TabPageStore {
           this.View === View.NavigatorDebug
         ) {
           this.View = View.Tabs;
-        } else if (this.urlText.length > 0) {
+        } else if (this.urlText.length > 0 || this.bonsaiBoxFocus) {
+          this.bonsaiBoxRef?.current?.blur();
           this.setUrlText('');
         } else {
           ipcRenderer.send('toggle');
@@ -640,7 +678,7 @@ export default class TabPageStore {
         this.historyBoxRef?.current?.focus();
         break;
       default:
-        this.urlBoxRef?.current?.focus();
+        this.bonsaiBoxRef?.current?.focus();
     }
   }
 
@@ -654,7 +692,7 @@ export default class TabPageStore {
         this.historyBoxRef?.current?.select();
         break;
       default:
-        this.urlBoxRef?.current?.select();
+        this.bonsaiBoxRef?.current?.select();
     }
   }
 
@@ -968,8 +1006,8 @@ export default class TabPageStore {
       this.selectText();
     });
     ipcRenderer.on('focus-main', () => {
-      this.urlBoxRef?.current?.focus();
-      this.urlBoxRef?.current?.select();
+      this.bonsaiBoxRef?.current?.focus();
+      this.bonsaiBoxRef?.current?.select();
     });
     ipcRenderer.on('set-pinned', (_, newIsPinned) => {
       runInAction(() => {

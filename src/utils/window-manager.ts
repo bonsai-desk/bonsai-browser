@@ -727,7 +727,7 @@ export default class WindowManager {
     }
   }
 
-  unSetTab(shouldScreenshot = true, shouldFocusSearch = true) {
+  unSetTab(shouldScreenshot = true, shouldFocusSearch = false) {
     const oldTabView = this.allWebViews[this.activeTabId];
 
     // move title bar off screen

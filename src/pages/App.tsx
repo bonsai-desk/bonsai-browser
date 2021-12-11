@@ -48,9 +48,13 @@ const URLBox = styled.input`
   border-radius: 99999px;
   border: none;
   background-color: var(--search-color);
+  padding: 0 0 0 10px;
   outline: none;
-  padding-left: 10px;
-  margin: 0 10px 0 10px;
+  :focus {
+    outline: var(--link-color) solid 2px;
+    background-color: white;
+  }
+  margin: 0 10px 0 8px;
   color: var(--body-text-color);
 `;
 
