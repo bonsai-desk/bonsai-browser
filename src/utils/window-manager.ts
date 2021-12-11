@@ -74,6 +74,13 @@ import MixpanelManager from './mixpanel-manager';
 import SaveData from './SaveData';
 import { INode } from '../store/history-store';
 
+interface LoadTextOptions {
+  dontActuallyLoadUrl?: boolean;
+  scrollHeight?: number;
+  handleLoaded?: () => void;
+  searchPattern?: string;
+}
+
 export default class WindowManager {
   // region variables
   windowFloating = false;
@@ -849,6 +856,50 @@ export default class WindowManager {
     this.tabPageView.webContents.send('access-tab', id);
 
     this.handleResize();
+  }
+
+  loadText(id: number, url: string, options: LoadTextOptions) {
+    const {
+      dontActuallyLoadUrl = false,
+      scrollHeight = 0,
+      handleLoaded = () => {},
+      searchPattern = 'https://www.google.com/search?q=%s',
+    } = options;
+
+    if (id === -1 || url === '') {
+      return;
+    }
+    const tabView = this.allWebViews[id];
+    if (typeof tabView === 'undefined') {
+      throw new Error(
+        `load-url-in-active-tab: tab with id ${id} does not exist`
+      );
+    }
+
+    const fullUrl = stringToUrl(url, searchPattern);
+
+    (async () => {
+      if (!dontActuallyLoadUrl) {
+        await tabView.view.webContents
+          .loadURL(fullUrl)
+          .then(handleLoaded)
+          .catch(() => {
+            // failed to load url
+            // todo: handle this
+            console.log(`error loading url: ${fullUrl}`);
+            console.log('todo: handle this? callback is not called?');
+          });
+        tabView.view.webContents.send('scroll-to', scrollHeight);
+      } else {
+        tabView.unloadedUrl = fullUrl;
+      }
+      const newUrl = dontActuallyLoadUrl
+        ? fullUrl
+        : tabView.view.webContents.getURL();
+      this.closeFind();
+      this.tabPageView.webContents.send('url-changed', [id, newUrl]);
+      updateWebContents(this.tabPageView, id, tabView.view);
+    })();
   }
 
   loadUrlInTab(
@@ -1812,6 +1863,9 @@ export default class WindowManager {
     ipcMain.on('load-url-in-tab', (_, [id, url]) => {
       this.loadUrlInTab(id, url);
     });
+    ipcMain.on('load-text-in-tab', (_, [id, text, searchPattern]) => {
+      this.loadText(id, text, { searchPattern });
+    });
     ipcMain.on('tab-back', (_, id) => {
       this.tabBack(id);
     });
@@ -1854,10 +1908,10 @@ export default class WindowManager {
           .catch(console.log);
       }
     });
-    ipcMain.on('search-url', (_, url) => {
+    ipcMain.on('search-url', (_, [text, searchPattern]) => {
       this.tabPageView.webContents.send('close-history-modal');
       const newTabId = this.createNewTab();
-      this.loadUrlInTab(newTabId, url);
+      this.loadText(newTabId, text, { searchPattern });
       this.setTab(newTabId);
     });
     ipcMain.on('history-search', (_, query) => {

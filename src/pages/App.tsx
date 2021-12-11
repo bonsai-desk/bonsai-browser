@@ -62,7 +62,7 @@ const ButtonRow = styled.div`
 `;
 
 const TitleBar = observer(() => {
-  const { tabStore, historyStore, tabPageStore } = useStore();
+  const { tabStore, historyStore, tabPageStore, keybindStore } = useStore();
 
   const urlBoxRef = useRef<HTMLInputElement>(null);
 
@@ -133,9 +133,10 @@ const TitleBar = observer(() => {
             if (e.nativeEvent.code === 'Enter') {
               const searchText = tabStore.getActiveTabSearchBar();
               if (searchText !== '') {
-                ipcRenderer.send('load-url-in-tab', [
+                ipcRenderer.send('load-text-in-tab', [
                   tabStore.activeTabId,
                   searchText,
+                  keybindStore.searchString(),
                 ]);
                 ipcRenderer.send('mixpanel-track', 'search url from title bar');
               }

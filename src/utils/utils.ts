@@ -86,7 +86,10 @@ function hostInHosts(host: string): boolean {
   return hostInHost;
 }
 
-export function stringToUrl(inputString: string): string {
+export function stringToUrl(
+  inputString: string,
+  pattern = 'https://www.google.com/search?q=%s'
+): string {
   let inputTrimmed = inputString.trim();
   if (inputTrimmed.startsWith('localhost')) {
     inputTrimmed = `http://${inputTrimmed}`;
@@ -115,9 +118,7 @@ export function stringToUrl(inputString: string): string {
     !url ||
     (url.hostname.indexOf('.') === -1 && !hostInHosts(url.hostname))
   ) {
-    return `https://www.google.com/search?q=${encodeURIComponent(
-      inputTrimmed
-    )}`;
+    return pattern.replace('%s', encodeURIComponent(inputTrimmed));
   }
 
   return urlString;

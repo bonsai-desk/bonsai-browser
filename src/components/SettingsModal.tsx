@@ -1044,7 +1044,7 @@ enum Page {
   Shortcuts = 'Shortcuts',
   StoryBoard = 'Story Board',
   Feedback = 'Feedback',
-  Config = 'Config',
+  SettingsItem = 'Settings',
 }
 
 function getActivePage(activePage: Page, menuItems: IMenuItem[]) {
@@ -1186,7 +1186,7 @@ const ConfigPage = observer(() => {
   };
 
   return (
-    <SettingsPage title="Config">
+    <SettingsPage title="Settings">
       <Stack spacing={4}>
         <div>
           <Typography variant="h6" gutterBottom>
@@ -1306,7 +1306,7 @@ const SettingsModal = observer(() => {
   let menuItems: IMenuItem[] = [
     { Icon: <AccountBox />, title: Page.Account, Page: <AccountPage /> },
     { Icon: <Keyboard />, title: Page.Shortcuts, Page: <Settings /> },
-    { Icon: <SettingsIcon />, title: Page.Config, Page: <ConfigPage /> },
+    { Icon: <SettingsIcon />, title: Page.SettingsItem, Page: <ConfigPage /> },
     { Icon: <Comment />, title: Page.Feedback, Page: <FeedbackPage /> },
   ];
 

@@ -11,7 +11,7 @@ import { TabPageColumn, TabPageTab } from '../interfaces/tab';
 import { getRootDomain } from '../utils/data';
 import { Item } from './workspace/item';
 import { Direction } from '../render-constants';
-import { chord, clamp, search, unixNow } from '../utils/utils';
+import { chord, clamp, unixNow } from '../utils/utils';
 import { HistoryEntry } from '../utils/interfaces';
 import { HistoryStore } from './history-store';
 import WorkspaceStore from './workspace/workspace-store';
@@ -247,11 +247,10 @@ export default class TabPageStore {
               ipcRenderer.send('open-workspace-url', tab.url);
             }
           } else {
-            encodeURIComponent(this.urlText);
-            ipcRenderer.send(
-              'search-url',
-              search(this.keybindStore.searchString(), this.urlText)
-            );
+            ipcRenderer.send('search-url', [
+              this.urlText,
+              this.keybindStore.searchString(),
+            ]);
             ipcRenderer.send('mixpanel-track', 'search url from home');
           }
           this.setUrlText('');
