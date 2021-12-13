@@ -1299,7 +1299,7 @@ const ConfigPage = observer(() => {
 });
 
 const Foo = observer(() => {
-  // const { tabPageStore } = useStore();
+  const { tabPageStore } = useStore();
 
   const [activePage, setActivePage] = useState<Page>(Page.Account);
 
@@ -1328,8 +1328,25 @@ const Foo = observer(() => {
 
   const ActivePage = getActivePage(activePage, menuItems);
 
+  // return (
+  //   <Grid sx={{ width: '1000px', height: '100%' }} container spacing={0}>
+  //     <Grid item xs={3}>
+  //       <MenuList menuItems={menuItems} setActivePage={setActive} />
+  //     </Grid>
+  //     <Grid sx={{ height: '100%', overflowY: 'auto' }} item xs={9}>
+  //       <Container>{ActivePage}</Container>
+  //     </Grid>
+  //   </Grid>
+  // );
   return (
-    <Grid sx={{ width: '1000px', height: '100%' }} container spacing={0}>
+    <Grid
+      sx={{
+        width: `${Math.min(tabPageStore.windowSize.width - 50, 1000)}px`,
+        height: '100%',
+      }}
+      container
+      spacing={0}
+    >
       <Grid item xs={3}>
         <MenuList menuItems={menuItems} setActivePage={setActive} />
       </Grid>

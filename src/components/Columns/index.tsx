@@ -8,6 +8,7 @@ import Column from './Column';
 import SelectWorkspaceModal from './SelectWorkspaceModal';
 import HomeParent, { HomeParentScrollBars } from '../Home';
 import Tab from '../Card';
+import { clamp } from '../../utils/utils';
 
 const ImageBoardParent = styled(HomeParent)`
   //align-items: center;
@@ -43,6 +44,14 @@ const ImageBoard = observer(() => {
   if (tabPageStore.View !== View.Tabs) {
     return <HomeParent />;
   }
+
+  const columnWidth = 200;
+  const gutter = 25;
+  const columns = clamp(
+    Math.floor(tabPageStore.windowSize.width / (columnWidth + gutter)),
+    1,
+    4
+  );
   return (
     <ImageBoardParent>
       <GridParent
@@ -50,7 +59,12 @@ const ImageBoard = observer(() => {
           tabPageStore.syncBumpOrder();
         }}
       >
-        <Grid columns={4} columnWidth={200} gutterWidth={25} gutterHeight={25}>
+        <Grid
+          columns={columns}
+          columnWidth={columnWidth}
+          gutterWidth={gutter}
+          gutterHeight={gutter}
+        >
           {tabPageStore
             .tabPageOrdered(tabPageStore.tabBumpOrder)
             .map((tab, index) => {

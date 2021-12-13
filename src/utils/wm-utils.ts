@@ -11,11 +11,8 @@ import path from 'path';
 import fs from 'fs';
 import { INavigateData, IWebView } from './interfaces';
 import { parseMap, urlToMapKey } from './utils';
-import { floatingWindowEdgeMargin } from './calculate-window-target';
 import {
-  floatingPadding,
-  floatingTitleBarHeight,
-  floatingTitleBarSpacing,
+  floatingWindowEdgeMargin,
   LOWER_BOUND,
   ONBOARDING_HTML,
 } from '../constants';
@@ -229,15 +226,6 @@ export function innerBounds(window: BrowserWindow): Electron.Rectangle {
   };
 }
 
-export function resizeOverlayView(view: BrowserView, windowSize: number[]) {
-  view.setBounds({
-    x: 0,
-    y: 0,
-    width: windowSize[0],
-    height: floatingTitleBarHeight + floatingPadding + floatingTitleBarSpacing,
-  });
-}
-
 export const updateContents = (webView: IWebView, tabPageView: BrowserView) => {
   updateWebContents(tabPageView, webView.id, webView.view);
   const url = webView.view.webContents.getURL();
@@ -290,10 +278,12 @@ export function saveTabs(allWebViews: Record<number, IWebView>) {
 }
 
 export function floatingSize(display: Display) {
-  const height =
-    (display.workAreaSize.height - floatingWindowEdgeMargin * 2) * 0.95;
-  const floatingWidth = Math.floor(height * 0.85);
-  const floatingHeight = Math.floor(height);
+  const floatingHeight = Math.floor(
+    display.size.height - floatingWindowEdgeMargin * 2
+  );
+  const floatingWidth = Math.floor(
+    display.size.width / 2 - floatingWindowEdgeMargin * 2
+  );
   return [floatingWidth, floatingHeight];
 }
 

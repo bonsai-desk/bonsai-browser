@@ -173,6 +173,7 @@ const TagSidebar = observer(() => {
         top: tabPageStore.innerBounds.y,
         width: tagSideBarWidth,
         height: tabPageStore.innerBounds.height,
+        display: tabPageStore.windowFloating ? 'none' : 'block',
       }}
     >
       <Border>

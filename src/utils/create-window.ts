@@ -15,9 +15,8 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import { setInterval } from 'timers';
 import WindowManager from './window-manager';
-import windowFixedUpdate from './calculate-window-physics';
 import { windowHasView } from './utils';
-import { floatingSize, makeWebContentsSafe } from './wm-utils';
+import { makeWebContentsSafe } from './wm-utils';
 import MixpanelManager from './mixpanel-manager';
 import { ICON_PNG, ICON_PNG_2, ICON_SMALL_PNG } from '../main-constants';
 
@@ -90,21 +89,21 @@ function initMenu(wm: WindowManager) {
           }
         },
       },
-      {
-        label: 'Toggle Float Window',
-        accelerator: 'CmdOrCtrl+\\',
-        click: () => {
-          if (wm.activeTabId === -1) {
-            return;
-          }
-
-          if (wm.windowFloating) {
-            wm.unFloat();
-          } else {
-            wm.float();
-          }
-        },
-      },
+      // {
+      //   label: 'Toggle Float Window',
+      //   accelerator: 'CmdOrCtrl+\\',
+      //   click: () => {
+      //     if (wm.activeTabId === -1) {
+      //       return;
+      //     }
+      //
+      //     if (wm.windowFloating) {
+      //       wm.unFloat();
+      //     } else {
+      //       wm.float();
+      //     }
+      //   },
+      // },
       {
         label: 'Close current tab',
         accelerator: 'CmdOrCtrl+W',
@@ -199,31 +198,31 @@ function initMenu(wm: WindowManager) {
   Menu.setApplicationMenu(menu);
 }
 
-function initFixedUpdate(wm: WindowManager) {
-  const fixedTimeStep = 0.01;
-  let lastFixedUpdateTime = 0;
-  const fixedUpdate = () => {
-    const deltaTime = fixedTimeStep;
-    const [floatingWidth, floatingHeight] = floatingSize(wm.display);
-    windowFixedUpdate(wm, deltaTime, floatingWidth, floatingHeight);
-  };
-
-  let startTime: number | null = null;
-
-  const update = () => {
-    const currentTime = Date.now() / 1000.0;
-    if (startTime === null) {
-      startTime = currentTime;
-    }
-    const time = currentTime - startTime;
-
-    while (lastFixedUpdateTime < time) {
-      lastFixedUpdateTime += fixedTimeStep;
-      fixedUpdate();
-    }
-  };
-  setInterval(update, 1);
-}
+// function initFixedUpdate(wm: WindowManager) {
+//   const fixedTimeStep = 0.01;
+//   let lastFixedUpdateTime = 0;
+//   const fixedUpdate = () => {
+//     // const deltaTime = fixedTimeStep;
+//     // const [floatingWidth, floatingHeight] = floatingSize(wm.display);
+//     // windowFixedUpdate(wm, deltaTime, floatingWidth, floatingHeight);
+//   };
+//
+//   let startTime: number | null = null;
+//
+//   const update = () => {
+//     const currentTime = Date.now() / 1000.0;
+//     if (startTime === null) {
+//       startTime = currentTime;
+//     }
+//     const time = currentTime - startTime;
+//
+//     while (lastFixedUpdateTime < time) {
+//       lastFixedUpdateTime += fixedTimeStep;
+//       fixedUpdate();
+//     }
+//   };
+//   setInterval(update, 1);
+// }
 
 function initWindow(): BrowserWindow {
   app.on('web-contents-created', (_, contents) => {
@@ -375,7 +374,7 @@ export const createWindow = async () => {
 
   initTray(ICON_SMALL_PNG, wm);
 
-  initFixedUpdate(wm);
+  // initFixedUpdate(wm);
 
   initMenu(wm);
 

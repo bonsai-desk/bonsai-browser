@@ -13,18 +13,13 @@ import {
 } from 'electron';
 import BezierEasing from 'bezier-easing';
 import fs from 'fs';
-import { vec2 } from 'gl-matrix';
 import Fuse from 'fuse.js';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import {
-  dragThresholdSquared,
   FIND_HTML,
-  floatingPadding,
-  floatingTitleBarHeight,
-  floatingTitleBarSpacing,
+  floatingWindowEdgeMargin,
   headerHeight,
-  OVERLAY_HTML,
   PRELOAD,
   TAB_PAGE,
   tagSideBarWidth,
@@ -41,10 +36,8 @@ import {
   urlToMapKey,
   windowHasView,
 } from './utils';
-import calculateWindowTarget from './calculate-window-target';
 import {
   currentWindowSize,
-  floatingSize,
   genHandleWindowOpen,
   goBack,
   handleDidNavigate,
@@ -59,7 +52,6 @@ import {
   pointInBounds,
   reloadTab,
   resizeFindView,
-  resizeOverlayView,
   resizePeekView,
   saveTabs,
   showOnboardingWindow,
@@ -85,11 +77,11 @@ export default class WindowManager {
   // region variables
   windowFloating = false;
 
+  floatingDirection = '';
+
   allWebViews: Record<number, IWebView> = {};
 
   activeTabId = -1;
-
-  movingWindow = false;
 
   mainWindow: BrowserWindow;
 
@@ -97,27 +89,11 @@ export default class WindowManager {
 
   tabPageView: BrowserView;
 
-  windowPosition = vec2.create();
-
-  windowVelocity = vec2.create();
-
   historyFuse = new Fuse<HistoryEntry>([], {
     keys: ['url', 'title', 'openGraphData.title'],
   });
 
   historyModalActive = false;
-
-  isPinned = false;
-
-  lastX: number | null = null;
-
-  lastY: number | null = null;
-
-  lastTime = 0;
-
-  targetWindowPosition = vec2.create();
-
-  windowSize = { width: 0, height: 0 };
 
   display: Display;
 
@@ -135,7 +111,7 @@ export default class WindowManager {
 
   private readonly findView: BrowserView;
 
-  private readonly overlayView: BrowserView;
+  // private readonly overlayView: BrowserView;
 
   private findText = '';
 
@@ -146,18 +122,6 @@ export default class WindowManager {
   private removedTabsStack: TabInfo[][] = [];
 
   private loadedOpenTabs = false;
-
-  private startMouseX: number | null = null;
-
-  private startMouseY: number | null = null;
-
-  private validFloatingClick = false;
-
-  private lastValidFloatingClickTime = 0;
-
-  private lastValidFloatingClickPoint: Electron.Point = { x: 0, y: 0 };
-
-  private windowSpeeds: number[][] = [];
   // endregion
 
   constructor(mainWindow: BrowserWindow, mixpanelManager: MixpanelManager) {
@@ -187,7 +151,7 @@ export default class WindowManager {
     this.findView = makeView(FIND_HTML);
     // this.findView.webContents.openDevTools({ mode: 'detach' });
 
-    this.overlayView = makeView(OVERLAY_HTML);
+    // this.overlayView = makeView(OVERLAY_HTML);
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
@@ -221,20 +185,13 @@ export default class WindowManager {
 
     screen.on('display-metrics-changed', (_, changedDisplay) => {
       if (changedDisplay.id === this.display.id) {
-        if (this.windowFloating) {
-          const [floatingWidth, floatingHeight] = floatingSize(this.display);
-          this.windowSize.width = floatingWidth;
-          this.windowSize.height = floatingHeight;
-          this.updateMainWindowBounds();
-        }
+        this.setDisplay(changedDisplay);
         if (!this.windowFloating) {
           this.unFloat();
         }
+        this.resizeBrowserWindow();
         this.handleResize();
-
-        this.setTargetNoVelocity();
       }
-      this.setDisplay(this.display);
     });
 
     this.handleResize();
@@ -314,25 +271,33 @@ export default class WindowManager {
     this.bindToggleShortcut('Alt+Space');
 
     this.initBoot();
-  }
 
-  setTargetNoVelocity() {
-    const target = calculateWindowTarget(
-      1,
-      0,
-      0,
-      0,
-      0,
-      0,
-      this.windowSize,
-      this.windowPosition,
-      this.display
-    );
-    if (target[0]) {
-      // eslint-disable-next-line prefer-destructuring
-      this.targetWindowPosition[0] = target[2][0];
-      // eslint-disable-next-line prefer-destructuring
-      this.targetWindowPosition[1] = target[2][1];
+    if (app.isPackaged) {
+      globalShortcut.register('CommandOrControl+Alt+Left', () => {
+        this.openAndFloatLeft();
+      });
+      globalShortcut.register('CommandOrControl+Alt+Right', () => {
+        this.openAndFloatRight();
+      });
+      globalShortcut.register('CommandOrControl+Alt+Up', () => {
+        this.showWindow();
+      });
+      globalShortcut.register('CommandOrControl+Alt+Down', () => {
+        this.hideWindow();
+      });
+
+      globalShortcut.register('CommandOrControl+Alt+H', () => {
+        this.openAndFloatLeft();
+      });
+      globalShortcut.register('CommandOrControl+Alt+L', () => {
+        this.openAndFloatRight();
+      });
+      globalShortcut.register('CommandOrControl+Alt+K', () => {
+        this.showWindow();
+      });
+      globalShortcut.register('CommandOrControl+Alt+J', () => {
+        this.hideWindow();
+      });
     }
   }
 
@@ -509,7 +474,7 @@ export default class WindowManager {
   // window
 
   hideWindow() {
-    this.overlayView.webContents.send('cancel-animation-frame');
+    // this.overlayView.webContents.send('cancel-animation-frame');
 
     let opacity = 1.0;
     // const display = { activeDisplay: screen.getPrimaryDisplay() };
@@ -543,10 +508,12 @@ export default class WindowManager {
     }
   }
 
-  showWindow() {
+  showWindow(showAsFloating = false) {
+    this.setWindowFloating(showAsFloating);
+
     this.mainWindow.setAlwaysOnTop(true, 'pop-up-menu');
 
-    this.overlayView.webContents.send('cancel-animation-frame');
+    // this.overlayView.webContents.send('cancel-animation-frame');
 
     const mousePoint = screen.getCursorScreenPoint();
     const display = { activeDisplay: screen.getPrimaryDisplay() };
@@ -573,7 +540,6 @@ export default class WindowManager {
       visibleOnFullScreen: true,
     });
     this.mainWindow.setOpacity(1.0);
-    this.setPinned(false);
     this.resizeBrowserWindow();
 
     if (process.platform === 'linux') {
@@ -586,15 +552,6 @@ export default class WindowManager {
 
     this.tabPageView.webContents.focus();
     this.tabPageView.webContents.send('focus-search');
-
-    if (this.windowFloating) {
-      this.windowPosition[0] = this.targetWindowPosition[0];
-      this.windowPosition[1] = this.targetWindowPosition[1];
-      const [floatingWidth, floatingHeight] = floatingSize(this.display);
-      this.windowSize.width = floatingWidth;
-      this.windowSize.height = floatingHeight;
-      this.updateMainWindowBounds();
-    }
 
     setTimeout(() => {
       this.handleResize();
@@ -616,39 +573,6 @@ export default class WindowManager {
     //   }
     //   this.mainWindow.setOpacity(this.easeOut(opacity));
     // }, 10);
-  }
-
-  setPinned(pinned: boolean) {
-    this.isPinned = pinned;
-    this.mainWindow.webContents.send('set-pinned', pinned);
-    this.tabPageView.webContents.send('set-pinned', pinned);
-  }
-
-  updateMainWindowBounds() {
-    let x = Math.round(this.windowPosition[0]);
-    // why do you do this to me JavaScript?
-    if (Object.is(x, -0)) {
-      x = 0;
-    }
-    let y = Math.round(this.windowPosition[1]);
-    if (Object.is(y, -0)) {
-      y = 0;
-    }
-    const rect = {
-      x,
-      y,
-      width: Math.round(this.windowSize.width),
-      height: Math.round(this.windowSize.height),
-    };
-    try {
-      this.mainWindow.setBounds(rect);
-    } catch (e) {
-      console.log('---');
-      console.log(e);
-      console.log(
-        `updateMainWindowBounds error with rect: ${JSON.stringify(rect)}`
-      );
-    }
   }
 
   closeFind() {
@@ -1062,139 +986,6 @@ export default class WindowManager {
     }
   }
 
-  handleWindowMoving(mouseX: number, mouseY: number) {
-    this.movingWindow = true;
-
-    const mousePoint = screen.getCursorScreenPoint();
-    this.setDisplay(screen.getDisplayNearestPoint(mousePoint));
-
-    const [floatingWidth, floatingHeight] = floatingSize(this.display);
-    this.windowSize.width = floatingWidth;
-    this.windowSize.height = floatingHeight;
-    this.updateMainWindowBounds();
-    this.handleResize();
-
-    const { x, y } = mousePoint;
-    const currentTime = new Date().getTime() / 1000.0;
-
-    const speedAverageRange = 0.1;
-    this.windowSpeeds.push([currentTime, x, y]);
-    while (
-      this.windowSpeeds.length > 0 &&
-      currentTime - this.windowSpeeds[0][0] > speedAverageRange
-    ) {
-      this.windowSpeeds.shift();
-    }
-
-    this.lastTime = currentTime;
-    this.lastX = x;
-    this.lastY = y;
-    if (this.startMouseX === null || this.startMouseY === null) {
-      this.startMouseX = x;
-      this.startMouseY = y;
-      this.validFloatingClick = true;
-    }
-
-    const xDif = this.startMouseX - x;
-    const yDif = this.startMouseY - y;
-    const distSquared = xDif * xDif + yDif * yDif;
-
-    if (distSquared > dragThresholdSquared || !this.validFloatingClick) {
-      if (this.validFloatingClick) {
-        this.startMouseX = xDif;
-        this.startMouseY = yDif;
-        this.validFloatingClick = false;
-      }
-      this.windowPosition[0] = x - mouseX + this.startMouseX;
-      this.windowPosition[1] = y - mouseY + this.startMouseY;
-      this.updateMainWindowBounds();
-    }
-  }
-
-  handleWindowMoved() {
-    let setTarget = false;
-    let firstTarget: number[] | null = null;
-    let firstVelocity: number[] | null = null;
-    let i = this.windowSpeeds.length - 1;
-    while (i >= 1) {
-      const current = this.windowSpeeds[i];
-      const last = this.windowSpeeds[i - 1];
-      const [valid, hasVelocity, target, windowVelocity] =
-        calculateWindowTarget(
-          current[0],
-          last[0],
-          current[1],
-          current[2],
-          last[1],
-          last[2],
-          this.windowSize,
-          this.windowPosition,
-          this.display
-        );
-
-      if (firstTarget === null && valid) {
-        firstTarget = [target[0], target[1]];
-        firstVelocity = [windowVelocity[0], windowVelocity[1]];
-      }
-
-      if (valid && hasVelocity) {
-        // eslint-disable-next-line prefer-destructuring
-        this.targetWindowPosition[0] = target[0];
-        // eslint-disable-next-line prefer-destructuring
-        this.targetWindowPosition[1] = target[1];
-
-        // eslint-disable-next-line prefer-destructuring
-        this.windowVelocity[0] = windowVelocity[0];
-        // eslint-disable-next-line prefer-destructuring
-        this.windowVelocity[1] = windowVelocity[1];
-
-        setTarget = true;
-        break;
-      }
-
-      i -= 1;
-    }
-
-    if (!setTarget && firstTarget !== null && firstVelocity !== null) {
-      // eslint-disable-next-line prefer-destructuring
-      this.targetWindowPosition[0] = firstTarget[0];
-      // eslint-disable-next-line prefer-destructuring
-      this.targetWindowPosition[1] = firstTarget[1];
-
-      // eslint-disable-next-line prefer-destructuring
-      this.windowVelocity[0] = firstVelocity[0];
-      // eslint-disable-next-line prefer-destructuring
-      this.windowVelocity[1] = firstVelocity[1];
-    }
-
-    this.startMouseX = null;
-    this.startMouseY = null;
-    this.lastX = null;
-    this.lastY = null;
-    this.windowSpeeds = [];
-    this.movingWindow = false;
-    if (this.validFloatingClick) {
-      const now = Date.now() / 1000.0;
-      const mousePoint = screen.getCursorScreenPoint();
-      const xDist = mousePoint.x - this.lastValidFloatingClickPoint.x;
-      const yDist = mousePoint.y - this.lastValidFloatingClickPoint.y;
-      const distSquared = xDist * xDist + yDist * yDist;
-      if (
-        now - this.lastValidFloatingClickTime < 0.5 &&
-        distSquared < dragThresholdSquared
-      ) {
-        if (this.windowFloating) {
-          // used to be: "unfloat window by clicking"
-          this.mixpanelManager.track('unfloat window by double clicking');
-          this.unFloat();
-        }
-      }
-      this.lastValidFloatingClickTime = now;
-      this.lastValidFloatingClickPoint = mousePoint;
-    }
-    this.validFloatingClick = false;
-  }
-
   clickFind() {
     if (
       this.mainWindow !== null &&
@@ -1213,8 +1004,8 @@ export default class WindowManager {
     }
   }
 
-  float() {
-    if (this.windowFloating) {
+  float(direction: string) {
+    if (this.windowFloating && this.floatingDirection === direction) {
       return;
     }
 
@@ -1222,32 +1013,13 @@ export default class WindowManager {
       this.mainWindow.unmaximize();
     }
 
+    this.floatingDirection = direction;
+
     this.setWindowFloating(true);
 
-    const [floatingWidth, floatingHeight] = floatingSize(this.display);
+    this.resizeBrowserWindow();
 
-    // snap to corner mode
-    if (!windowHasView(this.mainWindow, this.overlayView)) {
-      this.mainWindow?.addBrowserView(this.overlayView);
-      this.mainWindow?.setTopBrowserView(this.overlayView);
-    }
-    this.windowPosition[0] =
-      this.display.workAreaSize.width / 2.0 -
-      floatingWidth / 2.0 +
-      this.display.workArea.x +
-      5;
-    this.windowPosition[1] =
-      this.display.workAreaSize.height / 2.0 -
-      floatingHeight / 2.0 +
-      this.display.workArea.y -
-      5;
-    this.windowSize.width = floatingWidth;
-    this.windowSize.height = floatingHeight;
-    this.windowVelocity[0] = 0;
-    this.windowVelocity[1] = 0;
     this.handleResize();
-    this.updateMainWindowBounds();
-    this.setTargetNoVelocity();
   }
 
   handleResize() {
@@ -1261,9 +1033,9 @@ export default class WindowManager {
       bounds,
     });
 
-    resizeFindView(this.findView, this.headerHeight(), bounds);
+    resizeFindView(this.findView, headerHeight, bounds);
     resizePeekView(this.urlPeekView, bounds);
-    resizeOverlayView(this.overlayView, windowSize);
+    // resizeOverlayView(this.overlayView, windowSize);
 
     // resize tab page view
     this.tabPageView.setBounds({
@@ -1276,34 +1048,18 @@ export default class WindowManager {
     // resize active web view
     const activeView = this.allWebViews[this.activeTabId];
     if (activeView) {
-      if (this.windowFloating) {
-        const [floatingWidth, floatingHeight] = floatingSize(this.display);
-        activeView.view.setBounds({
-          x: floatingPadding,
-          y: floatingPadding + floatingTitleBarHeight + floatingTitleBarSpacing,
-          width: floatingWidth - floatingPadding * 2,
-          height:
-            floatingHeight -
-            floatingPadding * 2 -
-            floatingTitleBarHeight -
-            floatingTitleBarSpacing,
-        });
-      } else {
-        const urlHeight = this.headerHeight();
-        activeView.view.setBounds({
-          x: bounds.x + tagSideBarWidth,
-          y: bounds.y + urlHeight,
-          width: bounds.width - tagSideBarWidth,
-          height: bounds.height - urlHeight,
-        });
-      }
+      const sideBarWidth = this.windowFloating ? 0 : tagSideBarWidth;
+      activeView.view.setBounds({
+        x: bounds.x + sideBarWidth,
+        y: bounds.y + headerHeight,
+        width: bounds.width - sideBarWidth,
+        height: bounds.height - headerHeight,
+      });
     }
   }
 
   toggle(mouseInBorder: boolean) {
-    if (this.windowFloating) {
-      this.hideWindow();
-    } else if (this.noWebPageOpen()) {
+    if (this.noWebPageOpen()) {
       if (this.historyModalActive) {
         this.tabPageView.webContents.send('close-history-modal');
       } else {
@@ -1604,23 +1360,43 @@ export default class WindowManager {
 
   private resizeBrowserWindow() {
     const { display } = this;
-    const extraPixel = process.platform === 'darwin' ? 0 : 1; // todo: on windows if you make it the same size as monitor, everything breaks!?!??!?!?
-    if (process.platform === 'linux') {
-      this.windowPosition[0] = display.workArea.x;
-      this.windowPosition[1] = display.workArea.y;
-      this.windowSize.width = display.workArea.width;
-      this.windowSize.height = display.workArea.height + extraPixel;
+
+    let bounds;
+    if (this.windowFloating) {
+      const displayBounds = display.workArea;
+      if (this.floatingDirection === 'left') {
+        bounds = {
+          x: displayBounds.x + floatingWindowEdgeMargin,
+          y: displayBounds.y + floatingWindowEdgeMargin,
+          width: displayBounds.width / 2 - floatingWindowEdgeMargin * 2,
+          height: displayBounds.height - floatingWindowEdgeMargin * 2,
+        };
+      } else {
+        bounds = {
+          x:
+            displayBounds.x +
+            floatingWindowEdgeMargin +
+            displayBounds.width / 2,
+          y: displayBounds.y + floatingWindowEdgeMargin,
+          width: displayBounds.width / 2 - floatingWindowEdgeMargin * 2,
+          height: displayBounds.height - floatingWindowEdgeMargin * 2,
+        };
+      }
     } else {
-      this.windowPosition[0] = display.bounds.x;
-      this.windowPosition[1] = display.bounds.y;
-      this.windowSize.width = display.bounds.width;
-      this.windowSize.height = display.bounds.height + extraPixel;
+      const extraPixel = process.platform === 'darwin' ? 0 : 1; // todo: on windows if you make it the same size as monitor, everything breaks!?!??!?!?
+      bounds = {
+        x: display.bounds.x,
+        y: display.bounds.y,
+        width: display.bounds.width,
+        height: display.bounds.height + extraPixel,
+      };
     }
 
-    this.updateMainWindowBounds();
+    this.mainWindow.setBounds(bounds);
   }
 
   unFloat() {
+    this.setWindowFloating(false);
     this.resizeBrowserWindow();
 
     if (process.platform === 'linux') {
@@ -1632,18 +1408,6 @@ export default class WindowManager {
     }
 
     this.handleResize();
-
-    if (!this.windowFloating) {
-      return;
-    }
-
-    this.setWindowFloating(false);
-
-    if (windowHasView(this.mainWindow, this.overlayView)) {
-      this.mainWindow?.removeBrowserView(this.overlayView);
-    }
-
-    this.handleResize();
   }
 
   padding(): number {
@@ -1652,10 +1416,6 @@ export default class WindowManager {
 
   private noWebPageOpen(): boolean {
     return this.activeTabId === -1;
-  }
-
-  private headerHeight(): number {
-    return this.windowFloating ? 0 : headerHeight;
   }
 
   handleAppActivate() {
@@ -1792,7 +1552,7 @@ export default class WindowManager {
 
   setDisplay(display: Display) {
     this.display = display;
-    // this function used to update data in renderer, but now it does nothing. for now it will stay, maybe delete later
+    this.resizeBrowserWindow();
   }
 
   webBrowserViewActive(): boolean {
@@ -1845,6 +1605,16 @@ export default class WindowManager {
     setTimeout(boot, 15000);
   }
 
+  openAndFloatLeft() {
+    this.showWindow(true);
+    this.float('left');
+  }
+
+  openAndFloatRight() {
+    this.showWindow(true);
+    this.float('right');
+  }
+
   addListeners() {
     ipcMain.on('create-new-tab', (_, switchToTab = false) => {
       const id = this.createNewTab();
@@ -1889,12 +1659,6 @@ export default class WindowManager {
     ipcMain.on('find-next', () => {
       this.findNext();
     });
-    ipcMain.on('windowMoving', (_, { mouseX, mouseY }) => {
-      this.handleWindowMoving(mouseX, mouseY);
-    });
-    ipcMain.on('windowMoved', () => {
-      this.handleWindowMoved();
-    });
     ipcMain.on('wheel', (_, [deltaX, deltaY]) => {
       const activeTabView = this.allWebViews[this.activeTabId];
       if (activeTabView !== null) {
@@ -1934,12 +1698,6 @@ export default class WindowManager {
     });
     ipcMain.on('clear-history', () => {
       this.clearHistory();
-    });
-    ipcMain.on('toggle-pin', () => {
-      this.setPinned(!this.isPinned);
-    });
-    ipcMain.on('float', () => {
-      this.float();
     });
     ipcMain.on('toggle', () => {
       this.toggle(true);
@@ -2133,6 +1891,12 @@ export default class WindowManager {
     ipcMain.on('update-tab-view', (_, tabView) => {
       this.saveData.data.tabView = tabView;
       this.saveData.save();
+    });
+    ipcMain.on('move-floating-window-left', () => {
+      this.float('left');
+    });
+    ipcMain.on('move-floating-window-right', () => {
+      this.float('right');
     });
   }
 }

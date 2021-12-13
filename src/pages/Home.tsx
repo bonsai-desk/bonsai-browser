@@ -20,6 +20,7 @@ import GenericModal from '../components/GenericModal';
 import SettingsModal from '../components/SettingsModal';
 import GlobalStyle, { GlobalDark, GlobalLight } from '../GlobalStyle';
 import Storyboard from '../components/StoryBoard';
+import FloatingButtons from '../components/FloatingButtons';
 
 const BackHomeButtonParent = styled.div`
   width: 2rem;
@@ -134,26 +135,23 @@ const DebugModal = observer(() => {
   );
 });
 
-const FloatingShadow = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-
-  //background-color: white;
-  box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.5);
-
-  width: calc(100% - 20px);
-  height: calc(100% - 20px - 37px - 10px);
-
-  margin: 57px 10px 10px 10px;
-`;
-
 const Background = styled.div`
   width: 100vw;
   height: 100vh;
   margin: 0;
   overflow: hidden;
-  //background-color: #e5e1e7;
+`;
+
+const Border = styled.div`
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 100000;
+  width: calc(100vw - 6px);
+  height: calc(100vh - 6px);
+  border-radius: 10px;
+  border: 3px solid rgba(0, 0, 0, 0.3);
+  pointer-events: none;
 `;
 
 const Home = observer(() => {
@@ -200,10 +198,6 @@ const Home = observer(() => {
     [mode]
   );
 
-  if (tabPageStore.windowFloating) {
-    return <FloatingShadow />;
-  }
-
   const backgroundColor = keybindStore.settings.backgroundEnabled
     ? `#${keybindStore.settings.background}`
     : 'var(--background-color)';
@@ -211,7 +205,10 @@ const Home = observer(() => {
   return (
     <ThemeProvider theme={theme}>
       <Background
-        style={{ backgroundColor }}
+        style={{
+          backgroundColor,
+          borderRadius: tabPageStore.windowFloating ? '10px' : 0,
+        }}
         onMouseDown={(e) => {
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
@@ -234,12 +231,16 @@ const Home = observer(() => {
           }
         }}
       >
+        <Border
+          style={{ display: tabPageStore.windowFloating ? 'block' : 'none' }}
+        />
         <Style />
         <BackHomeButton />
         <Content />
         <HistoryModal />
         <DebugModal />
         <SettingsModal />
+        <FloatingButtons />
       </Background>
     </ThemeProvider>
   );

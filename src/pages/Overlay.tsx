@@ -31,6 +31,8 @@ const Background = styled.div`
   -moz-user-select: none;
   user-select: none;
   -webkit-user-drag: none;
+
+  background-color: red;
 `;
 
 const Main = styled.div`

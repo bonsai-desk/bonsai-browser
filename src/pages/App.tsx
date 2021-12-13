@@ -2,12 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import styled from 'styled-components';
 import { ipcRenderer } from 'electron';
-import {
-  Refresh,
-  ArrowForward,
-  ArrowBack,
-  PictureInPicture,
-} from '@material-ui/icons';
+import { Refresh, ArrowForward, ArrowBack } from '@material-ui/icons';
 import { runInAction } from 'mobx';
 import { useStore } from '../store/tab-page-store';
 import { Buttons } from '../components/Buttons';
@@ -56,6 +51,7 @@ const URLBox = styled.input`
     background-color: white;
   }
   margin: 0 10px 0 8px;
+  padding-left: 10px;
   color: var(--body-text-color);
 `;
 
@@ -169,14 +165,6 @@ const TitleBar = observer(() => {
             }
           }}
         />
-        <RoundButton
-          onClick={() => {
-            ipcRenderer.send('float');
-            ipcRenderer.send('mixpanel-track', 'click float window button');
-          }}
-        >
-          <PictureInPicture />
-        </RoundButton>
       </TitleBarBottom>
     </TitleBarFull>
   );

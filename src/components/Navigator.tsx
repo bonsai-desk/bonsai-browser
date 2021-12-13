@@ -240,6 +240,8 @@ const Navigator = observer(() => {
   const backRef = useRef(null);
   const { tabPageStore } = useStore();
 
+  const sideBarWidth = tabPageStore.windowFloating ? 0 : tagSideBarWidth;
+
   return (
     <NavigatorParent
       ref={backRef}
@@ -250,9 +252,9 @@ const Navigator = observer(() => {
       }}
     >
       <TabsBar
-        x={tabPageStore.innerBounds.x + tagSideBarWidth}
+        x={tabPageStore.innerBounds.x + sideBarWidth}
         y={tabPageStore.innerBounds.y}
-        width={tabPageStore.innerBounds.width - tagSideBarWidth}
+        width={tabPageStore.innerBounds.width - sideBarWidth}
       />
       <TagSidebar />
     </NavigatorParent>

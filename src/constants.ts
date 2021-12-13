@@ -29,4 +29,4 @@ export const headerHeight = 71;
 
 export const tagSideBarWidth = 200;
 
-export const dragThresholdSquared = 5 * 5;
+export const floatingWindowEdgeMargin = 25;
