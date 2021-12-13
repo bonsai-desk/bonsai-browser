@@ -1,7 +1,7 @@
 import React from 'react';
 import { Typography } from '@material-ui/core';
 
-const SettingsPage = ({
+const SettingsContainer = ({
   title,
   children,
 }: {
@@ -18,4 +18,4 @@ const SettingsPage = ({
   );
 };
 
-export default SettingsPage;
+export default SettingsContainer;

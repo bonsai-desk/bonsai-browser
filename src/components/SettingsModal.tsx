@@ -76,7 +76,7 @@ import refreshIcon from '../../assets/refresh.svg';
 import { bindEquals, globalKeybindValid, showKeys } from '../store/keybinds';
 import Storyboard from './StoryBoard';
 import HeaderText from './HeaderText';
-import SettingsPage from './SettingsPage';
+import SettingsContainer from './SettingsContainer';
 import { color } from '../utils/jsutils';
 import pkg from '../package.json';
 
@@ -792,7 +792,7 @@ const AccountPage = observer(() => {
   };
 
   return (
-    <SettingsPage title="Account & Backup">
+    <SettingsContainer title="Account & Backup">
       <Stack spacing={4}>
         <div
           style={{
@@ -878,7 +878,7 @@ const AccountPage = observer(() => {
           </CenterModalBox>
         </Box>
       </Modal>
-    </SettingsPage>
+    </SettingsContainer>
   );
 });
 
@@ -949,7 +949,7 @@ const Settings = observer(() => {
   };
 
   return (
-    <SettingsPage title="Shortcuts">
+    <SettingsContainer title="Shortcuts">
       <Stack spacing={4}>
         <div>
           <Title>General</Title>
@@ -1035,7 +1035,7 @@ const Settings = observer(() => {
           </PaddedPaper>
         </div>
       </Stack>
-    </SettingsPage>
+    </SettingsContainer>
   );
 });
 
@@ -1084,7 +1084,7 @@ const FeedbackPage = observer(() => {
     }
   }
   return (
-    <SettingsPage title="Feedback">
+    <SettingsContainer title="Feedback">
       <Stack spacing={2}>
         <div>
           <Card>
@@ -1166,7 +1166,7 @@ const FeedbackPage = observer(() => {
           </CardActions>
         </Card>
       </Stack>
-    </SettingsPage>
+    </SettingsContainer>
   );
 });
 
@@ -1186,7 +1186,7 @@ const ConfigPage = observer(() => {
   };
 
   return (
-    <SettingsPage title="Settings">
+    <SettingsContainer title="Settings">
       <Stack spacing={4}>
         <div>
           <Typography variant="h6" gutterBottom>
@@ -1294,12 +1294,12 @@ const ConfigPage = observer(() => {
           </PaddedPaper>
         </div>
       </Stack>
-    </SettingsPage>
+    </SettingsContainer>
   );
 });
 
-const SettingsModal = observer(() => {
-  const { tabPageStore } = useStore();
+const Foo = observer(() => {
+  // const { tabPageStore } = useStore();
 
   const [activePage, setActivePage] = useState<Page>(Page.Account);
 
@@ -1327,17 +1327,25 @@ const SettingsModal = observer(() => {
   };
 
   const ActivePage = getActivePage(activePage, menuItems);
+
+  return (
+    <Grid sx={{ width: '1000px', height: '100%' }} container spacing={0}>
+      <Grid item xs={3}>
+        <MenuList menuItems={menuItems} setActivePage={setActive} />
+      </Grid>
+      <Grid sx={{ height: '100%', overflowY: 'auto' }} item xs={9}>
+        <Container>{ActivePage}</Container>
+      </Grid>
+    </Grid>
+  );
+});
+
+const SettingsModal = observer(() => {
+  const { tabPageStore } = useStore();
   return (
     <>
       <GenericModal view={View.Settings}>
-        <Grid sx={{ width: '1000px', height: '100%' }} container spacing={0}>
-          <Grid item xs={3}>
-            <MenuList menuItems={menuItems} setActivePage={setActive} />
-          </Grid>
-          <Grid sx={{ height: '100%', overflowY: 'auto' }} item xs={9}>
-            <Container>{ActivePage}</Container>
-          </Grid>
-        </Grid>
+        <Foo />
       </GenericModal>
 
       <RebindModal active={!!tabPageStore.rebindModalId} />

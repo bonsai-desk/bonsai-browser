@@ -4,11 +4,11 @@ import { AddCircle, Settings } from '@material-ui/icons';
 import { Divider, Stack, Typography } from '@material-ui/core';
 import { Buttons, ButtonRow } from './Buttons';
 import { SearchInputParent } from './SearchInput';
-import SettingsPage from './SettingsPage';
+import SettingsContainer from './SettingsContainer';
 
 const Storyboard = observer(() => {
   return (
-    <SettingsPage title="Storyboard">
+    <SettingsContainer title="Storyboard">
       <Stack spacing={2}>
         <div>
           <h1>Heading h1</h1>
@@ -65,7 +65,7 @@ const Storyboard = observer(() => {
         <Divider />
         <SearchInputParent placeholder="Search" />
       </Stack>
-    </SettingsPage>
+    </SettingsContainer>
   );
 });
 
