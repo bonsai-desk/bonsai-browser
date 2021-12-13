@@ -427,6 +427,7 @@ export default class WindowManager {
           log(`${webView.id} did-navigate-in-page main-frame to ${url}`);
           updateContents(webView, this.tabPageView);
           if (webView.gestureAfterDOMLoad) {
+            this.closeFind();
             handleWillNavigate(webView, url, [this.tabPageView]);
           } else {
             handleInPageNavigateWithoutGesture(webView, url, [
