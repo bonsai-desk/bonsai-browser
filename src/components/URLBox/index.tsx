@@ -62,6 +62,10 @@ const Header = observer(({ onViewPage }: { onViewPage: boolean }) => {
       // tabPageStore.setFocus()
       tabPageStore.bonsaiBoxRef?.current?.focus();
     }
+    if (tabPageStore.bonsaiBoxFocus && !tabPageStore.urlText) {
+      // tabPageStore.setFocus()
+      tabPageStore.bonsaiBoxRef?.current?.blur();
+    }
   }, [tabPageStore.urlText]);
 
   return (

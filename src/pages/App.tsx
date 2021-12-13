@@ -51,6 +51,7 @@ const URLBox = styled.input`
   padding: 0 0 0 10px;
   outline: none;
   :focus {
+    color: black;
     outline: var(--link-color) solid 2px;
     background-color: white;
   }
@@ -128,7 +129,7 @@ const TitleBar = observer(() => {
         <URLBox
           type="text"
           ref={urlBoxRef}
-          placeholder="Search Google or type a URL"
+          placeholder={`Search ${keybindStore.settings.selectedSearch} or type a URL`}
           value={tabStore.getActiveTabSearchBar()}
           onInput={(e) => {
             tabStore.setActiveTabSearchBar(e.currentTarget.value);

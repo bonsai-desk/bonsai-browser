@@ -38,6 +38,7 @@ export enum TabViewType {
 }
 
 const NOT_TEXT = [
+  'Backspace',
   'ShiftLeft',
   'ControlLeft',
   'MetaLeft',
