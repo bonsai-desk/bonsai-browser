@@ -817,6 +817,9 @@ export default class WindowManager {
       cleanupBrowser();
     }
 
+    // close the text finder
+    this.closeFind();
+
     this.activeTabId = id;
 
     // tell main window that it is active and get the tabview reference
@@ -844,9 +847,6 @@ export default class WindowManager {
       this.loadUrlInTab(id, tabView.unloadedUrl, false, tabView.scrollHeight);
       tabView.unloadedUrl = '';
     }
-
-    // close the text finder
-    this.closeFind();
 
     // remove the url peek view if it exists
     if (windowHasView(this.mainWindow, this.urlPeekView)) {
