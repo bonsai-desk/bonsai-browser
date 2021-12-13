@@ -350,6 +350,7 @@ export default class WindowManager {
       window,
       view: new BrowserView({
         webPreferences: {
+          scrollBounce: process.platform === 'darwin',
           nodeIntegration: false,
           devTools: !app.isPackaged,
           contextIsolation: true,
