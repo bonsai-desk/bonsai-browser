@@ -386,7 +386,7 @@ export default class WindowManager {
 
     // webView.view.webContents.openDevTools({ mode: 'detach' });
 
-    webView.view.setBackgroundColor('#FFFFFF');
+    webView.view.setBackgroundColor('#ffffff');
     webView.id = webView.view.webContents.id;
 
     const handleWindowOpen = genHandleWindowOpen(webView, [this.tabPageView]);
