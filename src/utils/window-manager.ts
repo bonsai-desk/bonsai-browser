@@ -273,30 +273,38 @@ export default class WindowManager {
     this.initBoot();
 
     if (app.isPackaged) {
-      globalShortcut.register('CommandOrControl+Alt+Left', () => {
+      globalShortcut.register('Alt+Shift+Left', () => {
         this.openAndFloatLeft();
       });
-      globalShortcut.register('CommandOrControl+Alt+Right', () => {
+      globalShortcut.register('Alt+Shift+Right', () => {
         this.openAndFloatRight();
       });
-      globalShortcut.register('CommandOrControl+Alt+Up', () => {
-        this.showWindow();
+      globalShortcut.register('Alt+Shift+Up', () => {
+        if (this.windowFloating) {
+          this.showWindow();
+        }
       });
-      globalShortcut.register('CommandOrControl+Alt+Down', () => {
-        this.hideWindow();
+      globalShortcut.register('Alt+Shift+Down', () => {
+        if (this.windowFloating) {
+          this.hideWindow();
+        }
       });
 
-      globalShortcut.register('CommandOrControl+Alt+H', () => {
+      globalShortcut.register('Alt+Shift+H', () => {
         this.openAndFloatLeft();
       });
-      globalShortcut.register('CommandOrControl+Alt+L', () => {
+      globalShortcut.register('Alt+Shift+L', () => {
         this.openAndFloatRight();
       });
-      globalShortcut.register('CommandOrControl+Alt+K', () => {
-        this.showWindow();
+      globalShortcut.register('Alt+Shift+K', () => {
+        if (this.windowFloating) {
+          this.showWindow();
+        }
       });
-      globalShortcut.register('CommandOrControl+Alt+J', () => {
-        this.hideWindow();
+      globalShortcut.register('Alt+Shift+J', () => {
+        if (this.windowFloating) {
+          this.hideWindow();
+        }
       });
     }
   }
@@ -474,6 +482,7 @@ export default class WindowManager {
   // window
 
   hideWindow() {
+    this.setWindowFloating(false);
     // this.overlayView.webContents.send('cancel-animation-frame');
 
     let opacity = 1.0;
