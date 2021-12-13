@@ -50,7 +50,8 @@ const ButtonContainer = styled.div`
 const TabsRow = styled.div`
   display: flex;
   height: 34px;
-  margin: 0 0 0 1px;
+  margin: 0 0 0 0;
+  background-color: var(--canvas-inactive-color);
 `;
 
 interface ITabBarTab {
@@ -60,6 +61,11 @@ interface ITabBarTab {
   width: number;
   tabBarInfo: { x: number; width: number };
 }
+
+const WebpageBackground = styled.div`
+  background-color: white;
+  //position: absolute;
+`;
 
 export const TabBarTab = observer(
   ({ tabBarInfo, width, provided, tab, active = false }: ITabBarTab) => {
@@ -218,14 +224,17 @@ const TabsBar = observer(({ x, y, width }: ITabsBar) => {
         </ButtonContainer>
       </TabsRow>
       <TitleBar />
+      <WebpageBackground
+        style={{
+          // left: tabPageStore.innerBounds.x + tagSideBarWidth,
+          // top: tabPageStore.innerBounds.y + headerHeight,
+          width: tabPageStore.innerBounds.width - tagSideBarWidth,
+          height: tabPageStore.innerBounds.height - headerHeight,
+        }}
+      />
     </TabsParent>
   );
 });
-
-const WebpageBackground = styled.div`
-  background-color: white;
-  position: absolute;
-`;
 
 const Navigator = observer(() => {
   const backRef = useRef(null);
@@ -246,14 +255,6 @@ const Navigator = observer(() => {
         width={tabPageStore.innerBounds.width - tagSideBarWidth}
       />
       <TagSidebar />
-      <WebpageBackground
-        style={{
-          left: tabPageStore.innerBounds.x + tagSideBarWidth,
-          top: tabPageStore.innerBounds.y + headerHeight,
-          width: tabPageStore.innerBounds.width - tagSideBarWidth,
-          height: tabPageStore.innerBounds.height - headerHeight,
-        }}
-      />
     </NavigatorParent>
   );
 });

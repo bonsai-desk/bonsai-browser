@@ -13,13 +13,14 @@ export const TabsParent = styled.div`
   overflow: hidden;
   z-index: 1;
   border-radius: 10px 10px 0 0;
-  background-color: var(--canvas-inactive-color);
   width: 500px;
   position: absolute;
   top: 0;
   left: 0;
-  height: 70px;
+  //height: 70px;
   border-bottom: 1px solid var(--canvas-border-color);
+  //background-color: red;
+  box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
 `;
 export const TabParent = styled.div`
   position: relative;
