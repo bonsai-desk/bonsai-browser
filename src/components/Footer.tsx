@@ -104,7 +104,8 @@ const Footer = observer(() => {
   const { tabPageStore } = useStore();
 
   const footerContent =
-    tabPageStore.View === View.Navigator ? null : (
+    tabPageStore.View === View.Navigator ||
+    tabPageStore.windowFloating ? null : (
       <>
         <WorkspaceButtons />
       </>
