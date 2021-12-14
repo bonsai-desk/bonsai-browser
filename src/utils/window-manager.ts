@@ -1548,13 +1548,13 @@ export default class WindowManager {
   }
 
   setWindowFloating(windowFloating: boolean) {
-    if (process.platform === 'darwin') {
-      if (windowFloating) {
-        this.mainWindow.setVibrancy(null);
-      } else {
-        this.mainWindow.setVibrancy(VIBRANCY);
-      }
-    }
+    // if (process.platform === 'darwin') {
+    //   if (windowFloating) {
+    //     this.mainWindow.setVibrancy(null);
+    //   } else {
+    //     this.mainWindow.setVibrancy(VIBRANCY);
+    //   }
+    // }
     this.windowFloating = windowFloating;
     this.tabPageView.webContents.send('set-window-floating', windowFloating);
   }
