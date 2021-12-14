@@ -1305,8 +1305,8 @@ const Foo = observer(() => {
 
   let menuItems: IMenuItem[] = [
     { Icon: <AccountBox />, title: Page.Account, Page: <AccountPage /> },
-    { Icon: <Keyboard />, title: Page.Shortcuts, Page: <Settings /> },
     { Icon: <SettingsIcon />, title: Page.SettingsItem, Page: <ConfigPage /> },
+    { Icon: <Keyboard />, title: Page.Shortcuts, Page: <Settings /> },
     { Icon: <Comment />, title: Page.Feedback, Page: <FeedbackPage /> },
   ];
 
