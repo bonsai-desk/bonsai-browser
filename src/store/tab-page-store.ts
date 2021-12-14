@@ -216,37 +216,18 @@ export default class TabPageStore {
   }
 
   handleKeyBind(e: KeyboardEvent) {
+    if (e.altKey) {
+      return;
+    }
+
     if (
-      e.key === 'ArrowUp' ||
-      e.key === 'ArrowDown' ||
-      e.key === 'ArrowLeft' ||
-      e.key === 'ArrowRight'
+      !e.altKey &&
+      (e.key === 'ArrowUp' ||
+        e.key === 'ArrowDown' ||
+        e.key === 'ArrowLeft' ||
+        e.key === 'ArrowRight')
     ) {
       e.preventDefault();
-    }
-
-    if (
-      this.keybindStore.isBind(e, 'float-left-vim') ||
-      this.keybindStore.isBind(e, 'float-left')
-    ) {
-      ipcRenderer.send('move-floating-window-left');
-      return;
-    }
-
-    if (
-      this.keybindStore.isBind(e, 'float-right-vim') ||
-      this.keybindStore.isBind(e, 'float-right')
-    ) {
-      ipcRenderer.send('move-floating-window-right');
-      return;
-    }
-
-    if (
-      this.keybindStore.isBind(e, 'float-max-vim') ||
-      this.keybindStore.isBind(e, 'float-max')
-    ) {
-      ipcRenderer.send('move-floating-window-max');
-      return;
     }
 
     if (this.view === View.FuzzySearch) {

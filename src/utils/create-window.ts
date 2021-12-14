@@ -179,6 +179,52 @@ function initMenu(wm: WindowManager) {
           }, 100);
         },
       },
+      {
+        label: 'Float Left Vim',
+        accelerator: 'Alt+H',
+        click: () => {
+          wm.showWindow(true);
+          wm.float('left');
+        },
+      },
+      {
+        label: 'Float Left',
+        accelerator: 'Alt+Left',
+        click: () => {
+          wm.showWindow(true);
+          wm.float('left');
+        },
+      },
+      {
+        label: 'Float Right Vim',
+        accelerator: 'Alt+L',
+        click: () => {
+          wm.showWindow(true);
+          wm.float('right');
+        },
+      },
+      {
+        label: 'Float Right',
+        accelerator: 'Alt+Right',
+        click: () => {
+          wm.showWindow(true);
+          wm.float('right');
+        },
+      },
+      {
+        label: 'Max Floating Window Vim',
+        accelerator: 'Alt+K',
+        click: () => {
+          wm.showWindow();
+        },
+      },
+      {
+        label: 'Max Floating Window',
+        accelerator: 'Alt+Up',
+        click: () => {
+          wm.showWindow();
+        },
+      },
     ],
   });
   const template = [main, edit];

@@ -345,42 +345,6 @@ export function defaultKeybindStore(): Instance<typeof KeybindStore> {
         defaultBind: ['CmdOrCtrl', 'KeyT'],
         currentBind: ['CmdOrCtrl', 'KeyT'],
       },
-      'float-left-vim': {
-        version: 3,
-        name: 'Float Left',
-        defaultBind: ['Alt', 'KeyH'],
-        currentBind: ['Alt', 'KeyH'],
-      },
-      'float-left': {
-        version: 3,
-        name: 'Float Left',
-        defaultBind: ['Alt', 'ArrowLeft'],
-        currentBind: ['Alt', 'ArrowLeft'],
-      },
-      'float-right-vim': {
-        version: 3,
-        name: 'Float Right',
-        defaultBind: ['Alt', 'KeyL'],
-        currentBind: ['Alt', 'KeyL'],
-      },
-      'float-right': {
-        version: 3,
-        name: 'Float Right',
-        defaultBind: ['Alt', 'ArrowRight'],
-        currentBind: ['Alt', 'ArrowRight'],
-      },
-      'float-max-vim': {
-        version: 4,
-        name: 'Float Max',
-        defaultBind: ['Alt', 'KeyK'],
-        currentBind: ['Alt', 'KeyK'],
-      },
-      'float-max': {
-        version: 4,
-        name: 'Float Max',
-        defaultBind: ['Alt', 'ArrowUp'],
-        currentBind: ['Alt', 'ArrowUp'],
-      },
     },
   });
 }
