@@ -44,7 +44,6 @@ import {
   handleGoForward,
   handleInPageNavigateWithoutGesture,
   handleWillNavigate,
-  innerBounds,
   log,
   makeOnboardingWindow,
   makeView,
@@ -1040,7 +1039,7 @@ export default class WindowManager {
     const window = this.mainWindow;
 
     // update renderer inner bounds
-    const bounds = innerBounds(window);
+    const bounds = this.innerBounds();
     const windowSize = currentWindowSize(window);
     this.tabPageView.webContents.send('inner-bounds', {
       windowSize: { width: windowSize[0], height: windowSize[1] },
@@ -1070,6 +1069,19 @@ export default class WindowManager {
         height: bounds.height - headerHeight,
       });
     }
+  }
+
+  innerBounds(): Electron.Rectangle {
+    const windowBounds = this.mainWindow.getBounds();
+    const topPadding = 70;
+    const padding = this.windowFloating ? 3 : 20;
+
+    return {
+      x: padding,
+      y: topPadding,
+      width: windowBounds.width - padding * 2,
+      height: windowBounds.height - topPadding - padding,
+    };
   }
 
   toggle(mouseInBorder: boolean) {
@@ -1233,7 +1245,7 @@ export default class WindowManager {
   }
 
   private mouseInInner() {
-    const bounds = innerBounds(this.mainWindow);
+    const bounds = this.innerBounds();
     const mousePos = screen.getCursorScreenPoint();
     const windowBounds = this.mainWindow.getBounds();
 
@@ -1382,21 +1394,25 @@ export default class WindowManager {
     let bounds;
     if (this.windowFloating) {
       const displayBounds = display.workArea;
+      const width = Math.floor(
+        (displayBounds.width - floatingWindowEdgeMargin) * 0.45
+      );
       if (this.floatingDirection === 'left') {
         bounds = {
           x: displayBounds.x + floatingWindowEdgeMargin,
           y: displayBounds.y + floatingWindowEdgeMargin,
-          width: displayBounds.width / 2 - floatingWindowEdgeMargin * 2,
+          width,
           height: displayBounds.height - floatingWindowEdgeMargin * 2,
         };
       } else {
         bounds = {
           x:
             displayBounds.x +
-            floatingWindowEdgeMargin +
-            displayBounds.width / 2,
+            displayBounds.width -
+            width -
+            floatingWindowEdgeMargin,
           y: displayBounds.y + floatingWindowEdgeMargin,
-          width: displayBounds.width / 2 - floatingWindowEdgeMargin * 2,
+          width,
           height: displayBounds.height - floatingWindowEdgeMargin * 2,
         };
       }
@@ -1478,7 +1494,7 @@ export default class WindowManager {
     }
     const newWebView = this.allWebViews[newWindowId];
     if (newWebView) {
-      const bounds = innerBounds(this.mainWindow);
+      const bounds = this.innerBounds();
       const windowSize = currentWindowSize(this.mainWindow);
       const hiddenBounds = {
         x: bounds.x,

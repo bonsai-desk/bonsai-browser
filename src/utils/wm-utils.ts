@@ -209,23 +209,6 @@ export function currentWindowSize(window: BrowserWindow): [number, number] {
   return [x, y];
 }
 
-export function innerBounds(window: BrowserWindow): Electron.Rectangle {
-  // const ratio = 15;
-  // const padding = Math.floor(window.getBounds().height / ratio);
-  // return innerRectangle(4 / 3, currentWindowSize(window), padding);
-
-  const windowBounds = window.getBounds();
-  const topPadding = 70;
-  const padding = 20;
-
-  return {
-    x: padding,
-    y: topPadding,
-    width: windowBounds.width - padding * 2,
-    height: windowBounds.height - topPadding - padding,
-  };
-}
-
 export const updateContents = (webView: IWebView, tabPageView: BrowserView) => {
   updateWebContents(tabPageView, webView.id, webView.view);
   const url = webView.view.webContents.getURL();
