@@ -24,7 +24,6 @@ import {
   TAB_PAGE,
   tagSideBarWidth,
   URL_PEEK_HTML,
-  VIBRANCY,
 } from '../constants';
 import {
   base64ImgToDisk,
