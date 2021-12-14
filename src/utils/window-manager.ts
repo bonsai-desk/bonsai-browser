@@ -214,10 +214,15 @@ export default class WindowManager {
       const webBrowserViewIsActive = this.webBrowserViewActive();
       const mouseIsInBorder = !this.mouseInInner();
       const findIsActive = windowHasView(this.mainWindow, this.findView);
+      const mouseInWindow = pointInBounds(
+        screen.getCursorScreenPoint(),
+        this.mainWindow.getBounds()
+      );
       if (
         !escapeActive &&
         mainWindowVisible &&
         webBrowserViewIsActive &&
+        mouseInWindow &&
         (mouseIsInBorder || findIsActive)
       ) {
         escapeActive = true;
@@ -230,11 +235,12 @@ export default class WindowManager {
           this.toggle(!this.mouseInInner());
         });
       } else if (
-        escapeActive &&
-        (!mainWindowVisible ||
-          (mainWindowVisible && webBrowserViewIsActive && !mouseIsInBorder) ||
-          (mainWindowVisible && !webBrowserViewIsActive)) &&
-        !findIsActive
+        (escapeActive &&
+          !findIsActive &&
+          (!mainWindowVisible ||
+            (mainWindowVisible && webBrowserViewIsActive && !mouseIsInBorder) ||
+            (mainWindowVisible && !webBrowserViewIsActive))) ||
+        (escapeActive && !mouseInWindow)
       ) {
         setTimeout(() => {
           // timeout here because there was sometimes a gap between this being
@@ -1204,22 +1210,26 @@ export default class WindowManager {
         this.onboardingWindow?.destroy();
         this.onboardingWindow = null;
       }
-      if (
-        ((process.platform === 'darwin' || process.platform === 'linux') &&
-          !this.mainWindow.isVisible()) ||
-        (process.platform !== 'darwin' && this.mainWindow.isMinimized())
-      ) {
-        this.mixpanelManager.track('show with global shortcut', {
-          shortcut: shortCut,
-        });
-        this.showWindow();
-      } else {
+      if (this.windowActive()) {
         this.mixpanelManager.track('hide with global shortcut', {
           shortcut: shortCut,
         });
         this.hideWindow();
+      } else {
+        this.mixpanelManager.track('show with global shortcut', {
+          shortcut: shortCut,
+        });
+        this.showWindow();
       }
     });
+  }
+
+  windowActive() {
+    const windowHidden =
+      ((process.platform === 'darwin' || process.platform === 'linux') &&
+        !this.mainWindow.isVisible()) ||
+      (process.platform !== 'darwin' && this.mainWindow.isMinimized());
+    return !windowHidden;
   }
 
   private mouseInInner() {

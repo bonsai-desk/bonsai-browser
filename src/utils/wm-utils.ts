@@ -36,8 +36,8 @@ function pointInBounds(
   const innerY0 = bounds.y;
   const innerY1 = bounds.y + bounds.height;
 
-  const inX = innerX0 < mousePoint.x && mousePoint.x < innerX1;
-  const inY = innerY0 < mousePoint.y && mousePoint.y < innerY1;
+  const inX = innerX0 <= mousePoint.x && mousePoint.x <= innerX1;
+  const inY = innerY0 <= mousePoint.y && mousePoint.y <= innerY1;
 
   return inX && inY;
 }
