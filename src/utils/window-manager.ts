@@ -275,42 +275,6 @@ export default class WindowManager {
     this.bindToggleShortcut('Alt+Space');
 
     this.initBoot();
-
-    if (app.isPackaged) {
-      globalShortcut.register('Alt+Shift+Left', () => {
-        this.openAndFloatLeft();
-      });
-      globalShortcut.register('Alt+Shift+Right', () => {
-        this.openAndFloatRight();
-      });
-      globalShortcut.register('Alt+Shift+Up', () => {
-        if (this.windowFloating) {
-          this.showWindow();
-        }
-      });
-      globalShortcut.register('Alt+Shift+Down', () => {
-        if (this.windowFloating) {
-          this.hideWindow();
-        }
-      });
-
-      globalShortcut.register('Alt+Shift+H', () => {
-        this.openAndFloatLeft();
-      });
-      globalShortcut.register('Alt+Shift+L', () => {
-        this.openAndFloatRight();
-      });
-      globalShortcut.register('Alt+Shift+K', () => {
-        if (this.windowFloating) {
-          this.showWindow();
-        }
-      });
-      globalShortcut.register('Alt+Shift+J', () => {
-        if (this.windowFloating) {
-          this.hideWindow();
-        }
-      });
-    }
   }
 
   createTabView(
@@ -1931,6 +1895,9 @@ export default class WindowManager {
     });
     ipcMain.on('move-floating-window-right', () => {
       this.float('right');
+    });
+    ipcMain.on('move-floating-window-max', () => {
+      this.showWindow();
     });
   }
 }

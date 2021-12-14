@@ -147,18 +147,6 @@ function initMenu(wm: WindowManager) {
         },
       },
       {
-        label: 'History',
-        accelerator: 'CmdOrCtrl+H',
-        click: () => {
-          if (windowHasView(wm.mainWindow, wm.tabPageView)) {
-            if (wm.webBrowserViewActive()) {
-              wm.unSetTab();
-            }
-            wm.tabPageView.webContents.send('toggle-history-modal');
-          }
-        },
-      },
-      {
         label: 'Debug',
         accelerator: 'CmdOrCtrl+D',
         click: () => {

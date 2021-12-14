@@ -16,7 +16,7 @@ import { HistoryEntry } from '../utils/interfaces';
 import { HistoryStore } from './history-store';
 import WorkspaceStore from './workspace/workspace-store';
 import packageInfo from '../package.json';
-import { Bind, KeybindStore } from './keybinds';
+import { KeybindStore } from './keybinds';
 import TabStore from './tabs';
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from '../constants';
 
@@ -66,6 +66,10 @@ const NOT_TEXT = [
   'F11',
   'F12',
   'F13',
+  'ArrowLeft',
+  'ArrowRight',
+  'ArrowUp',
+  'ArrowDown',
 ];
 
 export default class TabPageStore {
@@ -198,43 +202,79 @@ export default class TabPageStore {
   }
 
   fuzzyLeft(e: KeyboardEvent) {
+    e.preventDefault();
     if (this.fuzzySelectionIndex[0] > -1) {
-      e.preventDefault();
       this.moveFuzzySelection(Direction.Left);
     }
   }
 
   fuzzyRight(e: KeyboardEvent) {
+    e.preventDefault();
     if (this.fuzzySelectionIndex[0] > -1) {
-      e.preventDefault();
       this.moveFuzzySelection(Direction.Right);
     }
   }
 
   handleKeyBind(e: KeyboardEvent) {
+    if (
+      e.key === 'ArrowUp' ||
+      e.key === 'ArrowDown' ||
+      e.key === 'ArrowLeft' ||
+      e.key === 'ArrowRight'
+    ) {
+      e.preventDefault();
+    }
+
+    if (
+      this.keybindStore.isBind(e, 'float-left-vim') ||
+      this.keybindStore.isBind(e, 'float-left')
+    ) {
+      ipcRenderer.send('move-floating-window-left');
+      return;
+    }
+
+    if (
+      this.keybindStore.isBind(e, 'float-right-vim') ||
+      this.keybindStore.isBind(e, 'float-right')
+    ) {
+      ipcRenderer.send('move-floating-window-right');
+      return;
+    }
+
+    if (
+      this.keybindStore.isBind(e, 'float-max-vim') ||
+      this.keybindStore.isBind(e, 'float-max')
+    ) {
+      ipcRenderer.send('move-floating-window-max');
+      return;
+    }
+
     if (this.view === View.FuzzySearch) {
-      const fu = this.keybindStore.isBind(e, Bind.FuzzyUp);
-      const fd = this.keybindStore.isBind(e, Bind.FuzzyDown);
-      const fl = this.keybindStore.isBind(e, Bind.FuzzyLeft);
-      const fr = this.keybindStore.isBind(e, Bind.FuzzyRight);
-      if (fu) {
+      const fu = this.keybindStore.isBind(e, 'fuzzy-up');
+      const fd = this.keybindStore.isBind(e, 'fuzzy-down');
+      const fl = this.keybindStore.isBind(e, 'fuzzy-left');
+      const fr = this.keybindStore.isBind(e, 'fuzzy-right');
+      if (fu || e.key === 'ArrowUp') {
         this.fuzzyUp(e);
+        return;
       }
-      if (fd) {
+      if (fd || e.key === 'ArrowDown') {
         this.fuzzyDown(e);
+        return;
       }
-      if (fl) {
+      if (fl || e.key === 'ArrowLeft') {
         this.fuzzyLeft(e);
+        return;
       }
-      if (fr) {
+      if (fr || e.key === 'ArrowRight') {
         this.fuzzyRight(e);
+        return;
       }
       if (!fu && !fd && !fl && !fr) {
         this.fuzzySelectionIndex = [-1, -1];
       }
     } else if (this.view !== View.Settings) {
       const mod = NOT_TEXT.includes(e.code);
-      console.log(e);
       if (!mod) {
         this.setFocus();
       }
@@ -331,18 +371,6 @@ export default class TabPageStore {
           this.View = View.Tabs;
         }
         e.preventDefault();
-        break;
-      case 'ArrowUp':
-        this.fuzzyUp(e);
-        break;
-      case 'ArrowDown':
-        this.fuzzyDown(e);
-        break;
-      case 'ArrowLeft':
-        this.fuzzyLeft(e);
-        break;
-      case 'ArrowRight':
-        this.fuzzyRight(e);
         break;
       default:
         this.handleKeyBind(e);

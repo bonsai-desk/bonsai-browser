@@ -121,14 +121,6 @@ export interface IKeyBind {
   version: number;
 }
 
-export enum Bind {
-  FuzzyLeft = 'fuzzy-left',
-  FuzzyRight = 'fuzzy-right',
-  FuzzyUp = 'fuzzy-up',
-  FuzzyDown = 'fuzzy-down',
-  NewTab = 'new-tab',
-}
-
 const KeyBind = types
   .model({
     name: types.string,
@@ -215,7 +207,7 @@ export const KeybindStore = types
         self.settings.search.get(self.settings.selectedSearch) || GOOG_STRING
       );
     },
-    isBind(e: KeyboardEvent, bind: Bind): boolean {
+    isBind(e: KeyboardEvent, bind: string): boolean {
       // ipcRenderer.send('log-data', { bind });
       // ipcRenderer.send('log-data', getSnapshot(self.binds));
       const internalChord = self.binds.get(bind);
@@ -352,6 +344,42 @@ export function defaultKeybindStore(): Instance<typeof KeybindStore> {
         name: 'New Tab',
         defaultBind: ['CmdOrCtrl', 'KeyT'],
         currentBind: ['CmdOrCtrl', 'KeyT'],
+      },
+      'float-left-vim': {
+        version: 3,
+        name: 'Float Left',
+        defaultBind: ['Alt', 'KeyH'],
+        currentBind: ['Alt', 'KeyH'],
+      },
+      'float-left': {
+        version: 3,
+        name: 'Float Left',
+        defaultBind: ['Alt', 'ArrowLeft'],
+        currentBind: ['Alt', 'ArrowLeft'],
+      },
+      'float-right-vim': {
+        version: 3,
+        name: 'Float Right',
+        defaultBind: ['Alt', 'KeyL'],
+        currentBind: ['Alt', 'KeyL'],
+      },
+      'float-right': {
+        version: 3,
+        name: 'Float Right',
+        defaultBind: ['Alt', 'ArrowRight'],
+        currentBind: ['Alt', 'ArrowRight'],
+      },
+      'float-max-vim': {
+        version: 4,
+        name: 'Float Max',
+        defaultBind: ['Alt', 'KeyK'],
+        currentBind: ['Alt', 'KeyK'],
+      },
+      'float-max': {
+        version: 4,
+        name: 'Float Max',
+        defaultBind: ['Alt', 'ArrowUp'],
+        currentBind: ['Alt', 'ArrowUp'],
       },
     },
   });
