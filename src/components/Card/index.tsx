@@ -69,6 +69,7 @@ const TabImage = observer(({ imgUrl, selected }: ITabImage) => {
           src={imgFileUrl ? `file://${imgFileUrl}` : ''}
           onLoad={() => {
             setLoaded(true);
+            setError(false);
           }}
           onError={() => {
             setError(true);
