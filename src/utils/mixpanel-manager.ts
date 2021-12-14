@@ -34,10 +34,13 @@ class MixpanelManager {
       if (id && this.userId !== id) {
         this.userId = id;
         this.setVersion(id);
+        this.track('auth logged in');
         if (email) {
           this.mixpanel.people.set(id, {
             email,
+            $email: email,
           });
+          this.track('auth logged in (email)');
         }
       }
     }

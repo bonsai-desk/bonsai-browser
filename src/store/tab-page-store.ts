@@ -833,6 +833,7 @@ export default class TabPageStore {
         clearInterval(this.refreshHandle);
       }
       this.session = session;
+      // DON'T REMOVE THIS REFRESH SESSION
       this.refreshSession(session);
       this.refreshHandle = setInterval(() => {
         // console.log('refresh');
