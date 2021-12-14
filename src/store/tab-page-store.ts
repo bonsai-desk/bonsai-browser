@@ -270,8 +270,11 @@ export default class TabPageStore {
         this.fuzzyRight(e);
         return;
       }
-      if (!fu && !fd && !fl && !fr) {
-        this.fuzzySelectionIndex = [-1, -1];
+
+      this.fuzzySelectionIndex = [-1, -1];
+
+      if (!NOT_TEXT.includes(e.code)) {
+        this.setFocus();
       }
     } else if (this.view !== View.Settings) {
       const mod = NOT_TEXT.includes(e.code);
@@ -1032,6 +1035,10 @@ export default class TabPageStore {
       });
     });
     ipcRenderer.on('focus-search', () => {
+      if (this.urlText === '') {
+        return;
+      }
+
       this.setFocus();
       this.selectText();
     });

@@ -528,7 +528,9 @@ export default class WindowManager {
     }
 
     this.tabPageView.webContents.focus();
-    this.tabPageView.webContents.send('focus-search');
+    setTimeout(() => {
+      this.tabPageView.webContents.send('focus-search');
+    }, 100);
 
     setTimeout(() => {
       this.handleResize();
