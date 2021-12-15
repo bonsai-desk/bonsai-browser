@@ -153,7 +153,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -1052,11 +1052,13 @@ export default class WindowManager {
 
     const possibleNotchSize = this.display.workArea.y - this.display.bounds.y;
 
+    const topPadding = this.windowFloating ? 0 : 0;
+
     return maybeHasNotch &&
       process.platform === 'darwin' &&
       !this.windowFloating
       ? possibleNotchSize
-      : 0;
+      : topPadding;
   }
 
   innerBounds(): Electron.Rectangle {
@@ -1923,6 +1925,9 @@ export default class WindowManager {
     });
     ipcMain.on('move-floating-window-max', () => {
       this.showWindow();
+    });
+    ipcMain.on('hide-window', () => {
+      this.hideWindow();
     });
   }
 }

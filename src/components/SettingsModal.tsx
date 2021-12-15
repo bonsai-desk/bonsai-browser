@@ -954,7 +954,22 @@ const Settings = observer(() => {
         <div>
           <Title>General</Title>
           <PaddedPaper>
-            Toggle app <KeyBindButton id="toggle-app" clickable />
+            <Stack spacing={1}>
+              <div id="settings-row">
+                Toggle app <KeyBindButton id="toggle-app" clickable />
+              </div>
+              <div id="settings-row">
+                Snap left <KeyBindButton id="snap-left" /> or{' '}
+                <KeyBindButton id="snap-left-normal" />
+              </div>
+              <div id="settings-row">
+                Snap right <KeyBindButton id="snap-right" /> or{' '}
+                <KeyBindButton id="snap-right-normal" />
+              </div>
+              <div id="settings-row">
+                Fullscreen from snap <KeyBindButton id="fullscreen" />
+              </div>
+            </Stack>
           </PaddedPaper>
         </div>
 

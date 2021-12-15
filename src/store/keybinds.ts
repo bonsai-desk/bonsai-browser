@@ -345,6 +345,36 @@ export function defaultKeybindStore(): Instance<typeof KeybindStore> {
         defaultBind: ['CmdOrCtrl', 'KeyT'],
         currentBind: ['CmdOrCtrl', 'KeyT'],
       },
+      'snap-left': {
+        version: 1,
+        name: 'Snap Left',
+        defaultBind: ['Alt', 'KeyH'],
+        currentBind: ['Alt', 'KeyH'],
+      },
+      'snap-left-normal': {
+        version: 1,
+        name: 'Snap Left',
+        defaultBind: ['Alt', 'ArrowLeft'],
+        currentBind: ['Alt', 'ArrowLeft'],
+      },
+      'snap-right-normal': {
+        version: 1,
+        name: 'Snap Left',
+        defaultBind: ['Alt', 'ArrowRight'],
+        currentBind: ['Alt', 'ArrowRight'],
+      },
+      'snap-right': {
+        version: 1,
+        name: 'Snap Right',
+        defaultBind: ['Alt', 'KeyL'],
+        currentBind: ['Alt', 'KeyL'],
+      },
+      fullscreen: {
+        version: 1,
+        name: 'Fullscreen',
+        defaultBind: ['Alt', 'KeyK'],
+        currentBind: ['Alt', 'KeyK'],
+      },
     },
   });
 }

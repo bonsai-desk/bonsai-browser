@@ -87,7 +87,6 @@ const Header = observer(({ onViewPage }: { onViewPage: boolean }) => {
         <div>
           <BigButton
             className="is-active"
-            // disabled
             onClick={() => {
               if (tabPageStore.View === View.Navigator) {
                 ipcRenderer.send('click-main');

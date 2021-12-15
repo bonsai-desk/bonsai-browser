@@ -1,8 +1,7 @@
 import React, { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
-import { runInAction } from 'mobx';
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 import { createTheme, ThemeProvider, useMediaQuery } from '@mui/material';
 import { useStore, View } from '../store/tab-page-store';
 import Header from '../components/URLBox';
@@ -14,61 +13,11 @@ import Footer from '../components/Footer';
 import Container from '../components/Container';
 import Workspace from '../components/Workspace';
 import Navigator, { clickMain } from '../components/Navigator';
-import redX from '../../assets/x-letter.svg';
-import home from '../../assets/home.svg';
 import GenericModal from '../components/GenericModal';
 import SettingsModal from '../components/SettingsModal';
 import GlobalStyle, { GlobalDark, GlobalLight } from '../GlobalStyle';
 import Storyboard from '../components/StoryBoard';
 import FloatingButtons from '../components/FloatingButtons';
-
-const BackHomeButtonParent = styled.div`
-  width: 2rem;
-  height: 2rem;
-  border-radius: 0 0 10px 0;
-  background-color: rgba(0, 0, 0, 0.1);
-  position: absolute;
-  top: 0;
-  left: 0;
-  transition-duration: 0.1s;
-
-  background-size: 100%;
-  background-repeat: no-repeat;
-  background-position: center center;
-  ${({ view }: { view: View }) => {
-    if (view === View.Tabs) {
-      return `background-image: url(${redX});`;
-    }
-    return css`
-      background-image: url(${home});
-      background-size: 60%;
-    `;
-  }}
-  :hover {
-    background-color: rgba(0, 0, 0, 0.5);
-  }
-`;
-
-const BackHomeButton = observer(() => {
-  const { tabPageStore } = useStore();
-
-  return (
-    <BackHomeButtonParent
-      view={tabPageStore.View}
-      onClick={() => {
-        if (tabPageStore.View === View.Tabs) {
-          ipcRenderer.send('toggle');
-        } else if (tabPageStore.View === View.WorkSpace) {
-          runInAction(() => {
-            tabPageStore.View = View.Tabs;
-          });
-        } else {
-          ipcRenderer.send('click-main');
-        }
-      }}
-    />
-  );
-});
 
 const MainContent = observer(() => {
   const { tabPageStore, workspaceStore } = useStore();
@@ -235,7 +184,6 @@ const Home = observer(() => {
           style={{ display: tabPageStore.windowFloating ? 'block' : 'none' }}
         />
         <Style />
-        <BackHomeButton />
         <Content />
         <HistoryModal />
         <DebugModal />
