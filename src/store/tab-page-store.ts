@@ -160,6 +160,8 @@ export default class TabPageStore {
 
   private keybindStore: Instance<typeof KeybindStore>;
 
+  private historyStore: Instance<typeof HistoryStore>;
+
   windowFloating = false;
 
   versionString = 'None';
@@ -633,6 +635,30 @@ export default class TabPageStore {
     return false;
   }
 
+  ringTabNeighbor(
+    targetId: number,
+    side: 'left' | 'right'
+  ): number | undefined {
+    const matchIdx = this.sorting.findIndex((id) => {
+      return targetId === id;
+    });
+    if (matchIdx !== -1) {
+      if (side === 'left') {
+        const leftIdx = matchIdx - 1;
+        if (leftIdx < 0) {
+          return this.sorting[this.sorting.length - 1];
+        }
+        return this.sorting[leftIdx];
+      }
+      const rightIdx = matchIdx + 1;
+      if (rightIdx > this.sorting.length - 1) {
+        return this.sorting[0];
+      }
+      return this.sorting[rightIdx];
+    }
+    return undefined;
+  }
+
   leftOfTab(id: number): number | null {
     const tabs = Object.values(this.openTabs);
     const match = tabs.findIndex((element) => {
@@ -833,7 +859,8 @@ export default class TabPageStore {
 
   constructor(
     workspaceStore: Instance<typeof WorkspaceStore>,
-    keybindStore: Instance<typeof KeybindStore>
+    keybindStore: Instance<typeof KeybindStore>,
+    historyStore: Instance<typeof HistoryStore>
   ) {
     this.refreshHandle = null;
     makeAutoObservable(this);
@@ -861,6 +888,8 @@ export default class TabPageStore {
     this.workspaceStore = workspaceStore;
 
     this.keybindStore = keybindStore;
+
+    this.historyStore = historyStore;
 
     this.filteredOpenTabs = [];
     this.filteredWorkspaceTabs = [];
@@ -1088,6 +1117,13 @@ export default class TabPageStore {
       runInAction(() => {
         this.tabView = tabView;
       });
+    });
+    ipcRenderer.on('select-neighbor-tab', (_, side) => {
+      const id = parseInt(this.historyStore.active, 10);
+      const neighborTabId = this.ringTabNeighbor(id, side);
+      if (typeof neighborTabId !== 'undefined') {
+        ipcRenderer.send('set-tab', neighborTabId);
+      }
     });
   }
 }

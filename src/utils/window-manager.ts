@@ -690,6 +690,12 @@ export default class WindowManager {
     this.tabPageView.webContents.send('unset-tab', cachedId);
   }
 
+  selectNeighborTab(side: 'left' | 'right') {
+    if (this.activeTabId !== -1) {
+      this.tabPageView.webContents.send('select-neighbor-tab', side);
+    }
+  }
+
   setTab(_id: number | string, shouldScreenshot = true) {
     let id;
     if (typeof _id === 'string') {
