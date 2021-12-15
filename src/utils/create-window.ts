@@ -89,21 +89,6 @@ function initMenu(wm: WindowManager) {
           }
         },
       },
-      // {
-      //   label: 'Toggle Float Window',
-      //   accelerator: 'CmdOrCtrl+\\',
-      //   click: () => {
-      //     if (wm.activeTabId === -1) {
-      //       return;
-      //     }
-      //
-      //     if (wm.windowFloating) {
-      //       wm.unFloat();
-      //     } else {
-      //       wm.float();
-      //     }
-      //   },
-      // },
       {
         label: 'Close current tab',
         accelerator: 'CmdOrCtrl+W',
@@ -227,7 +212,37 @@ function initMenu(wm: WindowManager) {
       },
     ],
   });
+
+  const tabs: MenuItem = new MenuItem({
+    label: 'Tabs',
+    submenu: [
+      {
+        label: 'Select Left tab',
+        accelerator: 'Cmd+Alt+Left',
+        click: () => {
+          if (wm.activeTabId !== -1) {
+            wm.selectNeighborTab('left');
+          }
+        },
+      },
+      {
+        label: 'Select Right tab',
+        accelerator: 'Cmd+Alt+Right',
+        click: () => {
+          if (wm.activeTabId !== -1) {
+            wm.selectNeighborTab('right');
+          }
+        },
+      },
+    ],
+  });
+
   const template = [main, edit];
+
+  if (process.platform === 'darwin') {
+    template.push(tabs);
+  }
+
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
 }

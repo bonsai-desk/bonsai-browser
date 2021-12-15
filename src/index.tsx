@@ -48,8 +48,12 @@ if (document.getElementById('tab-page')) {
   const tabStore = new TabStore();
   const workspaceStore = createWorkspaceStore();
   const keybindStore = createAndLoadKeybindStore();
-  const tabPageStore = new TabPageStore(workspaceStore, keybindStore);
   const historyStore = HistoryStore.create({ nodes: {}, active: '' });
+  const tabPageStore = new TabPageStore(
+    workspaceStore,
+    keybindStore,
+    historyStore
+  );
   keybindStore.loadFromFile('');
 
   hookListeners(historyStore);
