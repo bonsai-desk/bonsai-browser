@@ -375,6 +375,12 @@ export function defaultKeybindStore(): Instance<typeof KeybindStore> {
         defaultBind: ['Alt', 'KeyK'],
         currentBind: ['Alt', 'KeyK'],
       },
+      'fullscreen-normal': {
+        version: 2,
+        name: 'Fullscreen',
+        defaultBind: ['Alt', 'ArrowUp'],
+        currentBind: ['Alt', 'ArrowUp'],
+      },
     },
   });
 }

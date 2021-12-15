@@ -959,15 +959,16 @@ const Settings = observer(() => {
                 Toggle app <KeyBindButton id="toggle-app" clickable />
               </div>
               <div id="settings-row">
-                Snap left <KeyBindButton id="snap-left" /> or{' '}
+                Tile window left <KeyBindButton id="snap-left" /> or{' '}
                 <KeyBindButton id="snap-left-normal" />
               </div>
               <div id="settings-row">
-                Snap right <KeyBindButton id="snap-right" /> or{' '}
+                Tile window right <KeyBindButton id="snap-right" /> or{' '}
                 <KeyBindButton id="snap-right-normal" />
               </div>
               <div id="settings-row">
-                Fullscreen from snap <KeyBindButton id="fullscreen" />
+                Maximize tiled window <KeyBindButton id="fullscreen" /> or{' '}
+                <KeyBindButton id="fullscreen-normal" />
               </div>
             </Stack>
           </PaddedPaper>
