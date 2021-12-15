@@ -49,8 +49,6 @@ const Header = observer(({ onViewPage }: { onViewPage: boolean }) => {
     tabPageStore.bonsaiBoxRef = bonsaiBoxRef;
   });
 
-  const titleBarHeight = 0; // for regular window mode when it's added
-
   const activeStyle = {
     outline: 'var(--link-color) solid 2px',
     backgroundColor: 'white',
@@ -75,8 +73,8 @@ const Header = observer(({ onViewPage }: { onViewPage: boolean }) => {
         position: onViewPage ? 'absolute' : 'static',
         top: onViewPage ? '0' : 'auto',
         zIndex: onViewPage ? 1 : 'auto',
-        height: tabPageStore.innerBounds.y - titleBarHeight,
-        marginTop: titleBarHeight,
+        height: tabPageStore.innerBounds.y - tabPageStore.topPadding,
+        paddingTop: tabPageStore.topPadding,
       }}
       onMouseOver={() => {
         runInAction(() => {

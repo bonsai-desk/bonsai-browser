@@ -153,7 +153,7 @@ export default class WindowManager {
     // this.overlayView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -1007,9 +1007,10 @@ export default class WindowManager {
     // update renderer inner bounds
     const bounds = this.innerBounds();
     const windowSize = currentWindowSize(window);
-    this.tabPageView.webContents.send('inner-bounds', {
+    this.tabPageView.webContents.send('set-bounds', {
       windowSize: { width: windowSize[0], height: windowSize[1] },
       bounds,
+      topPadding: this.notchSize(),
     });
 
     resizeFindView(this.findView, headerHeight, bounds);
@@ -1037,9 +1038,18 @@ export default class WindowManager {
     }
   }
 
+  notchSize() {
+    // no notch size api yet? so this is the workaround
+    const possibleNotchSize = this.display.workArea.y - this.display.bounds.y;
+    return process.platform === 'darwin' && !this.windowFloating
+      ? possibleNotchSize
+      : 0;
+  }
+
   innerBounds(): Electron.Rectangle {
     const windowBounds = this.mainWindow.getBounds();
-    const topPadding = 70;
+
+    const topPadding = 70 + this.notchSize();
     const padding = this.windowFloating ? 3 : 20;
 
     return {

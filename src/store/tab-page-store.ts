@@ -154,6 +154,8 @@ export default class TabPageStore {
 
   innerBounds: { x: number; y: number; width: number; height: number };
 
+  topPadding = 0;
+
   private workspaceStore: Instance<typeof WorkspaceStore>;
 
   private keybindStore: Instance<typeof KeybindStore>;
@@ -869,10 +871,11 @@ export default class TabPageStore {
       // }
     });
 
-    ipcRenderer.on('inner-bounds', (_, { windowSize, bounds }) => {
+    ipcRenderer.on('set-bounds', (_, { windowSize, bounds, topPadding }) => {
       runInAction(() => {
         this.windowSize = windowSize;
         this.innerBounds = bounds;
+        this.topPadding = topPadding;
       });
     });
     ipcRenderer.on('set-tab-parent', (_, [rootId, parentId]) => {
