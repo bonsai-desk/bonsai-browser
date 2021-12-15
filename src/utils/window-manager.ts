@@ -1038,10 +1038,17 @@ export default class WindowManager {
     }
   }
 
+  // no notch size api yet? so this is the workaround
   notchSize() {
-    // no notch size api yet? so this is the workaround
+    const aspectRatio = this.display.size.width / this.display.size.height;
+    const aspectRatio16By10 = 16 / 10;
+    const maybeHasNotch = aspectRatio < aspectRatio16By10;
+
     const possibleNotchSize = this.display.workArea.y - this.display.bounds.y;
-    return process.platform === 'darwin' && !this.windowFloating
+
+    return maybeHasNotch &&
+      process.platform === 'darwin' &&
+      !this.windowFloating
       ? possibleNotchSize
       : 0;
   }
