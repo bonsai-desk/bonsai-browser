@@ -8,36 +8,57 @@ import { myPlatform, Platform } from '../render-constants';
 const GOOG_STRING = 'https://www.google.com/search?q=%s';
 const DUCK_STRING = 'https://duckduckgo.com/?q=%s';
 
-function loadSnapshot(store: Instance<any>, encrypted = true): any {
+function loadJSON(store: Instance<any>, encrypted = true): any {
   if (store.userDataPath !== '') {
     try {
       const snapshotPath = path.join(store.userDataPath, 'keybindSnapshot');
       const json = fs.readFileSync(snapshotPath, 'utf8');
       if (json !== '') {
-        const storeSnapshot = JSON.parse(encrypted ? tryDecrypt(json) : json);
-        try {
-          applySnapshot(store, storeSnapshot);
-        } catch (err) {
-          console.log('err load snap');
-          console.log(err);
-        }
-        return storeSnapshot;
+        return JSON.parse(encrypted ? tryDecrypt(json) : json);
       }
+      return undefined;
     } catch (err) {
       console.log('err load snap');
       console.log(err);
       //
+      return undefined;
     }
   }
-  return {};
+  return undefined;
 }
+
+// function loadSnapshot(store: Instance<any>, encrypted = true): any {
+//   if (store.userDataPath !== '') {
+//     try {
+//       const snapshotPath = path.join(store.userDataPath, 'keybindSnapshot');
+//       const json = fs.readFileSync(snapshotPath, 'utf8');
+//       if (json !== '') {
+//         const storeSnapshot = JSON.parse(encrypted ? tryDecrypt(json) : json);
+//         try {
+//           applySnapshot(store, storeSnapshot);
+//         } catch (err) {
+//           ipcRenderer.send('log-data', JSON.stringify(err));
+//           console.log('err load snap');
+//           console.log(err);
+//         }
+//         return storeSnapshot;
+//       }
+//     } catch (err) {
+//       ipcRenderer.send('log-data', JSON.stringify(err));
+//       console.log('err load snap');
+//       console.log(err);
+//       //
+//     }
+//   }
+//   return {};
+// }
 
 function saveSnapshot(store: Instance<any>, encrypted = true) {
   if (store.userDataPath !== '') {
     try {
       const snapshotPath = path.join(store.userDataPath, 'keybindSnapshot');
       const snapshot = getSnapshot(store);
-      const snapshotString = JSON.stringify(snapshot);
+      const snapshotString = JSON.stringify(snapshot, null, '  ');
       fs.writeFileSync(
         snapshotPath,
         encrypted ? encrypt(snapshotString) : snapshotString
@@ -433,32 +454,30 @@ export function createAndLoadKeybindStore(): Instance<typeof KeybindStore> {
 
   const defaultSnapshot = getSnapshot(keybindStore);
 
-  ipcRenderer.send('request-user-data-path');
-
   ipcRenderer.on('user-data-path', (_, userDataPath) => {
     keybindStore.setUserDataPath(userDataPath);
-    const json = loadSnapshot(keybindStore, false);
+    // const json = loadSnapshot(keybindStore, false);
+    const jsonData = loadJSON(keybindStore, false);
+
+    if (typeof jsonData !== 'undefined' && jsonData.settings) {
+      applySnapshot(keybindStore.settings, jsonData.settings);
+    }
 
     // loading from file overwrites new keybinds so add the defaults back here if they don't exist
     // we also update the data if there is new version but keep the user custom keybind
     Object.entries(defaultSnapshot.binds).forEach(([key, defaultBind]) => {
       // const customBind = keybindStore.binds.get(key);
-      const customBinds = json.binds;
+      const customBinds = jsonData.binds;
       if (customBinds) {
         const customBind = customBinds[key];
-        if (!customBind) {
-          keybindStore.addBind(key, defaultBind);
-        } else if (
-          !customBind.version ||
-          defaultBind.version > customBind.version
-        ) {
-          keybindStore.addBind(key, defaultBind);
-          // keybindStore.setBind(key, customBind.currentBind);
+        if (!customBind.version || defaultBind.version === customBind.version) {
+          keybindStore.setBind(key, customBind.currentBind);
         }
       }
     });
 
     const binds = getSnapshot(keybindStore.binds);
+
     Object.entries(binds).forEach(([id, data]) => {
       ipcRenderer.send('rebind-hotkey', {
         hotkeyId: id,
@@ -468,9 +487,10 @@ export function createAndLoadKeybindStore(): Instance<typeof KeybindStore> {
   });
 
   ipcRenderer.on('update-toggle-app-hotkey', (_, data) => {
-    // ipcRenderer.send('log-data', { update: data });
     keybindStore.setBind('toggle-app', data);
   });
+
+  ipcRenderer.send('request-user-data-path');
 
   return keybindStore;
 }
