@@ -59,3 +59,10 @@ export interface INavigateData {
   httpResponseCode: number;
   httpStatusText: string;
 }
+
+export interface LoadTextOptions {
+  dontActuallyLoadUrl?: boolean;
+  scrollHeight?: number;
+  handleLoaded?: () => void;
+  searchPattern?: string;
+}

@@ -59,17 +59,16 @@ import {
   updateContents,
   updateWebContents,
 } from './wm-utils';
-import { HistoryEntry, IWebView, OpenGraphInfo, TabInfo } from './interfaces';
+import {
+  HistoryEntry,
+  IWebView,
+  LoadTextOptions,
+  OpenGraphInfo,
+  TabInfo,
+} from './interfaces';
 import MixpanelManager from './mixpanel-manager';
 import SaveData from './SaveData';
 import { INode } from '../store/history-store';
-
-interface LoadTextOptions {
-  dontActuallyLoadUrl?: boolean;
-  scrollHeight?: number;
-  handleLoaded?: () => void;
-  searchPattern?: string;
-}
 
 export default class WindowManager {
   // region variables
