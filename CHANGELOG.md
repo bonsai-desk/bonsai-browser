@@ -1,5 +1,25 @@
 # Changelog
 
+## Bonsai 1.1.3 (December 16, 2021)
+
+### Features
+- Tiling floating window with hotkeys (physics window replaced)
+- While app is open, press Alt+H or Alt+L to tile window left or right.
+- You can also use ALt+LeftArrow and Alt+RightArrow
+- App is fully functional in tiled window mode
+- Light & dark mode (matches system theme by default), custom background color, & UI improvements
+- Choose between Google/DuckDuckGo
+- Scrollbounce on macOS
+- Switch between tabs on macOS with Cmd+Opt+Left/Right
+
+### Fixes
+- Escape hotkey now does not trigger unless app has focus
+- Hotkeys display correctly for each platform
+- Close find-in-page popup when you navigate
+- Fixed problem where macOS notch cuts into search bar
+- Remove unintended outlines that would appear on buttons sometimes
+- Return to homepage hotkey no longer bricks app when in floaty window mode
+
 ## Bonsai 1.1.2 (December 07, 2021)
 
 ### Features
