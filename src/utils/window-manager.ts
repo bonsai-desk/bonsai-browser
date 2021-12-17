@@ -516,7 +516,7 @@ export default class WindowManager {
     this.mainWindow.setOpacity(1.0);
     this.resizeBrowserWindow();
 
-    if (process.platform === 'linux') {
+    if (process.platform === 'linux' && !this.windowFloating) {
       this.mainWindow.setResizable(true);
       this.mainWindow.maximize();
       setTimeout(() => {
