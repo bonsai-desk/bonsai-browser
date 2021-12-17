@@ -1,5 +1,10 @@
 # Changelog
 
+## Bonsai 1.1.4 (December 17, 2021)
+
+### Fixes 
+- Tiled windows now stay tiled when toggle the app
+
 ## Bonsai 1.1.3 (December 16, 2021)
 
 ### Features
