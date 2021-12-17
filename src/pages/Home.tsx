@@ -1,3 +1,4 @@
+/* eslint no-console: off */
 import React, { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
@@ -18,6 +19,8 @@ import SettingsModal from '../components/SettingsModal';
 import GlobalStyle, { GlobalDark, GlobalLight } from '../GlobalStyle';
 import Storyboard from '../components/StoryBoard';
 import FloatingButtons from '../components/FloatingButtons';
+import TagView from '../components/TagView';
+import AllTagsView from '../components/AllTagsView';
 
 const MainContent = observer(() => {
   const { tabPageStore, workspaceStore } = useStore();
@@ -38,9 +41,12 @@ const MainContent = observer(() => {
       return <Workspace workspace={workspace} />;
     }
     tabPageStore.setUrlText('');
-  }
-  if (tabPageStore.View === View.FuzzySearch) {
+  } else if (tabPageStore.View === View.FuzzySearch) {
     return <FuzzyTabs />;
+  } else if (tabPageStore.View === View.TagView) {
+    return <TagView />;
+  } else if (tabPageStore.View === View.AllTagsView) {
+    return <AllTagsView />;
   }
   return <HomePageTabs />;
 });

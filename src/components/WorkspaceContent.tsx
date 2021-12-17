@@ -14,7 +14,7 @@ import {
 import { AddCircle } from '@material-ui/icons';
 import styled from 'styled-components';
 import { headsOnNode, INode } from '../store/history-store';
-import { IWorkSpaceStore } from '../store/workspace/workspace-store';
+import WorkspaceStore from '../store/workspace/workspace-store';
 import { useStore, View } from '../store/tab-page-store';
 import { Workspace } from '../store/workspace/workspace';
 
@@ -50,7 +50,7 @@ const AddToWorkspaceButton = observer(
 
 function nodeInWorkspaces(
   node: INode | undefined,
-  workspaceStore: IWorkSpaceStore
+  workspaceStore: Instance<typeof WorkspaceStore>
 ): IItemPath[] {
   if (node) {
     const matches: IItemPath[] = [];

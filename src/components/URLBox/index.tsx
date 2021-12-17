@@ -2,7 +2,7 @@ import styled from 'styled-components';
 import React, { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { runInAction } from 'mobx';
-import { MoreHoriz } from '@material-ui/icons';
+import { LocalOffer, MoreHoriz } from '@material-ui/icons';
 import { Stack } from '@material-ui/core';
 import { ipcRenderer } from 'electron';
 import { GridView, ViewColumnOutlined } from '@mui/icons-material';
@@ -132,6 +132,21 @@ const Header = observer(({ onViewPage }: { onViewPage: boolean }) => {
           }}
         />
         <div>
+          <Tooltip title="Tags">
+            <BigButton
+              className="is-active"
+              onClick={() => {
+                runInAction(() => {
+                  ipcRenderer.send('click-main');
+                  tabPageStore.View = View.AllTagsView;
+                });
+              }}
+            >
+              <LocalOffer />
+            </BigButton>
+          </Tooltip>
+        </div>
+        <div>
           <Tooltip
             title={
               tabPageStore.TabView === TabViewType.Grid
@@ -155,7 +170,7 @@ const Header = observer(({ onViewPage }: { onViewPage: boolean }) => {
                 <GridView />
               ) : (
                 <ViewColumnOutlined />
-              )}
+              )}{' '}
             </BigButton>
           </Tooltip>
         </div>

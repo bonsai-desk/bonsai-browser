@@ -215,9 +215,6 @@ export const KeybindStore = types
     setUserDataPath(userDataPath: string) {
       self.userDataPath = userDataPath;
     },
-    loadFromFile(fileURI: string) {
-      console.warn('load from file not implemented', fileURI);
-    },
     saveSnapshot() {
       saveSnapshot(self, false);
     },

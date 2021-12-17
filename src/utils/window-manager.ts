@@ -1151,6 +1151,13 @@ export default class WindowManager {
           imgName: tabImgName,
         });
       }
+      tabView.imgString = tabImgName;
+      this.tabPageView.webContents.send('tab-image-native', [
+        tabId,
+        tabImgName,
+        true,
+      ]);
+      this.saveHistory();
       if (callback) {
         callback();
       }
@@ -1287,6 +1294,7 @@ export default class WindowManager {
     this.tabPageView.webContents.send('tab-image-native', [
       newTabId,
       tabView.imgString,
+      false,
     ]);
     tabView.scrollHeight = scrollHeight;
     this.loadUrlInTab(newTabId, url, true);
@@ -1899,6 +1907,9 @@ export default class WindowManager {
     });
     ipcMain.on('viewed-toggle-page', () => {
       this.viewedToggleAppPageInOnboarding = true;
+    });
+    ipcMain.on('save-snapshot', () => {
+      this.tabPageView.webContents.send('save-snapshot');
     });
     ipcMain.on('update-tab-view', (_, tabView) => {
       this.saveData.data.tabView = tabView;

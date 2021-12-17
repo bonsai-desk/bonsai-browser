@@ -2,10 +2,13 @@ import styled from 'styled-components';
 import React, { useEffect, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
 import { runInAction } from 'mobx';
+import { Container, Paper, Stack } from '@material-ui/core';
+import { ipcRenderer } from 'electron';
 import { tagSideBarWidth } from '../constants';
-import { useStore } from '../store/tab-page-store';
+import { useStore, View } from '../store/tab-page-store';
 import { baseUrl } from '../utils/utils';
-import WorkspaceContent from './WorkspaceContent';
+import { addTagStrings, removeTagStrings } from '../watermelon/databaseUtils';
+import { PageFromUrlTags } from '../watermelon/components/Tags';
 
 const Bounds = styled.div`
   position: absolute;
@@ -22,7 +25,7 @@ const Border = styled.div`
 `;
 
 const PageTitle = styled.div`
-  font-size: 1.5rem;
+  font-size: 1rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -62,27 +65,8 @@ const AddTagButton = styled.button`
   }
 `;
 
-const Tag = styled.div`
-  background-color: #2121e8;
-  color: white;
-
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-
-  padding: 0 10px 0 10px;
-  margin: 0 0 0 25px;
-  border-radius: 99999px;
-  width: calc(100% - 50px - 20px);
-
-  cursor: pointer;
-  :hover {
-    filter: brightness(0.8);
-  }
-`;
-
 const TagContent = observer(() => {
-  const { tabPageStore, historyStore, workspaceStore } = useStore();
+  const { tabPageStore, historyStore, database } = useStore();
 
   const tab = tabPageStore.openTabs[historyStore.active];
   let title = 'New Tab';
@@ -98,7 +82,12 @@ const TagContent = observer(() => {
   }, [tabPageStore]);
 
   return (
-    <>
+    <Paper
+      sx={{
+        height: '100%',
+        marginRight: '10px',
+      }}
+    >
       <PageTitle>{title === '' ? 'New Tab' : title}</PageTitle>
       <Divider />
       <Title>Add Tag:</Title>
@@ -118,9 +107,9 @@ const TagContent = observer(() => {
       <AddTagButton
         onClick={() => {
           if (tagBoxRef.current) {
-            const tag = tagBoxRef.current.value.trim();
-            if (tag !== '') {
-              workspaceStore.addTag(tabBaseUrl, tag);
+            const tagString = tagBoxRef.current.value.trim();
+            if (tagString !== '') {
+              addTagStrings(database, tabBaseUrl, tagString);
             }
           }
         }}
@@ -129,41 +118,26 @@ const TagContent = observer(() => {
       </AddTagButton>
       <Divider />
       <Title>Tags:</Title>
-      {/* {tags.map((tag) => { */}
-      {/*  return ( */}
-      {/*    <div key={tag}> */}
-      {/*      <Tag */}
-      {/*        onClick={() => { */}
-      {/*          tabPageStore.View = View.Tag; */}
-      {/*          ipcRenderer.send('click-main'); */}
-      {/*        }} */}
-      {/*      > */}
-      {/*        {tag} */}
-      {/*      </Tag> */}
-      {/*      <AddTagButton */}
-      {/*        style={{ marginLeft: 30, marginTop: 2 }} */}
-      {/*        onClick={() => { */}
-      {/*          workspaceStore.removeTag(tabBaseUrl, tag); */}
-      {/*        }} */}
-      {/*      > */}
-      {/*        X */}
-      {/*      </AddTagButton> */}
-      {/*    </div> */}
-      {/*  ); */}
-      {/* })} */}
-      <Divider />
-      <Title>Related Tags:</Title>
-    </>
+      <Container>
+        <Stack spacing={1}>
+          <PageFromUrlTags
+            pageUrl={tabBaseUrl}
+            onClick={(tag) => {
+              ipcRenderer.send('click-main');
+              tabPageStore.View = View.TagView;
+              tabPageStore.setViewingTag(tag);
+            }}
+            onDelete={(tag) => {
+              removeTagStrings(database, tabBaseUrl, tag.title);
+            }}
+          />
+        </Stack>
+      </Container>
+    </Paper>
   );
 });
 
 const TagSidebar = observer(() => {
-  // const tagsMap = workspaceStore.tags.get(tabBaseUrl);
-  // let tags: string[] = [];
-  // if (tagsMap) {
-  //   tags = Array.from(tagsMap.keys());
-  // }
-
   const { tabPageStore } = useStore();
 
   return (
@@ -177,7 +151,7 @@ const TagSidebar = observer(() => {
       }}
     >
       <Border>
-        <WorkspaceContent />
+        <TagContent />
       </Border>
     </Bounds>
   );

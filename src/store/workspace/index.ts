@@ -179,7 +179,6 @@ function createWorkspaceStore(): Instance<typeof WorkspaceStore> {
   const workspaceStore = WorkspaceStore.create({
     version: 2, // this number is the version for new stores. old stores loaded in will override the version and will need to be updated
     workspaces: {},
-    // tags: {},
   });
 
   workspaceStore.createWorkspace('default');

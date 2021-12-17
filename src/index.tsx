@@ -1,5 +1,7 @@
+/* eslint no-console: off */
 import React from 'react';
 import { render } from 'react-dom';
+import DatabaseProvider from '@nozbe/watermelondb/DatabaseProvider';
 import App from './pages/App';
 import DebugApp from './pages/DebugApp';
 import UrlPeek from './pages/UrlPeek';
@@ -16,6 +18,7 @@ import createWorkspaceStore from './store/workspace';
 import { hookListeners, HistoryStore } from './store/history-store';
 import Onboarding from './pages/Onboarding';
 import { createAndLoadKeybindStore } from './store/keybinds';
+import loadOrCreateWatermelonDB from './watermelon';
 
 if (document.getElementById('root')) {
   const tabStore = new TabStore();
@@ -46,7 +49,9 @@ if (document.getElementById('overlay')) {
 
 if (document.getElementById('tab-page')) {
   const tabStore = new TabStore();
+
   const workspaceStore = createWorkspaceStore();
+
   const keybindStore = createAndLoadKeybindStore();
   const historyStore = HistoryStore.create({ nodes: {}, active: '' });
   const tabPageStore = new TabPageStore(
@@ -54,26 +59,38 @@ if (document.getElementById('tab-page')) {
     keybindStore,
     historyStore
   );
-  keybindStore.loadFromFile('');
 
   hookListeners(historyStore);
 
-  render(
-    <>
-      <TabPageStoreProvider
-        value={{
-          tabPageStore,
-          workspaceStore,
-          historyStore,
-          keybindStore,
-          tabStore,
-        }}
-      >
-        <Home />
-      </TabPageStoreProvider>
-    </>,
-    document.getElementById('tab-page')
-  );
+  // dont' render anything until the database is loaded/created with the logged in user's id
+  let currentUserId = '';
+  tabPageStore.sessionChangeCallback = (userId) => {
+    if (userId === currentUserId) {
+      return;
+    }
+    currentUserId = userId;
+
+    const database = loadOrCreateWatermelonDB(userId);
+    render(
+      <>
+        <DatabaseProvider database={database}>
+          <TabPageStoreProvider
+            value={{
+              tabPageStore,
+              workspaceStore,
+              historyStore,
+              keybindStore,
+              tabStore,
+              database,
+            }}
+          >
+            <Home />
+          </TabPageStoreProvider>
+        </DatabaseProvider>
+      </>,
+      document.getElementById('tab-page')
+    );
+  };
 }
 
 if (document.getElementById('onboarding')) {

@@ -91,8 +91,9 @@ export function makeOnboardingWindow(): BrowserWindow {
     fullscreen: false,
     webPreferences: {
       nodeIntegration: true,
+      devTools: !app.isPackaged,
       contextIsolation: false,
-      devTools: false,
+      nodeIntegrationInWorker: true,
     },
   });
   // onboardingWindow.webContents.openDevTools({ mode: 'detach' });
@@ -108,6 +109,7 @@ export function makeView(loadURL: string) {
       nodeIntegration: true,
       devTools: !app.isPackaged,
       contextIsolation: false,
+      nodeIntegrationInWorker: true,
     },
   });
   makeWebContentsSafe(newView.webContents);

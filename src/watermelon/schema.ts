@@ -1,0 +1,40 @@
+import { appSchema, tableSchema } from '@nozbe/watermelondb';
+
+// to make code more readable and easier to refactor. The js variable name could be changed, but
+// DO NOT CHANGE THE STRINGS. It will break backwards compatibility.
+export enum TableName {
+  PAGES = 'pages',
+  TAGS = 'tags',
+  PAGETAGS = 'page_tags',
+}
+
+const schema = appSchema({
+  version: 1,
+  tables: [
+    tableSchema({
+      name: TableName.PAGES,
+      columns: [
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'url', type: 'string' },
+      ],
+    }),
+    tableSchema({
+      name: TableName.TAGS,
+      columns: [
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'title', type: 'string' },
+      ],
+    }),
+    tableSchema({
+      name: TableName.PAGETAGS,
+      columns: [
+        { name: 'page_id', type: 'string', isIndexed: true },
+        { name: 'tag_id', type: 'string', isIndexed: true },
+      ],
+    }),
+  ],
+});
+
+export default schema;

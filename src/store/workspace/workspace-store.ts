@@ -9,25 +9,10 @@ import { Workspace } from './workspace';
 import { ItemGroup } from './item-group';
 import { TabPageTab } from '../../interfaces/tab';
 
-// const Tag = types.model({
-//   id: types.identifier,
-//   title: types.string,
-// });
-//
-// const Page = types.model({
-//   id: types.identifier,
-//   url: types.string,
-//   tags: types.map(types.reference(Tag)),
-// });
-
 const WorkspaceStore = types
   .model({
     version: types.number,
     workspaces: types.map(Workspace),
-
-    // tags: types.map(Tag),
-    // pages: types.map(Page),
-    // tags: types.map(types.map(types.boolean)),
   })
   .volatile(() => ({
     snapshotPath: '',
@@ -38,6 +23,37 @@ const WorkspaceStore = types
     activeWorkspaceId: '',
     selectedTab: { url: '', title: '', image: '', favicon: '' },
   }))
+  // .views((self) => ({
+  //   getTagOrCreate(tagTitle: string): Instance<typeof Tag> {
+  //     const tags = Array.from(self.tags.values());
+  //     const tagIndex = tags.findIndex((tag) => tag.title === tagTitle);
+  //     const id = tags[tagIndex]?.id;
+  //     let tag = self.tags.get(id);
+  //     if (!tag) {
+  //       tag = self.tags.put(Tag.create({ id: uuidv4(), title: tagTitle }));
+  //     }
+  //     return tag;
+  //   },
+  //   getPage(baseUrl: string): Instance<typeof Page> | null {
+  //     const pages = Array.from(self.pages.values());
+  //     const pageIndex = pages.findIndex((page) => page.url === baseUrl);
+  //     const id = pages[pageIndex]?.id;
+  //     const page = self.pages.get(id);
+  //     if (!page) {
+  //       return null;
+  //     }
+  //     return page;
+  //   },
+  //   getPageOrCreate(baseUrl: string): Instance<typeof Page> {
+  //     let page = this.getPage(baseUrl);
+  //     if (!page) {
+  //       page = self.pages.put(
+  //         Page.create({ id: uuidv4(), url: baseUrl, tags: {} })
+  //       );
+  //     }
+  //     return page;
+  //   },
+  // }))
   .actions((self) => ({
     createWorkspace(name: string): Instance<typeof Workspace> {
       const workspace = Workspace.create({
@@ -94,20 +110,6 @@ const WorkspaceStore = types
       });
       destroy(workspace);
     },
-    // addTag(baseUrl: string, tag: string) {
-    //   // if (!self.tags.has(baseUrl)) {
-    //   //   self.tags.set(baseUrl, {});
-    //   // }
-    //   // self.tags.get(baseUrl)?.set(tag, true);
-    // },
-    // removeTag(baseUrl: string, tag: string) {
-    //   // if (!self.tags.has(baseUrl)) {
-    //   //   return;
-    //   // }
-    //   // self.tags.get(baseUrl)?.delete(tag);
-    // },
   }));
-
-export type IWorkSpaceStore = Instance<typeof WorkspaceStore>;
 
 export default WorkspaceStore;

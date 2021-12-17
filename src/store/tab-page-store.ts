@@ -7,6 +7,7 @@ import { RefObject, createContext, useContext } from 'react';
 import Fuse from 'fuse.js';
 import { Instance } from 'mobx-state-tree';
 import { DropResult } from 'react-beautiful-dnd';
+import { Database } from '@nozbe/watermelondb';
 import { TabPageColumn, TabPageTab } from '../interfaces/tab';
 import { getRootDomain } from '../utils/data';
 import { Item } from './workspace/item';
@@ -19,6 +20,7 @@ import packageInfo from '../package.json';
 import { KeybindStore } from './keybinds';
 import TabStore from './tabs';
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from '../constants';
+import TagModel from '../watermelon/TagModel';
 
 export enum View {
   None,
@@ -29,7 +31,8 @@ export enum View {
   Navigator,
   NavigatorDebug,
   Settings,
-  Tag,
+  TagView,
+  AllTagsView,
 }
 
 export enum TabViewType {
@@ -179,6 +182,12 @@ export default class TabPageStore {
   bonsaiBoxFocus = false;
 
   tagBoxFocus = false;
+
+  viewingTag: TagModel | null = null;
+
+  setViewingTag(tag: TagModel) {
+    this.viewingTag = tag;
+  }
 
   fuzzySelectedTab(): [boolean, TabPageTab | Instance<typeof Item>] | null {
     if (this.fuzzySelectionIndex[1] === 0) {
@@ -799,6 +808,8 @@ export default class TabPageStore {
 
   supaClient: SupabaseClient;
 
+  sessionChangeCallback: ((userId: string) => void) | null = null;
+
   handleRefreshError(error: string) {
     console.log(error);
     const expiresAt = this.supaClient.auth.session()?.expires_at;
@@ -837,6 +848,9 @@ export default class TabPageStore {
             this.session = liveSession;
           });
           ipcRenderer.send('refresh-session', liveSession);
+          if (this.sessionChangeCallback && this.session?.user?.id) {
+            this.sessionChangeCallback(this.session.user.id);
+          }
         }
         return 0;
       })
@@ -955,10 +969,13 @@ export default class TabPageStore {
         this.openTabs[id].lastAccessTime = new Date().getTime();
       });
     });
-    ipcRenderer.on('tab-image-native', (_, [id, thing]) => {
+    ipcRenderer.on('tab-image-native', (_, [id, thing, saveSnapshot]) => {
       runInAction(() => {
         if (typeof this.openTabs[id] !== 'undefined') {
           this.openTabs[id].image = thing;
+        }
+        if (saveSnapshot) {
+          ipcRenderer.send('save-snapshot');
         }
       });
     });
@@ -1134,6 +1151,7 @@ interface IContext {
   workspaceStore: Instance<typeof WorkspaceStore>;
   keybindStore: Instance<typeof KeybindStore>;
   tabStore: TabStore;
+  database: Database;
 }
 
 const TabPageContext = createContext<null | IContext>(null);

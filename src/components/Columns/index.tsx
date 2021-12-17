@@ -1,13 +1,12 @@
 import { observer } from 'mobx-react-lite';
 import React, { useEffect } from 'react';
 import styled from 'styled-components';
-// import { Grid } from '@material-ui/core';
 import { SpringGrid } from 'react-stonecutter';
 import { TabViewType, useStore, View } from '../../store/tab-page-store';
 import Column from './Column';
 import SelectWorkspaceModal from './SelectWorkspaceModal';
+import Card from '../Card';
 import HomeParent, { HomeParentScrollBars } from '../Home';
-import Tab from '../Card';
 import { clamp } from '../../utils/utils';
 
 const ImageBoardParent = styled(HomeParent)`
@@ -71,7 +70,7 @@ const ImageBoard = observer(() => {
               if (tab) {
                 return (
                   <div key={tab.id}>
-                    <Tab tab={tab} hover active width={201} />
+                    <Card tab={tab} hover active width={200} />
                   </div>
                 );
               }
