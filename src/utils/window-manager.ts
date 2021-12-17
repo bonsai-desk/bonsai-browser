@@ -449,7 +449,7 @@ export default class WindowManager {
   // window
 
   hideWindow() {
-    this.setWindowFloating(false);
+    // this.setWindowFloating(false);
     // this.overlayView.webContents.send('cancel-animation-frame');
 
     let opacity = 1.0;
@@ -484,9 +484,7 @@ export default class WindowManager {
     }
   }
 
-  showWindow(showAsFloating = false) {
-    this.setWindowFloating(showAsFloating);
-
+  showWindow() {
     this.mainWindow.setAlwaysOnTop(true, 'pop-up-menu');
 
     // this.overlayView.webContents.send('cancel-animation-frame');
@@ -1627,16 +1625,6 @@ export default class WindowManager {
     };
     this.tabPageView.webContents.on('did-finish-load', boot);
     setTimeout(boot, 15000);
-  }
-
-  openAndFloatLeft() {
-    this.showWindow(true);
-    this.float('left');
-  }
-
-  openAndFloatRight() {
-    this.showWindow(true);
-    this.float('right');
   }
 
   addListeners() {

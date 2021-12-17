@@ -168,7 +168,7 @@ function initMenu(wm: WindowManager) {
         label: 'Float Left Vim',
         accelerator: 'Alt+H',
         click: () => {
-          wm.showWindow(true);
+          wm.mixpanelManager.track('float left (vim)');
           wm.float('left');
         },
       },
@@ -176,7 +176,7 @@ function initMenu(wm: WindowManager) {
         label: 'Float Left',
         accelerator: 'Alt+Left',
         click: () => {
-          wm.showWindow(true);
+          wm.mixpanelManager.track('float left (arrow)');
           wm.float('left');
         },
       },
@@ -184,7 +184,7 @@ function initMenu(wm: WindowManager) {
         label: 'Float Right Vim',
         accelerator: 'Alt+L',
         click: () => {
-          wm.showWindow(true);
+          wm.mixpanelManager.track('float right (vim)');
           wm.float('right');
         },
       },
@@ -192,7 +192,7 @@ function initMenu(wm: WindowManager) {
         label: 'Float Right',
         accelerator: 'Alt+Right',
         click: () => {
-          wm.showWindow(true);
+          wm.mixpanelManager.track('float right (arrow)');
           wm.float('right');
         },
       },
@@ -200,14 +200,20 @@ function initMenu(wm: WindowManager) {
         label: 'Max Floating Window Vim',
         accelerator: 'Alt+K',
         click: () => {
-          wm.showWindow();
+          if (wm.windowFloating) {
+            wm.mixpanelManager.track('unfloat window (vim)');
+            wm.unFloat();
+          }
         },
       },
       {
         label: 'Max Floating Window',
         accelerator: 'Alt+Up',
         click: () => {
-          wm.showWindow();
+          if (wm.windowFloating) {
+            wm.mixpanelManager.track('unfloat window (arrow)');
+            wm.unFloat();
+          }
         },
       },
     ],
