@@ -4,16 +4,14 @@ import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import styled from 'styled-components';
 import { createTheme, ThemeProvider, useMediaQuery } from '@mui/material';
-import { useStore, View } from '../store/tab-page-store';
+import { runInAction } from 'mobx';
+import TabPageStore, { useStore } from '../store/tab-page-store';
 import Header from '../components/URLBox';
 import FuzzyTabs from '../components/FuzzyTabs';
 import ClickerParent from '../components/Clicker';
 import HistoryModal from '../components/History';
-import HomePageTabs from '../components/Columns';
-import Footer from '../components/Footer';
 import Container from '../components/Container';
-import Workspace from '../components/Workspace';
-import Navigator, { clickMain } from '../components/Navigator';
+import Navigator from '../components/Navigator';
 import GenericModal from '../components/GenericModal';
 import SettingsModal from '../components/SettingsModal';
 import GlobalStyle, { GlobalDark, GlobalLight } from '../GlobalStyle';
@@ -21,34 +19,22 @@ import Storyboard from '../components/StoryBoard';
 import FloatingButtons from '../components/FloatingButtons';
 import TagView from '../components/TagView';
 import AllTagsView from '../components/AllTagsView';
+import { FLOATING_BORDER_THICKNESS, View } from '../constants';
+import HomeListView from '../components/HomeListView';
 
 const MainContent = observer(() => {
-  const { tabPageStore, workspaceStore } = useStore();
+  const { tabPageStore } = useStore();
 
-  if (tabPageStore.View === View.WorkSpace) {
-    let workspace = workspaceStore.workspaces.get(
-      workspaceStore.activeWorkspaceId
-    );
-    if (typeof workspace === 'undefined') {
-      workspaceStore.workspaces.forEach((w) => {
-        if (typeof workspace === 'undefined') {
-          workspaceStore.setActiveWorkspaceId(w.id);
-          workspace = w;
-        }
-      });
-    }
-    if (typeof workspace !== 'undefined') {
-      return <Workspace workspace={workspace} />;
-    }
-    tabPageStore.setUrlText('');
-  } else if (tabPageStore.View === View.FuzzySearch) {
+  if (tabPageStore.View === View.FuzzySearch) {
     return <FuzzyTabs />;
-  } else if (tabPageStore.View === View.TagView) {
+  }
+  if (tabPageStore.View === View.TagView) {
     return <TagView />;
-  } else if (tabPageStore.View === View.AllTagsView) {
+  }
+  if (tabPageStore.View === View.AllTagsView) {
     return <AllTagsView />;
   }
-  return <HomePageTabs />;
+  return <HomeListView />;
 });
 
 const Content = observer(() => {
@@ -59,6 +45,9 @@ const Content = observer(() => {
       <ClickerParent
         onClick={() => {
           ipcRenderer.send('click-main');
+          runInAction(() => {
+            tabPageStore.View = View.Tabs;
+          });
         }}
       />
     );
@@ -71,7 +60,6 @@ const Content = observer(() => {
     <Container>
       <Header onViewPage={tabPageStore.View === View.Navigator} />
       {containerContent}
-      <Footer />
     </Container>
   );
 });
@@ -97,16 +85,12 @@ const Background = styled.div`
   overflow: hidden;
 `;
 
-const Border = styled.div`
-  position: absolute;
-  left: 0;
-  top: 0;
-  z-index: 100000;
-  width: calc(100vw - 6px);
-  height: calc(100vh - 6px);
-  border-radius: 10px;
-  border: 3px solid rgba(0, 0, 0, 0.3);
-  pointer-events: none;
+const ContentParent = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: center;
+  overflow: hidden;
 `;
 
 const Home = observer(() => {
@@ -116,10 +100,14 @@ const Home = observer(() => {
     function handleKeyDown(e: KeyboardEvent) {
       tabPageStore.handleKeyDown(e);
     }
-
     document.addEventListener('keydown', handleKeyDown);
+
+    tabPageStore.bindMouseTrap();
+    tabPageStore.registerKeybind('enter', () => {});
+
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
+      TabPageStore.unbindMouseTrap();
     };
   }, [tabPageStore]);
 
@@ -157,12 +145,27 @@ const Home = observer(() => {
     ? `#${keybindStore.settings.background}`
     : 'var(--background-color)';
 
+  const borderColor = 'var(--canvas-inactive-color)';
+
+  const contentStyle = {
+    width: tabPageStore.windowFloating
+      ? `calc(100vw - ${2 * FLOATING_BORDER_THICKNESS}px)`
+      : '100vw',
+    height: tabPageStore.windowFloating
+      ? `calc(100vh - ${2 * FLOATING_BORDER_THICKNESS}px)`
+      : '100vh',
+    margin: tabPageStore.windowFloating
+      ? `${FLOATING_BORDER_THICKNESS}px`
+      : '0',
+    backgroundColor,
+  };
+
   return (
     <ThemeProvider theme={theme}>
+      <Style />
       <Background
         style={{
-          backgroundColor,
-          borderRadius: tabPageStore.windowFloating ? '10px' : 0,
+          backgroundColor: borderColor,
         }}
         onMouseDown={(e) => {
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -173,28 +176,22 @@ const Home = observer(() => {
             (id === 'header' || id === 'footer' || id === 'workspaceBackground')
           ) {
             if (tabPageStore.View === View.Navigator) {
-              clickMain();
-            } else {
-              if (tabPageStore.View === View.WorkSpace) {
-                ipcRenderer.send(
-                  'mixpanel-track',
-                  'toggle off workspace with background click'
-                );
-              }
-              tabPageStore.View = View.Tabs;
+              ipcRenderer.send('click-main');
             }
+
+            runInAction(() => {
+              tabPageStore.View = View.Tabs;
+            });
           }
         }}
       >
-        <Border
-          style={{ display: tabPageStore.windowFloating ? 'block' : 'none' }}
-        />
-        <Style />
-        <Content />
-        <HistoryModal />
-        <DebugModal />
-        <SettingsModal />
-        <FloatingButtons />
+        <ContentParent style={contentStyle}>
+          <Content />
+          <HistoryModal />
+          <DebugModal />
+          <SettingsModal />
+          <FloatingButtons />
+        </ContentParent>
       </Background>
     </ThemeProvider>
   );

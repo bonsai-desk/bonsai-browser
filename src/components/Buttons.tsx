@@ -158,8 +158,11 @@ export const BigButton = styled(Buttons)`
   justify-content: center;
   color: ${color('body-text-color', 'opacity-high')};
 
-  svg {
+  :not([disabled]) svg {
     color: ${color('body-text-color', 'opacity-high')};
+  }
+
+  svg {
     font-size: 30px;
   }
 `;

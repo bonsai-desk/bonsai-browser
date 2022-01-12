@@ -2,8 +2,6 @@
 
 // yoinked from https://github.com/takanopontaro/node-parse-hosts/blob/master/lib/main.js
 
-import { ipcRenderer } from 'electron';
-
 const _ = require('lodash');
 
 const fs = require('fs');
@@ -34,9 +32,9 @@ export function get(path) {
 }
 
 export function hex2Rgb(color) {
-  var R = parseInt(color.substring(1, 3), 16);
-  var G = parseInt(color.substring(3, 5), 16);
-  var B = parseInt(color.substring(5, 7), 16);
+  let R = parseInt(color.substring(1, 3), 16);
+  let G = parseInt(color.substring(3, 5), 16);
+  let B = parseInt(color.substring(5, 7), 16);
   R = R < 255 ? R : 255;
   G = G < 255 ? G : 255;
   B = B < 255 ? B : 255;
@@ -103,28 +101,6 @@ export function hslaString(hsla) {
   return `hsla(${h}, ${s}%, ${l}%, ${a})`;
 }
 
-const THEME_LIGHT = {
-  'link-color': '#0075E1',
-  'highlight-color': '#F9A132',
-  'text-highlight-color': '#ffdb8a',
-  'warning-color': '#D20000',
-  'confirmation-color': '#009E23',
-  'header-text-color': '#322F38',
-  'body-text-color': '#433F38',
-  'border-color': 'hsla(32, 81%, 10%, 0.08)',
-  'background-plus-2': '#fff',
-  'background-plus-1': '#fbfbfb',
-  'background-color': '#F6F6F6',
-  'background-minus-1': '#FAF8F6',
-  'background-minus-2': '#EFEDEB',
-  'graph-control-bg': '#f9f9f9',
-  'graph-control-color': 'black',
-  'graph-node-normal': '#909090',
-  'graph-node-hlt': '#0075E1',
-  'graph-link-normal': '#cfcfcf',
-  'error-color': '#fd5243',
-};
-
 export function varHslaRow(name, hex, alphaName, alpha) {
   return `--${name}---${alphaName}: ${hslaString(
     opacify(hex2Hsl(hex), alpha)
@@ -150,6 +126,6 @@ export function color(variable, alpha) {
   return `var(--${variable}---${alpha})`;
 }
 
-export function mixpanelTrack(eventName, properties = {}) {
-  ipcRenderer.send('mixpanel-track-with-props', [eventName, properties]);
-}
+// export function mixpanelTrack(eventName, properties = {}) {
+//   ipcRenderer.send('mixpanel-track-with-props', [eventName, properties]);
+// }

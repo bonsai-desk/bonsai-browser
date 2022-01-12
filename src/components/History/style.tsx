@@ -1,24 +1,5 @@
 import styled, { css } from 'styled-components';
 
-export const HistoryButtonParent = styled.button`
-  //position: absolute;
-  //bottom: 10px;
-  //right: 10px;
-  //width: 125px;
-  height: 50px;
-  border-radius: 10px;
-  border: none;
-  outline: none;
-
-  font-weight: bold;
-  color: white;
-  transition-duration: 0.1s;
-  background-color: rgba(0, 0, 0, 0.25);
-
-  :hover {
-    background-color: rgba(0, 0, 0, 0.5);
-  }
-`;
 export const ModalParent = styled.div`
   position: absolute;
   left: 0;

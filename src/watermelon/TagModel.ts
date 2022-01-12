@@ -5,6 +5,13 @@ import { TableName } from './schema';
 // eslint-disable-next-line import/no-cycle
 import PageModel from './PageModel';
 
+export interface TagModelDataType {
+  id: string;
+  created_at: Date;
+  updated_at: Date;
+  title: string;
+}
+
 export default class TagModel extends Model {
   static table = TableName.TAGS;
 
@@ -21,13 +28,4 @@ export default class TagModel extends Model {
   @lazy pages = this.collections
     .get<PageModel>(TableName.PAGES)
     .query(Q.on(TableName.PAGETAGS, 'tag_id', this.id));
-
-  // @lazy relatedTags: Query<TagModel> = this.collections
-  //   .get<TagModel>(TableName.TAGS)
-  //   .query(Q.where('id', this.id))
-  //   .extend(Q.on(TableName.PAGETAGS, 'tag_id', this.id))
-  //   .collection.database.get<PageTag>(TableName.PAGETAGS)
-  //   .query();
-
-  @lazy relatedTags = this.collections.get<TagModel>(TableName.TAGS).query();
 }

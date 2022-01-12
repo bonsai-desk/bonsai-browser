@@ -97,13 +97,13 @@ export default class TabStore {
     this.tabs = this.tabs.filter((tab) => tab.id !== id);
   }
 
-  static requestAddTab() {
-    ipcRenderer.send('create-new-tab', true);
-  }
+  // static requestAddTab() {
+  //   ipcRenderer.send('create-new-tab', true);
+  // }
 
-  static removeTab(id: number) {
-    ipcRenderer.send('remove-tab', id);
-  }
+  // static removeTab(id: number) {
+  //   ipcRenderer.send('remove-tab', id);
+  // }
 
   getActiveTabSearchBar(): string {
     for (let i = 0; i < this.tabs.length; i += 1) {

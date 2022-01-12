@@ -10,18 +10,15 @@ import {
   ArrowRight,
 } from '@mui/icons-material';
 import { useStore } from '../store/tab-page-store';
+import { FLOATING_BORDER_THICKNESS } from '../constants';
 
 const FloatingButtonsParentLeft = styled.div`
   position: absolute;
-  left: 6px;
-  top: 6px;
   z-index: 100;
 `;
 
 const FloatingButtonsParentRight = styled.div`
   position: absolute;
-  right: 6px;
-  top: 6px;
   z-index: 100;
 `;
 
@@ -52,6 +49,10 @@ const FloatingButtons = observer(() => {
       setBlinkDone(true);
     }, 10);
   }, [tabPageStore.windowFloating]);
+
+  const offset = tabPageStore.windowFloating
+    ? `${6 + FLOATING_BORDER_THICKNESS}px`
+    : '6px';
 
   const RightButtons = () => {
     if (tabPageStore.windowFloating) {
@@ -131,7 +132,7 @@ const FloatingButtons = observer(() => {
 
   return (
     <>
-      <FloatingButtonsParentLeft>
+      <FloatingButtonsParentLeft style={{ top: offset, left: offset }}>
         <Stack direction="row" alignItems="center" spacing={0}>
           <Tooltip title={toString}>
             <IconButton
@@ -145,7 +146,7 @@ const FloatingButtons = observer(() => {
           </Tooltip>
         </Stack>
       </FloatingButtonsParentLeft>
-      <FloatingButtonsParentRight>
+      <FloatingButtonsParentRight style={{ top: offset, right: offset }}>
         <Stack direction="row" alignItems="center" spacing={0}>
           {!blinkDone ? '' : <RightButtons />}
         </Stack>

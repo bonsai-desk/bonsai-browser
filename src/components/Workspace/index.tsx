@@ -14,10 +14,11 @@ import {
   InboxColumnWidth,
   Workspace as MobxWorkspace,
 } from '../../store/workspace/workspace';
-import { useStore, View } from '../../store/tab-page-store';
+import { useStore } from '../../store/tab-page-store';
 import { HeaderInput, HeaderText } from './style';
 import ConfirmModal from '../Modal/Modal';
 import { ToggleButton } from '../Buttons';
+import { View } from '../../constants';
 
 export { MainItem, MainGroup };
 
@@ -80,13 +81,13 @@ export const TrashButtonIcon = styled.img`
   user-select: none;
   -webkit-user-drag: none;
 `;
-export const CornerButtonIcon = styled.img`
-  width: 20px;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  user-select: none;
-  -webkit-user-drag: none;
-`;
+// export const CornerButtonIcon = styled.img`
+//   width: 20px;
+//   -webkit-user-select: none;
+//   -moz-user-select: none;
+//   user-select: none;
+//   -webkit-user-drag: none;
+// `;
 const HamburgerBackground = styled.div`
   position: fixed;
   top: 0;

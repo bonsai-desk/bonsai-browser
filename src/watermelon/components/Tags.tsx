@@ -11,6 +11,7 @@ import {
   enhanceWithPageTags,
   enhanceWithTagPages,
 } from '../enhanceWithRelatedTags';
+import { baseUrl } from '../../utils/utils';
 
 const Tags: React.FC<{
   tags: TagModel[];
@@ -20,22 +21,24 @@ const Tags: React.FC<{
   return (
     <>
       {tags.map((tag) => {
-        const onDeleteHandler = onDelete
-          ? () => {
-              onDelete(tag);
-            }
-          : undefined;
-        const onClickHandler = onClick
-          ? () => {
-              onClick(tag);
-            }
-          : undefined;
         return (
           <Tag
             key={tag.id}
             tag={tag}
-            onClick={onClickHandler}
-            onDelete={onDeleteHandler}
+            onClick={
+              onClick
+                ? () => {
+                    onClick(tag);
+                  }
+                : undefined
+            }
+            onDelete={
+              onDelete
+                ? () => {
+                    onDelete(tag);
+                  }
+                : undefined
+            }
           />
         );
       })}
@@ -43,23 +46,31 @@ const Tags: React.FC<{
   );
 });
 
-const enhanceAllTags = withObservables(
+export const enhanceWithAllTags = withObservables(
   [],
   ({ database }: { database: Database }) => ({
     tags: database.get<TagModel>(TableName.TAGS).query(),
   })
 );
 
+export const enhanceWithAllTagsAndPages = withObservables(
+  [],
+  ({ database }: { database: Database }) => ({
+    tags: database.get<TagModel>(TableName.TAGS).query(),
+    pages: database.get<PageModel>(TableName.PAGES).query(),
+  })
+);
+
 // finds all pages with a url and gets all of their tags
 // there should not be multiple pages with the same url, so this should just get one pages tags
-const enhancePageFromUrlWithTags = withObservables(
+export const enhancePageFromUrlWithTags = withObservables(
   ['pageUrl'],
   ({ database, pageUrl }: { database: Database; pageUrl: string }) => ({
     tags: database
       .get<TagModel>(TableName.TAGS)
       .query(
         Q.experimentalNestedJoin(TableName.PAGETAGS, TableName.PAGES),
-        Q.on(TableName.PAGETAGS, Q.on(TableName.PAGES, 'url', pageUrl))
+        Q.on(TableName.PAGETAGS, Q.on(TableName.PAGES, 'url', baseUrl(pageUrl)))
       ),
   })
 );
@@ -71,7 +82,24 @@ const enhancePageWithTags = withObservables(
   })
 );
 
-export const AllTags = withDatabase(enhanceAllTags(Tags));
+const TagsFiltered: React.FC<{
+  filterText: string;
+  tags: TagModel[];
+  onClick?: (tag: TagModel) => void;
+  onDelete?: (tag: TagModel) => void;
+}> = observer(({ filterText, tags, onClick, onDelete }) => {
+  return (
+    <Tags
+      tags={tags.filter((tag) =>
+        tag.title.toLocaleLowerCase().includes(filterText.toLocaleLowerCase())
+      )}
+      onClick={onClick}
+      onDelete={onDelete}
+    />
+  );
+});
+
+export const AllTagsFiltered = withDatabase(enhanceWithAllTags(TagsFiltered));
 
 export const PageFromUrlTags = withDatabase(enhancePageFromUrlWithTags(Tags));
 

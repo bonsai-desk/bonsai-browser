@@ -9,7 +9,7 @@ const Page: React.FC<{ page: PageModel; onClick?: () => void }> = observer(
   ({ page, onClick }) => {
     return (
       <div>
-        <Chip label={page.url} icon={<Public />} onClick={onClick} />
+        <Chip label={page.title} icon={<Public />} onClick={onClick} />
       </div>
     );
   }

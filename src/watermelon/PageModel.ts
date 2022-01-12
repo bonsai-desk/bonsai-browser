@@ -5,6 +5,16 @@ import { TableName } from './schema';
 // eslint-disable-next-line import/no-cycle
 import TagModel from './TagModel';
 
+export interface PageModelDataType {
+  id: string;
+  created_at: Date;
+  updated_at: Date;
+  url: string;
+  title: string;
+  favicon: string;
+  image: string;
+}
+
 export default class PageModel extends Model {
   static table = TableName.PAGES;
 
@@ -17,6 +27,12 @@ export default class PageModel extends Model {
   @readonly @date('updated_at') updatedAt!: Date;
 
   @text('url') url!: string;
+
+  @text('title') title!: string;
+
+  @text('favicon') favicon!: string;
+
+  @text('image') image!: string;
 
   @lazy
   tags = this.collections

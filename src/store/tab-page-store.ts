@@ -1,46 +1,36 @@
 /* eslint-disable no-console */
-import { makeAutoObservable, runInAction } from 'mobx';
+import { makeAutoObservable, runInAction, toJS } from 'mobx';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { v4 as uuidv4 } from 'uuid';
 import { Session } from '@supabase/gotrue-js';
-import { ipcRenderer } from 'electron';
-import { RefObject, createContext, useContext } from 'react';
+import { ipcRenderer, IpcRendererEvent } from 'electron';
+import { createContext, RefObject, useContext } from 'react';
 import Fuse from 'fuse.js';
 import { Instance } from 'mobx-state-tree';
 import { DropResult } from 'react-beautiful-dnd';
 import { Database } from '@nozbe/watermelondb';
-import { TabPageColumn, TabPageTab } from '../interfaces/tab';
-import { getRootDomain } from '../utils/data';
-import { Item } from './workspace/item';
+import { bind, unbind } from 'mousetrap';
+import { TabPageTab, TabPageTabInfo } from '../interfaces/tab';
 import { Direction } from '../render-constants';
-import { chord, clamp, unixNow } from '../utils/utils';
+import { baseUrl, chord, clamp, unixNow } from '../utils/utils';
 import { HistoryEntry } from '../utils/interfaces';
 import { HistoryStore } from './history-store';
 import WorkspaceStore from './workspace/workspace-store';
 import packageInfo from '../package.json';
 import { KeybindStore } from './keybinds';
 import TabStore from './tabs';
-import { SUPABASE_ANON_KEY, SUPABASE_URL } from '../constants';
+import { SUPABASE_ANON_KEY, SUPABASE_URL, View } from '../constants';
 import TagModel from '../watermelon/TagModel';
-
-export enum View {
-  None,
-  WorkSpace,
-  Tabs,
-  FuzzySearch,
-  History,
-  Navigator,
-  NavigatorDebug,
-  Settings,
-  TagView,
-  AllTagsView,
-}
-
-export enum TabViewType {
-  Grid = 'Grid',
-  Column = 'Column',
-}
+import { TagModalData } from '../pages/TagModal';
+import {
+  addTagStrings,
+  getTag,
+  removeTagStrings,
+} from '../watermelon/databaseUtils';
+import { TableName } from '../watermelon/schema';
 
 const NOT_TEXT = [
+  'Escape',
   'Backspace',
   'ShiftLeft',
   'ControlLeft',
@@ -75,17 +65,67 @@ const NOT_TEXT = [
   'ArrowDown',
 ];
 
+require('dotenv').config();
+
+function renderOn(
+  channel: string,
+  listener: (event: IpcRendererEvent, ...args: any[]) => void
+) {
+  if (process.env.NODE_ENV === 'development' && process.env.DEBUG === 'true') {
+    ipcRenderer.on(channel, (...args) => {
+      ipcRenderer.send('log-data', channel);
+      listener(...args);
+    });
+  } else {
+    ipcRenderer.on(channel, listener);
+  }
+}
+
+export enum HomeView {
+  List,
+  Domain,
+}
+
 export default class TabPageStore {
+  // region properties
+
+  // region home
+
+  homeView: HomeView = HomeView.List;
+
+  // endregion
+
+  // region unsorted
+
+  private keybindStore: Instance<typeof KeybindStore>;
+
+  private historyStore: Instance<typeof HistoryStore>;
+
   private view: View = View.Tabs;
+
+  viewNavStack: [View, number, string, string][] = [];
 
   public get View() {
     return this.view;
   }
 
   public set View(view: View) {
+    this.setView(view);
+  }
+
+  setView(view: View, addToNavStack = true) {
     // return if view is the same as before
     if (this.view === view) {
       return;
+    }
+
+    if (addToNavStack) {
+      this.pushNavEntry([
+        this.View,
+        this.activeTabId,
+        this.viewingTag ? this.viewingTag.title : '',
+        this.urlText,
+      ]);
     }
 
     this.view = view;
@@ -106,16 +146,25 @@ export default class TabPageStore {
     }
   }
 
-  private tabView = TabViewType.Grid;
+  highlightedTabId: number | string = 0;
 
-  public get TabView() {
-    return this.tabView;
-  }
+  sorting: number[] = [];
 
-  public set TabView(tabView: TabViewType) {
-    this.tabView = tabView;
-    ipcRenderer.send('update-tab-view', tabView);
-  }
+  tabBumpOrder: number[] = [];
+
+  newTabBumpOrder: number[] = [];
+
+  session: Session | null = null;
+
+  supaClient: SupabaseClient;
+
+  sessionChangeCallback: ((userId: string) => void) | null = null;
+
+  // timeoutHandle = -1;
+
+  refreshHandle: NodeJS.Timeout | null;
+
+  activeHomeTabId: string | number = -1;
 
   navigatorTabModal = [0, 0];
 
@@ -127,8 +176,6 @@ export default class TabPageStore {
 
   filteredOpenTabs: Fuse.FuseResult<TabPageTab>[];
 
-  filteredWorkspaceTabs: Fuse.FuseResult<Instance<typeof Item>>[];
-
   historyMap = new Map<string, HistoryEntry>();
 
   searchResult: HistoryEntry[] | null = null;
@@ -139,11 +186,11 @@ export default class TabPageStore {
 
   isPinned = false;
 
+  preventBonsaiBoxEnter = false;
+
   bonsaiBoxRef: RefObject<HTMLInputElement> | null = null;
 
   historyBoxRef: RefObject<HTMLInputElement> | null = null;
-
-  tagBoxRef: RefObject<HTMLInputElement> | null = null;
 
   activeGroupBoxRef: RefObject<HTMLInputElement> | null = null;
 
@@ -159,11 +206,7 @@ export default class TabPageStore {
 
   topPadding = 0;
 
-  private workspaceStore: Instance<typeof WorkspaceStore>;
-
-  private keybindStore: Instance<typeof KeybindStore>;
-
-  private historyStore: Instance<typeof HistoryStore>;
+  database: Database | null = null;
 
   windowFloating = false;
 
@@ -185,24 +228,362 @@ export default class TabPageStore {
 
   viewingTag: TagModel | null = null;
 
-  setViewingTag(tag: TagModel) {
+  activeTabId = -1;
+
+  selectedForTagTab: TabPageTabInfo | null = null;
+
+  // lastActiveTabId = -1;
+
+  // endregion
+
+  // endregion
+
+  // region methods
+
+  // region home
+
+  setUrlText(newValue: string) {
+    this.urlText = newValue;
+
+    if (!this.bonsaiBoxFocus && this.urlText) {
+      // tabPageStore.setFocus()
+      this.bonsaiBoxRef?.current?.focus();
+    }
+    if (this.bonsaiBoxFocus && !this.urlText) {
+      // tabPageStore.setFocus()
+      // this.bonsaiBoxRef?.current?.blur();
+    }
+
+    if (newValue.length > 0) {
+      this.View = View.FuzzySearch;
+      this.searchTab(newValue);
+      ipcRenderer.send('unset-tab');
+    } else if (this.View !== View.Navigator) {
+      this.View = View.Tabs;
+    }
+  }
+
+  handleEscape() {
+    if (this.View === View.Navigator && this.bonsaiBoxFocus) {
+      this.bonsaiBoxRef?.current?.blur();
+      this.setUrlText('');
+      ipcRenderer.send('toggle');
+      return;
+    }
+
+    if (
+      this.View === View.History ||
+      this.View === View.Settings ||
+      this.View === View.TagView ||
+      this.View === View.AllTagsView ||
+      this.View === View.NavigatorDebug
+    ) {
+      this.View = View.Tabs;
+    } else if (this.urlText.length > 0 || this.bonsaiBoxFocus) {
+      this.bonsaiBoxRef?.current?.blur();
+      this.setUrlText('');
+    } else {
+      ipcRenderer.send('toggle');
+    }
+  }
+
+  handleTab() {
+    if (this.View === View.Tabs) {
+      this.cycleHomeView('right');
+    }
+  }
+
+  teleportHomeCursor(position: 'top' | 'bottom') {
+    const openTabs = this.openTabsBySorting(this.tabBumpOrder);
+    let idx = -1;
+    if (position === 'top') {
+      idx = 0;
+    }
+    if (position === 'bottom') {
+      idx = openTabs.length - 1;
+    }
+    const tab = openTabs[idx];
+    if (typeof tab !== 'undefined') {
+      this.activeHomeTabId = tab.id;
+      this.setHighlightedTabId(this.activeHomeTabId);
+    }
+  }
+
+  // moveHomeCursor(direction: 'down' | 'up') {
+  //   const tabs = this.openTabsBySorting(this.tabBumpOrder);
+  //   const root = tabs.find((tab) => {
+  //     return tab.id === this.highlightedTabId;
+  //   });
+  //   if (typeof root !== 'undefined') {
+  //     const id = relativeItem(root, tabs, direction);
+  //     if (typeof id !== 'undefined') {
+  //       this.activeHomeTabId = id;
+  //       this.setHighlightedTabId(this.activeHomeTabId);
+  //     }
+  //   }
+  // }
+
+  handleEnter() {
+    if (this.View === View.FuzzySearch && !this.preventBonsaiBoxEnter) {
+      // ipcRenderer.send('open-workspace-url', tab.url);
+      ipcRenderer.send('search-url', [
+        this.urlText,
+        this.keybindStore.searchString(),
+      ]);
+      this.setUrlText('');
+      this.bonsaiBoxRef?.current?.blur();
+    }
+  }
+
+  highlightedTab(): TabPageTab | undefined {
+    return this.openTabs[this.highlightedTabId];
+  }
+
+  setHighlightedTabId(id: number | string) {
+    this.highlightedTabId = id;
+  }
+
+  // closeHighlightedTab() {
+  //   const openTabs = this.openTabsBySorting(this.tabBumpOrder);
+  //   const idToRemove = this.highlightedTabId;
+  //   const idx = openTabs.findIndex((tab) => {
+  //     return tab.id === this.highlightedTabId;
+  //   });
+  //   if (idx !== -1) {
+  //     if (idx === this.tabBumpOrder.length - 1) {
+  //       this.moveHomeCursor('up');
+  //     } else {
+  //       this.moveHomeCursor('down');
+  //     }
+  //   }
+  //   ipcRenderer.send('remove-tab', idToRemove);
+  // }
+
+  // keys -> (handle -> fn)
+  mouseBinds: Record<string, Record<string, () => void>> = {};
+
+  registerKeybind(keys: string | string[], callback: () => void): string {
+    const insertBind = (key: string, handle: string, fn: () => void) => {
+      this.mouseBinds[key] = this.mouseBinds[key] || {};
+      this.mouseBinds[key][handle] = fn;
+    };
+    const uuid = uuidv4();
+    if (Array.isArray(keys)) {
+      keys.forEach((key) => {
+        insertBind(key, uuid, callback);
+      });
+    } else {
+      insertBind(keys, uuid, callback);
+    }
+    return uuid;
+  }
+
+  unregisterKeybind(handle: string) {
+    Object.values(this.mouseBinds).forEach((v) => {
+      delete v[handle];
+    });
+  }
+
+  invokeKeybind(keys: string | string[]) {
+    if (Array.isArray(keys)) {
+      keys.forEach((key) => {
+        Object.values(this.mouseBinds[key]).forEach((fn) => {
+          fn();
+        });
+      });
+    } else {
+      Object.values(this.mouseBinds[keys]).forEach((fn) => {
+        fn();
+      });
+    }
+  }
+
+  bindMouseTrap() {
+    bind('enter', (e) => {
+      e.preventDefault();
+      this.invokeKeybind('enter');
+    });
+    bind('ctrl+k', (e) => {
+      if (this.view === View.FuzzySearch) {
+        this.fuzzyUp(e);
+      }
+    });
+    bind('ctrl+j', (e) => {
+      if (this.view === View.FuzzySearch) {
+        this.fuzzyDown(e);
+      }
+    });
+    bind('ctrl+h', (e) => {
+      if (this.view === View.FuzzySearch) {
+        this.fuzzyLeft(e);
+      }
+    });
+    bind('ctrl+l', (e) => {
+      if (this.view === View.FuzzySearch) {
+        this.fuzzyRight(e);
+      }
+    });
+    bind(['g g'], (e) => {
+      if (!this.bonsaiBoxFocus) {
+        e.preventDefault();
+        this.teleportHomeCursor('top');
+      }
+    });
+    bind(['G'], (e) => {
+      if (!this.bonsaiBoxFocus) {
+        e.preventDefault();
+        this.teleportHomeCursor('bottom');
+      }
+    });
+    bind('tab', (e) => {
+      e.preventDefault();
+      this.handleTab();
+    });
+    bind('shift+tab', (e) => {
+      e.preventDefault();
+      if (this.View === View.Tabs) {
+        this.cycleHomeView('left');
+      }
+    });
+    bind('esc', () => {
+      this.handleEscape();
+    });
+    bind('/', (e) => {
+      if (!this.bonsaiBoxFocus) {
+        e.preventDefault();
+        this.setFocus();
+      }
+    });
+  }
+
+  static unbindMouseTrap() {
+    unbind('j');
+    unbind('tab');
+    unbind('esc');
+    unbind('enter');
+  }
+
+  cycleHomeView(direction: 'left' | 'right') {
+    const views: HomeView[] = [HomeView.List, HomeView.Domain];
+    const idx = views.findIndex((view) => this.homeView === view);
+    const shift = direction === 'left' ? -1 : 1;
+    if (idx !== -1) {
+      const newView = (idx + shift) % views.length;
+      if (newView < 0) {
+        this.homeView = views[views.length - 1];
+      } else {
+        this.homeView = views[newView];
+      }
+    }
+  }
+
+  setHomeView(view: HomeView) {
+    this.homeView = view;
+  }
+
+  handleKeyBind(e: KeyboardEvent) {
+    if (e.altKey) {
+      return;
+    }
+
+    if (
+      !e.altKey &&
+      (e.key === 'ArrowUp' ||
+        e.key === 'ArrowDown' ||
+        e.key === 'ArrowLeft' ||
+        e.key === 'ArrowRight')
+    ) {
+      e.preventDefault();
+    }
+
+    if (this.view === View.FuzzySearch) {
+      const fu = this.keybindStore.isBind(e, 'fuzzy-up');
+      const fd = this.keybindStore.isBind(e, 'fuzzy-down');
+      const fl = this.keybindStore.isBind(e, 'fuzzy-left');
+      const fr = this.keybindStore.isBind(e, 'fuzzy-right');
+      if (fu || e.key === 'ArrowUp') {
+        return;
+      }
+      if (fd || e.key === 'ArrowDown') {
+        return;
+      }
+      if (fl || e.key === 'ArrowLeft') {
+        return;
+      }
+      if (fr || e.key === 'ArrowRight') {
+        return;
+      }
+
+      this.fuzzySelectionIndex = [-1, -1];
+
+      if (!NOT_TEXT.includes(e.code)) {
+        this.setFocus();
+      }
+    }
+  }
+
+  handleKeyDown(e: KeyboardEvent) {
+    if (this.View === View.Settings && this.rebindModalId) {
+      e.preventDefault();
+      this.bindKeys = chord(e);
+      return;
+    }
+
+    if (
+      this.view === View.Navigator &&
+      (this.urlBoxFocus || this.tagBoxFocus)
+    ) {
+      return;
+    }
+
+    this.handleKeyBind(e);
+  }
+
+  // endregion
+
+  // region tags
+
+  setViewingTag(tag: TagModel, addToNavStack = true) {
+    if (this.View === View.Navigator) {
+      ipcRenderer.send('click-main');
+    }
+    if (this.View !== View.TagView) {
+      this.setView(View.TagView, addToNavStack);
+    } else if (addToNavStack) {
+      this.pushNavEntry([
+        this.View,
+        this.activeTabId,
+        this.viewingTag ? this.viewingTag.title : '',
+        this.urlText,
+      ]);
+    }
+
     this.viewingTag = tag;
   }
 
-  fuzzySelectedTab(): [boolean, TabPageTab | Instance<typeof Item>] | null {
-    if (this.fuzzySelectionIndex[1] === 0) {
-      const tab = this.filteredOpenTabs[this.fuzzySelectionIndex[0]];
-      if (typeof tab !== 'undefined') {
-        return [true, tab.item];
-      }
-    } else {
-      const tab = this.filteredWorkspaceTabs[this.fuzzySelectionIndex[0]];
-      if (typeof tab !== 'undefined') {
-        return [false, tab.item];
-      }
+  pushNavEntry(entry: [View, number, string, string]) {
+    this.viewNavStack.push(entry);
+    while (this.viewNavStack.length > 256) {
+      this.viewNavStack.shift();
     }
-    return null;
   }
+
+  printNavHistory() {
+    ipcRenderer.send(
+      'log-data',
+      JSON.stringify(
+        this.viewNavStack.map((printEntry) => [
+          View[printEntry[0]],
+          printEntry[1],
+          printEntry[2],
+        ])
+      )
+    );
+  }
+
+  // endregion
+
+  // region unsorted
 
   fuzzyDown(e: KeyboardEvent) {
     e.preventDefault();
@@ -228,57 +609,6 @@ export default class TabPageStore {
     }
   }
 
-  handleKeyBind(e: KeyboardEvent) {
-    if (e.altKey) {
-      return;
-    }
-
-    if (
-      !e.altKey &&
-      (e.key === 'ArrowUp' ||
-        e.key === 'ArrowDown' ||
-        e.key === 'ArrowLeft' ||
-        e.key === 'ArrowRight')
-    ) {
-      e.preventDefault();
-    }
-
-    if (this.view === View.FuzzySearch) {
-      const fu = this.keybindStore.isBind(e, 'fuzzy-up');
-      const fd = this.keybindStore.isBind(e, 'fuzzy-down');
-      const fl = this.keybindStore.isBind(e, 'fuzzy-left');
-      const fr = this.keybindStore.isBind(e, 'fuzzy-right');
-      if (fu || e.key === 'ArrowUp') {
-        this.fuzzyUp(e);
-        return;
-      }
-      if (fd || e.key === 'ArrowDown') {
-        this.fuzzyDown(e);
-        return;
-      }
-      if (fl || e.key === 'ArrowLeft') {
-        this.fuzzyLeft(e);
-        return;
-      }
-      if (fr || e.key === 'ArrowRight') {
-        this.fuzzyRight(e);
-        return;
-      }
-
-      this.fuzzySelectionIndex = [-1, -1];
-
-      if (!NOT_TEXT.includes(e.code)) {
-        this.setFocus();
-      }
-    } else if (this.view !== View.Settings) {
-      const mod = NOT_TEXT.includes(e.code);
-      if (!mod) {
-        this.setFocus();
-      }
-      this.fuzzySelectionIndex = [-1, -1];
-    }
-  }
-
   closeTab(id: number, currentlyActive = false) {
     const neighborId = this.leftOrRightOfTab(id);
     if (currentlyActive && neighborId) {
@@ -287,99 +617,11 @@ export default class TabPageStore {
     ipcRenderer.send('remove-tab', id);
   }
 
-  handleKeyDown(e: KeyboardEvent) {
-    if (this.View === View.Settings && this.rebindModalId) {
-      e.preventDefault();
-      this.bindKeys = chord(e);
-      ipcRenderer.send('rebind-hotkey', {
-        hotkeyId: 'test',
-        newBind: [...this.bindKeys],
-      });
-      return;
-    }
-
-    if (this.view === View.Navigator) {
-      if (this.urlBoxFocus || this.tagBoxFocus) {
-        return;
-      }
-    }
-
-    switch (e.key) {
-      case 'Enter':
-        if (this.View === View.FuzzySearch) {
-          const data = this.fuzzySelectedTab();
-          if (data) {
-            const [open, tab] = data;
-            if (open) {
-              ipcRenderer.send('mixpanel-track', 'fuzzy enter set tab');
-              ipcRenderer.send('set-tab', tab.id);
-            } else {
-              ipcRenderer.send(
-                'mixpanel-track',
-                'fuzzy enter open workspace tab'
-              );
-              ipcRenderer.send('open-workspace-url', tab.url);
-            }
-          } else {
-            ipcRenderer.send('search-url', [
-              this.urlText,
-              this.keybindStore.searchString(),
-            ]);
-            ipcRenderer.send('mixpanel-track', 'search url from home');
-          }
-          this.setUrlText('');
-          this.bonsaiBoxRef?.current?.blur();
-        }
-        break;
-      case 'Escape':
-        if (
-          this.View === View.History ||
-          this.View === View.WorkSpace ||
-          this.View === View.Settings ||
-          this.View === View.NavigatorDebug
-        ) {
-          this.View = View.Tabs;
-        } else if (this.urlText.length > 0 || this.bonsaiBoxFocus) {
-          this.bonsaiBoxRef?.current?.blur();
-          this.setUrlText('');
-        } else {
-          ipcRenderer.send('toggle');
-        }
-        break;
-      case 'Tab':
-        if (this.View === View.Tabs) {
-          // ipcRenderer.send(
-          //   'mixpanel-track',
-          //   'toggle on workspace with tab key'
-          // );
-          // this.View = View.WorkSpace;
-          runInAction(() => {
-            if (this.tabView === TabViewType.Grid) {
-              this.tabView = TabViewType.Column;
-            } else {
-              this.tabView = TabViewType.Grid;
-            }
-          });
-        } else if (this.View === View.WorkSpace) {
-          ipcRenderer.send(
-            'mixpanel-track',
-            'toggle off workspace with tab key'
-          );
-          this.View = View.Tabs;
-        }
-        e.preventDefault();
-        break;
-      default:
-        this.handleKeyBind(e);
-        break;
-    }
-  }
-
   moveFuzzySelection(direction: Direction) {
     const sel = this.fuzzySelectionIndex;
 
     const openNum = this.filteredOpenTabs.length;
-    const workNum = this.filteredWorkspaceTabs.length;
+    const workNum = 0;
 
     switch (direction) {
       case Direction.Down:
@@ -423,8 +665,6 @@ export default class TabPageStore {
       clamp(this.fuzzySelectionIndex[1], 0, 1),
     ];
   }
-
-  sorting: number[] = [];
 
   lastRHSDescendentIndex(rootIndex: number, ancestorIndex: number): number {
     const rootId = this.sorting[rootIndex];
@@ -503,7 +743,7 @@ export default class TabPageStore {
       title: '',
       image: '',
       favicon: '',
-      openGraphInfo: null,
+      openGraphInfo: undefined,
       canGoForward: false,
       canGoBack: false,
       ancestor: undefined,
@@ -540,43 +780,23 @@ export default class TabPageStore {
   }
 
   reorderTabs(result: DropResult) {
-    // result.source.index,
-    // result.destination.index
-    // const result = Array.from(list);
-
     if (result.destination) {
       const startIndex = result.source.index;
       const endIndex = result.destination?.index;
 
       this.reorderFromIndex(startIndex, endIndex);
     }
-
-    // const [removed] = result.splice(startIndex, 1);
-    // result.splice(endIndex, 0, removed);
-    // const tabList = this.sorting.map((id) => this.openTabs[id]);
-
-    // return tabList;
-    // const sourceWebViewId = parseInt(result.source.droppableId, 10);
-    // const sourceIndex = result.source.index;
-    //
-    // if (result.destination) {
-    //   const destWebViewId = parseInt(result.destination.droppableId, 10);
-    //   const destIndex = result.source.index;
-    //
-    //   ipcRenderer.send('log-data', [id, result]);
-    // }
   }
 
-  tabPageOrdered(sorting: number[]): TabPageTab[] {
+  openTabsBySorting(sorting: number[]): TabPageTab[] {
     const row = sorting.map((id) => this.openTabs[id]);
-    row.filter((tab) => {
+    return row.filter((tab) => {
       return !!tab && typeof tab !== 'undefined';
     });
-    return row;
   }
 
   tabPageRow(): TabPageTab[] {
-    return this.tabPageOrdered(this.sorting);
+    return this.openTabsBySorting(this.sorting);
   }
 
   syncBumpOrder() {
@@ -600,10 +820,6 @@ export default class TabPageStore {
     }
   }
 
-  tabBumpOrder: number[] = [];
-
-  newTabBumpOrder: number[] = [];
-
   bumpTab(id: number) {
     if (this.newTabBumpOrder[0] === id) {
       return;
@@ -614,18 +830,6 @@ export default class TabPageStore {
       // ipcRenderer.send('log-data', ['bump', removed]);
       this.newTabBumpOrder.unshift(removed);
     }
-  }
-
-  imageBoardTabs(): TabPageTab[] {
-    return this.tabPageOrdered(this.tabBumpOrder);
-  }
-
-  isFirstTab(id: number) {
-    const tabs = Object.values(this.openTabs);
-    const match = tabs.findIndex((element) => {
-      return element.id === id;
-    });
-    return match === 0;
   }
 
   tabCanGoForward(id: string) {
@@ -668,17 +872,6 @@ export default class TabPageStore {
     return undefined;
   }
 
-  leftOfTab(id: number): number | null {
-    const tabs = Object.values(this.openTabs);
-    const match = tabs.findIndex((element) => {
-      return element.id === id;
-    });
-    if (match) {
-      return tabs[match - 1].id;
-    }
-    return null;
-  }
-
   leftOrRightOfTab(id: number) {
     const tabs = Object.values(this.openTabs);
     if (tabs.length <= 1) {
@@ -697,21 +890,6 @@ export default class TabPageStore {
       return tabs[match - 1].id;
     }
     return null;
-  }
-
-  tabPageColumns() {
-    const columns: Record<string, TabPageTab[]> = {};
-    Object.values(this.openTabs).forEach((tab) => {
-      const domain = getRootDomain(tab.url);
-      if (!columns[domain]) {
-        columns[domain] = [];
-      }
-      columns[domain].unshift(tab);
-    });
-    return Object.keys(columns).map((key) => {
-      const column: TabPageColumn = { domain: key, tabs: columns[key] };
-      return column;
-    });
   }
 
   setFocus() {
@@ -747,34 +925,24 @@ export default class TabPageStore {
   }
 
   searchTab(pattern: string) {
+    // open tab search
     const openTabFuse = new Fuse<TabPageTab>(Object.values(this.openTabs), {
       keys: ['title', 'openGraphData.title'],
     });
     this.filteredOpenTabs = openTabFuse.search(pattern, { limit: 10 });
 
-    const workspaceItems: Instance<typeof Item>[] = [];
-    this.workspaceStore.workspaces.forEach((workspace) => {
-      workspace.items.forEach((item) => {
-        workspaceItems.push(item);
-      });
-    });
-    const workspaceTabFuse = new Fuse<Instance<typeof Item>>(workspaceItems, {
-      keys: ['title'],
-    });
-    this.filteredWorkspaceTabs = workspaceTabFuse.search(pattern, {
-      limit: 10,
-    });
-  }
+    // tags search
+    (async () => {
+      if (!this.database) {
+        return;
+      }
+      const tags = await this.database
+        .get<TagModel>(TableName.TAGS)
+        .query()
+        .fetch();
 
-  setUrlText(newValue: string) {
-    this.urlText = newValue;
-    if (newValue.length > 0) {
-      this.View = View.FuzzySearch;
-      this.searchTab(newValue);
-      ipcRenderer.send('unset-tab');
-    } else {
-      this.View = View.Tabs;
-    }
+      console.log(tags.length);
+    })();
   }
 
   refreshFuse() {
@@ -783,10 +951,6 @@ export default class TabPageStore {
 
   setHistoryText(newValue: string) {
     this.historyText = newValue;
-  }
-
-  setNavigatorTabModal(loc: [number, number]) {
-    this.navigatorTabModal = loc;
   }
 
   findAncestorId(rootId: number): number {
@@ -804,17 +968,11 @@ export default class TabPageStore {
     return rootId;
   }
 
-  session: Session | null = null;
-
-  supaClient: SupabaseClient;
-
-  sessionChangeCallback: ((userId: string) => void) | null = null;
-
-  handleRefreshError(error: string) {
-    console.log(error);
+  handleRefreshError(error: any) {
     const expiresAt = this.supaClient.auth.session()?.expires_at;
 
-    if (typeof expiresAt === 'undefined') {
+    console.log(expiresAt);
+    if (typeof expiresAt === 'undefined' || error.status === 400) {
       this.clearSession();
       return;
     }
@@ -841,7 +999,7 @@ export default class TabPageStore {
       .then((data) => {
         const { session: liveSession, error } = data;
         if (error) {
-          this.handleRefreshError(JSON.stringify(error));
+          this.handleRefreshError(error);
         } else {
           // console.log('refresh then ', error, liveSession);
           runInAction(() => {
@@ -856,7 +1014,7 @@ export default class TabPageStore {
       })
       .catch((error) => {
         // console.log('refresh catch', error);
-        this.handleRefreshError(JSON.stringify(error));
+        this.handleRefreshError(error);
       });
   }
 
@@ -867,23 +1025,28 @@ export default class TabPageStore {
     ipcRenderer.send('clear-session');
   }
 
-  timeoutHandle = -1;
+  // endregion
 
-  refreshHandle: NodeJS.Timeout | null;
+  // endregion
 
   constructor(
-    workspaceStore: Instance<typeof WorkspaceStore>,
     keybindStore: Instance<typeof KeybindStore>,
     historyStore: Instance<typeof HistoryStore>
   ) {
-    this.refreshHandle = null;
     makeAutoObservable(this);
 
+    this.refreshHandle = null;
     this.supaClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    this.versionString = packageInfo.version;
+    this.windowSize = { width: 200, height: 200 };
+    this.innerBounds = { x: 0, y: 0, width: 100, height: 100 };
+    this.keybindStore = keybindStore;
+    this.historyStore = historyStore;
+    this.filteredOpenTabs = [];
 
     ipcRenderer.send('request-session');
 
-    ipcRenderer.on('session', (_, session) => {
+    renderOn('session', (_, session) => {
       if (this.refreshHandle) {
         clearInterval(this.refreshHandle);
       }
@@ -895,33 +1058,19 @@ export default class TabPageStore {
         this.refreshSession(this.session);
       }, 1000 * 60 * 60);
     });
-
-    this.versionString = packageInfo.version;
-    this.windowSize = { width: 200, height: 200 };
-    this.innerBounds = { x: 0, y: 0, width: 100, height: 100 };
-    this.workspaceStore = workspaceStore;
-
-    this.keybindStore = keybindStore;
-
-    this.historyStore = historyStore;
-
-    this.filteredOpenTabs = [];
-    this.filteredWorkspaceTabs = [];
-
-    ipcRenderer.on('tabView-created-with-id', () => {
+    renderOn('tabView-created-with-id', () => {
       this.syncBumpOrder();
       // if (this.view === View.Tabs) {
       // }
     });
-
-    ipcRenderer.on('set-bounds', (_, { windowSize, bounds, topPadding }) => {
+    renderOn('set-bounds', (_, { windowSize, bounds, topPadding }) => {
       runInAction(() => {
         this.windowSize = windowSize;
         this.innerBounds = bounds;
         this.topPadding = topPadding;
       });
     });
-    ipcRenderer.on('set-tab-parent', (_, [rootId, parentId]) => {
+    renderOn('set-tab-parent', (_, [rootId, parentId]) => {
       runInAction(() => {
         const tab = this.openTabs[rootId];
         if (tab) {
@@ -935,41 +1084,38 @@ export default class TabPageStore {
         }
       });
     });
-    ipcRenderer.on('tabView-created-with-id', (_, [id, parentId]) => {
+    renderOn('tabView-created-with-id', (_, [id, parentId]) => {
       runInAction(() => {
         this.createTab(id, parentId);
       });
     });
-    ipcRenderer.on('tab-removed', (_, id) => {
+    renderOn('tab-removed', (_, id) => {
       runInAction(() => {
         this.deleteTab(id);
       });
     });
-    ipcRenderer.on('url-changed', (_, [id, url]) => {
+    renderOn('url-changed', (_, [id, url]) => {
       runInAction(() => {
         this.openTabs[id].url = url;
       });
     });
-    ipcRenderer.on('title-updated', (_, [id, title]) => {
+    renderOn('title-updated', (_, [id, title]) => {
       runInAction(() => {
         this.openTabs[id].title = title;
       });
     });
-    ipcRenderer.on(
-      'web-contents-update',
-      (_, [id, canGoBack, canGoForward]) => {
-        runInAction(() => {
-          this.openTabs[id].canGoBack = canGoBack;
-          this.openTabs[id].canGoForward = canGoForward;
-        });
-      }
-    );
-    ipcRenderer.on('access-tab', (_, id) => {
+    renderOn('web-contents-update', (_, [id, canGoBack, canGoForward]) => {
+      runInAction(() => {
+        this.openTabs[id].canGoBack = canGoBack;
+        this.openTabs[id].canGoForward = canGoForward;
+      });
+    });
+    renderOn('access-tab', (_, id) => {
       runInAction(() => {
         this.openTabs[id].lastAccessTime = new Date().getTime();
       });
     });
-    ipcRenderer.on('tab-image-native', (_, [id, thing, saveSnapshot]) => {
+    renderOn('tab-image-native', (_, [id, thing, saveSnapshot]) => {
       runInAction(() => {
         if (typeof this.openTabs[id] !== 'undefined') {
           this.openTabs[id].image = thing;
@@ -979,7 +1125,7 @@ export default class TabPageStore {
         }
       });
     });
-    ipcRenderer.on('add-history', (_, entry: HistoryEntry) => {
+    renderOn('add-history', (_, entry: HistoryEntry) => {
       runInAction(() => {
         if (entry.openGraphData.title !== 'null') {
           Object.values(this.openTabs).forEach((tab) => {
@@ -1001,22 +1147,17 @@ export default class TabPageStore {
         }
       });
     });
-    ipcRenderer.on('history-search-result', (_, result) => {
+    renderOn('history-search-result', (_, result) => {
       runInAction(() => {
         this.searchResult = result;
       });
     });
-    ipcRenderer.on('close-history-modal', () => {
-      runInAction(() => {
-        this.View = View.Tabs;
-      });
-    });
-    ipcRenderer.on('open-history-modal', () => {
+    renderOn('open-history-modal', () => {
       runInAction(() => {
         this.View = View.History;
       });
     });
-    ipcRenderer.on('toggle-history-modal', () => {
+    renderOn('toggle-history-modal', () => {
       runInAction(() => {
         if (this.View !== View.History) {
           this.View = View.History;
@@ -1025,7 +1166,7 @@ export default class TabPageStore {
         }
       });
     });
-    ipcRenderer.on('toggle-debug-modal', () => {
+    renderOn('toggle-debug-modal', () => {
       runInAction(() => {
         if (this.View !== View.NavigatorDebug) {
           this.View = View.NavigatorDebug;
@@ -1034,75 +1175,63 @@ export default class TabPageStore {
         }
       });
     });
-    ipcRenderer.on('favicon-updated', (_, [id, favicon]) => {
+    renderOn('favicon-updated', (_, [id, favicon]) => {
       runInAction(() => {
         this.openTabs[id].favicon = favicon;
       });
     });
-    ipcRenderer.on('history-cleared', () => {
+    renderOn('history-cleared', () => {
       runInAction(() => {
         this.historyMap.clear();
         this.searchResult = [];
       });
     });
-    ipcRenderer.on('blur', () => {
+    renderOn('blur', () => {
       runInAction(() => {
         if (this.View === View.Tabs) {
           this.setUrlText('');
         }
       });
     });
-    ipcRenderer.on('set-active', (_, newIsActive) => {
-      runInAction(() => {
-        if (newIsActive && this.View !== View.Navigator) {
-          return;
-        }
-        if (newIsActive) {
-          this.View = View.Tabs;
-        } else {
-          this.View = View.Navigator;
-        }
-      });
-    });
-    ipcRenderer.on('focus-search', () => {
-      if (this.urlText === '') {
-        return;
-      }
+    renderOn('focus-search', () => {
+      // if (this.urlText === '') {
+      //   return;
+      // }
 
       this.setFocus();
       this.selectText();
     });
-    ipcRenderer.on('focus-main', () => {
+    renderOn('focus-main', () => {
       this.bonsaiBoxRef?.current?.focus();
       this.bonsaiBoxRef?.current?.select();
     });
-    ipcRenderer.on('set-pinned', (_, newIsPinned) => {
+    renderOn('set-pinned', (_, newIsPinned) => {
       runInAction(() => {
         this.isPinned = newIsPinned;
       });
     });
-    ipcRenderer.on('set-window-floating', (_, windowFloating) => {
+    renderOn('set-window-floating', (_, windowFloating) => {
       runInAction(() => {
         this.windowFloating = windowFloating;
       });
     });
-    ipcRenderer.on('gesture', (_, { id }) => {
-      // ipcRenderer.send('log-data', 'render-gesture');
-      this.bumpTab(id);
-    });
-    ipcRenderer.on('will-navigate', (_, { id }) => {
+    // renderOn('gesture', (_, { id }) => {
+    //   // ipcRenderer.send('log-data', 'render-gesture');
+    //   // this.bumpTab(id);
+    // });
+    renderOn('will-navigate', (_, { id }) => {
       runInAction(() => {
         this.navigatorTabModalSelectedNodeId = '';
         this.navigatorTabModal = [0, 0];
         this.bumpTab(id);
       });
     });
-    ipcRenderer.on('set-seenEmailForm', (_, seenEmailForm) => {
+    renderOn('set-seenEmailForm', (_, seenEmailForm) => {
       runInAction(() => {
         this.seenEmailForm = seenEmailForm;
       });
     });
-    ipcRenderer.on('close-tab', (_, tabId) => {
+    renderOn('close-tab', (_, tabId) => {
       const neighborId = this.leftOrRightOfTab(tabId);
       if (neighborId) {
         ipcRenderer.send('set-tab', neighborId);
@@ -1110,38 +1239,222 @@ export default class TabPageStore {
       ipcRenderer.send('remove-tab', tabId);
       ipcRenderer.send('mixpanel-track', 'close tab with hotkey in webview');
     });
-    ipcRenderer.on('tab-was-set', (_, id) => {
+    renderOn('tab-was-set', (_, id) => {
       runInAction(() => {
-        if (this.timeoutHandle !== -1) {
-          clearTimeout(this.timeoutHandle);
+        // this.lastActiveTabId = this.activeTabId;
+        this.activeTabId = id;
+        if (this.View !== View.Navigator && id !== -1) {
+          this.View = View.Navigator;
         }
+        // if (this.timeoutHandle !== -1) {
+        //   clearTimeout(this.timeoutHandle);
+        // }
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        this.timeoutHandle = setTimeout(() => {
-          this.bumpTab(id);
-          this.timeoutHandle = -1;
-        }, 5000);
+        // this.timeoutHandle = setTimeout(() => {
+        //   this.bumpTab(id);
+        //   this.timeoutHandle = -1;
+        // }, 5000);
       });
     });
-    ipcRenderer.on('unset-tab', (_, id) => {
+    renderOn('unset-tab', (_, id) => {
       if (typeof id !== 'undefined') {
-        this.bumpTab(id);
+        // this.bumpTab(id);
+        this.syncBumpOrder();
+        runInAction(() => {
+          this.highlightedTabId = id;
+        });
       }
-      clearTimeout(this.timeoutHandle);
-      this.timeoutHandle = -1;
+      // this.View = View.Tabs;
+      // clearTimeout(this.timeoutHandle);
+      // this.timeoutHandle = -1;
     });
-    ipcRenderer.on('set-tabview', (_, tabView) => {
-      runInAction(() => {
-        this.tabView = tabView;
-      });
-    });
-    ipcRenderer.on('select-neighbor-tab', (_, side) => {
+    renderOn('select-neighbor-tab', (_, side) => {
       const id = parseInt(this.historyStore.active, 10);
       const neighborTabId = this.ringTabNeighbor(id, side);
       if (typeof neighborTabId !== 'undefined') {
         ipcRenderer.send('set-tab', neighborTabId);
       }
     });
+    renderOn('tag-modal-message', (_, [event, data]: [string, never]) => {
+      this.processTagModalMessage(event, data);
+    });
+    renderOn('go-back-view', () => {
+      this.navBack();
+    });
+    renderOn('go-forward-view', () => {
+      TabPageStore.navForward();
+    });
+    renderOn('set-view', (_, view) => {
+      runInAction(() => {
+        this.View = view;
+      });
+    });
+  }
+
+  navBack() {
+    ipcRenderer.send('close-tag-modal');
+    const last = this.viewNavStack.pop();
+    if (last) {
+      const lastView = last[0];
+      const lastTabId = last[1];
+      const lastTagTitle = last[2];
+      const lastFuzzyText = last[3];
+      if (lastView === View.Navigator && lastTabId !== -1) {
+        ipcRenderer.send('set-tab', lastTabId);
+      }
+      if (this.view === View.Navigator) {
+        ipcRenderer.send('click-main');
+      }
+      if (lastView === View.TagView) {
+        (async () => {
+          if (!this.database) {
+            return;
+          }
+
+          const tag = await getTag(this.database, lastTagTitle);
+          if (tag) {
+            this.setViewingTag(tag, false);
+          }
+        })();
+      }
+      this.setView(lastView, false);
+      if (lastView === View.FuzzySearch && lastFuzzyText) {
+        this.setUrlText(lastFuzzyText);
+      }
+    }
+  }
+
+  static navForward() {
+    // separate forward stack or maybe keep index in nav stack
+    ipcRenderer.send('log-data', 'todo: go forward');
+  }
+
+  tagModalInput = '';
+
+  tagModalData: TagModalData = {
+    tagListInfo: [],
+    allowCreateNewTag: false,
+  };
+
+  // when a tag is checked or unchecked in the tag modal, it will be stored here
+  // this will be used to make sure when it is re-rendered it does not move
+  // this will be cleared when order is allowed to change like when you type in the input or open/close the modal
+  recentlyUsedTagOldCheckedValue: Record<string, boolean> = {};
+
+  // used to track the last created tag so it can stay at the bottom of the page once created
+  recentlyCreatedTagTitle = '';
+
+  processTagModalMessage(event: string, data: never) {
+    switch (event) {
+      case 'tag-input-change':
+        this.tagModalInput = data;
+        this.recentlyUsedTagOldCheckedValue = {};
+        this.recentlyCreatedTagTitle = '';
+        this.sendTagModalData();
+        break;
+      case 'pressed-ctrl-enter':
+      case 'd':
+      case 'pressed-escape':
+      case 'click-background':
+        ipcRenderer.send('close-tag-modal');
+        break;
+      case 'clicked-tag-entry':
+        this.clickTagEntry(data);
+        break;
+      case 'clicked-create-tag':
+        this.clickCreateTag(data);
+        break;
+      case 'go-to-tag':
+      case 'pressed-shift-enter':
+        this.goToTag(data);
+        break;
+      default:
+        ipcRenderer.send('log-data', `unknown tag modal event: ${event}`);
+        break;
+    }
+  }
+
+  async goToTag(tagTitle: string) {
+    ipcRenderer.send('close-tag-modal');
+    if (this.database) {
+      const tag = await getTag(this.database, tagTitle);
+      if (tag) {
+        this.setViewingTag(tag);
+      }
+    }
+  }
+
+  openTag(tag: TagModel) {
+    ipcRenderer.send('click-main');
+    this.View = View.TagView;
+    this.setViewingTag(tag);
+  }
+
+  getModalTab() {
+    let tab;
+    if (this.View === View.Navigator) {
+      tab = this.openTabs[this.activeTabId.toString()];
+    }
+    if (!tab) {
+      return null;
+    }
+    return tab;
+  }
+
+  clickTagEntry(tagEntry: { checked: boolean; title: string }) {
+    if (!this.database) {
+      return;
+    }
+
+    const possible = this.getModalTab();
+    const tab = possible || this.selectedForTagTab;
+    if (!tab) {
+      return;
+    }
+
+    // if it was already in the recently used, then this means we are toggling it back to its original value, so just remove the entry
+    if (tagEntry.title in this.recentlyUsedTagOldCheckedValue) {
+      delete this.recentlyUsedTagOldCheckedValue[tagEntry.title];
+    } else {
+      this.recentlyUsedTagOldCheckedValue[tagEntry.title] = tagEntry.checked;
+    }
+
+    const pageBaseUrl = baseUrl(tab.url);
+
+    if (tagEntry.checked) {
+      removeTagStrings(this.database, pageBaseUrl, tagEntry.title);
+    } else {
+      addTagStrings(this.database, pageBaseUrl, tagEntry.title, {
+        title: tab.title,
+        favicon: tab.favicon,
+      });
+    }
+  }
+
+  clickCreateTag(tagTitle: string) {
+    if (!this.database) {
+      return;
+    }
+
+    const possible = this.getModalTab();
+    const tab = possible || this.selectedForTagTab;
+    if (!tab) {
+      return;
+    }
+
+    this.recentlyCreatedTagTitle = tagTitle;
+
+    const pageBaseUrl = baseUrl(tab.url);
+
+    addTagStrings(this.database, pageBaseUrl, tagTitle, {
+      title: tab.title,
+      favicon: tab.favicon,
+    });
+  }
+
+  sendTagModalData() {
+    ipcRenderer.send('set-tag-modal-data', toJS(this.tagModalData));
   }
 }
 

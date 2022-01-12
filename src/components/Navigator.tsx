@@ -10,12 +10,12 @@ import {
   DraggableProvided,
   Droppable,
 } from 'react-beautiful-dnd';
+import { runInAction } from 'mobx';
 import { useStore } from '../store/tab-page-store';
 import TitleBar, { RoundButton } from '../pages/App';
 import { Tab, TabsParent } from './Tab';
 import { TabPageTab } from '../interfaces/tab';
-import TagSidebar from './TagSidebar';
-import { headerHeight, tagSideBarWidth } from '../constants';
+import { headerHeight, tagSideBarWidth, View } from '../constants';
 
 const NavigatorParent = styled.div`
   position: absolute;
@@ -29,10 +29,7 @@ const NavigatorParent = styled.div`
   justify-content: space-between;
 `;
 
-export function clickMain() {
-  ipcRenderer.send('click-main');
-  ipcRenderer.send('mixpanel-track', 'go to home from navigator border click');
-}
+export function clickMain() {}
 
 interface ITabsBar {
   x: number;
@@ -63,8 +60,9 @@ interface ITabBarTab {
 }
 
 const WebpageBackground = styled.div`
-  background-color: white;
+  //background-color: white;
   //position: absolute;
+  //margin: 1px 0 0 0;
 `;
 
 export const TabBarTab = observer(
@@ -111,8 +109,9 @@ export const TabBarTab = observer(
       }
     }
 
-    function clickClose(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
-      e.stopPropagation();
+    function clickClose() {
+      // e: React.MouseEvent<HTMLDivElement, MouseEvent>
+      // e.stopPropagation();
       tabPageStore.closeTab(tab.id, _active);
       ipcRenderer.send('mixpanel-track', 'click remove tab in bar');
     }
@@ -125,14 +124,17 @@ export const TabBarTab = observer(
       >
         <Tab
           title={title}
+          favicon={tab.favicon}
           active={_active}
           width={width}
-          tab={tab}
-          clickTab={() => {
+          onClick={() => {
             clickTab();
           }}
-          clickClose={(e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-            clickClose(e);
+          onClose={() => {
+            clickClose();
+          }}
+          handleAuxClick={() => {
+            clickClose();
           }}
         />
       </div>
@@ -171,7 +173,14 @@ const TabsBar = observer(({ x, y, width }: ITabsBar) => {
   const filteredTabs = tabs.slice(0, tabs.length - numToDrop);
 
   return (
-    <TabsParent style={{ top: y, left: x, width: `${width}px` }}>
+    <TabsParent
+      style={{
+        top: y,
+        left: x,
+        width: `${width}px`,
+        borderRadius: tabPageStore.windowFloating ? '' : '10px 10px 0 0',
+      }}
+    >
       <TabsRow>
         <DragDropContext
           onDragEnd={(result) => {
@@ -247,7 +256,10 @@ const Navigator = observer(() => {
       ref={backRef}
       onMouseDown={(e) => {
         if (backRef.current && e.target === backRef.current) {
-          clickMain();
+          ipcRenderer.send('click-main');
+          runInAction(() => {
+            tabPageStore.View = View.Tabs;
+          });
         }
       }}
     >
@@ -256,7 +268,6 @@ const Navigator = observer(() => {
         y={tabPageStore.innerBounds.y}
         width={tabPageStore.innerBounds.width - sideBarWidth}
       />
-      <TagSidebar />
     </NavigatorParent>
   );
 });

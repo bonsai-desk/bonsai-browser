@@ -3,7 +3,7 @@ import { color, themePermute } from './utils/jsutils';
 
 const THEME_LIGHT = {
   'canvas-color': '#ffffff',
-  'canvas-border-color': '#dee1e6',
+  'canvas-border-color': '#d6d7d8',
   'canvas-inactive-color': '#d9dde2',
   'canvas-inactive-hover': '#f1f2f4',
   'search-color': '#edeff0',
@@ -31,7 +31,7 @@ const THEME_LIGHT = {
 
 const THEME_DARK = {
   'canvas-color': '#2f2f33',
-  'canvas-border-color': '#555659',
+  'canvas-border-color': '#585858',
   'canvas-inactive-color': '#1d1e20',
   'canvas-inactive-hover': '#28292c',
   'search-color': '#1d1e20',

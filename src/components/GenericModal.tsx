@@ -3,8 +3,9 @@ import { runInAction } from 'mobx';
 import React from 'react';
 import { Modal } from '@material-ui/core';
 import styled from 'styled-components';
-import { useStore, View } from '../store/tab-page-store';
+import { useStore } from '../store/tab-page-store';
 import { color } from '../utils/jsutils';
+import { View } from '../constants';
 
 interface IModal {
   view: View;

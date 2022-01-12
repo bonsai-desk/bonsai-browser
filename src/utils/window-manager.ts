@@ -20,10 +20,13 @@ import {
   FIND_HTML,
   floatingWindowEdgeMargin,
   headerHeight,
+  FLOATING_BORDER_THICKNESS,
   PRELOAD,
   TAB_PAGE,
+  TAG_MODAL_HTML,
   tagSideBarWidth,
   URL_PEEK_HTML,
+  View,
 } from '../constants';
 import {
   base64ImgToDisk,
@@ -108,6 +111,8 @@ export default class WindowManager {
 
   private readonly findView: BrowserView;
 
+  readonly tagModalView: BrowserView;
+
   // private readonly overlayView: BrowserView;
 
   private findText = '';
@@ -148,8 +153,8 @@ export default class WindowManager {
     this.findView = makeView(FIND_HTML);
     // this.findView.webContents.openDevTools({ mode: 'detach' });
 
-    // this.overlayView = makeView(OVERLAY_HTML);
-    // this.overlayView.webContents.openDevTools({ mode: 'detach' });
+    this.tagModalView = makeView(TAG_MODAL_HTML);
+    // this.tagModalView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
     // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
@@ -166,12 +171,6 @@ export default class WindowManager {
         'set-seenEmailForm',
         this.saveData.data.seenEmailForm
       );
-      if (this.saveData.data.tabView) {
-        this.tabPageView.webContents.send(
-          'set-tabview',
-          this.saveData.data.tabView
-        );
-      }
 
       this.setDisplay(this.display);
     });
@@ -216,34 +215,30 @@ export default class WindowManager {
         screen.getCursorScreenPoint(),
         this.mainWindow.getBounds()
       );
+      const tagModalUp = windowHasView(this.mainWindow, this.tagModalView);
       if (
-        !escapeActive &&
         mainWindowVisible &&
         webBrowserViewIsActive &&
         mouseInWindow &&
+        !tagModalUp &&
         (mouseIsInBorder || findIsActive)
       ) {
-        escapeActive = true;
-        globalShortcut.register('Escape', () => {
-          if (this.mouseInInner()) {
-            this.mixpanelManager.track('escape while mouse in inner');
-          } else {
-            this.mixpanelManager.track('escape while mouse not in inner');
-          }
-          this.toggle(!this.mouseInInner());
-        });
-      } else if (
-        (escapeActive &&
-          !findIsActive &&
-          (!mainWindowVisible ||
-            (mainWindowVisible && webBrowserViewIsActive && !mouseIsInBorder) ||
-            (mainWindowVisible && !webBrowserViewIsActive))) ||
-        (escapeActive && !mouseInWindow)
-      ) {
+        if (!escapeActive) {
+          escapeActive = true;
+          globalShortcut.register('Escape', () => {
+            if (this.mouseInInner()) {
+              this.mixpanelManager.track('escape while mouse in inner');
+            } else {
+              this.mixpanelManager.track('escape while mouse not in inner');
+            }
+            this.toggle(!this.mouseInInner());
+          });
+        }
+      } else if (escapeActive) {
+        escapeActive = false;
         setTimeout(() => {
           // timeout here because there was sometimes a gap between this being
           // un-registered and the tab page taking over the escape key functionality
-          escapeActive = false;
           globalShortcut.unregister('Escape');
         }, 10);
       }
@@ -274,6 +269,15 @@ export default class WindowManager {
     this.bindToggleShortcut('Alt+Space');
 
     this.initBoot();
+  }
+
+  addBrowserView(browserView: BrowserView) {
+    this.mainWindow.addBrowserView(browserView);
+    this.mainWindow.setTopBrowserView(browserView);
+
+    if (windowHasView(this.mainWindow, this.tagModalView)) {
+      this.mainWindow.setTopBrowserView(this.tagModalView);
+    }
   }
 
   createTabView(
@@ -387,8 +391,7 @@ export default class WindowManager {
       }
       if (url !== '') {
         if (!windowHasView(window, urlPeekView)) {
-          window.addBrowserView(urlPeekView);
-          window.setTopBrowserView(urlPeekView);
+          this.addBrowserView(urlPeekView);
           this.handleResize();
         }
         urlPeekView.webContents.send('peek-url-updated', url);
@@ -420,13 +423,13 @@ export default class WindowManager {
         }
       }
     );
-    webView.view.webContents.on(
-      'did-redirect-navigation',
-      (_, url, isInPlace) => {
-        console.log('did redirect');
-        console.log(url, isInPlace);
-      }
-    );
+    // webView.view.webContents.on(
+    //   'did-redirect-navigation',
+    //   (_, url, isInPlace) => {
+    //     console.log('did redirect');
+    //     console.log(url, isInPlace);
+    //   }
+    // );
     webView.view.webContents.on('page-favicon-updated', (_, favicons) => {
       if (favicons.length > 0) {
         if (webView.historyEntry?.favicon === '') {
@@ -485,9 +488,11 @@ export default class WindowManager {
   }
 
   showWindow() {
-    this.mainWindow.setAlwaysOnTop(true, 'pop-up-menu');
+    if (windowHasView(this.mainWindow, this.tagModalView)) {
+      this.closeTagModal();
+    }
 
-    // this.overlayView.webContents.send('cancel-animation-frame');
+    this.mainWindow.setAlwaysOnTop(true, 'pop-up-menu');
 
     const mousePoint = screen.getCursorScreenPoint();
     const display = { activeDisplay: screen.getPrimaryDisplay() };
@@ -524,6 +529,7 @@ export default class WindowManager {
       }, 100);
     }
 
+    this.mainWindow.focus();
     this.tabPageView.webContents.focus();
     setTimeout(() => {
       this.tabPageView.webContents.send('focus-search');
@@ -622,14 +628,12 @@ export default class WindowManager {
       return;
     }
 
-    // this.tabPageView.webContents.send('close-history-modal');
-
     for (let i = 0; i < tabs.length; i += 1) {
       this.loadTabFromTabInfo(tabs[i]);
     }
   }
 
-  unSetTab(shouldScreenshot = true, shouldFocusSearch = false) {
+  unSetTab(shouldScreenshot = true, shouldFocusSearch = false, view?: View) {
     const oldTabView = this.allWebViews[this.activeTabId];
 
     // move title bar off screen
@@ -683,8 +687,11 @@ export default class WindowManager {
     this.activeTabId = -1;
 
     // tell tab page that it is active
-    this.tabPageView.webContents.send('set-active', true);
     this.tabPageView.webContents.send('unset-tab', cachedId);
+
+    if (view) {
+      this.tabPageView.webContents.send('set-view', view);
+    }
   }
 
   selectNeighborTab(side: 'left' | 'right') {
@@ -730,8 +737,6 @@ export default class WindowManager {
     this.activeTabId = id;
 
     // tell main window that it is active and get the tabview reference
-    this.mainWindow.webContents.send('set-active', true);
-    this.tabPageView.webContents.send('set-active', false);
     const tabView = this.allWebViews[id];
     if (typeof tabView === 'undefined') {
       log(`setTab: tab with id ${id} does not exist`);
@@ -740,7 +745,7 @@ export default class WindowManager {
     }
 
     // add the live page to the main window and focus it a little bit later
-    this.mainWindow.addBrowserView(tabView.view);
+    this.addBrowserView(tabView.view);
     setTimeout(() => {
       // mouse icons dont switch properly on macOS after closing and opening a BrowserView
       // unless we time this out for some reason :/
@@ -973,8 +978,7 @@ export default class WindowManager {
       this.mainWindow !== null &&
       !windowHasView(this.mainWindow, this.findView)
     ) {
-      this.mainWindow.addBrowserView(this.findView);
-      this.mainWindow.setTopBrowserView(this.findView);
+      this.addBrowserView(this.findView);
       this.handleResize();
     }
 
@@ -1018,7 +1022,12 @@ export default class WindowManager {
 
     resizeFindView(this.findView, headerHeight, bounds);
     resizePeekView(this.urlPeekView, bounds);
-    // resizeOverlayView(this.overlayView, windowSize);
+    this.tagModalView.setBounds({
+      x: 0,
+      y: 0,
+      width: windowSize[0],
+      height: windowSize[1],
+    });
 
     // resize tab page view
     this.tabPageView.setBounds({
@@ -1061,8 +1070,11 @@ export default class WindowManager {
   innerBounds(): Electron.Rectangle {
     const windowBounds = this.mainWindow.getBounds();
 
-    const topPadding = 70 + this.notchSize();
-    const padding = this.windowFloating ? 3 : 20;
+    const topPadding =
+      70 +
+      this.notchSize() +
+      (this.windowFloating ? FLOATING_BORDER_THICKNESS : 0);
+    const padding = this.windowFloating ? FLOATING_BORDER_THICKNESS : 20;
 
     return {
       x: padding,
@@ -1074,17 +1086,13 @@ export default class WindowManager {
 
   toggle(mouseInBorder: boolean) {
     if (this.noWebPageOpen()) {
-      if (this.historyModalActive) {
-        this.tabPageView.webContents.send('close-history-modal');
-      } else {
-        this.hideWindow();
-      }
+      this.hideWindow();
     } else if (this.activeTabId !== -1) {
       const findIsActive = windowHasView(this.mainWindow, this.findView);
       if (findIsActive && !mouseInBorder) {
         this.closeFind();
       } else {
-        this.unSetTab();
+        this.unSetTab(true, false, View.Tabs);
       }
     }
   }
@@ -1106,8 +1114,7 @@ export default class WindowManager {
     tabId: number,
     tabView: IWebView,
     callback?: () => void,
-    forItemWithId = '',
-    workspaceId = ''
+    forItemWithId = ''
   ) {
     tabView.view.webContents.send('get-scroll-height', tabId);
     const handleImage = (image: NativeImage) => {
@@ -1145,11 +1152,11 @@ export default class WindowManager {
           tabImgName,
         ]);
       } else {
-        this.tabPageView.webContents.send('got-screenshot-for-item', {
-          itemId: forItemWithId,
-          workspaceId,
-          imgName: tabImgName,
-        });
+        // this.tabPageView.webContents.send('got-screenshot-for-item', {
+        //   itemId: forItemWithId,
+        //   workspaceId,
+        //   imgName: tabImgName,
+        // });
       }
       tabView.imgString = tabImgName;
       this.tabPageView.webContents.send('tab-image-native', [
@@ -1279,6 +1286,10 @@ export default class WindowManager {
     (tabView.view.webContents as any).destroy();
     delete this.allWebViews[id];
     this.tabPageView.webContents.send('tab-removed', id);
+
+    if (Array.from(Object.keys(this.allWebViews)).length === 0) {
+      this.tabPageView.webContents.send('set-view', View.Tabs);
+    }
   }
 
   private loadTabFromTabInfo(tab: TabInfo) {
@@ -1505,7 +1516,8 @@ export default class WindowManager {
       log(`set bounds as ${JSON.stringify(hiddenBounds)}`);
       log(`bounds are now ${JSON.stringify(newWebView.view.getBounds())}`);
       if (!windowHasView(this.mainWindow, newWebView.view)) {
-        this.mainWindow.addBrowserView(newWebView.view);
+        this.addBrowserView(newWebView.view);
+        this.handleResize();
       }
     }
 
@@ -1635,6 +1647,25 @@ export default class WindowManager {
     setTimeout(boot, 15000);
   }
 
+  openTagModal() {
+    if (windowHasView(this.mainWindow, this.tagModalView)) {
+      return;
+    }
+    this.addBrowserView(this.tagModalView);
+    this.handleResize();
+    setTimeout(() => {
+      this.tagModalView.webContents.focus();
+    }, 100);
+  }
+
+  closeTagModal() {
+    if (windowHasView(this.mainWindow, this.tagModalView)) {
+      this.mainWindow.removeBrowserView(this.tagModalView);
+      this.tabPageView.webContents.focus();
+    }
+    this.tagModalView.webContents.send('clear-input');
+  }
+
   addListeners() {
     ipcMain.on('create-new-tab', (_, switchToTab = false) => {
       const id = this.createNewTab();
@@ -1695,7 +1726,6 @@ export default class WindowManager {
       }
     });
     ipcMain.on('search-url', (_, [text, searchPattern]) => {
-      this.tabPageView.webContents.send('close-history-modal');
       const newTabId = this.createNewTab();
       this.loadText(newTabId, text, { searchPattern });
       this.setTab(newTabId);
@@ -1733,8 +1763,6 @@ export default class WindowManager {
       }
     });
     ipcMain.on('open-workspace-url', (_, url) => {
-      this.tabPageView.webContents.send('close-history-modal');
-
       let tabExists = false;
 
       Object.values(this.allWebViews).forEach((tabView) => {
@@ -1812,18 +1840,6 @@ export default class WindowManager {
         this.screenShotTab(webViewId, webView);
       }
     });
-    ipcMain.on('created-workspace-item', (_, [itemId, workspaceId]) => {
-      const webView = this.allWebViews[this.activeTabId];
-      if (webView) {
-        this.screenShotTab(
-          this.activeTabId,
-          webView,
-          () => {},
-          itemId,
-          workspaceId
-        );
-      }
-    });
     ipcMain.on('mixpanel-track', (_, eventName) => {
       this.mixpanelManager.track(eventName);
     });
@@ -1833,6 +1849,9 @@ export default class WindowManager {
         this.mixpanelManager.track(eventName, properties);
       }
     );
+    ipcMain.on('mixpanel-set-user-prop', (_, properties) => {
+      this.mixpanelManager.setUserProp(properties);
+    });
     // ipcMain.on(
     //   'mixpanel-track-with-properties',
     //   (_, [eventName, properties]) => {
@@ -1926,6 +1945,18 @@ export default class WindowManager {
     });
     ipcMain.on('hide-window', () => {
       this.hideWindow();
+    });
+    ipcMain.on('open-tag-modal', () => {
+      this.openTagModal();
+    });
+    ipcMain.on('set-tag-modal-data', (_, data) => {
+      this.tagModalView.webContents.send('set-data', data);
+    });
+    ipcMain.on('tag-modal-message', (_, msg) => {
+      this.tabPageView.webContents.send('tag-modal-message', msg);
+    });
+    ipcMain.on('close-tag-modal', () => {
+      this.closeTagModal();
     });
   }
 }

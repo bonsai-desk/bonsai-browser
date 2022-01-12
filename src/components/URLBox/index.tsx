@@ -2,15 +2,18 @@ import styled from 'styled-components';
 import React, { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { runInAction } from 'mobx';
-import { LocalOffer, MoreHoriz } from '@material-ui/icons';
+import { MoreHoriz } from '@material-ui/icons';
 import { Stack } from '@material-ui/core';
 import { ipcRenderer } from 'electron';
-import { GridView, ViewColumnOutlined } from '@mui/icons-material';
+import { Style } from '@mui/icons-material';
 import { Tooltip } from '@mui/material';
-import { TabViewType, useStore, View } from '../../store/tab-page-store';
+import { useStore } from '../../store/tab-page-store';
 import { BigButton } from '../Buttons';
+import TagButton from '../../watermelon/components/TagButton';
+import { baseUrl } from '../../utils/utils';
+import { FLOATING_BORDER_THICKNESS, View } from '../../constants';
 
-const URLBoxParent = styled.div`
+const BonsaiBoxParent = styled.div`
   display: flex;
   justify-content: center;
   width: 100%;
@@ -20,6 +23,7 @@ const URLBoxParent = styled.div`
 
 const Input = styled.input`
   background-color: rgba(0, 0, 0, 0.25);
+  transition-duration: 0.05s;
   font-size: 1rem;
   font-weight: normal;
   height: 3rem;
@@ -40,7 +44,7 @@ const Input = styled.input`
 `;
 
 const Header = observer(({ onViewPage }: { onViewPage: boolean }) => {
-  const { tabPageStore } = useStore();
+  const { tabPageStore, historyStore } = useStore();
 
   const bonsaiBoxRef = useRef<HTMLInputElement>(null);
   const [bonsaiBoxFocus, setBonsaiBoxFocus] = useState(false);
@@ -55,25 +59,25 @@ const Header = observer(({ onViewPage }: { onViewPage: boolean }) => {
     color: 'black',
   };
 
-  useEffect(() => {
-    if (!tabPageStore.bonsaiBoxFocus && tabPageStore.urlText) {
-      // tabPageStore.setFocus()
-      tabPageStore.bonsaiBoxRef?.current?.focus();
-    }
-    if (tabPageStore.bonsaiBoxFocus && !tabPageStore.urlText) {
-      // tabPageStore.setFocus()
-      tabPageStore.bonsaiBoxRef?.current?.blur();
-    }
-  }, [tabPageStore.urlText]);
+  const topPadding = tabPageStore.windowFloating
+    ? FLOATING_BORDER_THICKNESS
+    : 0;
+
+  const tab = tabPageStore.openTabs[historyStore.active];
+  let tabBaseUrl = '';
+  if (tab) {
+    tabBaseUrl = baseUrl(tab.url);
+  }
 
   return (
-    <URLBoxParent
+    <BonsaiBoxParent
       id="header"
       style={{
-        position: onViewPage ? 'absolute' : 'static',
+        // position: onViewPage ? 'absolute' : 'static',
         top: onViewPage ? '0' : 'auto',
         zIndex: onViewPage ? 1 : 'auto',
-        height: tabPageStore.innerBounds.y - tabPageStore.topPadding,
+        height:
+          tabPageStore.innerBounds.y - tabPageStore.topPadding - topPadding,
         paddingTop: tabPageStore.topPadding,
       }}
       onMouseOver={() => {
@@ -100,6 +104,7 @@ const Header = observer(({ onViewPage }: { onViewPage: boolean }) => {
           </BigButton>
         </div>
         <Input
+          className="mousetrap"
           type="text"
           spellCheck={false}
           ref={bonsaiBoxRef}
@@ -131,51 +136,29 @@ const Header = observer(({ onViewPage }: { onViewPage: boolean }) => {
             }
           }}
         />
+        <TagButton
+          pageUrl={tabBaseUrl}
+          onClick={() => {
+            ipcRenderer.send('open-tag-modal');
+          }}
+        />
         <div>
-          <Tooltip title="Tags">
+          <Tooltip title="All Tags">
             <BigButton
               className="is-active"
               onClick={() => {
+                ipcRenderer.send('click-main');
                 runInAction(() => {
-                  ipcRenderer.send('click-main');
                   tabPageStore.View = View.AllTagsView;
                 });
               }}
             >
-              <LocalOffer />
-            </BigButton>
-          </Tooltip>
-        </div>
-        <div>
-          <Tooltip
-            title={
-              tabPageStore.TabView === TabViewType.Grid
-                ? 'Tab Columns'
-                : 'Tab Grid'
-            }
-          >
-            <BigButton
-              className="is-active"
-              onClick={() => {
-                runInAction(() => {
-                  if (tabPageStore.TabView === TabViewType.Grid) {
-                    tabPageStore.TabView = TabViewType.Column;
-                  } else {
-                    tabPageStore.TabView = TabViewType.Grid;
-                  }
-                });
-              }}
-            >
-              {tabPageStore.TabView === TabViewType.Column ? (
-                <GridView />
-              ) : (
-                <ViewColumnOutlined />
-              )}{' '}
+              <Style />
             </BigButton>
           </Tooltip>
         </div>
       </Stack>
-    </URLBoxParent>
+    </BonsaiBoxParent>
   );
 });
 

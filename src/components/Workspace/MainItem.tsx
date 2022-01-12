@@ -5,7 +5,7 @@ import { DraggableCore, DraggableData } from 'react-draggable';
 import { runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
 import path from 'path';
-import { useStore, View } from '../../store/tab-page-store';
+import { useStore } from '../../store/tab-page-store';
 import { easeOut, getGroupBelowItem, overTrash } from './utils';
 import { lerp } from '../../utils/utils';
 import {
@@ -28,6 +28,7 @@ import {
   ItemGroup,
 } from '../../store/workspace/item-group';
 import { Workspace } from '../../store/workspace/workspace';
+import { View } from '../../constants';
 
 const MainItem = observer(
   ({

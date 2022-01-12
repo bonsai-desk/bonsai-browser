@@ -5,19 +5,16 @@ import styled from '@emotion/styled';
 import { OpenInBrowser } from '@material-ui/icons';
 import path from 'path';
 import { useStore } from '../../store/tab-page-store';
-import { ITab, TabPageTab } from '../../interfaces/tab';
+import { ITab, tabImage, tabTitle } from '../../interfaces/tab';
 
 import { TabImageParent, TabImg, TabParent } from './style';
 import { Tab } from '../Tab';
 import { useMiddleClick } from '../../utils/effects';
 
 interface ITabImage {
-  hover: boolean;
-  title: string;
   imgUrl: string;
-  tab: TabPageTab;
-  disableButtons?: boolean;
   selected: boolean;
+  width: number;
 }
 
 const SelectedParent = styled.div`
@@ -37,7 +34,7 @@ const SelectedParent = styled.div`
   }
 `;
 
-const TabImage = observer(({ imgUrl, selected }: ITabImage) => {
+const TabImage = observer(({ imgUrl, selected, width }: ITabImage) => {
   const { workspaceStore } = useStore();
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
@@ -46,10 +43,13 @@ const TabImage = observer(({ imgUrl, selected }: ITabImage) => {
     'images',
     `${imgUrl}.jpg`
   );
+  // width = 200;
   return (
     <TabImageParent
       style={{
         backgroundColor: loaded ? 'transparent' : 'var(--canvas-color)',
+        width,
+        height: Math.round((9 / 16) * width),
       }}
     >
       {selected ? (
@@ -83,9 +83,8 @@ const TabImage = observer(({ imgUrl, selected }: ITabImage) => {
 });
 
 const CardTabParent = styled(TabParent)`
-  box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
-  //background-color: var(--canvas-color);
-  //background-color: white;
+  box-shadow: rgba(99, 99, 99, 0.2) 0 2px 8px 0;
+  //background-color: red;
   #tab-inner {
     border-right: none;
   }
@@ -101,102 +100,102 @@ const CardTabParent = styled(TabParent)`
   }
 `;
 
-const Card = observer(
-  ({
-    tab,
-    hover,
-    active = false,
-    callback,
-    disableButtons = false,
-    style = {},
-    width = 200,
-    selected = false,
-  }: ITab) => {
-    const { tabPageStore } = useStore();
-    let title =
-      tab.openGraphInfo !== null &&
-      tab.openGraphInfo.title !== '' &&
-      tab.openGraphInfo.title !== 'null'
-        ? tab.openGraphInfo.title
-        : tab.title;
-    if (!title) {
-      title = 'New Tab';
+interface IDummyCard {
+  title: string;
+  favicon: string;
+  imgUrl: string;
+  active: boolean;
+  onClick?: () => void;
+  onClose?: () => void;
+  onMiddleClick?: (e: MouseEvent) => void;
+  width: number;
+  selected?: boolean;
+}
+
+export const DummyCard = ({
+  title,
+  width,
+  onClick = undefined,
+  onClose = undefined,
+  onMiddleClick = undefined,
+  active,
+  imgUrl,
+  favicon,
+  selected = false,
+}: IDummyCard) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+  // const disableButtons = typeof onClose === 'undefined';
+
+  useMiddleClick(cardRef, (e) => {
+    if (typeof onMiddleClick !== 'undefined') {
+      onMiddleClick(e);
     }
-    const imgUrl =
-      tab.openGraphInfo !== null && tab.openGraphInfo.image !== ''
-        ? tab.openGraphInfo.image
-        : tab.image;
+  });
 
-    const hovering = hover || tabPageStore.hoveringUrlInput;
+  return (
+    <CardTabParent
+      ref={cardRef}
+      style={{ width }}
+      onClick={() => {
+        if (typeof onClick === 'function') {
+          onClick();
+        }
+      }}
+    >
+      <Tab
+        title={title}
+        favicon={favicon}
+        active={active}
+        width={width}
+        onClick={onClick}
+        onClose={onClose}
+        bigCloseHitbox
+      />
+      <div
+        style={{
+          borderBottom: '1px solid var(--canvas-border-color)',
+          width: '100%',
+        }}
+      />
+      <TabImage imgUrl={imgUrl} selected={selected} width={width} />
+    </CardTabParent>
+  );
+};
 
-    function clickTab() {
+const Card = observer(
+  ({ tab, width = 200, active = false, callback, selected = false }: ITab) => {
+    const title = tabTitle(tab);
+    const imgUrl = tabImage(tab);
+
+    const clickTab = () => {
       if (callback) {
         callback();
       } else {
         ipcRenderer.send('set-tab', tab.id);
-        ipcRenderer.send('mixpanel-track-with-props', [
-          'click home tab',
-          {
-            pageType: tabPageStore.TabView,
-          },
-        ]);
-        tabPageStore.setUrlText('');
       }
-    }
-
-    function clickClose(
-      e: MouseEvent | React.MouseEvent<HTMLDivElement, MouseEvent>
-    ) {
-      e.stopPropagation();
-      ipcRenderer.send('remove-tab', tab.id);
-      ipcRenderer.send('mixpanel-track', 'click remove tab in home');
-    }
-
-    const handleAuxClick = (e: MouseEvent) => {
-      clickClose(e);
     };
 
-    const cardRef = useRef<HTMLDivElement>(null);
+    const clickClose = () => {
+      ipcRenderer.send('remove-tab', tab.id);
+      ipcRenderer.send('mixpanel-track', 'click remove tab in home');
+    };
 
-    useMiddleClick(cardRef, handleAuxClick);
+    const handleAuxClick = () => {
+      clickClose();
+    };
 
     return (
-      <CardTabParent
-        ref={cardRef}
-        style={style}
-        onClick={() => {
-          clickTab();
-        }}
-      >
-        <Tab
-          disableButtons={disableButtons}
-          title={title}
-          active={active}
-          width={width}
-          tab={tab}
-          clickTab={() => {
-            clickTab();
-          }}
-          clickClose={(e) => {
-            clickClose(e);
-          }}
-          bigCloseHitbox
-        />
-        <div
-          style={{
-            borderBottom: '1px solid var(--canvas-border-color)',
-            width: '100%',
-          }}
-        />
-        <TabImage
-          disableButtons={disableButtons}
-          hover={hovering}
-          title={title}
-          imgUrl={imgUrl}
-          tab={tab}
-          selected={selected}
-        />
-      </CardTabParent>
+      <DummyCard
+        title={title}
+        favicon={tab.favicon}
+        imgUrl={imgUrl}
+        active={active}
+        onClick={clickTab}
+        onMiddleClick={handleAuxClick}
+        onClose={clickClose}
+        width={width}
+        selected={selected}
+      />
     );
   }
 );

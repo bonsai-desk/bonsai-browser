@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react-lite';
 // import { runInAction } from 'mobx';
 import React from 'react';
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 import { Modal } from '@material-ui/core';
 // import { useStore } from '../store/tab-page-store';
 
@@ -46,19 +46,6 @@ export const MiniModalBackground = styled.div`
   flex-wrap: wrap;
   align-content: center;
   justify-content: center;
-`;
-
-export const MiniModalParent = styled.div`
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-
-  ${({ active }: { active: boolean }) =>
-    css`
-      display: ${active ? 'block' : 'none'};
-    `}
 `;
 
 const MiniGenericModal = observer(

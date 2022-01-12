@@ -6,12 +6,12 @@ import { ipcRenderer } from 'electron';
 import fs from 'fs';
 import path from 'path';
 import { runInAction } from 'mobx';
-import { Item } from './item';
-import { ItemGroup } from './item-group';
+import { Database } from '@nozbe/watermelondb';
 import WorkspaceStore from './workspace-store';
-import { base64ImgToDisk, tryDecrypt } from '../../utils/utils';
+import { base64ImgToDisk, baseUrl, tryDecrypt } from '../../utils/utils';
+import { addTagStrings } from '../../watermelon/databaseUtils';
 
-const animationTime = 0.15;
+// const animationTime = 0.15;
 
 function saveSnapshot(workspaceStore: Instance<typeof WorkspaceStore>) {
   if (!workspaceStore.attemptedToLoadSnapshot) {
@@ -88,7 +88,6 @@ function loadSnapshot(workspaceStore: Instance<typeof WorkspaceStore>) {
         if (typeof workspaceSnapshot.version === 'undefined') {
           runInAction(() => {
             workspaceSnapshot.version = 1;
-            // workspaceSnapshot.setVersion(1);
           });
         }
 
@@ -121,61 +120,63 @@ function loadSnapshot(workspaceStore: Instance<typeof WorkspaceStore>) {
   }
 }
 
-function animateItem(item: Instance<typeof Item>, deltaTime: number) {
-  if (item.animationLerp !== 1) {
-    item.setAnimationLerp(item.animationLerp + deltaTime * (1 / animationTime));
-    if (item.animationLerp > 1) {
-      item.setAnimationLerp(1);
-    }
-  }
-}
+// function animateItem(item: Instance<typeof Item>, deltaTime: number) {
+//   if (item.animationLerp !== 1) {
+//     item.setAnimationLerp(item.animationLerp + deltaTime * (1 / animationTime));
+//     if (item.animationLerp > 1) {
+//       item.setAnimationLerp(1);
+//     }
+//   }
+// }
 
-function animateGroup(group: Instance<typeof ItemGroup>, deltaTime: number) {
-  if (group.animationLerp !== 1) {
-    group.setAnimationLerp(
-      group.animationLerp + deltaTime * (1 / animationTime)
-    );
-    if (group.animationLerp > 1) {
-      group.setAnimationLerp(1);
-    }
-  }
-}
+// function animateGroup(group: Instance<typeof ItemGroup>, deltaTime: number) {
+//   if (group.animationLerp !== 1) {
+//     group.setAnimationLerp(
+//       group.animationLerp + deltaTime * (1 / animationTime)
+//     );
+//     if (group.animationLerp > 1) {
+//       group.setAnimationLerp(1);
+//     }
+//   }
+// }
 
-let lastSnapshotTime = 0;
-function update(
-  time: number,
-  deltaTime: number,
-  workspaceStore: Instance<typeof WorkspaceStore>
-) {
-  if (time - lastSnapshotTime > 5) {
-    lastSnapshotTime = time;
-    saveSnapshot(workspaceStore);
-  }
+// let lastSnapshotTime = 0;
+// function update(
+//   time: number,
+//   deltaTime: number,
+//   workspaceStore: Instance<typeof WorkspaceStore>
+// ) {
+//   if (time - lastSnapshotTime > 5) {
+//     lastSnapshotTime = time;
+//     saveSnapshot(workspaceStore);
+//   }
+//
+//   workspaceStore.workspaces.forEach((workspace) => {
+//     workspace.updateVolatileRenderValues();
+//
+//     workspace.items.forEach((item) => {
+//       animateItem(item, deltaTime);
+//       if (item.groupId === 'hidden') {
+//         if (!item.beingDragged) {
+//           workspace.changeGroup(
+//             item,
+//             workspace.hiddenGroup,
+//             workspace.inboxGroup
+//           );
+//         }
+//       }
+//     });
+//     workspace.groups.forEach((group) => {
+//       animateGroup(group, deltaTime);
+//     });
+//     animateGroup(workspace.hiddenGroup, deltaTime);
+//     animateGroup(workspace.inboxGroup, deltaTime);
+//   });
+// }
 
-  workspaceStore.workspaces.forEach((workspace) => {
-    workspace.updateVolatileRenderValues();
-
-    workspace.items.forEach((item) => {
-      animateItem(item, deltaTime);
-      if (item.groupId === 'hidden') {
-        if (!item.beingDragged) {
-          workspace.changeGroup(
-            item,
-            workspace.hiddenGroup,
-            workspace.inboxGroup
-          );
-        }
-      }
-    });
-    workspace.groups.forEach((group) => {
-      animateGroup(group, deltaTime);
-    });
-    animateGroup(workspace.hiddenGroup, deltaTime);
-    animateGroup(workspace.inboxGroup, deltaTime);
-  });
-}
-
-function createWorkspaceStore(): Instance<typeof WorkspaceStore> {
+function createWorkspaceStore(
+  database: Database
+): Instance<typeof WorkspaceStore> {
   const workspaceStore = WorkspaceStore.create({
     version: 2, // this number is the version for new stores. old stores loaded in will override the version and will need to be updated
     workspaces: {},
@@ -190,41 +191,89 @@ function createWorkspaceStore(): Instance<typeof WorkspaceStore> {
     workspaceStore.setSnapshotPath(snapshotPath);
     workspaceStore.setDataPath(dataPath);
     loadSnapshot(workspaceStore);
-  });
 
-  ipcRenderer.on(
-    'got-screenshot-for-item',
-    (_, { itemId, workspaceId, imgName }) => {
-      const item = workspaceStore.workspaces
-        .get(workspaceId)
-        ?.items.get(itemId);
-      if (item) {
-        item.setImage(imgName);
-        saveSnapshot(workspaceStore);
+    const exists = fs.existsSync(workspaceStore.snapshotPath);
+    if (!exists) {
+      return;
+    }
+
+    fs.renameSync(
+      snapshotPath,
+      path.join(dataPath, 'workspaceSnapshot-backup')
+    );
+
+    ipcRenderer.send(
+      'log-data',
+      'Found old workspace snapshot. Converting to tags and renaming to "workspaceSnapshot-backup"'
+    );
+
+    const data: [string, string, { title: string; favicon: string }][] = [];
+    workspaceStore.workspaces.forEach((workspace) => {
+      workspace.items.forEach((item) => {
+        const group = workspace.groups.get(item.groupId);
+        if (group) {
+          data.push([
+            baseUrl(item.url),
+            group.title,
+            {
+              title: item.title,
+              favicon: item.favicon,
+            },
+          ]);
+        }
+
+        data.push([
+          baseUrl(item.url),
+          workspace.name,
+          {
+            title: item.title,
+            favicon: item.favicon,
+          },
+        ]);
+      });
+    });
+
+    (async () => {
+      for (let i = 0; i < data.length; i += 1) {
+        // eslint-disable-next-line no-await-in-loop
+        await addTagStrings(database, data[i][0], data[i][1], data[i][2]);
       }
-    }
-  );
-
-  ipcRenderer.on('save-snapshot', () => {
-    saveSnapshot(workspaceStore);
+    })();
   });
 
-  let lastTime = 0;
-  let startTime = -1;
-  const animationLoop = (milliseconds: number) => {
-    const currentTime = milliseconds / 1000;
-    if (startTime < 0) {
-      startTime = currentTime;
-    }
-    const time = currentTime - startTime;
-    const deltaTime = time - lastTime;
-    lastTime = time;
+  // ipcRenderer.on(
+  //   'got-screenshot-for-item',
+  //   (_, { itemId, workspaceId, imgName }) => {
+  //     const item = workspaceStore.workspaces
+  //       .get(workspaceId)
+  //       ?.items.get(itemId);
+  //     if (item) {
+  //       item.setImage(imgName);
+  //       saveSnapshot(workspaceStore);
+  //     }
+  //   }
+  // );
 
-    update(time, deltaTime, workspaceStore);
+  // ipcRenderer.on('save-snapshot', () => {
+  //   saveSnapshot(workspaceStore);
+  // });
 
-    requestAnimationFrame(animationLoop);
-  };
-  requestAnimationFrame(animationLoop);
+  // let lastTime = 0;
+  // let startTime = -1;
+  // const animationLoop = (milliseconds: number) => {
+  //   const currentTime = milliseconds / 1000;
+  //   if (startTime < 0) {
+  //     startTime = currentTime;
+  //   }
+  //   const time = currentTime - startTime;
+  //   const deltaTime = time - lastTime;
+  //   lastTime = time;
+  //
+  //   update(time, deltaTime, workspaceStore);
+  //
+  //   requestAnimationFrame(animationLoop);
+  // };
+  // requestAnimationFrame(animationLoop);
 
   return workspaceStore;
 }

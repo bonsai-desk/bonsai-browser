@@ -1,5 +1,17 @@
 import { OpenGraphInfo } from '../utils/interfaces';
 
+export interface TabPageTabInfo {
+  id: string | number;
+
+  favicon: string;
+
+  title: string;
+
+  url: string;
+
+  openGraphInfo?: OpenGraphInfo;
+}
+
 export interface TabPageTab {
   id: number;
 
@@ -13,7 +25,7 @@ export interface TabPageTab {
 
   favicon: string;
 
-  openGraphInfo: OpenGraphInfo | null;
+  openGraphInfo?: OpenGraphInfo;
 
   canGoBack: false;
 
@@ -38,8 +50,24 @@ export interface ITab {
   selected?: boolean;
 }
 
-export interface TabPageColumn {
-  domain: string;
+export function tabTitle(tab: TabPageTabInfo): string {
+  let title =
+    tab.openGraphInfo !== null &&
+    typeof tab.openGraphInfo !== 'undefined' &&
+    tab.openGraphInfo.title !== '' &&
+    tab.openGraphInfo.title !== 'null'
+      ? tab.openGraphInfo.title
+      : tab.title;
+  if (!title) {
+    title = 'New Tab';
+  }
+  return title;
+}
 
-  tabs: TabPageTab[];
+export function tabImage(tab: TabPageTab): string {
+  return tab.openGraphInfo !== null &&
+    typeof tab.openGraphInfo !== 'undefined' &&
+    tab.openGraphInfo.image !== ''
+    ? tab.openGraphInfo.image
+    : tab.image;
 }

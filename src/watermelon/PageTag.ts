@@ -5,6 +5,12 @@ import { TableName } from './schema';
 import PageModel from './PageModel';
 import TagModel from './TagModel';
 
+export interface PageTagDataType {
+  id: string;
+  page_id: string;
+  tag_id: string;
+}
+
 export default class PageTag extends Model {
   static table = TableName.PAGETAGS;
 

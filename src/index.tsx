@@ -19,6 +19,8 @@ import { hookListeners, HistoryStore } from './store/history-store';
 import Onboarding from './pages/Onboarding';
 import { createAndLoadKeybindStore } from './store/keybinds';
 import loadOrCreateWatermelonDB from './watermelon';
+import TagModal from './pages/TagModal';
+import { exportWatermelon } from './watermelon/databaseUtils';
 
 if (document.getElementById('root')) {
   const tabStore = new TabStore();
@@ -47,18 +49,16 @@ if (document.getElementById('overlay')) {
   render(<Overlay />, document.getElementById('overlay'));
 }
 
+if (document.getElementById('tag-modal')) {
+  render(<TagModal />, document.getElementById('tag-modal'));
+}
+
 if (document.getElementById('tab-page')) {
   const tabStore = new TabStore();
 
-  const workspaceStore = createWorkspaceStore();
-
   const keybindStore = createAndLoadKeybindStore();
   const historyStore = HistoryStore.create({ nodes: {}, active: '' });
-  const tabPageStore = new TabPageStore(
-    workspaceStore,
-    keybindStore,
-    historyStore
-  );
+  const tabPageStore = new TabPageStore(keybindStore, historyStore);
 
   hookListeners(historyStore);
 
@@ -71,6 +71,13 @@ if (document.getElementById('tab-page')) {
     currentUserId = userId;
 
     const database = loadOrCreateWatermelonDB(userId);
+
+    tabPageStore.database = database;
+
+    const workspaceStore = createWorkspaceStore(database);
+
+    exportWatermelon(database);
+
     render(
       <>
         <DatabaseProvider database={database}>

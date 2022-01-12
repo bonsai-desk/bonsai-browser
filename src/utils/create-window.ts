@@ -19,6 +19,7 @@ import { windowHasView } from './utils';
 import { makeWebContentsSafe } from './wm-utils';
 import MixpanelManager from './mixpanel-manager';
 import { ICON_PNG, ICON_PNG_2, ICON_SMALL_PNG } from '../main-constants';
+import { View } from '../constants';
 
 function updateIfNeeded() {
   // eslint-disable-next-line global-require
@@ -109,7 +110,7 @@ function initMenu(wm: WindowManager) {
           }
 
           if (wm.webBrowserViewActive()) {
-            wm.unSetTab();
+            wm.unSetTab(true, false, View.Tabs);
           }
         },
       },
@@ -132,15 +133,44 @@ function initMenu(wm: WindowManager) {
         },
       },
       {
-        label: 'Debug',
+        label: 'Open Tag Modal',
         accelerator: 'CmdOrCtrl+D',
         click: () => {
-          if (windowHasView(wm.mainWindow, wm.tabPageView)) {
-            if (wm.webBrowserViewActive()) {
-              wm.unSetTab();
-            }
-            wm.tabPageView.webContents.send('toggle-debug-modal');
+          if (wm.activeTabId === -1) {
+            return;
           }
+
+          if (!windowHasView(wm.mainWindow, wm.tagModalView)) {
+            wm.openTagModal();
+          }
+        },
+      },
+      {
+        label: 'Go Back View',
+        accelerator: 'CmdOrCtrl+[',
+        click: () => {
+          wm.tabPageView.webContents.send('go-back-view');
+        },
+      },
+      {
+        label: 'Go Forward View',
+        accelerator: 'CmdOrCtrl+]',
+        click: () => {
+          wm.tabPageView.webContents.send('go-forward-view');
+        },
+      },
+      {
+        label: 'Go Back View',
+        accelerator: 'CmdOrCtrl+b',
+        click: () => {
+          wm.tabPageView.webContents.send('go-back-view');
+        },
+      },
+      {
+        label: 'Go Forward View',
+        accelerator: 'CmdOrCtrl+shift+b',
+        click: () => {
+          wm.tabPageView.webContents.send('go-forward-view');
         },
       },
       {
@@ -421,7 +451,7 @@ export const createWindow = async () => {
     }
   }
 
-  console.log(`User Id: ${userId}`);
+  // console.log(`User Id: ${userId}`);
 
   const mixpanelManager = new MixpanelManager(userId);
 

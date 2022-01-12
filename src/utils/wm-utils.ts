@@ -3,7 +3,6 @@ import {
   app,
   BrowserView,
   BrowserWindow,
-  Display,
   HandlerDetails,
   WebContents,
 } from 'electron';
@@ -11,14 +10,12 @@ import path from 'path';
 import fs from 'fs';
 import { INavigateData, IWebView } from './interfaces';
 import { parseMap, urlToMapKey } from './utils';
-import {
-  floatingWindowEdgeMargin,
-  LOWER_BOUND,
-  ONBOARDING_HTML,
-} from '../constants';
+import { ONBOARDING_HTML } from '../constants';
 import { ICON_SMALL_PNG } from '../main-constants';
 
-const DEBUG = false;
+require('dotenv').config();
+
+const DEBUG = process.env.DEBUG === 'true';
 
 export function log(str: string) {
   if (DEBUG) {
@@ -42,26 +39,26 @@ function pointInBounds(
   return inX && inY;
 }
 
-function innerRectangle(
-  aspect: number,
-  windowSize: [number, number],
-  verticalPadding: number
-): Electron.Rectangle {
-  // const height = Math.max(windowSize[1], 0) - verticalPadding * 2;
-  const height = Math.max(windowSize[1], 0) - verticalPadding - LOWER_BOUND;
+// function innerRectangle(
+//   aspect: number,
+//   windowSize: [number, number],
+//   verticalPadding: number
+// ): Electron.Rectangle {
+//   // const height = Math.max(windowSize[1], 0) - verticalPadding * 2;
+//   const height = Math.max(windowSize[1], 0) - verticalPadding - LOWER_BOUND;
+//
+//   const width = Math.round(aspect * height);
+//
+//   const xPadding = Math.round((windowSize[0] - width) / 2);
+//   return {
+//     x: xPadding,
+//     y: verticalPadding,
+//     width,
+//     height,
+//   };
+// }
 
-  const width = Math.round(aspect * height);
-
-  const xPadding = Math.round((windowSize[0] - width) / 2);
-  return {
-    x: xPadding,
-    y: verticalPadding,
-    width,
-    height,
-  };
-}
-
-export { pointInBounds, innerRectangle };
+export { pointInBounds };
 
 export function makeWebContentsSafe(webContents: WebContents) {
   if (app.isPackaged) {
@@ -158,19 +155,19 @@ export function handleFindText(
   return search;
 }
 
-export function resizeAsTitleBar(
-  view: BrowserView,
-  height: number,
-  pageInnerBounds: Electron.Rectangle
-) {
-  const titleBarBounds = {
-    x: 0,
-    y: 0,
-    width: pageInnerBounds.width,
-    height,
-  };
-  view.setBounds(titleBarBounds);
-}
+// export function resizeAsTitleBar(
+//   view: BrowserView,
+//   height: number,
+//   pageInnerBounds: Electron.Rectangle
+// ) {
+//   const titleBarBounds = {
+//     x: 0,
+//     y: 0,
+//     width: pageInnerBounds.width,
+//     height,
+//   };
+//   view.setBounds(titleBarBounds);
+// }
 
 export function resizePeekView(
   view: BrowserView,
@@ -262,15 +259,15 @@ export function saveTabs(allWebViews: Record<number, IWebView>) {
   }
 }
 
-export function floatingSize(display: Display) {
-  const floatingHeight = Math.floor(
-    display.size.height - floatingWindowEdgeMargin * 2
-  );
-  const floatingWidth = Math.floor(
-    display.size.width / 2 - floatingWindowEdgeMargin * 2
-  );
-  return [floatingWidth, floatingHeight];
-}
+// export function floatingSize(display: Display) {
+//   const floatingHeight = Math.floor(
+//     display.size.height - floatingWindowEdgeMargin * 2
+//   );
+//   const floatingWidth = Math.floor(
+//     display.size.width / 2 - floatingWindowEdgeMargin * 2
+//   );
+//   return [floatingWidth, floatingHeight];
+// }
 
 export function showOnboardingWindow(onboardingWindow: BrowserWindow | null) {
   onboardingWindow?.show();

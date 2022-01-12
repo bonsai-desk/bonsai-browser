@@ -17,7 +17,8 @@ const TitleBarBottom = styled.div`
   width: calc(100% - 20px);
   height: 36px;
   background-color: var(--canvas-color);
-  border-bottom: 1px solid #dee1e6;
+  border-bottom: 1px solid var(--canvas-border-color);
+  //border-bottom: 1px solid #dee1e6;
   display: flex;
   align-items: center;
   align-content: center;

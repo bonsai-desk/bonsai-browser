@@ -2,7 +2,9 @@ import { IAnyModelType, Instance, types } from 'mobx-state-tree';
 import { ipcRenderer } from 'electron';
 import { v4 as uuidv4 } from 'uuid';
 
-const DEBUG = false;
+require('dotenv').config();
+
+const DEBUG = process.env.DEBUG === 'true';
 
 function log(str: string) {
   if (DEBUG) {
@@ -115,27 +117,27 @@ export function headsOnNode(
   return [];
 }
 
-function childLeaves(a: INode) {
-  return a.children.filter((x) => x.children.length === 0);
-}
+// function childLeaves(a: INode) {
+//   return a.children.filter((x) => x.children.length === 0);
+// }
+//
+// function childParents(a: INode) {
+//   return a.children.filter((x) => x.children.length > 0);
+// }
 
-function childParents(a: INode) {
-  return a.children.filter((x) => x.children.length > 0);
-}
+// function registerLeavesRecursive(a: INode, register: (arg: INode) => void) {
+//   childLeaves(a).forEach((child) => register(child));
+//   childParents(a).forEach((child) => registerLeavesRecursive(child, register));
+// }
 
-function registerLeavesRecursive(a: INode, register: (arg: INode) => void) {
-  childLeaves(a).forEach((child) => register(child));
-  childParents(a).forEach((child) => registerLeavesRecursive(child, register));
-}
-
-export function allDescendentLeaves(a: INode): INode[] {
-  const acc: INode[] = [];
-  const register = (aLeaf: INode) => {
-    acc.push(aLeaf);
-  };
-  registerLeavesRecursive(a, register);
-  return acc;
-}
+// export function allDescendentLeaves(a: INode): INode[] {
+//   const acc: INode[] = [];
+//   const register = (aLeaf: INode) => {
+//     acc.push(aLeaf);
+//   };
+//   registerLeavesRecursive(a, register);
+//   return acc;
+// }
 
 function getDate(): string {
   return (Date.now() / 1000).toString();

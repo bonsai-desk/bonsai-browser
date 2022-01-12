@@ -17,6 +17,9 @@ const schema = appSchema({
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
         { name: 'url', type: 'string' },
+        { name: 'title', type: 'string' },
+        { name: 'favicon', type: 'string' },
+        { name: 'image', type: 'string' },
       ],
     }),
     tableSchema({

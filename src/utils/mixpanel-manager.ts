@@ -57,6 +57,12 @@ class MixpanelManager {
       distinct_id: this.userId,
     });
   }
+
+  setUserProp(properties = {}) {
+    if (this.userId && this.userId !== '') {
+      this.mixpanel.people.set(this.userId, properties);
+    }
+  }
 }
 
 export default MixpanelManager;

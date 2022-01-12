@@ -6,6 +6,8 @@ import styled from 'styled-components';
 import { runInAction } from 'mobx';
 import { ipcRenderer } from 'electron';
 import * as crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 import {
   AccountBox,
   Backup,
@@ -61,9 +63,8 @@ import {
   Radio,
 } from '@mui/material';
 import { Settings as SettingsIcon } from '@mui/icons-material';
-import { applySnapshot, getSnapshot } from 'mobx-state-tree';
 import GenericModal from './GenericModal';
-import { useStore, View } from '../store/tab-page-store';
+import { useStore } from '../store/tab-page-store';
 import MiniGenericModal from './MiniGenericModal';
 import '../index.css';
 import {
@@ -79,6 +80,12 @@ import HeaderText from './HeaderText';
 import SettingsContainer from './SettingsContainer';
 import { color } from '../utils/jsutils';
 import pkg from '../package.json';
+import { View } from '../constants';
+import {
+  exportWatermelon,
+  importWatermelon,
+  WatermelonDBData,
+} from '../watermelon/databaseUtils';
 
 const { version } = pkg;
 
@@ -153,7 +160,7 @@ export const ResetButtonIcon = styled.img`
   -webkit-user-drag: none;
 `;
 
-const CenterModalBox = ({ children }: { children: React.ReactNode }) => {
+export const CenterModalBox = ({ children }: { children: React.ReactNode }) => {
   return (
     <Box
       sx={{
@@ -388,7 +395,7 @@ const CreateNewBackupCard = observer(
     handleCreate: (snapshot: ISnapshot) => void;
     handleClose: () => void;
   }) => {
-    const { tabPageStore, workspaceStore } = useStore();
+    const { tabPageStore, database, workspaceStore } = useStore();
     const [values, setValues] = useState<{
       loading: boolean;
       snapshot?: ISnapshot;
@@ -397,13 +404,16 @@ const CreateNewBackupCard = observer(
       snapshot: undefined,
     });
     const myId = tabPageStore.session?.user?.id;
-    function submit() {
-      const snapshotData = getSnapshot(workspaceStore);
-      console.log(snapshotData);
+    async function submit() {
+      const snapshotData = await exportWatermelon(database);
+      fs.writeFileSync(
+        path.join(workspaceStore.dataPath, 'data-export'),
+        JSON.stringify(snapshotData, null, '  ')
+      );
       setValues({ ...values, loading: true });
       // eslint-disable-next-line promise/catch-or-return
       tabPageStore.supaClient
-        .from('wssnapshot')
+        .from('tagssnapshot')
         .insert([{ data: snapshotData, user_id: myId }])
         .then(({ data, error }) => {
           if (error) {
@@ -482,7 +492,7 @@ const DeleteSnapshotCard = observer(
     const submit = () => {
       // eslint-disable-next-line promise/catch-or-return
       tabPageStore.supaClient
-        .from('wssnapshot')
+        .from('tagssnapshot')
         .delete()
         .eq('id', snapshot.id)
         // eslint-disable-next-line promise/always-return
@@ -542,17 +552,21 @@ const ApplyBackupCard = observer(
   }) => {
     const title = hashNumber(snapshot.id);
     const [values, setValues] = useState({ loading: false, done: false });
-    const { tabPageStore, workspaceStore } = useStore();
+    const { tabPageStore, database } = useStore();
     async function submit() {
       setValues({ ...values, loading: true });
       const { data, error } = await tabPageStore.supaClient
-        .from('wssnapshot')
+        .from('tagssnapshot')
         .select('data')
         .eq('id', snapshot.id);
       if (error) {
         setValues({ ...values, loading: false });
       } else if (data && data[0]) {
-        applySnapshot(workspaceStore, data[0].data);
+        // applySnapshot(workspaceStore, data[0].data);
+        const dbData: WatermelonDBData = JSON.parse(data[0].data);
+        if (dbData) {
+          importWatermelon(database, dbData);
+        }
         setValues({ ...values, loading: false, done: true });
       }
     }
@@ -570,7 +584,7 @@ const ApplyBackupCard = observer(
               ''
             )}
             <Alert severity="warning">
-              This will overwrite your current workspace data.
+              This will overwrite your current tag data.
             </Alert>
           </Stack>
         </CardContent>
@@ -746,7 +760,7 @@ const AccountPage = observer(() => {
 
       // eslint-disable-next-line promise/catch-or-return
       tabPageStore.supaClient
-        .from('wssnapshot')
+        .from('tagssnapshot')
         .select('id, inserted_at, user_id')
         .eq('user_id', myId)
         .order('inserted_at', { ascending: false })
@@ -807,7 +821,7 @@ const AccountPage = observer(() => {
         <Divider />
         <Stack spacing={4}>
           <Grid container direction="row" justifyContent="space-between">
-            <Typography variant="h6">Cloud Workspace Backups</Typography>
+            <Typography variant="h6">Cloud Tag Backups</Typography>
             <Stack direction="row" spacing={2}>
               <div>
                 <Fab
@@ -984,10 +998,6 @@ const Settings = observer(() => {
                 <KeyBindButton id="toggle-app" /> into an active web page.
               </div>
               <div id="settings-row">
-                Toggle floating window{' '}
-                <KeyBindButton id="toggle-floating-window" />
-              </div>
-              <div id="settings-row">
                 Focus search box <KeyBindButton id="select-search-box" />
               </div>
               <div id="settings-row">
@@ -1004,34 +1014,34 @@ const Settings = observer(() => {
           </PaddedPaper>
         </div>
         <div>
-          <Title>Search</Title>
+          <Title>Lists</Title>
           <PaddedPaper>
             <Stack spacing={1}>
               <div id="settings-row">
-                Clear search: <KeyBindButton id="clear-fuzzy-search" />
-              </div>
-              <div id="settings-row">
                 {' '}
-                You can select results in fuzzy search with keyboard.
+                You can select results using the keyboard
               </div>
               <div id="settings-row">
-                Down <KeyBindButton id="fuzzy-down-arrow" /> or{' '}
-                <KeyBindButton id="fuzzy-down" clickable />
+                {'Down '}
+                <KeyBindButton id="raw-down" />
+                {', '}
+                <KeyBindButton id="fuzzy-down" />
+                {', or '}
+                <KeyBindButton id="fuzzy-down-arrow" />
               </div>
               <div id="settings-row">
-                Up <KeyBindButton id="fuzzy-up-arrow" /> or{' '}
-                <KeyBindButton id="fuzzy-up" clickable />
-              </div>
-              <div id="settings-row">
-                Left <KeyBindButton id="fuzzy-left-arrow" /> or{' '}
-                <KeyBindButton id="fuzzy-left" clickable />
-              </div>
-              <div id="settings-row">
-                Right <KeyBindButton id="fuzzy-right-arrow" /> or{' '}
-                <KeyBindButton id="fuzzy-right" clickable />
+                {'Up '}
+                <KeyBindButton id="raw-up" />
+                {', '}
+                <KeyBindButton id="fuzzy-up" />
+                {', or '}
+                <KeyBindButton id="fuzzy-up-arrow" />
               </div>
               <div id="settings-row">
                 Open page: <KeyBindButton id="select-fuzzy-result" />
+              </div>
+              <div id="settings-row">
+                Clear search: <KeyBindButton id="clear-fuzzy-search" />
               </div>
             </Stack>
           </PaddedPaper>

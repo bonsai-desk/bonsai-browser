@@ -2,12 +2,19 @@ import styled from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import React from 'react';
 import { Paper } from '@material-ui/core';
-import { useStore, View } from '../store/tab-page-store';
+import { useStore } from '../store/tab-page-store';
+import { View } from '../constants';
 
 const Background = styled.div``;
 
 const PaperView = observer(
-  ({ children }: { children: React.ReactNode | React.ReactNodeArray }) => {
+  ({
+    children,
+    style,
+  }: {
+    children: React.ReactNode | React.ReactNodeArray;
+    style?: React.CSSProperties;
+  }) => {
     const { tabPageStore } = useStore();
 
     return (
@@ -28,6 +35,7 @@ const PaperView = observer(
             width: tabPageStore.innerBounds.width,
             height: tabPageStore.innerBounds.height,
             display: 'flex',
+            ...style,
           }}
         >
           {children}

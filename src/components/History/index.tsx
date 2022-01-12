@@ -2,8 +2,8 @@ import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import React, { useEffect, useRef } from 'react';
 import { runInAction } from 'mobx';
-import { useStore, View } from '../../store/tab-page-store';
-import Favicon from '../Favicon';
+import styled from 'styled-components';
+import { useStore } from '../../store/tab-page-store';
 import {
   ClearHistory,
   HistoryHeader,
@@ -16,6 +16,12 @@ import {
   HistoryTitleDiv,
   HistoryUrlDiv,
 } from './style';
+import { View } from '../../constants';
+
+const Favicon = styled.img`
+  width: 16px;
+  height: 16px;
+`;
 
 const HistoryResults = observer(() => {
   const { tabPageStore } = useStore();

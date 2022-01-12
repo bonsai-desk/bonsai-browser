@@ -3,6 +3,7 @@ import { createCipheriv, createDecipheriv } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import fs from 'fs';
+import { useEffect, useState } from 'react';
 import { get } from './jsutils';
 import { HistoryEntry } from './interfaces';
 
@@ -55,18 +56,18 @@ export function chord(e: KeyboardEvent): string[] {
   return keys;
 }
 
-export function validURL(str: string): boolean {
-  const pattern = new RegExp(
-    '^(https?:\\/\\/)?' + // protocol
-      '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
-      '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
-      '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
-      '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
-      '(\\#[-a-z\\d_]*)?$',
-    'i'
-  ); // fragment locator
-  return pattern.test(str);
-}
+// export function validURL(str: string): boolean {
+//   const pattern = new RegExp(
+//     '^(https?:\\/\\/)?' + // protocol
+//       '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
+//       '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
+//       '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
+//       '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
+//       '(\\#[-a-z\\d_]*)?$',
+//     'i'
+//   ); // fragment locator
+//   return pattern.test(str);
+// }
 function hostInHosts(host: string): boolean {
   if (host === 'localhost') {
     return true;
@@ -160,16 +161,16 @@ export function urlToMapKey(url: string): string {
   return `${getDateString()}_${url}`;
 }
 
-export const moveTowards = (
-  current: number,
-  target: number,
-  maxDelta: number
-) => {
-  if (Math.abs(target - current) <= maxDelta) {
-    return target;
-  }
-  return current + Math.sign(target - current) * maxDelta;
-};
+// export const moveTowards = (
+//   current: number,
+//   target: number,
+//   maxDelta: number
+// ) => {
+//   if (Math.abs(target - current) <= maxDelta) {
+//     return target;
+//   }
+//   return current + Math.sign(target - current) * maxDelta;
+// };
 
 /**
  * Returns a number whose value is limited to the given range.
@@ -177,6 +178,7 @@ export const moveTowards = (
  * Example: limit the output of this computation to between 0 and 255
  * (x * 255).clamp(0, 255)
  *
+ * @param {Number} value the number
  * @param {Number} min The lower boundary of the output range
  * @param {Number} max The upper boundary of the output range
  * @returns A number in the range [min, max]
@@ -262,4 +264,54 @@ export function unixNow(): number {
 
 export function search(pattern: string, query: string) {
   return pattern.replace('%s', encodeURIComponent(query));
+}
+
+export interface IWindowSize {
+  width: undefined | number;
+  height: undefined | number;
+}
+export function useWindowSize() {
+  // Initialize state with undefined width/height so server and client renders match
+  // Learn more here: https://joshwcomeau.com/react/the-perils-of-rehydration/
+  const [windowSize, setWindowSize] = useState<IWindowSize>({
+    width: undefined,
+    height: undefined,
+  });
+  useEffect(() => {
+    // Handler to call on window resize
+    function handleResize() {
+      // Set window width/height to state
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    }
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+    // Call handler right away so state gets updated with initial window size
+    handleResize();
+    // Remove event listener on cleanup
+    return () => window.removeEventListener('resize', handleResize);
+  }, []); // Empty array ensures that effect is only run on mount
+  return windowSize;
+}
+
+export function relativeItem(
+  root: { id: string },
+  tabs: { id: string }[],
+  direction: 'down' | 'up'
+): string | undefined {
+  const idx = tabs.findIndex((tab) => {
+    return tab.id === root.id;
+  });
+
+  if (idx !== -1) {
+    if (direction === 'down' && idx < tabs.length - 1) {
+      return tabs[idx + 1].id;
+    }
+    if (direction === 'up' && idx > 0) {
+      return tabs[idx - 1].id;
+    }
+  }
+  return undefined;
 }

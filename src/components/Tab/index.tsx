@@ -2,26 +2,23 @@
 import styled from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import React, { useRef } from 'react';
-import { ipcRenderer } from 'electron';
-import { Close, Public } from '@material-ui/icons';
-import { useStore } from '../../store/tab-page-store';
-import { TabPageTab } from '../../interfaces/tab';
+import { Close } from '@material-ui/icons';
 import { color } from '../../utils/jsutils';
 import { useMiddleClick } from '../../utils/effects';
+import Favicon from '../Favicon';
 
 export const TabsParent = styled.div`
   overflow: hidden;
   z-index: 1;
-  border-radius: 10px 10px 0 0;
   width: 500px;
   position: absolute;
   top: 0;
   left: 0;
   //height: 70px;
-  border-bottom: 1px solid var(--canvas-border-color);
   //background-color: red;
   box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
 `;
+
 export const TabParent = styled.div`
   position: relative;
   cursor: default !important;
@@ -41,9 +38,6 @@ export const TabParent = styled.div`
   :hover {
     background-color: var(--canvas-inactive-hover);
 
-    //#tab-inner {
-    //  border-right: 1px solid transparent;
-    //}
     #divider {
       background-color: transparent;
     }
@@ -55,10 +49,6 @@ export const TabParent = styled.div`
     :hover {
       background-color: var(--canvas-color);
     }
-
-    //#tab-inner {
-    //  border-right: 1px solid transparent;
-    //}
 
     #divider {
       background-color: transparent;
@@ -109,6 +99,7 @@ const BigButtonHitbox = styled.div`
     }
   }
 `;
+
 export const TabButton = styled.div`
   border-radius: 50%;
   width: 16px;
@@ -142,19 +133,7 @@ export const TabButton = styled.div`
   }
 }`;
 
-// noinspection CssInvalidPropertyValue
-export const Favicon = styled.div`
-  position: relative;
-  height: 16px;
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: center center;
-  mask-size: cover;
-  mask-repeat: no-repeat;
-  mask-position: center center;
-  image-rendering: -webkit-optimize-contrast;
-`;
-export const TabInner = styled.div`
+export const TabInnerParent = styled.div`
   width: calc(100%);
   padding: 0 8px 0 0;
   height: 19px;
@@ -164,6 +143,7 @@ export const TabInner = styled.div`
   justify-content: space-between;
   align-content: center;
 `;
+
 export const FavTitle = styled.div`
   height: 16px;
   position: relative;
@@ -174,7 +154,7 @@ export const FavTitle = styled.div`
   overflow: hidden;
 `;
 
-const Title = styled.div`
+export const Title = styled.div`
   color: ${color('body-text-color')};
   height: 15px;
   margin: -1px 0 0 0;
@@ -186,57 +166,44 @@ const Title = styled.div`
 
 interface ITab {
   title: string;
+  favicon?: string;
   active: boolean;
   width: number;
-  tab: TabPageTab;
-  clickClose?: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
-  clickTab?: () => void;
+  onClose?: () => void;
+  onClick?: () => void;
+  handleAuxClick?: () => void;
   bigCloseHitbox?: boolean;
-  disableButtons?: boolean;
 }
-
-const FavImage = styled.div`
-  position: relative;
-  height: 16px;
-  svg {
-    position: absolute;
-    top: -4px;
-    left: 0;
-    color: var(--body-text-color);
-    width: 100%;
-  }
-`;
 
 export const Tab = observer(
   ({
     title,
     active,
     width,
-    tab,
-    clickClose = () => {},
-    clickTab = () => {},
+    favicon = '',
+    handleAuxClick = undefined,
+    onClose = undefined,
+    onClick = undefined,
     bigCloseHitbox = false,
-    disableButtons = false,
   }: ITab) => {
-    const { tabPageStore } = useStore();
-
+    const disableClose = typeof onClose !== 'function';
     const tabRef = useRef<HTMLDivElement>(null);
-    function handleAuxClick(e: MouseEvent) {
-      if (e.button === 1) {
-        tabPageStore.closeTab(tab.id, active);
-        ipcRenderer.send('mixpanel-track', 'middle click remove tab in bar');
+    useMiddleClick(tabRef, () => {
+      if (typeof handleAuxClick === 'function') {
+        handleAuxClick();
       }
-    }
-
-    useMiddleClick(tabRef, handleAuxClick);
-
-    // todo
-
+    });
+    const clickCloseC = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+      e.stopPropagation();
+      if (typeof onClose !== 'undefined') {
+        onClose();
+      }
+    };
     const SmallCloseButton = () => (
       <BigButtonHitbox>
         <TabButton
           onClick={(e) => {
-            clickClose(e);
+            clickCloseC(e);
           }}
         >
           <Close />
@@ -246,7 +213,7 @@ export const Tab = observer(
     const BigCloseButton = () => (
       <BigButtonHitbox
         onClick={(e) => {
-          clickClose(e);
+          clickCloseC(e);
         }}
       >
         <TabButton id="tab-button">
@@ -257,11 +224,8 @@ export const Tab = observer(
 
     const CloseButton = bigCloseHitbox ? BigCloseButton : SmallCloseButton;
 
-    // const disableClose = !active || disableButtons || width <= 80;
-    const closeEnabled = active || !(disableButtons || width <= 80);
+    const closeEnabled = !disableClose && (active || !(width <= 80));
     const faviconDisabled = closeEnabled && width < 48;
-
-    // ipcRenderer.send('log-data', width);
 
     const faviconChop = Math.max(0, 22 - width);
     const faviconWidth = 16 - faviconChop;
@@ -283,43 +247,24 @@ export const Tab = observer(
       ? 'max(calc(100% - 16px), 10px)'
       : 'max(calc(100%), 10px)';
 
-    const FaviconAndFallback = () => {
-      if (tab.favicon) {
-        return (
-          <Favicon
-            style={{
-              width: `${faviconWidth}px`,
-              backgroundImage: `url(${tab.favicon})`,
-            }}
-          />
-        );
-      }
-      return (
-        <FavImage
-          style={{
-            width: `${faviconWidth}px`,
-          }}
-        >
-          <Public />
-        </FavImage>
-      );
-    };
-
     return (
       <TabParent
         id="tab"
         ref={tabRef}
         width={width}
         className={active ? 'is-active' : ''}
-        onClick={clickTab}
+        onClick={onClick}
       >
-        <TabInner id="tab-inner" style={{ margin: `0 0 0 ${innerMargin}px` }}>
+        <TabInnerParent
+          id="tab-inner"
+          style={{ margin: `0 0 0 ${innerMargin}px` }}
+        >
           <FavTitle style={{ width: favTitleWidth }}>
             {faviconDisabled ? (
               ''
             ) : (
               // <FavImage src={World} />
-              <FaviconAndFallback />
+              <Favicon favicon={favicon} width={faviconWidth} />
             )}
             <Title
               style={{
@@ -332,7 +277,7 @@ export const Tab = observer(
             </Title>
           </FavTitle>
           {closeEnabled ? <CloseButton /> : ''}
-        </TabInner>
+        </TabInnerParent>
         <Divider id="divider" />
       </TabParent>
     );

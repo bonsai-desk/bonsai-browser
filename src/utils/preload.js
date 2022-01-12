@@ -14,17 +14,17 @@ function getMeta() {
   return data;
 }
 
-function getOpenGraphData() {
-  const properties = ['title', 'type', 'image', 'url'];
-  const data = {};
-  properties.forEach((property) => {
-    const element = document.head.querySelector(
-      `[property~="og:${property}"][content]`
-    );
-    data[property] = element === null ? '' : element.content;
-  });
-  return data;
-}
+// function getOpenGraphData() {
+//   const properties = ['title', 'type', 'image', 'url'];
+//   const data = {};
+//   properties.forEach((property) => {
+//     const element = document.head.querySelector(
+//       `[property~="og:${property}"][content]`
+//     );
+//     data[property] = element === null ? '' : element.content;
+//   });
+//   return data;
+// }
 
 window.addEventListener('DOMContentLoaded', () => {
   ipcRenderer.send('meta-info', getMeta());

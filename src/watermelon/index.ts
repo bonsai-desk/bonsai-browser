@@ -1,7 +1,6 @@
 /* eslint no-console: off */
 import { Database } from '@nozbe/watermelondb';
 import LokiJSAdapter from '@nozbe/watermelondb/adapters/lokijs';
-import { ipcRenderer } from 'electron';
 import schema from './schema';
 import migrations from './migrations';
 import PageModel from './PageModel';
@@ -52,46 +51,3 @@ function loadOrCreateWatermelonDB(dbName: string) {
 }
 
 export default loadOrCreateWatermelonDB;
-
-export async function executeWatermelon(
-  func: () => Promise<void>,
-  printSuccess = false
-) {
-  await func()
-    .then(
-      () => {
-        if (printSuccess) {
-          console.log('success');
-        }
-        return null;
-      },
-      (e) => {
-        console.log('executeWatermelon reject');
-        console.log(e);
-        ipcRenderer.send('log-data', 'executeWatermelon reject');
-        ipcRenderer.send('log-data', e);
-      }
-    )
-    .catch((e) => {
-      console.log('executeWatermelon error');
-      console.log(e);
-      ipcRenderer.send('log-data', 'executeWatermelon error');
-      ipcRenderer.send('log-data', e);
-    });
-}
-
-// await database.unsafeResetDatabase();
-// const newPage = await database
-//   .get<Page>(TableName.PAGES)
-//   .create((page) => {
-//     page.url = 'https://google2.com';
-//   });
-//
-// const newTag = await database.get<Tag>(TableName.TAGS).create((tag) => {
-//   tag.title = 'google2';
-// });
-//
-// await database.get<PageTag>(TableName.PAGETAGS).create((pageTag) => {
-//   pageTag.page.set(newPage);
-//   pageTag.tag.set(newTag);
-// });
