@@ -225,6 +225,16 @@ export async function deleteTag(database: Database, tag: TagModel) {
   await database.write(async () => {
     for (let i = pageTags.length - 1; i >= 0; i -= 1) {
       // eslint-disable-next-line no-await-in-loop
+      const page = await pageTags[i].page.fetch();
+      if (page) {
+        // eslint-disable-next-line no-await-in-loop
+        const pageTagsCounts = await page.tags.fetchCount();
+        if (pageTagsCounts <= 1) {
+          // eslint-disable-next-line no-await-in-loop
+          await page.destroyPermanently();
+        }
+      }
+      // eslint-disable-next-line no-await-in-loop
       await pageTags[i].destroyPermanently();
     }
 
