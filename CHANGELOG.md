@@ -1,5 +1,12 @@
 # Changelog
 
+## Bonsai 1.2.0 (January 14, 2022)
+
+### Features
+- Tagging system to replace workspaces!
+  - Use Ctrl/Cmd+D to tag a page
+- Redesigned app around lists and hotkey navigation
+
 ## Bonsai 1.1.4 (December 17, 2021)
 
 ### Fixes 
