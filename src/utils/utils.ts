@@ -95,6 +95,16 @@ export function stringToUrl(
   if (inputTrimmed.startsWith('localhost')) {
     inputTrimmed = `http://${inputTrimmed}`;
   }
+  if (process.platform === 'win32') {
+    if (inputTrimmed.startsWith('C:') || inputTrimmed.startsWith('c:')) {
+      inputTrimmed = `file:///${inputTrimmed}`;
+    }
+  } else if (inputTrimmed.startsWith('/')) {
+    inputTrimmed = `file:///${inputTrimmed}`;
+  }
+  if (inputTrimmed.startsWith('file:')) {
+    return inputTrimmed;
+  }
 
   let url: URL | null = null;
   let urlString = '';
