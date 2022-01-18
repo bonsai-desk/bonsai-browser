@@ -14,8 +14,6 @@ export const TabsParent = styled.div`
   position: absolute;
   top: 0;
   left: 0;
-  //height: 70px;
-  //background-color: red;
   box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
 `;
 

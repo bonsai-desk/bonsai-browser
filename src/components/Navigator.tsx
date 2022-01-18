@@ -60,9 +60,7 @@ interface ITabBarTab {
 }
 
 const WebpageBackground = styled.div`
-  //background-color: white;
-  //position: absolute;
-  //margin: 1px 0 0 0;
+  background-color: white;
 `;
 
 export const TabBarTab = observer(
