@@ -87,6 +87,32 @@ function hostInHosts(host: string): boolean {
   return hostInHost;
 }
 
+function isFilePath(inputString: string): boolean {
+  if (process.platform === 'win32') {
+    if (inputString.startsWith('C:') || inputString.startsWith('c:')) {
+      return true;
+    }
+  } else if (inputString.startsWith('/')) {
+    return true;
+  }
+  return false;
+}
+
+function isFilePathWithQuotes(inputString: string): boolean {
+  const hasQuotes =
+    (inputString.charAt(0) === '"' || inputString.charAt(0) === "'") &&
+    (inputString.charAt(inputString.length - 1) === '"' ||
+      inputString.charAt(inputString.length - 1) === "'");
+  if (!hasQuotes) {
+    return false;
+  }
+  const inputStringWithoutQuotes = inputString.substring(
+    1,
+    inputString.length - 1
+  );
+  return isFilePath(inputStringWithoutQuotes);
+}
+
 export function stringToUrl(
   inputString: string,
   pattern = 'https://www.google.com/search?q=%s'
@@ -95,12 +121,14 @@ export function stringToUrl(
   if (inputTrimmed.startsWith('localhost')) {
     inputTrimmed = `http://${inputTrimmed}`;
   }
-  if (process.platform === 'win32') {
-    if (inputTrimmed.startsWith('C:') || inputTrimmed.startsWith('c:')) {
-      inputTrimmed = `file:///${inputTrimmed}`;
-    }
-  } else if (inputTrimmed.startsWith('/')) {
+  if (isFilePath(inputString)) {
     inputTrimmed = `file:///${inputTrimmed}`;
+  }
+  if (isFilePathWithQuotes(inputString)) {
+    inputTrimmed = `file:///${inputTrimmed.substring(
+      1,
+      inputTrimmed.length - 1
+    )}`;
   }
   if (inputTrimmed.startsWith('file:')) {
     return inputTrimmed;
