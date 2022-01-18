@@ -27,7 +27,6 @@ import {
   getTag,
   removeTagStrings,
 } from '../watermelon/databaseUtils';
-import { TableName } from '../watermelon/schema';
 
 const NOT_TEXT = [
   'Escape',
@@ -151,8 +150,6 @@ export default class TabPageStore {
   sorting: number[] = [];
 
   tabBumpOrder: number[] = [];
-
-  newTabBumpOrder: number[] = [];
 
   session: Session | null = null;
 
@@ -726,7 +723,7 @@ export default class TabPageStore {
 
   createTab(id: number, parentId?: number) {
     this.sorting.push(id);
-    this.newTabBumpOrder.push(id);
+    this.tabBumpOrder.push(id);
     if (typeof parentId !== 'undefined') {
       const parentTab = this.openTabs[parentId];
       if (parentTab) {
@@ -754,9 +751,7 @@ export default class TabPageStore {
 
   deleteTab(idToRemove: number) {
     this.sorting = this.sorting.filter((id) => id !== idToRemove);
-    this.newTabBumpOrder = this.newTabBumpOrder.filter(
-      (id) => id !== idToRemove
-    );
+    this.tabBumpOrder = this.tabBumpOrder.filter((id) => id !== idToRemove);
     // this.sorting.
     delete this.openTabs[idToRemove];
     // todo: could filter the fuse instead if it was a property
@@ -799,36 +794,15 @@ export default class TabPageStore {
     return this.openTabsBySorting(this.sorting);
   }
 
-  syncBumpOrder() {
-    let synced = true;
-    if (
-      this.newTabBumpOrder &&
-      this.newTabBumpOrder.length === this.tabBumpOrder.length
-    ) {
-      this.newTabBumpOrder.forEach((newId, index) => {
-        if (synced) {
-          synced = newId === this.tabBumpOrder[index];
-        }
-      });
-    } else {
-      synced = false;
-    }
-    if (!synced) {
-      if (typeof this.newTabBumpOrder !== 'undefined') {
-        this.tabBumpOrder = [...this.newTabBumpOrder];
-      }
-    }
-  }
-
   bumpTab(id: number) {
-    if (this.newTabBumpOrder[0] === id) {
+    if (this.tabBumpOrder[0] === id) {
       return;
     }
-    const idx = this.newTabBumpOrder.findIndex((openTabId) => openTabId === id);
+    const idx = this.tabBumpOrder.findIndex((openTabId) => openTabId === id);
     if (typeof idx !== 'undefined') {
-      const [removed] = this.newTabBumpOrder.splice(idx, 1);
+      const [removed] = this.tabBumpOrder.splice(idx, 1);
       // ipcRenderer.send('log-data', ['bump', removed]);
-      this.newTabBumpOrder.unshift(removed);
+      this.tabBumpOrder.unshift(removed);
     }
   }
 
@@ -932,17 +906,17 @@ export default class TabPageStore {
     this.filteredOpenTabs = openTabFuse.search(pattern, { limit: 10 });
 
     // tags search
-    (async () => {
-      if (!this.database) {
-        return;
-      }
-      const tags = await this.database
-        .get<TagModel>(TableName.TAGS)
-        .query()
-        .fetch();
-
-      console.log(tags.length);
-    })();
+    // (async () => {
+    //   if (!this.database) {
+    //     return;
+    //   }
+    //   const tags = await this.database
+    //     .get<TagModel>(TableName.TAGS)
+    //     .query()
+    //     .fetch();
+    //
+    //   console.log(tags.length);
+    // })();
   }
 
   refreshFuse() {
@@ -1058,11 +1032,6 @@ export default class TabPageStore {
         this.refreshSession(this.session);
       }, 1000 * 60 * 60);
     });
-    renderOn('tabView-created-with-id', () => {
-      this.syncBumpOrder();
-      // if (this.view === View.Tabs) {
-      // }
-    });
     renderOn('set-bounds', (_, { windowSize, bounds, topPadding }) => {
       runInAction(() => {
         this.windowSize = windowSize;
@@ -1097,11 +1066,25 @@ export default class TabPageStore {
     renderOn('url-changed', (_, [id, url]) => {
       runInAction(() => {
         this.openTabs[id].url = url;
+
+        const tab = this.openTabs[id];
+        if (!tab.title && tab.url.startsWith('file:')) {
+          const split = tab.url.split(/[\\/]/);
+          this.openTabs[id].title =
+            split.length === 0 ? 'file' : split[split.length - 1];
+        }
       });
     });
     renderOn('title-updated', (_, [id, title]) => {
       runInAction(() => {
-        this.openTabs[id].title = title;
+        const tab = this.openTabs[id];
+        if (tab.url.startsWith('file:')) {
+          const split = tab.url.split(/[\\/]/);
+          this.openTabs[id].title =
+            split.length === 0 ? 'file' : split[split.length - 1];
+        } else {
+          this.openTabs[id].title = title;
+        }
       });
     });
     renderOn('web-contents-update', (_, [id, canGoBack, canGoForward]) => {
@@ -1259,15 +1242,10 @@ export default class TabPageStore {
     });
     renderOn('unset-tab', (_, id) => {
       if (typeof id !== 'undefined') {
-        // this.bumpTab(id);
-        this.syncBumpOrder();
         runInAction(() => {
           this.highlightedTabId = id;
         });
       }
-      // this.View = View.Tabs;
-      // clearTimeout(this.timeoutHandle);
-      // this.timeoutHandle = -1;
     });
     renderOn('select-neighbor-tab', (_, side) => {
       const id = parseInt(this.historyStore.active, 10);
