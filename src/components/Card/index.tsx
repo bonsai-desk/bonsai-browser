@@ -102,6 +102,7 @@ const CardTabParent = styled(TabParent)`
 
 interface IDummyCard {
   title: string;
+  url?: string;
   favicon: string;
   imgUrl: string;
   active: boolean;
@@ -114,6 +115,7 @@ interface IDummyCard {
 
 export const DummyCard = ({
   title,
+  url,
   width,
   onClick = undefined,
   onClose = undefined,
@@ -144,6 +146,7 @@ export const DummyCard = ({
     >
       <Tab
         title={title}
+        url={url}
         favicon={favicon}
         active={active}
         width={width}
@@ -187,6 +190,7 @@ const Card = observer(
     return (
       <DummyCard
         title={title}
+        url={tab.url}
         favicon={tab.favicon}
         imgUrl={imgUrl}
         active={active}

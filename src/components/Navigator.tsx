@@ -122,6 +122,7 @@ export const TabBarTab = observer(
       >
         <Tab
           title={title}
+          url={tab.url}
           favicon={tab.favicon}
           active={_active}
           width={width}

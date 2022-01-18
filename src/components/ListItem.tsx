@@ -205,7 +205,7 @@ export const PageListItem = observer(
               ) : (
                 ''
               )}
-              <Favicon favicon={favicon} />
+              <Favicon favicon={favicon} isFile={url?.startsWith('file:')} />
               <EnhancedTags
                 hideTags={hideTags}
                 pageUrl={url || ''}

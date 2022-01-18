@@ -164,6 +164,7 @@ export const Title = styled.div`
 
 interface ITab {
   title: string;
+  url?: string;
   favicon?: string;
   active: boolean;
   width: number;
@@ -176,6 +177,7 @@ interface ITab {
 export const Tab = observer(
   ({
     title,
+    url,
     active,
     width,
     favicon = '',
@@ -262,7 +264,11 @@ export const Tab = observer(
               ''
             ) : (
               // <FavImage src={World} />
-              <Favicon favicon={favicon} width={faviconWidth} />
+              <Favicon
+                favicon={favicon}
+                width={faviconWidth}
+                isFile={url?.startsWith('file:')}
+              />
             )}
             <Title
               style={{

@@ -115,6 +115,7 @@ const HomeHUD = observer(({ tab, width }: IHomeHUD) => {
       <DummyCard
         active
         title={title}
+        url={tab.url}
         favicon={favicon}
         imgUrl={imgUrl}
         onClick={onClick}

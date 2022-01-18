@@ -2,6 +2,7 @@
 import styled from 'styled-components';
 import { Public } from '@material-ui/icons';
 import React from 'react';
+import { InsertDriveFile } from '@mui/icons-material';
 
 const FaviconParent = styled.div`
   position: relative;
@@ -28,12 +29,15 @@ const FavImage = styled.div`
   }
 `;
 
-interface IFavicon {
+const Favicon = ({
+  favicon,
+  width = 16,
+  isFile = false,
+}: {
   favicon: string;
   width?: number;
-}
-
-const Favicon = ({ favicon, width = 16 }: IFavicon) => {
+  isFile?: boolean;
+}) => {
   if (favicon) {
     return (
       <FaviconParent
@@ -50,7 +54,7 @@ const Favicon = ({ favicon, width = 16 }: IFavicon) => {
         width: `${width}px`,
       }}
     >
-      <Public />
+      {isFile ? <InsertDriveFile /> : <Public />}
     </FavImage>
   );
 };

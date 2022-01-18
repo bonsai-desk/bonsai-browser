@@ -17,6 +17,10 @@ export function useStore() {
 }
 
 export function getRootDomain(url: string): string {
+  if (url.startsWith('file:')) {
+    return 'file';
+  }
+
   let testUrl;
   try {
     const { hostname } = new URL(url);
@@ -34,5 +38,5 @@ export function getRootDomain(url: string): string {
       return r.substring(0, r.length - 1);
     }
   }
-  return '';
+  return 'other';
 }
