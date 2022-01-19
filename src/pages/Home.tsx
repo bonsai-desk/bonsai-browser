@@ -160,6 +160,34 @@ const Home = observer(() => {
     backgroundColor,
   };
 
+  useEffect(() => {
+    function drop(e: DragEvent) {
+      if (e.dataTransfer) {
+        const { files } = e.dataTransfer;
+        for (let i = 0; i < files.length; i += 1) {
+          const { path } = files[i];
+          ipcRenderer.send('search-url', [
+            `file:///${path}`,
+            keybindStore.searchString(),
+          ]);
+        }
+      }
+    }
+
+    function dragover(e: DragEvent) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    document.addEventListener('drop', drop);
+    document.addEventListener('dragover', dragover);
+
+    return () => {
+      document.removeEventListener('drop', drop);
+      document.removeEventListener('dragover', dragover);
+    };
+  }, []);
+
   return (
     <ThemeProvider theme={theme}>
       <Style />

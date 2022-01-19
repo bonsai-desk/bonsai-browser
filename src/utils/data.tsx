@@ -38,5 +38,5 @@ export function getRootDomain(url: string): string {
       return r.substring(0, r.length - 1);
     }
   }
-  return 'other';
+  return 'new tab';
 }

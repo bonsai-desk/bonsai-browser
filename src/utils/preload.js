@@ -62,3 +62,23 @@ ipcRenderer.on('get-scroll-height', (_, id) => {
 ipcRenderer.on('scroll-to', (_, height) => {
   window.scroll(0, height);
 });
+
+window.onload = () => {
+  function drop(e) {
+    if (e.dataTransfer) {
+      const { files } = e.dataTransfer;
+      for (let i = 0; i < files.length; i += 1) {
+        const { path } = files[i];
+        ipcRenderer.send('search-url', [`file:///${path}`]);
+      }
+    }
+  }
+
+  function dragover(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  document.addEventListener('drop', drop);
+  document.addEventListener('dragover', dragover);
+};
