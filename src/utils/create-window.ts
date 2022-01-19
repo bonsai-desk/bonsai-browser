@@ -246,6 +246,24 @@ function initMenu(wm: WindowManager) {
           }
         },
       },
+      {
+        label: 'Select Left tab',
+        accelerator: 'Ctrl+Shift+Tab',
+        click: () => {
+          if (wm.activeTabId !== -1) {
+            wm.selectNeighborTab('left');
+          }
+        },
+      },
+      {
+        label: 'Select Right tab',
+        accelerator: 'Ctrl+Tab',
+        click: () => {
+          if (wm.activeTabId !== -1) {
+            wm.selectNeighborTab('right');
+          }
+        },
+      },
     ],
   });
 
