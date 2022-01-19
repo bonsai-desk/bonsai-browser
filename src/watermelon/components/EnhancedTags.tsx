@@ -20,7 +20,8 @@ const TagsRow: React.FC<{
   tags: TagModel[];
   hideTags: string[];
   onClick?: (tag: TagModel) => void;
-}> = observer(({ tags, hideTags, onClick }) => {
+  firstTag?: string;
+}> = observer(({ tags, hideTags, onClick, firstTag = '' }) => {
   const filteredTags = tags.filter((tag) => !hideTags.includes(tag.title));
   if (filteredTags.length === 0) {
     return null;
@@ -28,6 +29,15 @@ const TagsRow: React.FC<{
   filteredTags.sort((a, b) => {
     return a.title.localeCompare(b.title);
   });
+
+  if (firstTag) {
+    const firstTagIdx = filteredTags.findIndex((tag) => tag.title === firstTag);
+    if (firstTagIdx !== -1) {
+      const first = filteredTags.splice(firstTagIdx, 1);
+      filteredTags.splice(0, 0, first[0]);
+    }
+  }
+
   return (
     <TagsRowParent>
       <Stack direction="row" spacing={1}>

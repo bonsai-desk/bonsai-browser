@@ -18,6 +18,7 @@ export interface IHomeListItem {
   hideTags?: string[];
   noClickTags?: string[];
   LED?: boolean;
+  firstTag?: string;
 }
 
 export interface ITagListItem {
@@ -178,6 +179,7 @@ export const PageListItem = observer(
     hideTags = [],
     noClickTags = [],
     LED = false,
+    firstTag = '',
   }: IHomeListItem) => {
     const { tabPageStore } = useStore();
 
@@ -208,6 +210,7 @@ export const PageListItem = observer(
               <Favicon favicon={favicon} isFile={url?.startsWith('file:')} />
               <EnhancedTags
                 hideTags={hideTags}
+                firstTag={firstTag}
                 pageUrl={url || ''}
                 onClick={(tag) => {
                   if (noClickTags && noClickTags.includes(tag.title)) {

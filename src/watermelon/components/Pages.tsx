@@ -43,6 +43,7 @@ const Pages: React.FC<{
         title={tabTitle(page)}
         favicon={page.favicon}
         hideTags={[]}
+        firstTag={tag.title}
         noClickTags={[tag.title]}
         LED={openUrls.includes(page.url)}
       />
