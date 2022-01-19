@@ -1,6 +1,7 @@
 /* eslint no-console: off */
 import React from 'react';
 import { render } from 'react-dom';
+import { ipcRenderer } from 'electron';
 import DatabaseProvider from '@nozbe/watermelondb/DatabaseProvider';
 import App from './pages/App';
 import DebugApp from './pages/DebugApp';
@@ -20,7 +21,8 @@ import Onboarding from './pages/Onboarding';
 import { createAndLoadKeybindStore } from './store/keybinds';
 import loadOrCreateWatermelonDB from './watermelon';
 import TagModal from './pages/TagModal';
-import { exportWatermelon } from './watermelon/databaseUtils';
+import { TableName } from './watermelon/schema';
+import { addTagStrings, getTagOrCreate } from './watermelon/databaseUtils';
 
 if (document.getElementById('root')) {
   const tabStore = new TabStore();
@@ -72,11 +74,34 @@ if (document.getElementById('tab-page')) {
 
     const database = loadOrCreateWatermelonDB(userId);
 
+    if (localStorage.getItem('hasLaunchedOnce') !== 'true') {
+      (async () => {
+        const numTags = await database.get(TableName.TAGS).query().fetchCount();
+        if (numTags === 0) {
+          await addTagStrings(
+            database,
+            'https://bonsaibrowser.com/',
+            'Cool Apps',
+            {
+              title: 'Bonsai | Web Browser for Research',
+              favicon: 'https://bonsaibrowser.com/favicon.png',
+            }
+          );
+          await getTagOrCreate(database, 'todo');
+          await getTagOrCreate(database, 'Read Later');
+
+          ipcRenderer.send(
+            'create-tab-without-set',
+            'https://bonsaibrowser.com/'
+          );
+        }
+      })();
+    }
+    localStorage.setItem('hasLaunchedOnce', 'true');
+
     tabPageStore.database = database;
 
     const workspaceStore = createWorkspaceStore(database);
-
-    exportWatermelon(database);
 
     render(
       <>

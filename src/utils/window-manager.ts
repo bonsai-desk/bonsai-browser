@@ -157,7 +157,7 @@ export default class WindowManager {
     // this.tagModalView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -1778,6 +1778,10 @@ export default class WindowManager {
         this.loadUrlInTab(newTabId, url);
         this.setTab(newTabId);
       }
+    });
+    ipcMain.on('create-tab-without-set', (_, url) => {
+      const newTabId = this.createNewTab();
+      this.loadUrlInTab(newTabId, url);
     });
     ipcMain.on('request-user-data-path', (event) => {
       const userDataPath = app.getPath('userData');

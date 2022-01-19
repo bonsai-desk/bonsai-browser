@@ -453,31 +453,27 @@ export const createWindow = async () => {
   let userId = '';
   const idPath = path.join(app.getPath('userData'), 'da');
   try {
-    console.log('Loading user id');
+    // Loading user id
     userId = fs.readFileSync(idPath, 'utf8');
   } catch {
-    console.log('could not load user id');
+    // could not load user id
   }
 
   if (userId === '') {
     try {
-      console.log('creating new id');
+      // creating new id
       userId = uuidv4();
       fs.writeFileSync(idPath, userId);
     } catch {
-      console.log('could not save id');
+      // could not save id
     }
   }
-
-  // console.log(`User Id: ${userId}`);
 
   const mixpanelManager = new MixpanelManager(userId);
 
   const wm = new WindowManager(initWindow(), mixpanelManager);
 
   initTray(ICON_SMALL_PNG, wm);
-
-  // initFixedUpdate(wm);
 
   initMenu(wm);
 
