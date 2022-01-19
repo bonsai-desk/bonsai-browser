@@ -28,7 +28,9 @@ function titleToItem(
     ),
     onClick: () => {},
     onTag: () => {},
-    onIdChange: () => {},
+    onIdChange: () => {
+      store.blurBonsaiBox();
+    },
     onLazyIdChange: () => {},
 
     onDelete: (trigger) => {
@@ -83,6 +85,7 @@ function tabToItem(
       ipcRenderer.send('open-tag-modal');
     },
     onIdChange: () => {
+      store.blurBonsaiBox();
       store.setHighlightedTabId(tab.id);
     },
     onLazyIdChange: () => {
