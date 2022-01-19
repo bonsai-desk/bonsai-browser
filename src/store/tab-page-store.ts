@@ -396,6 +396,14 @@ export default class TabPageStore {
   }
 
   bindMouseTrap() {
+    bind('alt+h', (e) => {
+      e.preventDefault();
+      ipcRenderer.send('float-left');
+    });
+    bind('alt+l', (e) => {
+      e.preventDefault();
+      ipcRenderer.send('float-right');
+    });
     bind('enter', (e) => {
       e.preventDefault();
       this.invokeKeybind('enter');

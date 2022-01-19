@@ -1958,5 +1958,13 @@ export default class WindowManager {
     ipcMain.on('close-tag-modal', () => {
       this.closeTagModal();
     });
+    ipcMain.on('float-left', () => {
+      this.mixpanelManager.track('float left (vim)');
+      this.float('left');
+    });
+    ipcMain.on('float-right', () => {
+      this.mixpanelManager.track('float right (vim)');
+      this.float('right');
+    });
   }
 }
