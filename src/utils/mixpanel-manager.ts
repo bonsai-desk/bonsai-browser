@@ -51,10 +51,11 @@ class MixpanelManager {
   }
 
   track(eventName: string, properties = {}) {
-    // console.log('track ', eventName);
     this.mixpanel.track(eventName, {
       ...properties,
       distinct_id: this.userId,
+      os: process.platform,
+      version: packageInfo.version,
     });
   }
 
