@@ -494,11 +494,16 @@ export function createAndLoadKeybindStore(): Instance<typeof KeybindStore> {
     // we also update the data if there is new version but keep the user custom keybind
     Object.entries(defaultSnapshot.binds).forEach(([key, defaultBind]) => {
       // const customBind = keybindStore.binds.get(key);
-      const customBinds = jsonData.binds;
-      if (customBinds) {
-        const customBind = customBinds[key];
-        if (!customBind.version || defaultBind.version === customBind.version) {
-          keybindStore.setBind(key, customBind.currentBind);
+      if (jsonData) {
+        const customBinds = jsonData.binds;
+        if (customBinds) {
+          const customBind = customBinds[key];
+          if (
+            !customBind.version ||
+            defaultBind.version === customBind.version
+          ) {
+            keybindStore.setBind(key, customBind.currentBind);
+          }
         }
       }
     });
