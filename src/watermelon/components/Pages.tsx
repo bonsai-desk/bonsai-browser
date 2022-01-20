@@ -12,6 +12,7 @@ import { tabTitle } from '../../interfaces/tab';
 import { PageListItem } from '../../components/ListItem';
 import { ListItem } from '../../interface/ListItem';
 import { trackOpenItem } from '../../utils/tracking';
+import { baseUrl } from '../../utils/utils';
 
 const Pages: React.FC<{
   tag: TagModel;
@@ -20,7 +21,9 @@ const Pages: React.FC<{
 }> = observer(({ tag, onClick, pages }) => {
   const { tabPageStore } = useStore();
 
-  const openUrls = Object.values(tabPageStore.openTabs).map((tab) => tab.url);
+  const openUrls = Object.values(tabPageStore.openTabs).map((tab) =>
+    baseUrl(tab.url)
+  );
 
   pages.sort((a, b) => {
     if (a.createdAt.getTime() > b.createdAt.getTime()) {
