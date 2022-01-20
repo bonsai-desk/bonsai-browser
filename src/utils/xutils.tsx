@@ -18,7 +18,8 @@ import {
 function titleToItem(
   title: string,
   store: TabPageStore,
-  location: Location
+  location: Location,
+  domainTabs?: TabPageTab[]
 ): ListItem {
   return {
     id: title,
@@ -31,7 +32,13 @@ function titleToItem(
     onIdChange: () => {
       store.blurBonsaiBox();
     },
-    onLazyIdChange: () => {},
+    onLazyIdChange: () => {
+      if (domainTabs && domainTabs[0]) {
+        runInAction(() => {
+          store.activeHomeTabId = domainTabs[0].id;
+        });
+      }
+    },
 
     onDelete: (trigger) => {
       const keys = Object.keys(store.openTabs);
@@ -195,7 +202,7 @@ export function tabsToItemsByDomain(
   const items: ListItem[] = [];
 
   domainsList.forEach(([domain, domainTabs]) => {
-    items.push(titleToItem(domain, store, location));
+    items.push(titleToItem(domain, store, location, domainTabs));
     domainTabs.forEach((tab) => {
       items.push(tabToItem(tab, store, LED, location));
     });

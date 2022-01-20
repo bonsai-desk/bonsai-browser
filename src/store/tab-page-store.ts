@@ -261,7 +261,9 @@ export default class TabPageStore {
   }
 
   blurBonsaiBox() {
-    this.bonsaiBoxRef?.current?.blur();
+    if (this.bonsaiBoxFocus) {
+      this.bonsaiBoxRef?.current?.blur();
+    }
   }
 
   handleEscape() {

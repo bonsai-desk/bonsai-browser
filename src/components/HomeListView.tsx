@@ -174,7 +174,7 @@ const HomeListView = observer(() => {
     <ColumnContainer
       Header={<HomeHeader />}
       Left={<HomeListContent />}
-      Right={tab ? <HomeHUD tab={tab} width={infoWidth} /> : ''}
+      Right={tab ? <HomeHUD tab={tab} width={infoWidth} /> : <div />}
     />
   );
 });
