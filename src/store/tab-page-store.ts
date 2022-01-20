@@ -402,11 +402,11 @@ export default class TabPageStore {
   }
 
   bindMouseTrap() {
-    bind('alt+h', (e) => {
+    bind(['alt+h', 'alt+left'], (e) => {
       e.preventDefault();
       ipcRenderer.send('float-left');
     });
-    bind('alt+l', (e) => {
+    bind(['alt+l', 'alt+right'], (e) => {
       e.preventDefault();
       ipcRenderer.send('float-right');
     });
@@ -497,15 +497,15 @@ export default class TabPageStore {
       return;
     }
 
-    if (
-      !e.altKey &&
-      (e.key === 'ArrowUp' ||
-        e.key === 'ArrowDown' ||
-        e.key === 'ArrowLeft' ||
-        e.key === 'ArrowRight')
-    ) {
-      e.preventDefault();
-    }
+    // if (
+    //   !e.altKey &&
+    //   (e.key === 'ArrowUp' ||
+    //     e.key === 'ArrowDown' ||
+    //     e.key === 'ArrowLeft' ||
+    //     e.key === 'ArrowRight')
+    // ) {
+    //   e.preventDefault();
+    // }
 
     if (this.view === View.FuzzySearch) {
       const fu = this.keybindStore.isBind(e, 'fuzzy-up');
