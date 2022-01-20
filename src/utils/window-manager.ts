@@ -157,7 +157,7 @@ export default class WindowManager {
     // this.tagModalView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {

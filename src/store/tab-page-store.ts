@@ -1337,11 +1337,18 @@ export default class TabPageStore {
   // used to track the last created tag so it can stay at the bottom of the page once created
   recentlyCreatedTagTitle = '';
 
+  // used to put recently used tag at top of list
+  recentlyUsedTagTitle = '';
+
+  // cached version of recentlyUsedTagTitle so the modal list order does not change while it is open
+  recentlyUsedModalTagTitle = '';
+
   processTagModalMessage(event: string, data: never) {
     switch (event) {
       case 'tag-input-change':
         this.tagModalInput = data;
         this.recentlyUsedTagOldCheckedValue = {};
+        this.recentlyUsedModalTagTitle = this.recentlyUsedTagTitle;
         this.recentlyCreatedTagTitle = '';
         this.sendTagModalData();
         break;
@@ -1421,6 +1428,7 @@ export default class TabPageStore {
         title: tab.title,
         favicon: tab.favicon,
       });
+      this.recentlyUsedTagTitle = tagEntry.title;
     }
   }
 
@@ -1443,6 +1451,7 @@ export default class TabPageStore {
       title: tab.title,
       favicon: tab.favicon,
     });
+    this.recentlyUsedTagTitle = tagTitle;
   }
 
   sendTagModalData() {

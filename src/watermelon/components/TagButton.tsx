@@ -43,6 +43,8 @@ const Button: React.FC<{
     { checked: boolean; title: string }[]
   >([]);
 
+  // this entire mess should just be imperative
+
   useEffect(() => {
     const allTagsObserved = database
       .get<TagModel>(TableName.TAGS)
@@ -82,6 +84,7 @@ const Button: React.FC<{
               }
             }
           });
+          const numTagged = sortedResult.length;
           result.forEach((entry) => {
             if (entry.title !== tabPageStore.recentlyCreatedTagTitle) {
               if (entry.title in tabPageStore.recentlyUsedTagOldCheckedValue) {
@@ -98,6 +101,24 @@ const Button: React.FC<{
               sortedResult.push(entry);
             }
           });
+          for (let i = 0; i < sortedResult.length; i += 1) {
+            if (
+              sortedResult[i].title === tabPageStore.recentlyUsedModalTagTitle
+            ) {
+              const oldCheckedValue =
+                tabPageStore.recentlyUsedTagOldCheckedValue[
+                  sortedResult[i].title
+                ];
+              let checkedValue = sortedResult[i].checked;
+              if (typeof oldCheckedValue !== 'undefined') {
+                checkedValue = oldCheckedValue;
+              }
+              const goToIndex = checkedValue ? 0 : numTagged;
+              const item = sortedResult.splice(i, 1)[0];
+              sortedResult.splice(goToIndex, 0, item);
+              break;
+            }
+          }
           setQueryData(sortedResult);
         },
       });
@@ -110,6 +131,7 @@ const Button: React.FC<{
     tabBaseUrl,
     tabPageStore.recentlyCreatedTagTitle,
     tabPageStore.recentlyUsedTagOldCheckedValue,
+    tabPageStore.recentlyUsedModalTagTitle,
   ]);
 
   useEffect(() => {
