@@ -1,6 +1,8 @@
 import React from 'react';
 import { ipcRenderer } from 'electron';
 import { runInAction } from 'mobx';
+import { IconButton } from '@mui/material';
+import { Close, LocalOffer } from '@mui/icons-material';
 import PageModel from '../watermelon/PageModel';
 import { TabPageTab, tabTitle } from '../interfaces/tab';
 import TabPageStore from '../store/tab-page-store';
@@ -68,6 +70,18 @@ function tabToItem(
   LED = false,
   location: Location
 ): ListItem {
+  function onTag() {
+    runInAction(() => {
+      store.selectedForTagTab = tab;
+    });
+    ipcRenderer.send('open-tag-modal');
+  }
+
+  function onDelete(trigger: Trigger) {
+    ipcRenderer.send('remove-tab', tab.id);
+    trackClosePage(trigger, 'active tab', location);
+  }
+
   return {
     id: tab.id.toString(),
     item: tab,
@@ -77,6 +91,30 @@ function tabToItem(
         url={tab.url}
         title={tabTitle(tab)}
         favicon={tab.favicon}
+        extraButtons={
+          active ? (
+            <div>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTag();
+                }}
+              >
+                <LocalOffer sx={{ fontSize: '15px' }} />
+              </IconButton>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete('mouse');
+                }}
+              >
+                <Close sx={{ fontSize: '15px' }} />
+              </IconButton>
+            </div>
+          ) : undefined
+        }
         led={{ enabled: LED, clickLed: () => {}, tooltip: '' }}
       />
     ),
@@ -86,16 +124,10 @@ function tabToItem(
     },
     delete: {
       bounceOffEnd: true,
-      onClick: (trigger) => {
-        ipcRenderer.send('remove-tab', tab.id);
-        trackClosePage(trigger, 'active tab', location);
-      },
+      onClick: onDelete,
     },
     onTag: () => {
-      runInAction(() => {
-        store.selectedForTagTab = tab;
-      });
-      ipcRenderer.send('open-tag-modal');
+      onTag();
     },
     onIdChange: () => {
       store.blurBonsaiBox();
@@ -160,6 +192,13 @@ export function pagesToItems(
       enabled: ledEnabled(page.id),
     };
 
+    function onTag() {
+      runInAction(() => {
+        store.selectedForTagTab = page;
+      });
+      ipcRenderer.send('open-tag-modal');
+    }
+
     return {
       id: page.id,
       item: page,
@@ -174,6 +213,21 @@ export function pagesToItems(
           firstTag={parentTag ? parentTag.title : undefined}
           noClickTags={parentTag ? [parentTag.title] : undefined}
           led={led}
+          extraButtons={
+            active ? (
+              <div>
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onTag();
+                  }}
+                >
+                  <LocalOffer sx={{ fontSize: '15px' }} />
+                </IconButton>
+              </div>
+            ) : undefined
+          }
         />
       ),
       onClick: (trigger) => {
@@ -181,12 +235,7 @@ export function pagesToItems(
         trackOpenItem(trigger, 'saved page', location);
       },
       onAltClick: !pageIsOpen ? altClick : undefined,
-      onTag: () => {
-        runInAction(() => {
-          store.selectedForTagTab = page;
-        });
-        ipcRenderer.send('open-tag-modal');
-      },
+      onTag,
       onIdChange: () => {
         store.setHighlightedTabId(page.id);
       },

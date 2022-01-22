@@ -3,7 +3,6 @@ import React from 'react';
 import { ipcRenderer } from 'electron';
 import styled from 'styled-components';
 import { Typography } from '@mui/material';
-import path from 'path';
 import { useStore } from '../store/tab-page-store';
 import TagModel from '../watermelon/TagModel';
 import { TagPages } from '../watermelon/components/Pages';
@@ -62,7 +61,7 @@ const TagViewHeader = observer(({ tag }: { tag: TagModel }) => {
 });
 
 const Content = observer(({ tag }: { tag: TagModel }) => {
-  const { tabPageStore, workspaceStore } = useStore();
+  const { tabPageStore } = useStore();
 
   const { width: windowWidth } = useWindowSize();
   const infoWidth = getHomeHUDWidth(windowWidth);

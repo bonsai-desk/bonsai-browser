@@ -25,6 +25,7 @@ export interface IHomeListItem {
     tooltip: string;
     enabled: boolean;
   };
+  extraButtons?: JSX.Element;
 }
 
 export interface ITagListItem {
@@ -198,9 +199,8 @@ export const PageListItem = observer(
     url,
     hideTags = [],
     noClickTags = [],
-    // LED = false,
     firstTag = '',
-    // clickLed,
+    extraButtons,
     led,
   }: IHomeListItem) => {
     const { tabPageStore } = useStore();
@@ -293,6 +293,17 @@ export const PageListItem = observer(
                 }}
               />
               <Title>{title}</Title>
+              <div
+                style={{
+                  height: '100%',
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignContent: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {extraButtons}
+              </div>
             </FavTitle>
           </TabInnerParent>
         </Row>
