@@ -1,7 +1,6 @@
 /* eslint no-console: off */
 import React from 'react';
 import { render } from 'react-dom';
-import { ipcRenderer } from 'electron';
 import DatabaseProvider from '@nozbe/watermelondb/DatabaseProvider';
 import App from './pages/App';
 import DebugApp from './pages/DebugApp';
@@ -22,7 +21,7 @@ import { createAndLoadKeybindStore } from './store/keybinds';
 import loadOrCreateWatermelonDB from './watermelon';
 import TagModal from './pages/TagModal';
 import { TableName } from './watermelon/schema';
-import { addTagStrings, getTagOrCreate } from './watermelon/databaseUtils';
+import addOnboardingData from './utils/AddOnboardingData';
 
 if (document.getElementById('root')) {
   const tabStore = new TabStore();
@@ -78,22 +77,7 @@ if (document.getElementById('tab-page')) {
       (async () => {
         const numTags = await database.get(TableName.TAGS).query().fetchCount();
         if (numTags === 0) {
-          await addTagStrings(
-            database,
-            'https://bonsaibrowser.com/',
-            'Cool Apps',
-            {
-              title: 'Bonsai | Web Browser for Research',
-              favicon: 'https://bonsaibrowser.com/favicon.png',
-            }
-          );
-          await getTagOrCreate(database, 'todo');
-          await getTagOrCreate(database, 'Read Later');
-
-          ipcRenderer.send(
-            'create-tab-without-set',
-            'https://bonsaibrowser.com/'
-          );
+          addOnboardingData(database);
         }
       })();
     }
