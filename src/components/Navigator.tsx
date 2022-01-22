@@ -1,5 +1,5 @@
 /* eslint-disable react/jsx-props-no-spreading */
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
@@ -171,6 +171,14 @@ const TabsBar = observer(({ x, y, width }: ITabsBar) => {
   // ipcRenderer.send('log-data', tabWidth);
 
   const filteredTabs = tabs.slice(0, tabs.length - numToDrop);
+
+  useEffect(() => {
+    if (filteredTabs.length === 0) {
+      runInAction(() => {
+        tabPageStore.View = View.Tabs;
+      });
+    }
+  }, [tabPageStore, filteredTabs]);
 
   return (
     <TabsParent

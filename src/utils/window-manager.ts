@@ -1281,10 +1281,6 @@ export default class WindowManager {
     (tabView.view.webContents as any).destroy();
     delete this.allWebViews[id];
     this.tabPageView.webContents.send('tab-removed', id);
-
-    if (Array.from(Object.keys(this.allWebViews)).length === 0) {
-      this.tabPageView.webContents.send('set-view', View.Tabs);
-    }
   }
 
   private loadTabFromTabInfo(tab: TabInfo) {
