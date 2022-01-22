@@ -37,6 +37,8 @@ export interface TabPageTab {
 
   // root web-view id in the chain of tabs where the links are open in new window
   ancestor: number | undefined;
+
+  zoomFactor: number;
 }
 
 export interface ITab {

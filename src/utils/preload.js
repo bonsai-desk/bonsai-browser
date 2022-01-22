@@ -81,4 +81,10 @@ window.onload = () => {
 
   document.addEventListener('drop', drop);
   document.addEventListener('dragover', dragover);
+
+  window.addEventListener('wheel', (e) => {
+    if (e.ctrlKey) {
+      ipcRenderer.send('page-wheel-event', e.deltaY);
+    }
+  });
 };

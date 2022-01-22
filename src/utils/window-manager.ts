@@ -31,12 +31,16 @@ import {
 import {
   base64ImgToDisk,
   baseUrl,
+  clamp,
   get16Favicon,
   stringifyMap,
   stringToUrl,
   tryDecrypt,
   urlToMapKey,
   windowHasView,
+  zoomFactors,
+  zoomFactorToNumber,
+  zoomNumberToFactor,
 } from './utils';
 import {
   currentWindowSize,
@@ -767,6 +771,8 @@ export default class WindowManager {
     // tell the tab page that just accessed some tab
     // this updates the access time
     this.tabPageView.webContents.send('access-tab', id);
+
+    this.tabPageView.webContents.send('close-zoom-modal');
 
     this.handleResize();
   }
@@ -1666,6 +1672,56 @@ export default class WindowManager {
     this.tagModalView.webContents.send('clear-input');
   }
 
+  sendCurrentPageZoom() {
+    const view = this.allWebViews[this.activeTabId];
+    if (!view) {
+      return;
+    }
+
+    this.tabPageView.webContents.send('set-page-zoom-factor', [
+      view.id,
+      view.view.webContents.getZoomFactor(),
+    ]);
+  }
+
+  resetZoomCurrentPage() {
+    const view = this.allWebViews[this.activeTabId];
+    if (!view) {
+      return;
+    }
+
+    view.view.webContents.setZoomFactor(1);
+    this.sendCurrentPageZoom();
+  }
+
+  zoomOutCurrentPage() {
+    this.zoomCurrentPage(false);
+  }
+
+  zoomInCurrentPage() {
+    this.zoomCurrentPage(true);
+  }
+
+  zoomCurrentPage(zoomIn: boolean) {
+    const view = this.allWebViews[this.activeTabId];
+    if (!view) {
+      return;
+    }
+
+    const zoomNumber = zoomFactorToNumber(
+      view.view.webContents.getZoomFactor()
+    );
+
+    const direction = zoomIn ? 1 : -1;
+    const newZoomNumber = clamp(
+      zoomNumber + direction,
+      0,
+      zoomFactors.length - 1
+    );
+    view.view.webContents.setZoomFactor(zoomNumberToFactor(newZoomNumber));
+    this.sendCurrentPageZoom();
+  }
+
   addListeners() {
     ipcMain.on('create-new-tab', (_, switchToTab = false) => {
       const id = this.createNewTab();
@@ -1969,6 +2025,23 @@ export default class WindowManager {
     ipcMain.on('float-right', () => {
       this.mixpanelManager.track('float right (vim)');
       this.float('right');
+    });
+    ipcMain.on('page-wheel-event', (_, deltaY) => {
+      if (deltaY > 0) {
+        this.zoomOutCurrentPage();
+      }
+      if (deltaY < 0) {
+        this.zoomInCurrentPage();
+      }
+    });
+    ipcMain.on('zoom-out', () => {
+      this.zoomOutCurrentPage();
+    });
+    ipcMain.on('zoom-in', () => {
+      this.zoomInCurrentPage();
+    });
+    ipcMain.on('reset-zoom', () => {
+      this.resetZoomCurrentPage();
     });
   }
 }

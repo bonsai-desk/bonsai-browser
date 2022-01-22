@@ -264,6 +264,20 @@ function initMenu(wm: WindowManager) {
           }
         },
       },
+      {
+        label: 'Zoom Out',
+        accelerator: 'CmdOrCtrl+-',
+        click: () => {
+          wm.zoomOutCurrentPage();
+        },
+      },
+      {
+        label: 'Zoom In',
+        accelerator: 'CmdOrCtrl+=',
+        click: () => {
+          wm.zoomInCurrentPage();
+        },
+      },
     ],
   });
 

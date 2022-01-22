@@ -16,6 +16,7 @@ import TitleBar, { RoundButton } from '../pages/App';
 import { Tab, TabsParent } from './Tab';
 import { TabPageTab } from '../interfaces/tab';
 import { headerHeight, tagSideBarWidth, View } from '../constants';
+import ZoomModal from './ZoomModal';
 
 const NavigatorParent = styled.div`
   position: absolute;
@@ -82,7 +83,7 @@ export const TabBarTab = observer(
           style.transform = `translate(${x}px, 0)`;
         } catch (e) {
           // todo handle when the thing becomes readonly when you stop dragging?
-          console.log(e);
+          // console.log(e);
         }
       }
     }
@@ -240,6 +241,7 @@ const TabsBar = observer(({ x, y, width }: ITabsBar) => {
           height: tabPageStore.innerBounds.height - headerHeight,
         }}
       />
+      <ZoomModal />
     </TabsParent>
   );
 });

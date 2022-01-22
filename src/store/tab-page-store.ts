@@ -229,6 +229,8 @@ export default class TabPageStore {
 
   selectedForTagTab: TabPageTabInfo | null = null;
 
+  setZoomTime = 0;
+
   // lastActiveTabId = -1;
 
   // endregion
@@ -759,6 +761,7 @@ export default class TabPageStore {
       canGoBack: false,
       ancestor: undefined,
       unRooted: false,
+      zoomFactor: 1,
     };
     this.bumpTab(id);
   }
@@ -1281,6 +1284,15 @@ export default class TabPageStore {
       runInAction(() => {
         this.View = view;
       });
+    });
+    renderOn('set-page-zoom-factor', (_, [id, zoomFactor]) => {
+      const tab = this.openTabs[id];
+      if (tab) {
+        runInAction(() => {
+          tab.zoomFactor = zoomFactor;
+          this.setZoomTime = Date.now();
+        });
+      }
     });
   }
 

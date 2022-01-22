@@ -353,3 +353,30 @@ export function relativeItem(
   }
   return undefined;
 }
+
+export const zoomFactors = [
+  0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4,
+  5,
+];
+
+export function zoomFactorToNumber(zoomFactor: number): number {
+  let closestDist = 1000000000;
+  let closestIndex = 0;
+  for (let i = 0; i < zoomFactors.length; i += 1) {
+    const dist = Math.abs(zoomFactor - zoomFactors[i]);
+    if (dist < closestDist) {
+      closestDist = dist;
+      closestIndex = i;
+    }
+  }
+
+  return closestIndex;
+}
+
+export function zoomNumberToFactor(zoomNumber: number): number {
+  const zoomFactor = zoomFactors[zoomNumber];
+  if (typeof zoomFactor !== 'undefined') {
+    return zoomFactor;
+  }
+  return 1;
+}
