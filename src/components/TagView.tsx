@@ -60,12 +60,37 @@ const TagViewHeader = observer(({ tag }: { tag: TagModel }) => {
   // );
 });
 
-const Content = observer(({ tag }: { tag: TagModel }) => {
+const ActiveListPage = observer(() => {
   const { tabPageStore } = useStore();
 
   const { width: windowWidth } = useWindowSize();
   const infoWidth = getHomeHUDWidth(windowWidth);
 
+  return tabPageStore.activeListPage ? (
+    <div>
+      <DummyCard
+        active
+        title={tabPageStore.activeListPage.title}
+        url={tabPageStore.activeListPage.url}
+        favicon={tabPageStore.activeListPage.favicon}
+        imgUrl={tabPageStore.activeListPage.image}
+        onClick={() => {
+          if (tabPageStore.activeListPage) {
+            ipcRenderer.send(
+              'open-workspace-url',
+              tabPageStore.activeListPage.url
+            );
+          }
+        }}
+        width={Math.round(infoWidth * 0.8)}
+      />
+    </div>
+  ) : (
+    <div />
+  );
+});
+
+const Content = observer(({ tag }: { tag: TagModel }) => {
   return (
     <ColumnContainer
       MiniColumn={<BackColumn />}
@@ -78,30 +103,7 @@ const Content = observer(({ tag }: { tag: TagModel }) => {
           }}
         />
       }
-      Right={
-        tabPageStore.activeListPage ? (
-          <div>
-            <DummyCard
-              active
-              title={tabPageStore.activeListPage.title}
-              url={tabPageStore.activeListPage.url}
-              favicon={tabPageStore.activeListPage.favicon}
-              imgUrl={tabPageStore.activeListPage.image}
-              onClick={() => {
-                if (tabPageStore.activeListPage) {
-                  ipcRenderer.send(
-                    'open-workspace-url',
-                    tabPageStore.activeListPage.url
-                  );
-                }
-              }}
-              width={Math.round(infoWidth * 0.8)}
-            />
-          </div>
-        ) : (
-          <div />
-        )
-      }
+      Right={<ActiveListPage />}
     />
   );
 });
