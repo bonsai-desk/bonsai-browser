@@ -157,18 +157,23 @@ const HomeHeader = observer(() => {
   );
 });
 
+export function getHomeHUDWidth(windowWidth: number | undefined): number {
+  const defaultWidth = 260;
+
+  const infoWidth = !windowWidth
+    ? defaultWidth
+    : Math.round(clamp((2 / 12) * windowWidth, defaultWidth, 2 * defaultWidth));
+
+  return infoWidth;
+}
+
 const HomeListView = observer(() => {
   const { tabPageStore } = useStore();
 
   const tab = tabPageStore.openTabs[tabPageStore.activeHomeTabId];
 
   const { width: windowWidth } = useWindowSize();
-
-  const defaultWidth = 260;
-
-  const infoWidth = !windowWidth
-    ? defaultWidth
-    : Math.round(clamp((2 / 12) * windowWidth, defaultWidth, 2 * defaultWidth));
+  const infoWidth = getHomeHUDWidth(windowWidth);
 
   return (
     <ColumnContainer

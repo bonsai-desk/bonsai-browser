@@ -1120,15 +1120,11 @@ export default class WindowManager {
     tabId: number,
     tabView: IWebView,
     callback?: () => void,
-    forItemWithId = ''
+    forPageWithUrl = ''
   ) {
     tabView.view.webContents.send('get-scroll-height', tabId);
     const handleImage = (image: NativeImage) => {
       const jpgBuf = image.toJPEG(50);
-      // const imgHash = createHash('sha256')
-      //   .update(jpgBuf)
-      //   .digest('hex')
-      //   .toUpperCase();
       const tabImgName = uuidv4();
       try {
         const imagesDir = path.join(app.getPath('userData'), 'images');
@@ -1138,7 +1134,7 @@ export default class WindowManager {
       } catch {
         //
       }
-      if (!forItemWithId) {
+      if (!forPageWithUrl) {
         if (tabView.imgString) {
           try {
             fs.rmSync(
@@ -1158,18 +1154,11 @@ export default class WindowManager {
           tabImgName,
         ]);
       } else {
-        // this.tabPageView.webContents.send('got-screenshot-for-item', {
-        //   itemId: forItemWithId,
-        //   workspaceId,
-        //   imgName: tabImgName,
-        // });
+        this.tabPageView.webContents.send('got-screenshot-for-page', {
+          url: forPageWithUrl,
+          imgName: tabImgName,
+        });
       }
-      tabView.imgString = tabImgName;
-      this.tabPageView.webContents.send('tab-image-native', [
-        tabId,
-        tabImgName,
-        true,
-      ]);
       this.saveHistory();
       if (callback) {
         callback();
@@ -1900,6 +1889,12 @@ export default class WindowManager {
         this.screenShotTab(webViewId, webView);
       }
     });
+    ipcMain.on('screenshot-current-page-for-watermelon', (_, url) => {
+      const webView = this.allWebViews[this.activeTabId];
+      if (webView) {
+        this.screenShotTab(this.activeTabId, webView, () => {}, url);
+      }
+    });
     ipcMain.on('mixpanel-track', (_, eventName) => {
       this.mixpanelManager.track(eventName);
     });
@@ -2042,6 +2037,15 @@ export default class WindowManager {
     });
     ipcMain.on('reset-zoom', () => {
       this.resetZoomCurrentPage();
+    });
+    ipcMain.on('delete-image-with-name', (_, imgName) => {
+      try {
+        fs.rmSync(
+          path.join(app.getPath('userData'), 'images', `${imgName}.jpg`)
+        );
+      } catch {
+        //
+      }
     });
   }
 }

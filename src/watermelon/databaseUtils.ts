@@ -146,6 +146,8 @@ export async function addTag(
     });
   });
 
+  ipcRenderer.send('screenshot-current-page-for-watermelon', page.url);
+
   trackNumTagUsage(database);
 
   const num = await numTagUsage(database);
@@ -178,6 +180,7 @@ export async function removeTag(
 
     const num = await page.tags.fetchCount();
     if (num === 0) {
+      ipcRenderer.send('delete-image-with-name', page.image);
       await page.destroyPermanently();
     }
   });
@@ -230,6 +233,7 @@ export async function deleteTag(database: Database, tag: TagModel) {
         // eslint-disable-next-line no-await-in-loop
         const pageTagsCounts = await page.tags.fetchCount();
         if (pageTagsCounts <= 1) {
+          ipcRenderer.send('delete-image-with-name', page.image);
           // eslint-disable-next-line no-await-in-loop
           await page.destroyPermanently();
         }

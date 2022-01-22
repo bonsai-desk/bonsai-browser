@@ -24,9 +24,11 @@ import TagModel from '../watermelon/TagModel';
 import { TagModalData } from '../pages/TagModal';
 import {
   addTagStrings,
+  getPage,
   getTag,
   removeTagStrings,
 } from '../watermelon/databaseUtils';
+import PageModel from '../watermelon/PageModel';
 
 const NOT_TEXT = [
   'Escape',
@@ -162,6 +164,8 @@ export default class TabPageStore {
   refreshHandle: NodeJS.Timeout | null;
 
   activeHomeTabId: string | number = -1;
+
+  activeListPage: PageModel | null = null;
 
   navigatorTabModal = [0, 0];
 
@@ -1294,6 +1298,27 @@ export default class TabPageStore {
         });
       }
     });
+    renderOn(
+      'got-screenshot-for-page',
+      (_, { url, imgName }: { url: string; imgName: string }) => {
+        (async () => {
+          if (!this.database) {
+            return;
+          }
+
+          const page = await getPage(this.database, baseUrl(url));
+          if (!page) {
+            return;
+          }
+
+          await this.database.write(async () => {
+            await page.update((updatePage) => {
+              updatePage.image = imgName;
+            });
+          });
+        })();
+      }
+    );
   }
 
   navBack() {

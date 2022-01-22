@@ -68,7 +68,7 @@ const Pages: React.FC<{
     },
     onLazyIdChange: () => {
       runInAction(() => {
-        tabPageStore.activeHomeTabId = page.id;
+        tabPageStore.activeListPage = page;
       });
     },
   }));
