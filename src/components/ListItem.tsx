@@ -1,8 +1,8 @@
 import styled from 'styled-components';
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { Circle, Delete } from '@mui/icons-material';
-import { Grid, IconButton } from '@mui/material';
+import { Circle, CircleOutlined, Delete } from '@mui/icons-material';
+import { Fade, Grid, IconButton, Tooltip } from '@mui/material';
 import Favicon from './Favicon';
 import { color } from '../utils/jsutils';
 import { TagWithTitle } from '../watermelon/components/Tag';
@@ -17,8 +17,14 @@ export interface IHomeListItem {
   url?: string;
   hideTags?: string[];
   noClickTags?: string[];
-  LED?: boolean;
+  // LED?: boolean;
   firstTag?: string;
+  // clickLed?: () => void;
+  led?: {
+    clickLed: () => void;
+    tooltip: string;
+    enabled: boolean;
+  };
 }
 
 export interface ITagListItem {
@@ -166,8 +172,22 @@ export const TagListItem = ({
 
 const LEDParent = styled.div`
   position: absolute;
-  left: -21px;
-  top: -1px;
+  left: 9px;
+  top: 9px;
+`;
+
+const LEDContainer = styled.div`
+  cursor: pointer;
+  position: absolute;
+  left: -30px;
+  top: -10px;
+  width: 26px;
+  height: 35px;
+  opacity: 0;
+
+  :hover {
+    opacity: 1;
+  }
 `;
 
 export const PageListItem = observer(
@@ -178,10 +198,18 @@ export const PageListItem = observer(
     url,
     hideTags = [],
     noClickTags = [],
-    LED = false,
+    // LED = false,
     firstTag = '',
+    // clickLed,
+    led,
   }: IHomeListItem) => {
     const { tabPageStore } = useStore();
+
+    const LED = led?.enabled || false;
+    const clickLed = led?.clickLed;
+    const tooltip = led?.tooltip || '';
+
+    // const { enabled = false, clickLed, tooltip } = led;
 
     return (
       <HomeListItemParent
@@ -195,15 +223,58 @@ export const PageListItem = observer(
         <Row>
           <TabInnerParent>
             <FavTitle style={{ width: 'calc(100% - 12px)' }}>
-              {LED ? (
-                <LEDParent>
-                  <Circle
-                    sx={{
-                      color: color('confirmation-color', 'opacity-high'),
-                      fontSize: '9px',
+              {!LED && clickLed ? (
+                <Tooltip
+                  title={tooltip}
+                  placement="left"
+                  TransitionComponent={Fade}
+                >
+                  <LEDContainer
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (clickLed) {
+                        clickLed();
+                      }
                     }}
-                  />
-                </LEDParent>
+                  >
+                    <LEDParent>
+                      <CircleOutlined
+                        sx={{
+                          color: color('confirmation-color', 'opacity-high'),
+                          fontSize: '9px',
+                        }}
+                      />
+                    </LEDParent>
+                  </LEDContainer>
+                </Tooltip>
+              ) : (
+                ''
+              )}
+              {LED ? (
+                <Tooltip
+                  title={tooltip}
+                  placement="left"
+                  TransitionComponent={Fade}
+                >
+                  <LEDContainer
+                    style={{ opacity: 1 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (clickLed) {
+                        clickLed();
+                      }
+                    }}
+                  >
+                    <LEDParent>
+                      <Circle
+                        sx={{
+                          color: color('confirmation-color', 'opacity-high'),
+                          fontSize: '9px',
+                        }}
+                      />
+                    </LEDParent>
+                  </LEDContainer>
+                </Tooltip>
               ) : (
                 ''
               )}

@@ -33,11 +33,15 @@ export function trackCloseGroup(
 export function trackOpenItem(
   trigger: 'mouse' | 'hotkey',
   type: Item,
-  location?: Location
+  location?: Location,
+  info?: string
 ) {
-  const data =
+  const data: Record<string, any> =
     typeof location !== 'undefined'
       ? { trigger, location, type }
       : { trigger, type };
+  if (typeof info !== 'undefined') {
+    data.info = info;
+  }
   ipcRenderer.send('mixpanel-track-with-props', ['open page item', data]);
 }

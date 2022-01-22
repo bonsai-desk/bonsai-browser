@@ -151,10 +151,10 @@ const ControlledList = observer(
             invokeLazyChange('-1');
           }
         } else {
-          const topTab = items[0].id;
+          const topTab = items[0];
           if (typeof topTab !== 'undefined') {
-            setHighlightedTabId(topTab);
-            invokeLazyChange(topTab);
+            setHighlightedTabId(topTab.id);
+            invokeLazyChange(topTab.id);
           }
         }
       },
@@ -167,24 +167,27 @@ const ControlledList = observer(
         const idx = items.findIndex((tab) => {
           return tab.id === idToRemove;
         });
-        if (idx !== -1) {
-          if (idx === items.length - 1) {
-            moveTabSelection('up');
-          } else {
-            moveTabSelection('down');
-          }
-        }
-
         const highlightedItem = items.find(
           (tab) => tab.id === highlightedTabId
         );
+
         if (
           typeof highlightedItem !== 'undefined' &&
-          typeof highlightedItem.onDelete !== 'undefined'
+          typeof highlightedItem.delete !== 'undefined'
         ) {
-          highlightedItem.onDelete(trigger);
+          if (idx !== -1) {
+            if (
+              idx === items.length - 1 &&
+              highlightedItem.delete.bounceOffEnd
+            ) {
+              moveTabSelection('up');
+            } else {
+              moveTabSelection('down');
+            }
+          }
+          highlightedItem.delete.onClick(trigger);
+          setMouseEnabled(false);
         }
-        setMouseEnabled(false);
       },
       [highlightedTabId, items, moveTabSelection]
     );
@@ -200,6 +203,29 @@ const ControlledList = observer(
           typeof highlightedItem.onClick !== 'undefined'
         ) {
           highlightedItem.onClick(trigger);
+        }
+      },
+      [highlightedTabId, items]
+    );
+
+    const altClickHighlightedTab = useCallback(
+      (trigger: 'mouse' | 'hotkey', move = true) => {
+        const highlightedItem = items.find(
+          (tab) => tab.id === highlightedTabId
+        );
+        const idx = items.findIndex((tab) => {
+          return tab.id === highlightedTabId;
+        });
+        if (
+          typeof highlightedItem !== 'undefined' &&
+          typeof highlightedItem.onAltClick !== 'undefined'
+        ) {
+          if (idx !== -1 && move) {
+            if (idx !== items.length - 1) {
+              moveTabSelection('down');
+            }
+          }
+          highlightedItem.onAltClick(trigger);
         }
       },
       [highlightedTabId, items]
@@ -250,6 +276,10 @@ const ControlledList = observer(
         }
       };
 
+      bind('shift+enter', () => {
+        tabPageStore.bonsaiBoxRef?.current?.blur();
+        altClickHighlightedTab('hotkey', true);
+      });
       bind(downKeys, () => {
         moveTabSelection('down');
       });
@@ -324,6 +354,20 @@ const ControlledList = observer(
         );
       }
     );
+
+    useEffect(() => {
+      if (scrollBoxRef && scrollBoxRef.current) {
+        const handleAuxClick = () => {
+          altClickHighlightedTab('mouse', false);
+        };
+        scrollBoxRef.current.addEventListener('auxclick', handleAuxClick);
+        const foo = scrollBoxRef.current;
+        return () => {
+          foo.removeEventListener('auxclick', handleAuxClick);
+        };
+      }
+      return () => {};
+    }, [altClickHighlightedTab, highlightedTabId]);
 
     return (
       <HiddenScrollbarStack

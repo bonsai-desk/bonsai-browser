@@ -8,5 +8,9 @@ export interface ListItem {
   onTag?: () => void;
   onIdChange?: () => void;
   onLazyIdChange?: () => void;
-  onDelete?: (trigger: Trigger) => void;
+  delete?: {
+    onClick: (trigger: Trigger) => void;
+    bounceOffEnd: boolean;
+  };
+  onAltClick?: (trigger: Trigger) => void;
 }

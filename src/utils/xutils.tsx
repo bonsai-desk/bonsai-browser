@@ -6,7 +6,7 @@ import { TabPageTab, tabTitle } from '../interfaces/tab';
 import TabPageStore from '../store/tab-page-store';
 import { PageListItem, TagListItem, TitleItem } from '../components/ListItem';
 import TagModel from '../watermelon/TagModel';
-import { ListItem } from '../interface/ListItem';
+import { ListItem, Trigger } from '../interface/ListItem';
 import { getRootDomain } from './data';
 import {
   Location,
@@ -14,6 +14,7 @@ import {
   trackClosePage,
   trackOpenItem,
 } from './tracking';
+import { baseUrl } from './utils';
 
 function titleToItem(
   title: string,
@@ -39,22 +40,24 @@ function titleToItem(
         });
       }
     },
-
-    onDelete: (trigger) => {
-      const keys = Object.keys(store.openTabs);
-      ipcRenderer.send('mixpanel-track-with-props', [
-        'click remove column in home',
-        { num_tabs: keys.length },
-      ]);
-      const tabs: number[] = [];
-      keys.forEach((key: string) => {
-        const tab = store.openTabs[key];
-        if (getRootDomain(tab.url) === title) {
-          tabs.push(tab.id);
-        }
-      });
-      ipcRenderer.send('remove-tabs', tabs);
-      trackCloseGroup(trigger, location, 'active tab');
+    delete: {
+      bounceOffEnd: true,
+      onClick: (trigger) => {
+        const keys = Object.keys(store.openTabs);
+        ipcRenderer.send('mixpanel-track-with-props', [
+          'click remove column in home',
+          { num_tabs: keys.length },
+        ]);
+        const tabs: number[] = [];
+        keys.forEach((key: string) => {
+          const tab = store.openTabs[key];
+          if (getRootDomain(tab.url) === title) {
+            tabs.push(tab.id);
+          }
+        });
+        ipcRenderer.send('remove-tabs', tabs);
+        trackCloseGroup(trigger, location, 'active tab');
+      },
     },
   };
 }
@@ -74,16 +77,19 @@ function tabToItem(
         url={tab.url}
         title={tabTitle(tab)}
         favicon={tab.favicon}
-        LED={LED}
+        led={{ enabled: LED, clickLed: () => {}, tooltip: '' }}
       />
     ),
     onClick: (trigger) => {
       ipcRenderer.send('set-tab', tab.id);
       trackOpenItem(trigger, 'active tab', location);
     },
-    onDelete: (trigger) => {
-      ipcRenderer.send('remove-tab', tab.id);
-      trackClosePage(trigger, 'active tab', location);
+    delete: {
+      bounceOffEnd: true,
+      onClick: (trigger) => {
+        ipcRenderer.send('remove-tab', tab.id);
+        trackClosePage(trigger, 'active tab', location);
+      },
     },
     onTag: () => {
       runInAction(() => {
@@ -105,40 +111,98 @@ function tabToItem(
 
 export function pagesToItems(
   store: TabPageStore,
-  tabs: PageModel[],
-  location: Location
+  pages: PageModel[],
+  location: Location,
+  parentTag?: TagModel
 ): ListItem[] {
-  return tabs.map((tab) => ({
-    id: tab.id,
-    item: tab,
-    Node: ({ active }: { active: boolean }) => (
-      <PageListItem
-        active={active}
-        key={tab.id}
-        url={tab.url}
-        title={tabTitle(tab)}
-        favicon={tab.favicon}
-      />
-    ),
-    onClick: (trigger) => {
-      ipcRenderer.send('open-workspace-url', tab.url);
-      trackOpenItem(trigger, 'saved page', location);
-    },
-    onTag: () => {
-      runInAction(() => {
-        store.selectedForTagTab = tab;
-      });
-      ipcRenderer.send('open-tag-modal');
-    },
-    onIdChange: () => {
-      store.setHighlightedTabId(tab.id);
-    },
-    onLazyIdChange: () => {
-      runInAction(() => {
-        store.activeHomeTabId = tab.id;
-      });
-    },
-  }));
+  // page id to tab id
+  const pageIdToTabId: Record<string, number> = {};
+
+  Object.values(store.openTabs).forEach((tab) => {
+    const pageMatch = pages.find(
+      (page) => baseUrl(page.url) === baseUrl(tab.url)
+    );
+    if (typeof pageMatch !== 'undefined') {
+      pageIdToTabId[pageMatch.id] = tab.id;
+    }
+  });
+
+  const ledEnabled = (pageId: string) => {
+    const match = pageIdToTabId[pageId];
+    return !!match;
+  };
+
+  return pages.map((page) => {
+    const tabId = pageIdToTabId[page.id];
+    const tabMatch = typeof tabId !== 'undefined';
+    const pageIsOpen = store.tabWithUrlOpen(page.url);
+
+    const altClick = (trigger: Trigger) => {
+      ipcRenderer.send('create-tab-without-set', page.url);
+      trackOpenItem(trigger, 'saved page', location, 'alt');
+    };
+
+    const onDelete = () => {
+      ipcRenderer.send('remove-tab', tabId);
+    };
+
+    const clickLed = () => {
+      if (ledEnabled(page.id)) {
+        onDelete();
+      } else {
+        altClick('mouse');
+      }
+    };
+
+    const led = {
+      clickLed,
+      tooltip: ledEnabled(page.id) ? 'w' : 'shift+enter',
+      enabled: ledEnabled(page.id),
+    };
+
+    return {
+      id: page.id,
+      item: page,
+      Node: ({ active }: { active: boolean }) => (
+        <PageListItem
+          active={active}
+          key={page.id}
+          url={page.url}
+          title={tabTitle(page)}
+          favicon={page.favicon}
+          hideTags={[]}
+          firstTag={parentTag ? parentTag.title : undefined}
+          noClickTags={parentTag ? [parentTag.title] : undefined}
+          led={led}
+        />
+      ),
+      onClick: (trigger) => {
+        ipcRenderer.send('open-workspace-url', page.url);
+        trackOpenItem(trigger, 'saved page', location);
+      },
+      onAltClick: !pageIsOpen ? altClick : undefined,
+      onTag: () => {
+        runInAction(() => {
+          store.selectedForTagTab = page;
+        });
+        ipcRenderer.send('open-tag-modal');
+      },
+      onIdChange: () => {
+        store.setHighlightedTabId(page.id);
+      },
+      onLazyIdChange: () => {
+        runInAction(() => {
+          store.activeListPage = page;
+        });
+      },
+      delete: tabMatch
+        ? {
+            bounceOffEnd: false,
+            onClick: onDelete,
+          }
+        : undefined,
+    };
+  });
 }
 
 export function tabsToItems(

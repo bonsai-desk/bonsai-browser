@@ -598,6 +598,13 @@ export default class TabPageStore {
     );
   }
 
+  tabWithUrlOpen(url: string): boolean {
+    const match = Object.values(this.openTabs).find(
+      (tab) => baseUrl(tab.url) === baseUrl(url)
+    );
+    return typeof match !== 'undefined';
+  }
+
   // endregion
 
   // region unsorted

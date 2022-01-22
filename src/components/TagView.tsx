@@ -67,10 +67,6 @@ const Content = observer(({ tag }: { tag: TagModel }) => {
   const { width: windowWidth } = useWindowSize();
   const infoWidth = getHomeHUDWidth(windowWidth);
 
-  if (tabPageStore.activeListPage) {
-    console.log(tabPageStore.activeListPage.image);
-  }
-
   return (
     <ColumnContainer
       MiniColumn={<BackColumn />}
