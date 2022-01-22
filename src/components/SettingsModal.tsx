@@ -61,6 +61,7 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
+  Slider,
 } from '@mui/material';
 import { Settings as SettingsIcon } from '@mui/icons-material';
 import GenericModal from './GenericModal';
@@ -1197,7 +1198,7 @@ const FeedbackPage = observer(() => {
 });
 
 const ConfigPage = observer(() => {
-  const { keybindStore } = useStore();
+  const { keybindStore, tabPageStore } = useStore();
   const { theme } = keybindStore.settings;
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1317,6 +1318,50 @@ const ConfigPage = observer(() => {
                 })}
               </RadioGroup>
             </FormControl>
+          </PaddedPaper>
+        </div>
+        <div>
+          <Typography variant="h6" gutterBottom>
+            Tiling Floating Window Width
+          </Typography>
+          <PaddedPaper>
+            <div>% of screen width (with minimum width of 580 pixels)</div>
+            <Slider
+              value={tabPageStore.tilingWidthSliderValue}
+              min={10}
+              max={90}
+              valueLabelDisplay="auto"
+              onChange={(_, value: number | number[]) => {
+                const v = value as number;
+                if (tabPageStore.tilingWidthSliderValue !== v) {
+                  runInAction(() => {
+                    tabPageStore.tilingWidthSliderValue = v;
+                  });
+                }
+              }}
+              onChangeCommitted={() => {
+                ipcRenderer.send(
+                  'change-tiling-width',
+                  tabPageStore.tilingWidthSliderValue
+                );
+              }}
+              onKeyDown={(e) => {
+                e.preventDefault();
+              }}
+            />
+            <Button
+              onClick={() => {
+                runInAction(() => {
+                  tabPageStore.tilingWidthSliderValue = 45;
+                });
+                ipcRenderer.send(
+                  'change-tiling-width',
+                  tabPageStore.tilingWidthSliderValue
+                );
+              }}
+            >
+              Reset to Default Value
+            </Button>
           </PaddedPaper>
         </div>
       </Stack>

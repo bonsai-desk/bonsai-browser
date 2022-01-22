@@ -117,8 +117,6 @@ export default class WindowManager {
 
   readonly tagModalView: BrowserView;
 
-  // private readonly overlayView: BrowserView;
-
   private findText = '';
 
   private lastFindTextSearch = '';
@@ -175,6 +173,13 @@ export default class WindowManager {
         'set-seenEmailForm',
         this.saveData.data.seenEmailForm
       );
+
+      if (this.saveData.data.tilingWidthPercent) {
+        this.tabPageView.webContents.send(
+          'set-tilingWidthPercent',
+          this.saveData.data.tilingWidthPercent
+        );
+      }
 
       this.setDisplay(this.display);
     });
@@ -1392,9 +1397,15 @@ export default class WindowManager {
     let bounds;
     if (this.windowFloating) {
       const displayBounds = display.workArea;
-      const width = Math.floor(
-        (displayBounds.width - floatingWindowEdgeMargin) * 0.45
+      const percent = this.saveData.data.tilingWidthPercent
+        ? this.saveData.data.tilingWidthPercent
+        : 45;
+      let width = Math.floor(
+        (displayBounds.width - floatingWindowEdgeMargin) * (percent / 100)
       );
+      if (width < 580) {
+        width = 580;
+      }
       if (this.floatingDirection === 'left') {
         bounds = {
           x: displayBounds.x + floatingWindowEdgeMargin,
@@ -2042,6 +2053,12 @@ export default class WindowManager {
       } catch {
         //
       }
+    });
+    ipcMain.on('change-tiling-width', (_, value) => {
+      this.saveData.data.tilingWidthPercent = value;
+      this.saveData.save();
+      this.resizeBrowserWindow();
+      this.handleResize();
     });
   }
 }

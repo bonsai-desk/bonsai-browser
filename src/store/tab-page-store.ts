@@ -185,6 +185,8 @@ export default class TabPageStore {
 
   historyText = '';
 
+  tilingWidthSliderValue = 45;
+
   isPinned = false;
 
   preventBonsaiBoxEnter = false;
@@ -1326,6 +1328,11 @@ export default class TabPageStore {
         })();
       }
     );
+    renderOn('set-tilingWidthPercent', (_, value) => {
+      runInAction(() => {
+        this.tilingWidthSliderValue = value;
+      });
+    });
   }
 
   navBack() {

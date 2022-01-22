@@ -11,6 +11,7 @@ class SaveData {
     toggledOnce?: boolean;
     session?: Session;
     tabView?: number;
+    tilingWidthPercent?: number;
   };
 
   constructor() {
