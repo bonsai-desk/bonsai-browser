@@ -94,8 +94,11 @@ const ControlledList = observer(
       setLastHighlightedIdx(highlightedIdx);
     }, [highlightedIdx]);
 
-    // todo make this more efficient
-    useEffect(() => {}, [highlightedTabId, items, snapToFirst]);
+    useEffect(() => {
+      runInAction(() => {
+        tabPageStore.lastSelectedListItemId = highlightedTabId;
+      });
+    }, [tabPageStore, highlightedTabId]);
 
     useEffect(() => {
       if (!highlightedItem) {

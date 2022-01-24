@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { withDatabase } from '@nozbe/watermelondb/DatabaseProvider';
 import withObservables from '@nozbe/with-observables';
 import { observer } from 'mobx-react-lite';
+import { runInAction } from 'mobx';
 import TagModel from '../TagModel';
 import PageModel from '../PageModel';
 import ControlledList from '../../components/ControlledPageList';
@@ -26,10 +27,21 @@ const Pages: React.FC<{
 
   const items = pagesToItems(tabPageStore, pages, 'tag page', tag);
 
+  useEffect(() => {
+    return () => {
+      runInAction(() => {
+        tabPageStore.lastSelectedListItemId = '';
+      });
+    };
+  }, [tabPageStore]);
+
+  const firstItemId = items.length > 0 ? items[0].id : '0';
+  const initialItemId = tabPageStore.lastSelectedListItemId;
+
   return (
     <ControlledList
       items={items}
-      initialHighlightedItemId={items.length > 0 ? items[0].id : '0'}
+      initialHighlightedItemId={initialItemId || firstItemId}
     />
   );
 });

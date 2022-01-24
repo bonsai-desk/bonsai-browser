@@ -87,6 +87,21 @@ export enum HomeView {
   Domain,
 }
 
+// type NavEntry = [View, number, string, string];
+
+// const lastView = last.view;
+// const lastTabId = last.activeTabId;
+// const lastTagTitle = last.tagTitle;
+// const lastFuzzyText = last.urlText;
+
+type NavEntry = {
+  view: View;
+  tabId: number;
+  tagTitle: string;
+  fuzzyText: string;
+  selectedListItemId?: string;
+};
+
 export default class TabPageStore {
   // region properties
 
@@ -104,7 +119,7 @@ export default class TabPageStore {
 
   private view: View = View.Tabs;
 
-  viewNavStack: [View, number, string, string][] = [];
+  viewNavStack: NavEntry[] = [];
 
   public get View() {
     return this.view;
@@ -121,12 +136,13 @@ export default class TabPageStore {
     }
 
     if (addToNavStack) {
-      this.pushNavEntry([
-        this.View,
-        this.activeTabId,
-        this.viewingTag ? this.viewingTag.title : '',
-        this.urlText,
-      ]);
+      this.pushNavEntry({
+        view: this.View,
+        tabId: this.activeTabId,
+        tagTitle: this.viewingTag ? this.viewingTag.title : '',
+        fuzzyText: this.urlText,
+        selectedListItemId: this.lastSelectedListItemId,
+      });
     }
 
     this.view = view;
@@ -236,6 +252,8 @@ export default class TabPageStore {
   selectedForTagTab: TabPageTabInfo | null = null;
 
   setZoomTime = 0;
+
+  lastSelectedListItemId = '';
 
   // lastActiveTabId = -1;
 
@@ -569,36 +587,37 @@ export default class TabPageStore {
     if (this.View !== View.TagView) {
       this.setView(View.TagView, addToNavStack);
     } else if (addToNavStack) {
-      this.pushNavEntry([
-        this.View,
-        this.activeTabId,
-        this.viewingTag ? this.viewingTag.title : '',
-        this.urlText,
-      ]);
+      this.pushNavEntry({
+        view: this.View,
+        tabId: this.activeTabId,
+        tagTitle: this.viewingTag ? this.viewingTag.title : '',
+        fuzzyText: this.urlText,
+        selectedListItemId: this.lastSelectedListItemId,
+      });
     }
 
     this.viewingTag = tag;
   }
 
-  pushNavEntry(entry: [View, number, string, string]) {
+  pushNavEntry(entry: NavEntry) {
     this.viewNavStack.push(entry);
     while (this.viewNavStack.length > 256) {
       this.viewNavStack.shift();
     }
   }
 
-  printNavHistory() {
-    ipcRenderer.send(
-      'log-data',
-      JSON.stringify(
-        this.viewNavStack.map((printEntry) => [
-          View[printEntry[0]],
-          printEntry[1],
-          printEntry[2],
-        ])
-      )
-    );
-  }
+  // printNavHistory() {
+  //   ipcRenderer.send(
+  //     'log-data',
+  //     JSON.stringify(
+  //       this.viewNavStack.map((printEntry) => [
+  //         View[printEntry[0]],
+  //         printEntry[1],
+  //         printEntry[2],
+  //       ])
+  //     )
+  //   );
+  // }
 
   tabWithUrlOpen(url: string): boolean {
     const match = Object.values(this.openTabs).find(
@@ -1338,10 +1357,12 @@ export default class TabPageStore {
     ipcRenderer.send('close-tag-modal');
     const last = this.viewNavStack.pop();
     if (last) {
-      const lastView = last[0];
-      const lastTabId = last[1];
-      const lastTagTitle = last[2];
-      const lastFuzzyText = last[3];
+      const lastView = last.view;
+      const lastTabId = last.tabId;
+      const lastTagTitle = last.tagTitle;
+      const lastFuzzyText = last.fuzzyText;
+      this.lastSelectedListItemId = last.selectedListItemId || '';
+
       if (lastView === View.Navigator && lastTabId !== -1) {
         ipcRenderer.send('set-tab', lastTabId);
       }
