@@ -179,7 +179,6 @@ function initMenu(wm: WindowManager) {
           wm.tabPageView.webContents.send('save-snapshot');
           wm.saveHistory();
           setTimeout(() => {
-            wm.mainWindow?.destroy();
             app.quit();
           }, 100);
         },

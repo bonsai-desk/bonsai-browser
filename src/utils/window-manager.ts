@@ -2112,6 +2112,9 @@ export default class WindowManager {
       }
 
       autoUpdater.quitAndInstall(false, true);
+      if (process.platform === 'darwin') {
+        app.quit();
+      }
     });
   }
 }
