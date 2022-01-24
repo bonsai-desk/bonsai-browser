@@ -159,7 +159,7 @@ export default class WindowManager {
     // this.tagModalView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -1808,6 +1808,9 @@ export default class WindowManager {
       if (this.webBrowserViewActive()) {
         this.unSetTab();
       }
+    });
+    ipcMain.on('click-header', () => {
+      this.unSetTab(true, false, View.Tabs);
     });
     ipcMain.on('unset-tab', () => {
       if (this.webBrowserViewActive()) {

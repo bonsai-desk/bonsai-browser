@@ -95,14 +95,7 @@ const Content = observer(({ tag }: { tag: TagModel }) => {
     <ColumnContainer
       MiniColumn={<BackColumn />}
       Header={<TagViewHeader tag={tag} />}
-      Left={
-        <TagPages
-          tag={tag}
-          onClick={(page) => {
-            ipcRenderer.send('open-workspace-url', page.url);
-          }}
-        />
-      }
+      Left={<TagPages tag={tag} />}
       Right={<ActiveListPage />}
     />
   );

@@ -50,7 +50,9 @@ const Header = observer(({ onViewPage }: { onViewPage: boolean }) => {
   const [bonsaiBoxFocus, setBonsaiBoxFocus] = useState(false);
 
   useEffect(() => {
-    tabPageStore.bonsaiBoxRef = bonsaiBoxRef;
+    runInAction(() => {
+      tabPageStore.bonsaiBoxRef = bonsaiBoxRef;
+    });
   });
 
   const activeStyle = {

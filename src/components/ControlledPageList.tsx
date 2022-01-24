@@ -81,24 +81,43 @@ const ControlledList = observer(
       initialHighlightedItemId
     );
 
+    const [lastHighlightedIdx, setLastHighlightedIdx] = useState<number>(
+      items.findIndex((item) => item.id === initialHighlightedItemId)
+    );
+
+    const highlightedIdx = items.findIndex(
+      (item) => item.id === highlightedTabId
+    );
+    const highlightedItem = items.find((item) => item.id === highlightedTabId);
+
+    useEffect(() => {
+      setLastHighlightedIdx(highlightedIdx);
+    }, [highlightedIdx]);
+
+    // todo make this more efficient
+    useEffect(() => {}, [highlightedTabId, items, snapToFirst]);
+
+    useEffect(() => {
+      if (!highlightedItem) {
+        if (lastHighlightedIdx > 0) {
+          const { id } = items[lastHighlightedIdx - 1];
+          setHighlightedTabId(id);
+        } else if (snapToFirst) {
+          const firstTab = items[0];
+          if (
+            typeof highlightedItem === 'undefined' &&
+            typeof firstTab !== 'undefined'
+          )
+            runInAction(() => {
+              setHighlightedTabId(firstTab.id);
+            });
+        }
+      }
+    }, [snapToFirst, items, highlightedItem, lastHighlightedIdx]);
+
     const [mouseEnabled, setMouseEnabled] = useState(false);
 
     const scrollBoxRef = useRef<HTMLDivElement>(null);
-
-    // todo make this more efficient
-    useEffect(() => {
-      if (snapToFirst) {
-        const firstTab = items[0];
-        const highlightedTab = items.find((tab) => tab.id === highlightedTabId);
-        if (
-          typeof highlightedTab === 'undefined' &&
-          typeof firstTab !== 'undefined'
-        )
-          runInAction(() => {
-            setHighlightedTabId(firstTab.id);
-          });
-      }
-    }, [highlightedTabId, items, snapToFirst]);
 
     useEffect(() => {
       if (resetHighlightOnChange) {
@@ -163,14 +182,7 @@ const ControlledList = observer(
 
     const closeHighlightedTab = useCallback(
       (trigger: Trigger) => {
-        const idToRemove = highlightedTabId;
-        const idx = items.findIndex((tab) => {
-          return tab.id === idToRemove;
-        });
-        const highlightedItem = items.find(
-          (tab) => tab.id === highlightedTabId
-        );
-
+        const idx = highlightedIdx;
         if (
           typeof highlightedItem !== 'undefined' &&
           typeof highlightedItem.delete !== 'undefined'
@@ -180,24 +192,21 @@ const ControlledList = observer(
               idx === items.length - 1 &&
               highlightedItem.delete.bounceOffEnd
             ) {
-              moveTabSelection('up');
+              // moveTabSelection('up');
             } else {
-              moveTabSelection('down');
+              // moveTabSelection('down');
             }
           }
           highlightedItem.delete.onClick(trigger);
           setMouseEnabled(false);
         }
       },
-      [highlightedTabId, items, moveTabSelection]
+      [highlightedIdx, highlightedItem, items]
     );
 
     const clickHighlightedTab = useCallback(
       (trigger: 'mouse' | 'hotkey') => {
         // ipcRenderer.send('set-tab', highlightedTabId);
-        const highlightedItem = items.find(
-          (tab) => tab.id === highlightedTabId
-        );
         if (
           typeof highlightedItem !== 'undefined' &&
           typeof highlightedItem.onClick !== 'undefined'
@@ -205,14 +214,11 @@ const ControlledList = observer(
           highlightedItem.onClick(trigger);
         }
       },
-      [highlightedTabId, items]
+      [highlightedItem]
     );
 
     const altClickHighlightedTab = useCallback(
       (trigger: 'mouse' | 'hotkey', move = true) => {
-        const highlightedItem = items.find(
-          (tab) => tab.id === highlightedTabId
-        );
         const idx = items.findIndex((tab) => {
           return tab.id === highlightedTabId;
         });
@@ -228,11 +234,10 @@ const ControlledList = observer(
           highlightedItem.onAltClick(trigger);
         }
       },
-      [highlightedTabId, items]
+      [moveTabSelection, highlightedItem, highlightedTabId, items]
     );
 
     useEffect(() => {
-      const highlightedItem = items.find((tab) => tab.id === highlightedTabId);
       let enterHandle = '';
       if (
         typeof highlightedItem !== 'undefined' &&
@@ -258,7 +263,13 @@ const ControlledList = observer(
           tabPageStore.unregisterKeybind(enterHandle);
         }
       };
-    }, [tabPageStore, highlightedTabId, items, clickHighlightedTab]);
+    }, [
+      highlightedItem,
+      tabPageStore,
+      highlightedTabId,
+      items,
+      clickHighlightedTab,
+    ]);
 
     useEffect(() => {
       const downKeys = ['down', 'ctrl+j'].concat(safeKeysOnly ? [] : ['j']);
@@ -268,9 +279,6 @@ const ControlledList = observer(
       );
 
       const toggleAddTag = () => {
-        const highlightedItem = items.find(
-          (tab) => tab.id === highlightedTabId
-        );
         if (highlightedItem && highlightedItem.onTag) {
           highlightedItem.onTag();
         }
@@ -319,7 +327,10 @@ const ControlledList = observer(
         unbind('d');
       };
     }, [
+      altClickHighlightedTab,
+      highlightedItem,
       tabPageStore.bonsaiBoxFocus,
+      tabPageStore.bonsaiBoxRef,
       highlightedTabId,
       safeKeysOnly,
       closeHighlightedTab,

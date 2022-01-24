@@ -203,13 +203,7 @@ const Home = observer(() => {
             tabPageStore.View !== View.Tabs &&
             (id === 'header' || id === 'footer' || id === 'workspaceBackground')
           ) {
-            if (tabPageStore.View === View.Navigator) {
-              ipcRenderer.send('click-main');
-            }
-
-            runInAction(() => {
-              tabPageStore.View = View.Tabs;
-            });
+            ipcRenderer.send('click-header');
           }
         }}
       >

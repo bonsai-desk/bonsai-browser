@@ -1294,9 +1294,8 @@ export default class TabPageStore {
       TabPageStore.navForward();
     });
     renderOn('set-view', (_, view) => {
-      runInAction(() => {
-        this.View = view;
-      });
+      // console.log('set view ', view);
+      this.View = view;
     });
     renderOn('set-page-zoom-factor', (_, [id, zoomFactor]) => {
       const tab = this.openTabs[id];
