@@ -11,22 +11,12 @@ import {
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { autoUpdater } from 'electron-updater';
-import log from 'electron-log';
-import { setInterval } from 'timers';
 import WindowManager from './window-manager';
 import { windowHasView } from './utils';
 import { makeWebContentsSafe } from './wm-utils';
 import MixpanelManager from './mixpanel-manager';
 import { ICON_PNG, ICON_PNG_2, ICON_SMALL_PNG } from '../main-constants';
 import { View } from '../constants';
-
-function updateIfNeeded() {
-  // eslint-disable-next-line global-require
-  log.transports.file.level = 'info';
-  autoUpdater.logger = log;
-  autoUpdater.checkForUpdatesAndNotify();
-}
 
 function initMenu(wm: WindowManager) {
   const edit: MenuItemConstructorOptions = {
@@ -494,7 +484,10 @@ export const createWindow = async () => {
   initApp(wm);
 
   if (app.isPackaged) {
-    updateIfNeeded();
-    setInterval(updateIfNeeded, 1000 * 60 * 60);
+    const second = 1000;
+    const minute = 60;
+    setInterval(() => {
+      wm.checkForUpdates();
+    }, second * minute * 5);
   }
 };

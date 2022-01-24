@@ -63,7 +63,11 @@ import {
   Radio,
   Slider,
 } from '@mui/material';
-import { Settings as SettingsIcon } from '@mui/icons-material';
+import {
+  BrowserUpdated,
+  FiberManualRecord,
+  Settings as SettingsIcon,
+} from '@mui/icons-material';
 import GenericModal from './GenericModal';
 import { useStore } from '../store/tab-page-store';
 import MiniGenericModal from './MiniGenericModal';
@@ -737,6 +741,151 @@ const WorkspaceSnapshot = ({
   );
 };
 
+const PaddedPaper = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <Paper>
+      <Container sx={{ padding: '1rem 0 1rem 0' }}>{children}</Container>
+    </Paper>
+  );
+};
+
+function updateStateToString(status: string) {
+  switch (status) {
+    case 'checking':
+      return 'checking for updates';
+    case 'update-available':
+      return 'downloading...';
+    case 'update-not-available':
+      return 'you are on the latest version';
+    case 'error':
+      return 'error checking for update. try again';
+    default:
+      break;
+  }
+  return 'unknown';
+}
+
+function CircularProgressWithLabel({ value }: { value: number }) {
+  return (
+    <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+      <CircularProgress variant="determinate" value={value} />
+      <Box
+        sx={{
+          top: 0,
+          left: 0,
+          bottom: 0,
+          right: 0,
+          position: 'absolute',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Typography
+          variant="caption"
+          component="div"
+          color="text.secondary"
+        >{`${Math.round(value)}%`}</Typography>
+      </Box>
+    </Box>
+  );
+}
+
+const UpdatesPage = observer(() => {
+  const { tabPageStore } = useStore();
+
+  let lastChecked = 'Never';
+  if (tabPageStore.lastUpdateCheckTime) {
+    const timeStr = timeAgo.format(tabPageStore.lastUpdateCheckTime);
+    if (typeof timeStr === 'string') {
+      lastChecked = timeStr;
+    }
+  }
+
+  const checking = tabPageStore.updateState === 'checking';
+  const percent = tabPageStore.updateDownloaded
+    ? 100
+    : tabPageStore.updateDownloadProgressPercent;
+
+  const status = (
+    <>
+      <Typography variant="h6">Status</Typography>
+      <div>
+        {tabPageStore.updateDownloaded
+          ? 'Downloaded'
+          : updateStateToString(tabPageStore.updateState)}
+      </div>
+      <div>
+        {tabPageStore.updateState === 'update-available' ||
+        tabPageStore.updateDownloaded ? (
+          <CircularProgressWithLabel value={percent} />
+        ) : null}
+      </div>
+    </>
+  );
+
+  const info = tabPageStore.updateState === 'idle' ? null : status;
+
+  const content = (
+    <>
+      <Box sx={{ m: 1, position: 'relative' }}>
+        <Button
+          variant="contained"
+          disabled={checking}
+          onClick={() => {
+            ipcRenderer.send('check-for-updates');
+          }}
+        >
+          Check for Updates
+          {checking && (
+            <CircularProgress
+              size={24}
+              sx={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                marginTop: '-12px',
+                marginLeft: '-12px',
+              }}
+            />
+          )}
+        </Button>
+      </Box>
+      <Typography variant="caption">{`Last Check: ${lastChecked}`}</Typography>
+      <div>{info}</div>
+    </>
+  );
+
+  return (
+    <SettingsContainer title="Update">
+      <Stack spacing={4}>
+        <div>
+          <PaddedPaper>
+            <Stack spacing={2}>
+              {!tabPageStore.updateDownloaded ? (
+                content
+              ) : (
+                <>
+                  <Typography variant="h6">Update Ready</Typography>
+                  <div>
+                    <Button
+                      onClick={() => {
+                        ipcRenderer.send('update-and-restart');
+                      }}
+                    >
+                      Install and Restart
+                    </Button>
+                  </div>
+                </>
+              )}
+            </Stack>
+          </PaddedPaper>
+        </div>
+      </Stack>
+    </SettingsContainer>
+  );
+});
+
 const AccountPage = observer(() => {
   const [values, setValues] = useState<IAccountPageValues>({
     snapshots: [],
@@ -909,7 +1058,18 @@ interface IMenuList {
   setActivePage: (name: Page) => void;
 }
 
+enum Page {
+  Update = 'Update',
+  Account = 'Account',
+  Shortcuts = 'Shortcuts',
+  StoryBoard = 'Story Board',
+  Feedback = 'Feedback',
+  SettingsItem = 'Settings',
+}
+
 const MenuList = observer(({ menuItems, setActivePage }: IMenuList) => {
+  const { tabPageStore } = useStore();
+
   return (
     <Paper sx={{ height: '100%' }}>
       <List>
@@ -936,6 +1096,9 @@ const MenuList = observer(({ menuItems, setActivePage }: IMenuList) => {
           >
             <ListItemIcon>{Icon}</ListItemIcon>
             <ListItemText primary={title} />
+            {title === Page[Page.Update] && tabPageStore.updateDownloaded ? (
+              <FiberManualRecord color="error" />
+            ) : null}
           </ListItemButton>
         ))}
       </List>
@@ -943,14 +1106,6 @@ const MenuList = observer(({ menuItems, setActivePage }: IMenuList) => {
     </Paper>
   );
 });
-
-const PaddedPaper = ({ children }: { children: React.ReactNode }) => {
-  return (
-    <Paper>
-      <Container sx={{ padding: '1rem 0 1rem 0' }}>{children}</Container>
-    </Paper>
-  );
-};
 
 const Settings = observer(() => {
   // const { tabPageStore } = useStore();
@@ -1065,14 +1220,6 @@ const Settings = observer(() => {
     </SettingsContainer>
   );
 });
-
-enum Page {
-  Account = 'Account',
-  Shortcuts = 'Shortcuts',
-  StoryBoard = 'Story Board',
-  Feedback = 'Feedback',
-  SettingsItem = 'Settings',
-}
 
 function getActivePage(activePage: Page, menuItems: IMenuItem[]) {
   let page: React.ReactNode = <div>not found</div>;
@@ -1369,13 +1516,16 @@ const ConfigPage = observer(() => {
   );
 });
 
-const Foo = observer(() => {
+const SettingsModalContent = observer(() => {
   const { tabPageStore } = useStore();
 
-  const [activePage, setActivePage] = useState<Page>(Page.Account);
+  const [activePage, setActivePage] = useState<Page>(
+    tabPageStore.updateDownloaded ? Page.Update : Page.Account
+  );
 
   let menuItems: IMenuItem[] = [
     { Icon: <AccountBox />, title: Page.Account, Page: <AccountPage /> },
+    { Icon: <BrowserUpdated />, title: Page.Update, Page: <UpdatesPage /> },
     { Icon: <SettingsIcon />, title: Page.SettingsItem, Page: <ConfigPage /> },
     { Icon: <Keyboard />, title: Page.Shortcuts, Page: <Settings /> },
     { Icon: <Comment />, title: Page.Feedback, Page: <FeedbackPage /> },
@@ -1399,16 +1549,6 @@ const Foo = observer(() => {
 
   const ActivePage = getActivePage(activePage, menuItems);
 
-  // return (
-  //   <Grid sx={{ width: '1000px', height: '100%' }} container spacing={0}>
-  //     <Grid item xs={3}>
-  //       <MenuList menuItems={menuItems} setActivePage={setActive} />
-  //     </Grid>
-  //     <Grid sx={{ height: '100%', overflowY: 'auto' }} item xs={9}>
-  //       <Container>{ActivePage}</Container>
-  //     </Grid>
-  //   </Grid>
-  // );
   return (
     <Grid
       sx={{
@@ -1433,7 +1573,7 @@ const SettingsModal = observer(() => {
   return (
     <>
       <GenericModal view={View.Settings}>
-        <Foo />
+        <SettingsModalContent />
       </GenericModal>
 
       <RebindModal active={!!tabPageStore.rebindModalId} />

@@ -6,7 +6,7 @@ import { MoreHoriz } from '@material-ui/icons';
 import { Stack } from '@material-ui/core';
 import { ipcRenderer } from 'electron';
 import { Style } from '@mui/icons-material';
-import { Tooltip } from '@mui/material';
+import { Badge, Tooltip } from '@mui/material';
 import { useStore } from '../../store/tab-page-store';
 import { BigButton } from '../Buttons';
 import TagButton from '../../watermelon/components/TagButton';
@@ -91,19 +91,28 @@ const Header = observer(({ onViewPage }: { onViewPage: boolean }) => {
     >
       <Stack direction="row" spacing={1}>
         <div>
-          <BigButton
-            className="is-active"
-            onClick={() => {
-              if (tabPageStore.View === View.Navigator) {
-                ipcRenderer.send('click-main');
-              }
-              runInAction(() => {
-                tabPageStore.View = View.Settings;
-              });
-            }}
+          <Badge
+            color="error"
+            overlap="circular"
+            badgeContent="•"
+            sx={{ pointerEvents: 'none' }}
+            invisible={!tabPageStore.updateDownloaded}
           >
-            <MoreHoriz />
-          </BigButton>
+            <BigButton
+              style={{ pointerEvents: 'auto' }}
+              className="is-active"
+              onClick={() => {
+                if (tabPageStore.View === View.Navigator) {
+                  ipcRenderer.send('click-main');
+                }
+                runInAction(() => {
+                  tabPageStore.View = View.Settings;
+                });
+              }}
+            >
+              <MoreHoriz />
+            </BigButton>
+          </Badge>
         </div>
         <Input
           className="mousetrap"

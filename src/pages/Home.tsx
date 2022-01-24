@@ -1,10 +1,23 @@
 /* eslint no-console: off */
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { ipcRenderer } from 'electron';
 import styled from 'styled-components';
-import { createTheme, ThemeProvider, useMediaQuery } from '@mui/material';
+import {
+  Box,
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  CardHeader,
+  createTheme,
+  IconButton,
+  ThemeProvider,
+  useMediaQuery,
+} from '@mui/material';
 import { runInAction } from 'mobx';
+import { Close } from '@material-ui/icons';
+import { Typography } from '@material-ui/core';
 import TabPageStore, { useStore } from '../store/tab-page-store';
 import Header from '../components/URLBox';
 import FuzzyTabs from '../components/FuzzyTabs';
@@ -92,6 +105,91 @@ const ContentParent = styled.div`
   align-content: center;
   overflow: hidden;
 `;
+
+const UpdateModalBackground = styled.div`
+  position: absolute;
+  right: 25px;
+  bottom: 25px;
+  box-shadow: rgba(100, 100, 111, 0.2) 0 7px 29px 0;
+`;
+
+const UpdateModalContent = observer(
+  ({ onClick, onClose }: { onClick: () => void; onClose: () => void }) => {
+    return (
+      <Box>
+        <Card sx={{ maxWidth: 345 }}>
+          <CardHeader
+            action={
+              <IconButton aria-label="settings" size="small" onClick={onClose}>
+                <Close fontSize="inherit" />
+              </IconButton>
+            }
+            title="New version available"
+            // subheader="An improved version of Bonsai is available. Please restart now to
+            //   upgrade."
+          />
+          <CardContent>
+            <Typography variant="body2" color="text.secondary">
+              An improved version of Bonsai is available. Please restart now to
+              upgrade.
+            </Typography>
+          </CardContent>
+          <CardActions>
+            <Button size="small" onClick={onClick}>
+              Restart and upgrade
+            </Button>
+          </CardActions>
+        </Card>
+      </Box>
+    );
+  }
+);
+
+const UpdateModal = observer(() => {
+  const { tabPageStore } = useStore();
+
+  const [now, setNow] = useState(0);
+
+  const dismissLengthHours = 12;
+
+  let showModal = tabPageStore.updateDownloaded;
+
+  if (tabPageStore.dismissedUpdateModalTime) {
+    const msDiff = now - tabPageStore.dismissedUpdateModalTime.getTime();
+    const secondsDiff = msDiff / 1000;
+    const minuteDiff = secondsDiff / 60;
+    const hoursAgo = minuteDiff / 60;
+
+    if (hoursAgo < dismissLengthHours) {
+      showModal = false;
+    }
+  }
+
+  useEffect(() => {
+    setNow(Date.now());
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 10000);
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
+
+  return showModal ? (
+    <UpdateModalBackground>
+      <UpdateModalContent
+        onClick={() => {
+          ipcRenderer.send('update-and-restart');
+        }}
+        onClose={() => {
+          runInAction(() => {
+            tabPageStore.dismissedUpdateModalTime = new Date();
+          });
+        }}
+      />
+    </UpdateModalBackground>
+  ) : null;
+});
 
 const Home = observer(() => {
   const { tabPageStore, keybindStore } = useStore();
@@ -213,6 +311,7 @@ const Home = observer(() => {
           <DebugModal />
           <SettingsModal />
           <FloatingButtons />
+          <UpdateModal />
         </ContentParent>
       </Background>
     </ThemeProvider>

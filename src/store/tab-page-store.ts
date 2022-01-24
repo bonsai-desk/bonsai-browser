@@ -255,6 +255,21 @@ export default class TabPageStore {
 
   lastSelectedListItemId = '';
 
+  lastUpdateCheckTime: Date | null = null;
+
+  updateState:
+    | 'idle'
+    | 'checking'
+    | 'update-available'
+    | 'update-not-available'
+    | 'error' = 'idle';
+
+  updateDownloadProgressPercent = 0;
+
+  updateDownloaded = false;
+
+  dismissedUpdateModalTime: Date | null = null;
+
   // lastActiveTabId = -1;
 
   // endregion
@@ -1349,6 +1364,40 @@ export default class TabPageStore {
     renderOn('set-tilingWidthPercent', (_, value) => {
       runInAction(() => {
         this.tilingWidthSliderValue = value;
+      });
+    });
+
+    // update stuff
+    renderOn('update-result', () => {});
+    renderOn('checking-for-update', () => {
+      runInAction(() => {
+        this.lastUpdateCheckTime = new Date();
+        this.updateState = 'checking';
+      });
+    });
+    renderOn('update-available', () => {
+      runInAction(() => {
+        this.updateState = 'update-available';
+      });
+    });
+    renderOn('update-not-available', () => {
+      runInAction(() => {
+        this.updateState = 'update-not-available';
+      });
+    });
+    renderOn('update-error', () => {
+      runInAction(() => {
+        this.updateState = 'error';
+      });
+    });
+    renderOn('download-progress', (_, percent) => {
+      runInAction(() => {
+        this.updateDownloadProgressPercent = percent;
+      });
+    });
+    renderOn('update-downloaded', () => {
+      runInAction(() => {
+        this.updateDownloaded = true;
       });
     });
   }

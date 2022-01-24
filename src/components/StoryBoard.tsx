@@ -65,6 +65,7 @@ const Storyboard = observer(() => {
         </Stack>
         <Divider />
         <SearchInputParent placeholder="Search" />
+        <Divider />
       </Stack>
     </SettingsContainer>
   );

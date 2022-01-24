@@ -16,6 +16,8 @@ import fs from 'fs';
 import Fuse from 'fuse.js';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { autoUpdater } from 'electron-updater';
+import { ProgressInfo } from 'electron-builder';
 import {
   FIND_HTML,
   floatingWindowEdgeMargin,
@@ -181,6 +183,8 @@ export default class WindowManager {
         );
       }
 
+      this.checkForUpdates();
+
       this.setDisplay(this.display);
     });
 
@@ -253,6 +257,7 @@ export default class WindowManager {
       }
     }, 10);
 
+    this.registerUpdateEventListeners();
     this.addListeners();
 
     mainWindow.webContents.on('did-finish-load', () => {
@@ -1718,6 +1723,41 @@ export default class WindowManager {
     this.sendCurrentPageZoom();
   }
 
+  async checkForUpdates() {
+    if (!app.isPackaged) {
+      return; // updating only works on packaged builds
+    }
+
+    await autoUpdater.checkForUpdates();
+    this.tabPageView.webContents.send('update-result');
+  }
+
+  registerUpdateEventListeners() {
+    autoUpdater.on('checking-for-update', () => {
+      this.tabPageView.webContents.send('checking-for-update');
+    });
+    autoUpdater.on('update-available', () => {
+      this.tabPageView.webContents.send('update-available');
+    });
+    autoUpdater.on('update-not-available', () => {
+      this.tabPageView.webContents.send('update-not-available');
+    });
+    autoUpdater.on('error', (err: Error) => {
+      console.log('update-error');
+      console.log(err);
+      this.tabPageView.webContents.send('update-error');
+    });
+    autoUpdater.on('download-progress', (progressObj: ProgressInfo) => {
+      this.tabPageView.webContents.send(
+        'download-progress',
+        progressObj.percent
+      );
+    });
+    autoUpdater.on('update-downloaded', () => {
+      this.tabPageView.webContents.send('update-downloaded');
+    });
+  }
+
   addListeners() {
     ipcMain.on('create-new-tab', (_, switchToTab = false) => {
       const id = this.createNewTab();
@@ -2062,6 +2102,16 @@ export default class WindowManager {
       this.saveData.save();
       this.resizeBrowserWindow();
       this.handleResize();
+    });
+    ipcMain.on('check-for-updates', () => {
+      this.checkForUpdates();
+    });
+    ipcMain.on('update-and-restart', () => {
+      if (!app.isPackaged) {
+        return;
+      }
+
+      autoUpdater.quitAndInstall(false, true);
     });
   }
 }
