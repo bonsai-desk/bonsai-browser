@@ -1,5 +1,31 @@
 # Changelog
 
+## Bonsai v1.2.1 (January 25 2022)
+
+### **Features**
+- Support for local files
+  - Click and drag file into window or put file path in search box
+- Custom floating window widths in settings
+- Open and close pages from tag views without leaving view
+  - Click the green indicator, use hotkey, or middle mouse click item
+- Update notifications in app
+- Page zooming hotkeys
+- Ctrl+Shift+Tab to cycle through tabs
+- Buttons for tagging and closing pages on list items
+
+### **Fixes**
+- Tagged pages now have screenshots
+- Alt+H/L no longer fills bonsai box with junk (macOS)
+- Arrows don't work on some bonsai text boxes
+- Right column dissapears sometimes in domain view
+- List items in tag page remember selection when navigating
+
+### **Other**
+- Added some pre-filled data for first time users
+- Blur text box when mouse highlights a list item
+- Most recently used tag at top of tag modal
+- Cleaner ordering of items' tags in tag page view
+
 ## Bonsai 1.2.0 (January 14, 2022)
 
 ### Features
