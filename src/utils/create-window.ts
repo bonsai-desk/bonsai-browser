@@ -267,6 +267,17 @@ function initMenu(wm: WindowManager) {
           wm.zoomInCurrentPage();
         },
       },
+      {
+        label: 'Go to All Tags Page',
+        accelerator: 'CmdOrCtrl+g',
+        click: () => {
+          if (wm.activeTabId === -1) {
+            wm.tabPageView.webContents.send('set-view', View.AllTagsView);
+          } else {
+            wm.unSetTab(true, false, View.AllTagsView);
+          }
+        },
+      },
     ],
   });
 
