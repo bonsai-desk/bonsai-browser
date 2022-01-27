@@ -270,6 +270,8 @@ export default class TabPageStore {
 
   dismissedUpdateModalTime: Date | null = null;
 
+  shouldNotFocusBonsaiBox = false;
+
   // lastActiveTabId = -1;
 
   // endregion
@@ -1400,6 +1402,16 @@ export default class TabPageStore {
         this.updateDownloaded = true;
       });
     });
+    renderOn('set-shouldNotFocusBonsaiBox', (_, shouldNotFocusBonsaiBox) => {
+      runInAction(() => {
+        this.shouldNotFocusBonsaiBox = shouldNotFocusBonsaiBox;
+      });
+    });
+  }
+
+  setShouldNotFocusBonsaiBox(shouldNotFocusBonsaiBox: boolean) {
+    this.shouldNotFocusBonsaiBox = shouldNotFocusBonsaiBox;
+    ipcRenderer.send('set-shouldNotFocusBonsaiBox', shouldNotFocusBonsaiBox);
   }
 
   navBack() {

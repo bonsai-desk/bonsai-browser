@@ -183,6 +183,13 @@ export default class WindowManager {
         );
       }
 
+      if (this.saveData.data.shouldNotFocusBonsaiBox) {
+        this.tabPageView.webContents.send(
+          'set-shouldNotFocusBonsaiBox',
+          this.saveData.data.shouldNotFocusBonsaiBox
+        );
+      }
+
       this.checkForUpdates();
 
       this.setDisplay(this.display);
@@ -544,10 +551,18 @@ export default class WindowManager {
     }
 
     this.mainWindow.focus();
-    this.tabPageView.webContents.focus();
-    setTimeout(() => {
-      this.tabPageView.webContents.send('focus-search');
-    }, 100);
+
+    const webPageOpen = this.activeTabId !== -1;
+    const shouldNotFocusBonsaiBox =
+      typeof this.saveData.data.shouldNotFocusBonsaiBox !== 'undefined' &&
+      this.saveData.data.shouldNotFocusBonsaiBox;
+    const dontFocusBonsaiBox = shouldNotFocusBonsaiBox && webPageOpen;
+    if (!dontFocusBonsaiBox) {
+      this.tabPageView.webContents.focus();
+      setTimeout(() => {
+        this.tabPageView.webContents.send('focus-search');
+      }, 100);
+    }
 
     setTimeout(() => {
       this.handleResize();
@@ -2115,6 +2130,10 @@ export default class WindowManager {
       if (process.platform === 'darwin') {
         app.quit();
       }
+    });
+    ipcMain.on('set-shouldNotFocusBonsaiBox', (_, shouldNotFocusBonsaiBox) => {
+      this.saveData.data.shouldNotFocusBonsaiBox = shouldNotFocusBonsaiBox;
+      this.saveData.save();
     });
   }
 }

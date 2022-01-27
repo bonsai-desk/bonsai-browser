@@ -1511,6 +1511,40 @@ const ConfigPage = observer(() => {
             </Button>
           </PaddedPaper>
         </div>
+        <div>
+          <Typography variant="h6" gutterBottom>
+            Auto Focus Search
+          </Typography>
+          <PaddedPaper>
+            <div>
+              should the search box auto focus when you toggle the app if you
+              are on a web page?
+            </div>
+            <ToggleButtonGroup
+              value={tabPageStore.shouldNotFocusBonsaiBox ? 'no' : 'yes'}
+              exclusive
+              onChange={(_, newAlignment: string | null) => {
+                if (!newAlignment) {
+                  return;
+                }
+
+                if (newAlignment === 'yes') {
+                  tabPageStore.setShouldNotFocusBonsaiBox(false);
+                } else {
+                  tabPageStore.setShouldNotFocusBonsaiBox(true);
+                }
+              }}
+              aria-label="text alignment"
+            >
+              <ToggleButton value="yes" aria-label="left aligned">
+                Yes
+              </ToggleButton>
+              <ToggleButton value="no" aria-label="centered">
+                No
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </PaddedPaper>
+        </div>
       </Stack>
     </SettingsContainer>
   );

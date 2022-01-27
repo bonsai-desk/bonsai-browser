@@ -6,15 +6,18 @@ import { tryDecrypt } from './utils';
 import { tryParseJSON } from './wm-utils';
 
 class SaveData {
+  // all values must be nullable and not need a default value
   data: {
     seenEmailForm?: boolean;
     toggledOnce?: boolean;
     session?: Session;
     tabView?: number;
     tilingWidthPercent?: number;
+    shouldNotFocusBonsaiBox?: boolean;
   };
 
   constructor() {
+    // dont set default values here because users on older versions wont get the new default data when they update
     this.data = {};
     this.load();
   }
