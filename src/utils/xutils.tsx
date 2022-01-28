@@ -123,7 +123,7 @@ function tabToItem(
             </div>
           ) : undefined
         }
-        led={{ enabled: LED, clickLed: () => {}, tooltip: '' }}
+        led={{ enabled: LED, tooltip: '' }}
       />
     ),
     onClick: (trigger) => {

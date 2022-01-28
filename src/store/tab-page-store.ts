@@ -107,7 +107,7 @@ export default class TabPageStore {
 
   // region home
 
-  homeView: HomeView = HomeView.List;
+  homeView: HomeView = HomeView.Domain;
 
   // endregion
 

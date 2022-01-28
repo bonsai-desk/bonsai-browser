@@ -2,14 +2,7 @@ import styled from 'styled-components';
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import { Circle, CircleOutlined, Delete } from '@mui/icons-material';
-import {
-  Fade,
-  Grid,
-  IconButton,
-  Stack,
-  Tooltip,
-  Typography,
-} from '@mui/material';
+import { Fade, Grid, IconButton, Tooltip, Typography } from '@mui/material';
 import Favicon from './Favicon';
 import { color } from '../utils/jsutils';
 import { TagWithTitle } from '../watermelon/components/Tag';
@@ -28,7 +21,7 @@ export interface IHomeListItem {
   firstTag?: string;
   // clickLed?: () => void;
   led?: {
-    clickLed: () => void;
+    clickLed?: () => void;
     tooltip: string;
     enabled: boolean;
   };
@@ -90,6 +83,17 @@ const InnerParent = styled.div`
 const TabInnerParent = styled(InnerParent)`
   height: 19px;
 `;
+
+const LedCircle = () => {
+  return (
+    <CircleOutlined
+      sx={{
+        color: color('confirmation-color', 'opacity-high'),
+        fontSize: '9px',
+      }}
+    />
+  );
+};
 
 const FavTitle = styled.div`
   height: 16px;
@@ -203,7 +207,6 @@ const GoogItemParent = styled.div`
   width: 600px;
   margin: 0 0 0 28px;
   padding: 0 0 30px 0;
-  cursor: pointer;
 `;
 
 const UrlParent = styled.div`
@@ -211,17 +214,18 @@ const UrlParent = styled.div`
   font-size: 14px;
   letter-spacing: 0.15px;
   width: 350px;
-`;
-
-const GoogUrl = styled.div`
-  color: #202124;
-`;
-
-const BreadcrumbParent = styled.div`
-  color: #5f6368;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+`;
+
+const GoogUrl = styled.span`
+  color: #202124;
+`;
+
+const BreadcrumbParent = styled.span`
+  color: #5f6368;
+  position: relative;
 `;
 
 const Breadcrumbs = ({ crumbs }: { crumbs: string[] }) => {
@@ -254,23 +258,7 @@ function getAllIndexes(arr: string, val: string) {
 }
 
 export const GoogListItem = observer(
-  ({
-    title,
-    favicon,
-    active,
-    url = '',
-    hideTags = [],
-    noClickTags = [],
-    firstTag = '',
-    extraButtons,
-    led,
-  }: IHomeListItem) => {
-    const { tabPageStore } = useStore();
-
-    // const LED = led?.enabled || false;
-    // const clickLed = led?.clickLed;
-    // const tooltip = led?.tooltip || '';
-
+  ({ title, active, url = '' }: IHomeListItem) => {
     const description =
       'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras venenatis non ligula sit amet porta. Vestibulum venenatis nisi ex, eu iaculis est rhoncus sed. Quisque ac felis maximus, faucibus arcu et, consectetur purus. Etiam ultricies ipsum et posuere tempor. Sed urna nulla, dignissim in diam sed, maximus vehicula est. Etiam eget sem et ligula semper pellentesque. Cras convallis viverra finibus. Aliquam dolor nunc, fermentum sit amet sodales non, sodales sit amet neque. Morbi malesuada massa at elit molestie, nec eleifend quam mollis. Nunc et mauris molestie, vestibulum diam in, aliquam justo. Cras volutpat elit ipsum, at iaculis libero tristique gravida. Nullam faucibus eros non enim porta elementum. Maecenas non ligula tincidunt, posuere nunc id, ornare metus. Nullam sit amet lobortis tellus. Phasellus neque ex, vulputate semper feugiat non, tincidunt sed leo. Nullam id luctus risus, non semper eros.';
 
@@ -293,25 +281,26 @@ export const GoogListItem = observer(
         .slice(0, queryBegin[0])
         .slice(idxs[2])
         .split('/')
-        .filter((crumb) => crumb);
+        .filter((crumb) => crumb)
+        .map((crumb) => decodeURIComponent(crumb));
     }
 
     return (
-      <GoogItemParent>
-        <UrlParent>
-          <Stack direction="row" spacing={0}>
+      <div style={{ cursor: 'pointer' }}>
+        <GoogItemParent>
+          <UrlParent>
             <GoogUrl>{processedUrl}</GoogUrl>
             <Breadcrumbs crumbs={crumbs} />
-          </Stack>
-        </UrlParent>
-        <GoogBlueLink
-          sx={{ textDecoration: active ? 'underline' : null }}
-          fontSize="20px"
-        >
-          {title}
-        </GoogBlueLink>
-        <GoogDescription>{choppedDescription}</GoogDescription>
-      </GoogItemParent>
+          </UrlParent>
+          <GoogBlueLink
+            sx={{ textDecoration: active ? 'underline' : null }}
+            fontSize="20px"
+          >
+            {title}
+          </GoogBlueLink>
+          <GoogDescription>{choppedDescription}</GoogDescription>
+        </GoogItemParent>
+      </div>
     );
   }
 );
@@ -361,12 +350,7 @@ export const PageListItem = observer(
                     }}
                   >
                     <LEDParent>
-                      <CircleOutlined
-                        sx={{
-                          color: color('confirmation-color', 'opacity-high'),
-                          fontSize: '9px',
-                        }}
-                      />
+                      <LedCircle />
                     </LEDParent>
                   </LEDContainer>
                 </Tooltip>

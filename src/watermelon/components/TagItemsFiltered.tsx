@@ -8,6 +8,10 @@ import ControlledList from '../../components/ControlledPageList';
 import { pagesToItems, tabsToGoogItems, tagsToItems } from '../../utils/xutils';
 import { GoogListItem } from '../../components/ListItem';
 
+function aGoogleSearch(url: string) {
+  return url.includes('https://www.google.com/search');
+}
+
 const TagItemsFiltered: React.FC<{
   filterText: string;
   pages: PageModel[];
@@ -17,9 +21,9 @@ const TagItemsFiltered: React.FC<{
 
   const lowerFilterText = filterText.toLocaleLowerCase();
 
-  const filteredOpenTabs = tabPageStore.filteredOpenTabs.map(
-    (value) => value.item
-  );
+  const filteredOpenTabs = tabPageStore.filteredOpenTabs
+    .map((value) => value.item)
+    .filter((tab) => !aGoogleSearch(tab.url));
 
   const openUrls = filteredOpenTabs.map((tab) => tab.url);
 

@@ -102,9 +102,13 @@ const ControlledList = observer(
 
     useEffect(() => {
       if (!highlightedItem) {
-        const lastItem = items[lastHighlightedIdx - 1];
+        const lastItem = items[lastHighlightedIdx];
+        const aboveItem = items[lastHighlightedIdx - 1];
         if (lastHighlightedIdx > 0 && lastItem) {
           const { id } = lastItem;
+          setHighlightedTabId(id);
+        } else if (aboveItem) {
+          const { id } = aboveItem;
           setHighlightedTabId(id);
         } else if (snapToFirst) {
           const firstTab = items[0];

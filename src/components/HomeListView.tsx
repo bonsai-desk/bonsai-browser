@@ -138,20 +138,20 @@ const HomeHeader = observer(() => {
       />
       <ViewHeader
         onClick={() => {
-          tabPageStore.setHomeView(HomeView.List);
-        }}
-        active={tabPageStore.homeView === HomeView.List}
-      >
-        Recent
-      </ViewHeader>
-      {' • '}
-      <ViewHeader
-        onClick={() => {
           tabPageStore.setHomeView(HomeView.Domain);
         }}
         active={tabPageStore.homeView === HomeView.Domain}
       >
         Domains
+      </ViewHeader>
+      {' • '}
+      <ViewHeader
+        onClick={() => {
+          tabPageStore.setHomeView(HomeView.List);
+        }}
+        active={tabPageStore.homeView === HomeView.List}
+      >
+        Recent
       </ViewHeader>
     </div>
   );
