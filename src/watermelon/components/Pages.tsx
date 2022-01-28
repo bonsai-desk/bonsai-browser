@@ -8,7 +8,8 @@ import PageModel from '../PageModel';
 import ControlledList from '../../components/ControlledPageList';
 import { useStore } from '../../store/tab-page-store';
 import { pagesToItems, titleToItem } from '../../utils/xutils';
-import { ListItem } from '../../interface/ListItem';
+import { IListItem } from '../../interface/ListItem';
+import { PageListItem } from '../../components/ListItem';
 
 const Pages: React.FC<{
   tag: TagModel;
@@ -80,7 +81,7 @@ const Pages: React.FC<{
     }
   });
 
-  const items: ListItem[] = [];
+  const items: IListItem[] = [];
 
   tagGroupsTitlesOrder.forEach((title) => {
     items.push(
@@ -92,6 +93,7 @@ const Pages: React.FC<{
       tabPageStore,
       tagGroups[title],
       'tag page',
+      PageListItem,
       tag,
       [tag.title, title]
     );
@@ -108,6 +110,7 @@ const Pages: React.FC<{
       tabPageStore,
       singleTagGroup,
       'tag page',
+      PageListItem,
       tag,
       [tag.title]
     );
@@ -122,6 +125,7 @@ const Pages: React.FC<{
       tabPageStore,
       threeOrMoreTagsGroup,
       'tag page',
+      PageListItem,
       tag,
       [tag.title]
     );
