@@ -244,7 +244,7 @@ export function pagesToItems(
         ipcRenderer.send('open-workspace-url', page.url);
         trackOpenItem(trigger, 'saved page', location);
       },
-      onAltClick: !pageIsOpen ? altClick : undefined,
+      onAltClick: !pageIsOpen ? altClick : onDelete,
       onTag,
       onIdChange: () => {
         store.setHighlightedTabId(page.id);

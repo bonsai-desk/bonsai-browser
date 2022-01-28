@@ -253,56 +253,6 @@ function getAllIndexes(arr: string, val: string) {
   return indexes;
 }
 
-// const GoogListItem = ({
-//   title,
-//   url,
-//   description,
-//   active = false,
-// }: {
-//   url: string;
-//   title: string;
-//   description: string;
-//   active?: boolean;
-// }) => {
-//   const choppedDescription =
-//     description.length > 155 ? `${description.slice(0, 155)} ...` : description;
-//
-//   const idxs = getAllIndexes(url, '/');
-//   const queryBegin = getAllIndexes(url, '?');
-//   if (queryBegin.length === 0) {
-//     queryBegin.push(url.length);
-//   }
-//
-//   let processedUrl = url;
-//   let crumbs: string[] = [];
-//   if (idxs.length > 2) {
-//     processedUrl = url.slice(0, idxs[2]);
-//     crumbs = url
-//       .slice(0, queryBegin[0])
-//       .slice(idxs[2])
-//       .split('/')
-//       .filter((crumb) => crumb);
-//   }
-//
-//   return (
-//     <GoogItemParent>
-//       <UrlParent>
-//         <Stack direction="row" spacing={0}>
-//           <GoogUrl>{processedUrl}</GoogUrl>
-//           <Breadcrumbs crumbs={crumbs} />
-//         </Stack>
-//       </UrlParent>
-//       <GoogBlueLink
-//         sx={{ textDecoration: active ? 'underline' : null }}
-//         fontSize="20px"
-//       >
-//         {title}
-//       </GoogBlueLink>
-//       <GoogDescription>{choppedDescription}</GoogDescription>
-//     </GoogItemParent>
-//   );
-// };
-
 export const GoogListItem = observer(
   ({
     title,
