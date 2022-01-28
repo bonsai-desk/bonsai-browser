@@ -5,7 +5,7 @@ import { Stack } from '@mui/material';
 import styled from 'styled-components';
 import { observer } from 'mobx-react-lite';
 import { relativeItem } from '../utils/utils';
-import { ListItem, Trigger } from '../interface/ListItem';
+import { IListItem, Trigger } from '../interface/ListItem';
 import { useStore } from '../store/tab-page-store';
 
 const WrappedListItem = ({
@@ -69,7 +69,7 @@ const ControlledList = observer(
     resetHighlightOnChange = false,
     uncappedTop = false,
   }: {
-    items: ListItem[];
+    items: IListItem[];
     initialHighlightedItemId: string;
     snapToFirst?: boolean;
     safeKeysOnly?: boolean;
@@ -102,8 +102,9 @@ const ControlledList = observer(
 
     useEffect(() => {
       if (!highlightedItem) {
-        if (lastHighlightedIdx > 0) {
-          const { id } = items[lastHighlightedIdx - 1];
+        const lastItem = items[lastHighlightedIdx - 1];
+        if (lastHighlightedIdx > 0 && lastItem) {
+          const { id } = lastItem;
           setHighlightedTabId(id);
         } else if (snapToFirst) {
           const firstTab = items[0];

@@ -79,7 +79,12 @@ import {
   InertButtonStyle,
 } from './StretchButton';
 import refreshIcon from '../../assets/refresh.svg';
-import { bindEquals, globalKeybindValid, showKeys } from '../store/keybinds';
+import {
+  bindEquals,
+  globalKeybindValid,
+  searchEngines,
+  showKeys,
+} from '../store/keybinds';
 import Storyboard from './StoryBoard';
 import HeaderText from './HeaderText';
 import SettingsContainer from './SettingsContainer';
@@ -1349,10 +1354,11 @@ const ConfigPage = observer(() => {
   const { theme } = keybindStore.settings;
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    let search: 'Google' | 'DuckDuckGo' = 'Google';
+    let search: 'Google' | 'DuckDuckGo' | 'Andi' = 'Google';
     if (
       event.target.value === 'Google' ||
-      event.target.value === 'DuckDuckGo'
+      event.target.value === 'DuckDuckGo' ||
+      event.target.value === 'Andi'
     ) {
       search = event.target.value;
     }
@@ -1453,7 +1459,7 @@ const ConfigPage = observer(() => {
                 value={keybindStore.settings.selectedSearch}
                 onChange={handleChange}
               >
-                {Array.from(keybindStore.settings.search.keys()).map((key) => {
+                {Array.from(Object.keys(searchEngines)).map((key) => {
                   return (
                     <FormControlLabel
                       key={key}

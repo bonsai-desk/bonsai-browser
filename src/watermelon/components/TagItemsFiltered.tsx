@@ -3,9 +3,10 @@ import { observer } from 'mobx-react-lite';
 import PageModel from '../PageModel';
 import TagModel from '../TagModel';
 import { useStore } from '../../store/tab-page-store';
-import { ListItem } from '../../interface/ListItem';
+import { IListItem } from '../../interface/ListItem';
 import ControlledList from '../../components/ControlledPageList';
-import { pagesToItems, tabsToItems, tagsToItems } from '../../utils/xutils';
+import { pagesToItems, tabsToGoogItems, tagsToItems } from '../../utils/xutils';
+import { GoogListItem } from '../../components/ListItem';
 
 const TagItemsFiltered: React.FC<{
   filterText: string;
@@ -22,7 +23,7 @@ const TagItemsFiltered: React.FC<{
 
   const openUrls = filteredOpenTabs.map((tab) => tab.url);
 
-  const openPageItems = tabsToItems(
+  const openPageItems = tabsToGoogItems(
     tabPageStore,
     filteredOpenTabs,
     true,
@@ -38,18 +39,19 @@ const TagItemsFiltered: React.FC<{
   const taggedPageItems = pagesToItems(
     tabPageStore,
     taggedPagesFiltered,
-    'search page'
+    'search page',
+    GoogListItem
   );
 
   const tagsFiltered = tagsToItems(
     tabPageStore,
-    tags.filter((tag) =>
-      tag.title.toLocaleLowerCase().includes(lowerFilterText)
-    ),
+    tags
+      .filter((tag) => tag.title.toLocaleLowerCase().includes(lowerFilterText))
+      .slice(0, 3),
     'search page'
   );
 
-  const items: ListItem[] = tagsFiltered
+  const items: IListItem[] = tagsFiltered
     .concat(openPageItems)
     .concat(taggedPageItems);
 

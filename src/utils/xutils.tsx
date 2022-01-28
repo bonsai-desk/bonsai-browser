@@ -6,9 +6,15 @@ import { Close, LocalOffer } from '@mui/icons-material';
 import PageModel from '../watermelon/PageModel';
 import { TabPageTab, tabTitle } from '../interfaces/tab';
 import TabPageStore from '../store/tab-page-store';
-import { PageListItem, TagListItem, TitleItem } from '../components/ListItem';
+import {
+  GoogListItem,
+  IHomeListItem,
+  PageListItem,
+  TagListItem,
+  TitleItem,
+} from '../components/ListItem';
 import TagModel from '../watermelon/TagModel';
-import { ListItem, Trigger } from '../interface/ListItem';
+import { IListItem, Trigger } from '../interface/ListItem';
 import { getRootDomain } from './data';
 import {
   Location,
@@ -24,7 +30,7 @@ export function titleToItem(
   location: Location,
   domainTabs?: TabPageTab[],
   onClick?: () => void
-): ListItem {
+): IListItem {
   return {
     id: title,
     item: title,
@@ -69,8 +75,9 @@ function tabToItem(
   tab: TabPageTab,
   store: TabPageStore,
   LED = false,
-  location: Location
-): ListItem {
+  location: Location,
+  ListItem: (a: IHomeListItem) => JSX.Element
+): IListItem {
   function onTag() {
     runInAction(() => {
       store.selectedForTagTab = tab;
@@ -87,7 +94,7 @@ function tabToItem(
     id: tab.id.toString(),
     item: tab,
     Node: ({ active }: { active: boolean }) => (
-      <PageListItem
+      <ListItem
         active={active}
         url={tab.url}
         title={tabTitle(tab)}
@@ -146,9 +153,10 @@ export function pagesToItems(
   store: TabPageStore,
   pages: PageModel[],
   location: Location,
+  ListItem: (x: IHomeListItem) => JSX.Element,
   parentTag?: TagModel,
   hideTags?: string[]
-): ListItem[] {
+): IListItem[] {
   // page id to tab id
   const pageIdToTabId: Record<string, number> = {};
 
@@ -205,7 +213,7 @@ export function pagesToItems(
       id: page.id,
       item: page,
       Node: ({ active }: { active: boolean }) => (
-        <PageListItem
+        <ListItem
           active={active}
           key={page.id}
           url={page.url}
@@ -261,8 +269,17 @@ export function tabsToItems(
   tabs: TabPageTab[],
   LED = false,
   location: Location
-): ListItem[] {
-  return tabs.map((tab) => tabToItem(tab, store, LED, location));
+): IListItem[] {
+  return tabs.map((tab) => tabToItem(tab, store, LED, location, PageListItem));
+}
+
+export function tabsToGoogItems(
+  store: TabPageStore,
+  tabs: TabPageTab[],
+  LED = false,
+  location: Location
+): IListItem[] {
+  return tabs.map((tab) => tabToItem(tab, store, LED, location, GoogListItem));
 }
 
 type Domain = string;
@@ -272,7 +289,7 @@ export function tabsToItemsByDomain(
   tabs: TabPageTab[],
   LED = false,
   location: Location
-): ListItem[] {
+): IListItem[] {
   const domains: Record<Domain, TabPageTab[]> = {};
 
   tabs.forEach((tab) => {
@@ -314,12 +331,12 @@ export function tabsToItemsByDomain(
     return 0;
   });
 
-  const items: ListItem[] = [];
+  const items: IListItem[] = [];
 
   domainsList.forEach(([domain, domainTabs]) => {
     items.push(titleToItem(domain, store, location, domainTabs));
     domainTabs.forEach((tab) => {
-      items.push(tabToItem(tab, store, LED, location));
+      items.push(tabToItem(tab, store, LED, location, PageListItem));
     });
   });
 
@@ -374,7 +391,7 @@ export function tagsToItems(
   location: Location,
   onDelete?: (tag: TagModel) => void,
   counts?: number[]
-): ListItem[] {
+): IListItem[] {
   const countsExist = typeof counts !== 'undefined';
   return tags.map((tag, idx) => ({
     id: tag.id,

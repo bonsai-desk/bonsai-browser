@@ -2,7 +2,14 @@ import styled from 'styled-components';
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import { Circle, CircleOutlined, Delete } from '@mui/icons-material';
-import { Fade, Grid, IconButton, Tooltip } from '@mui/material';
+import {
+  Fade,
+  Grid,
+  IconButton,
+  Stack,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import Favicon from './Favicon';
 import { color } from '../utils/jsutils';
 import { TagWithTitle } from '../watermelon/components/Tag';
@@ -191,6 +198,174 @@ const LEDContainer = styled.div`
   }
 `;
 
+const GoogItemParent = styled.div`
+  font-family: Roboto, arial, sans-serif;
+  width: 600px;
+  margin: 0 0 0 28px;
+  padding: 0 0 30px 0;
+  cursor: pointer;
+`;
+
+const UrlParent = styled.div`
+  margin: 0 0 2px 0;
+  font-size: 14px;
+  letter-spacing: 0.15px;
+  width: 350px;
+`;
+
+const GoogUrl = styled.div`
+  color: #202124;
+`;
+
+const BreadcrumbParent = styled.div`
+  color: #5f6368;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+`;
+
+const Breadcrumbs = ({ crumbs }: { crumbs: string[] }) => {
+  let chain = '';
+  crumbs.forEach((crumb) => {
+    chain += ` › ${crumb}`;
+  });
+  return <BreadcrumbParent>{chain}</BreadcrumbParent>;
+};
+
+const GoogBlueLink = styled(Typography)`
+  font-size: 20px;
+  color: #1a0dab;
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+`;
+
+const GoogDescription = styled.div`
+  color: #4d5156;
+  font-size: 14px;
+`;
+
+function getAllIndexes(arr: string, val: string) {
+  const indexes = [];
+  let i;
+  for (i = 0; i < arr.length; i += 1) if (arr[i] === val) indexes.push(i);
+  return indexes;
+}
+
+// const GoogListItem = ({
+//   title,
+//   url,
+//   description,
+//   active = false,
+// }: {
+//   url: string;
+//   title: string;
+//   description: string;
+//   active?: boolean;
+// }) => {
+//   const choppedDescription =
+//     description.length > 155 ? `${description.slice(0, 155)} ...` : description;
+//
+//   const idxs = getAllIndexes(url, '/');
+//   const queryBegin = getAllIndexes(url, '?');
+//   if (queryBegin.length === 0) {
+//     queryBegin.push(url.length);
+//   }
+//
+//   let processedUrl = url;
+//   let crumbs: string[] = [];
+//   if (idxs.length > 2) {
+//     processedUrl = url.slice(0, idxs[2]);
+//     crumbs = url
+//       .slice(0, queryBegin[0])
+//       .slice(idxs[2])
+//       .split('/')
+//       .filter((crumb) => crumb);
+//   }
+//
+//   return (
+//     <GoogItemParent>
+//       <UrlParent>
+//         <Stack direction="row" spacing={0}>
+//           <GoogUrl>{processedUrl}</GoogUrl>
+//           <Breadcrumbs crumbs={crumbs} />
+//         </Stack>
+//       </UrlParent>
+//       <GoogBlueLink
+//         sx={{ textDecoration: active ? 'underline' : null }}
+//         fontSize="20px"
+//       >
+//         {title}
+//       </GoogBlueLink>
+//       <GoogDescription>{choppedDescription}</GoogDescription>
+//     </GoogItemParent>
+//   );
+// };
+
+export const GoogListItem = observer(
+  ({
+    title,
+    favicon,
+    active,
+    url = '',
+    hideTags = [],
+    noClickTags = [],
+    firstTag = '',
+    extraButtons,
+    led,
+  }: IHomeListItem) => {
+    const { tabPageStore } = useStore();
+
+    // const LED = led?.enabled || false;
+    // const clickLed = led?.clickLed;
+    // const tooltip = led?.tooltip || '';
+
+    const description =
+      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras venenatis non ligula sit amet porta. Vestibulum venenatis nisi ex, eu iaculis est rhoncus sed. Quisque ac felis maximus, faucibus arcu et, consectetur purus. Etiam ultricies ipsum et posuere tempor. Sed urna nulla, dignissim in diam sed, maximus vehicula est. Etiam eget sem et ligula semper pellentesque. Cras convallis viverra finibus. Aliquam dolor nunc, fermentum sit amet sodales non, sodales sit amet neque. Morbi malesuada massa at elit molestie, nec eleifend quam mollis. Nunc et mauris molestie, vestibulum diam in, aliquam justo. Cras volutpat elit ipsum, at iaculis libero tristique gravida. Nullam faucibus eros non enim porta elementum. Maecenas non ligula tincidunt, posuere nunc id, ornare metus. Nullam sit amet lobortis tellus. Phasellus neque ex, vulputate semper feugiat non, tincidunt sed leo. Nullam id luctus risus, non semper eros.';
+
+    const choppedDescription =
+      description.length > 155
+        ? `${description.slice(0, 155)} ...`
+        : description;
+
+    const idxs = getAllIndexes(url, '/');
+    const queryBegin = getAllIndexes(url, '?');
+    if (queryBegin.length === 0) {
+      queryBegin.push(url.length);
+    }
+
+    let processedUrl = url;
+    let crumbs: string[] = [];
+    if (idxs.length > 2) {
+      processedUrl = url.slice(0, idxs[2]);
+      crumbs = url
+        .slice(0, queryBegin[0])
+        .slice(idxs[2])
+        .split('/')
+        .filter((crumb) => crumb);
+    }
+
+    return (
+      <GoogItemParent>
+        <UrlParent>
+          <Stack direction="row" spacing={0}>
+            <GoogUrl>{processedUrl}</GoogUrl>
+            <Breadcrumbs crumbs={crumbs} />
+          </Stack>
+        </UrlParent>
+        <GoogBlueLink
+          sx={{ textDecoration: active ? 'underline' : null }}
+          fontSize="20px"
+        >
+          {title}
+        </GoogBlueLink>
+        <GoogDescription>{choppedDescription}</GoogDescription>
+      </GoogItemParent>
+    );
+  }
+);
+
 export const PageListItem = observer(
   ({
     title,
@@ -208,8 +383,6 @@ export const PageListItem = observer(
     const LED = led?.enabled || false;
     const clickLed = led?.clickLed;
     const tooltip = led?.tooltip || '';
-
-    // const { enabled = false, clickLed, tooltip } = led;
 
     return (
       <HomeListItemParent

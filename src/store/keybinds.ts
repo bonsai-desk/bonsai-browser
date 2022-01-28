@@ -7,6 +7,13 @@ import { myPlatform, Platform } from '../render-constants';
 
 const GOOG_STRING = 'https://www.google.com/search?q=%s';
 const DUCK_STRING = 'https://duckduckgo.com/?q=%s';
+const ANDI_STRING = 'https://andisearch.com/nav/?query=%s';
+
+export const searchEngines = {
+  Google: GOOG_STRING,
+  DuckDuckGo: DUCK_STRING,
+  Andi: ANDI_STRING,
+};
 
 function loadJSON(store: Instance<any>, encrypted = true): any {
   if (store.userDataPath !== '') {
@@ -175,8 +182,7 @@ const Settings = types.model({
   theme: types.enumeration('theme', ['system', 'dark', 'light']),
   backgroundEnabled: types.boolean,
   background: types.string,
-  search: types.map(types.string),
-  selectedSearch: types.enumeration('search', ['Google', 'DuckDuckGo']),
+  selectedSearch: types.enumeration('search', ['Google', 'DuckDuckGo', 'Andi']),
 });
 
 export const KeybindStore = types
@@ -185,7 +191,7 @@ export const KeybindStore = types
     userDataPath: '',
   }))
   .actions((self) => ({
-    setSearch(search: 'Google' | 'DuckDuckGo') {
+    setSearch(search: 'Google' | 'DuckDuckGo' | 'Andi') {
       self.settings.selectedSearch = search;
       saveSnapshot(self, false);
     },
@@ -221,9 +227,7 @@ export const KeybindStore = types
   }))
   .views((self) => ({
     searchString(): string {
-      return (
-        self.settings.search.get(self.settings.selectedSearch) || GOOG_STRING
-      );
+      return searchEngines[self.settings.selectedSearch] || GOOG_STRING;
     },
     isBind(e: KeyboardEvent, bind: string): boolean {
       // ipcRenderer.send('log-data', { bind });
@@ -249,10 +253,6 @@ export function defaultKeybindStore(): Instance<typeof KeybindStore> {
       background: 'fcba03',
       backgroundEnabled: false,
       selectedSearch: 'Google',
-      search: {
-        Google: GOOG_STRING,
-        DuckDuckGo: DUCK_STRING,
-      },
     },
     binds: {
       'toggle-floating-window': {

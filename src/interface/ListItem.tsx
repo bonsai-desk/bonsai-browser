@@ -1,6 +1,6 @@
 export type Trigger = 'mouse' | 'hotkey';
 
-export interface ListItem {
+export interface IListItem {
   id: string;
   item: any;
   Node: ({ active }: { active: boolean }) => JSX.Element;
