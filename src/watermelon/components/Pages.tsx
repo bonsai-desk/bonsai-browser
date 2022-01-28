@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { withDatabase } from '@nozbe/watermelondb/DatabaseProvider';
 import withObservables from '@nozbe/with-observables';
 import { observer } from 'mobx-react-lite';
@@ -7,7 +7,8 @@ import TagModel from '../TagModel';
 import PageModel from '../PageModel';
 import ControlledList from '../../components/ControlledPageList';
 import { useStore } from '../../store/tab-page-store';
-import { pagesToItems } from '../../utils/xutils';
+import { pagesToItems, titleToItem } from '../../utils/xutils';
+import { ListItem } from '../../interface/ListItem';
 
 const Pages: React.FC<{
   tag: TagModel;
@@ -15,17 +16,119 @@ const Pages: React.FC<{
 }> = observer(({ tag, pages }) => {
   const { tabPageStore } = useStore();
 
-  pages.sort((a, b) => {
-    if (a.createdAt.getTime() > b.createdAt.getTime()) {
-      return -1;
+  const [pageTags, setPageTags] = useState<
+    { page: PageModel; tags: TagModel[] }[]
+  >([]);
+
+  useEffect(() => {
+    const promises: Promise<TagModel[]>[] = [];
+    const sortedPages = pages
+      .map((page) => page)
+      .sort((a, b) => {
+        return b.createdAt.getTime() - a.createdAt.getTime();
+      });
+    for (let i = 0; i < sortedPages.length; i += 1) {
+      promises.push(sortedPages[i].tags.fetch());
     }
-    if (a.createdAt.getTime() < b.createdAt.getTime()) {
-      return 1;
-    }
-    return 0;
+    Promise.all(promises)
+      .then((values) => {
+        const newPageTags: { page: PageModel; tags: TagModel[] }[] = [];
+        for (let i = 0; i < sortedPages.length; i += 1) {
+          newPageTags.push({ page: sortedPages[i], tags: values[i] });
+        }
+        setPageTags(newPageTags);
+        return null;
+      })
+      .catch(() => {
+        //
+      });
+  }, [pages]);
+
+  pageTags.sort((a, b) => {
+    return b.tags.length - a.tags.length;
   });
 
-  const items = pagesToItems(tabPageStore, pages, 'tag page', tag);
+  const tagGroupsTitlesOrder: string[] = [];
+  const tagGroups: Record<string, PageModel[]> = {};
+  const singleTagGroup: PageModel[] = [];
+  const threeOrMoreTagsGroup: PageModel[] = [];
+
+  pageTags.forEach(({ page, tags }) => {
+    let otherTagTitle = '';
+    switch (tags.length) {
+      case 1:
+        singleTagGroup.push(page);
+        break;
+      case 2:
+        for (let i = 0; i < tags.length; i += 1) {
+          if (tags[i].title !== tag.title) {
+            otherTagTitle = tags[i].title;
+            break;
+          }
+        }
+        if (!tagGroupsTitlesOrder.includes(otherTagTitle)) {
+          tagGroupsTitlesOrder.push(otherTagTitle);
+        }
+        if (!tagGroups[otherTagTitle]) {
+          tagGroups[otherTagTitle] = [];
+        }
+        tagGroups[otherTagTitle].push(page);
+        break;
+      default:
+        threeOrMoreTagsGroup.push(page);
+        break;
+    }
+  });
+
+  const items: ListItem[] = [];
+
+  tagGroupsTitlesOrder.forEach((title) => {
+    items.push(
+      titleToItem(title, tabPageStore, 'tag page', undefined, () => {
+        tabPageStore.goToTag(title);
+      })
+    );
+    const pageItems = pagesToItems(
+      tabPageStore,
+      tagGroups[title],
+      'tag page',
+      tag,
+      [tag.title, title]
+    );
+    pageItems.forEach((pageItem) => {
+      items.push(pageItem);
+    });
+  });
+
+  if (singleTagGroup.length > 0) {
+    items.push(
+      titleToItem(`${tag.title} only`, tabPageStore, 'tag page', undefined)
+    );
+    const pageItems = pagesToItems(
+      tabPageStore,
+      singleTagGroup,
+      'tag page',
+      tag,
+      [tag.title]
+    );
+    pageItems.forEach((pageItem) => {
+      items.push(pageItem);
+    });
+  }
+
+  if (threeOrMoreTagsGroup.length > 0) {
+    items.push(titleToItem(`3+ tags`, tabPageStore, 'tag page', undefined));
+    const pageItems = pagesToItems(
+      tabPageStore,
+      threeOrMoreTagsGroup,
+      'tag page',
+      tag,
+      [tag.title]
+    );
+    pageItems.forEach((pageItem) => {
+      items.push(pageItem);
+    });
+  }
 
   useEffect(() => {
     return () => {

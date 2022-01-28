@@ -18,11 +18,12 @@ import {
 } from './tracking';
 import { baseUrl } from './utils';
 
-function titleToItem(
+export function titleToItem(
   title: string,
   store: TabPageStore,
   location: Location,
-  domainTabs?: TabPageTab[]
+  domainTabs?: TabPageTab[],
+  onClick?: () => void
 ): ListItem {
   return {
     id: title,
@@ -30,7 +31,7 @@ function titleToItem(
     Node: ({ active }: { active: boolean }) => (
       <TitleItem title={title} active={active} />
     ),
-    onClick: () => {},
+    onClick,
     onTag: () => {},
     onIdChange: () => {
       store.blurBonsaiBox();
@@ -145,7 +146,8 @@ export function pagesToItems(
   store: TabPageStore,
   pages: PageModel[],
   location: Location,
-  parentTag?: TagModel
+  parentTag?: TagModel,
+  hideTags?: string[]
 ): ListItem[] {
   // page id to tab id
   const pageIdToTabId: Record<string, number> = {};
@@ -209,7 +211,7 @@ export function pagesToItems(
           url={page.url}
           title={tabTitle(page)}
           favicon={page.favicon}
-          hideTags={[]}
+          hideTags={hideTags}
           firstTag={parentTag ? parentTag.title : undefined}
           noClickTags={parentTag ? [parentTag.title] : undefined}
           led={led}
