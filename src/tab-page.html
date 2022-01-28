@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <style>
+      .error-catch {
+        background-color: red;
+        background-image: url(../assets/bonsai-logo-excited.svg);
+      }
+    </style>
     <meta charset="utf-8" />
     <title>Bonsai</title>
     <script>
@@ -38,6 +44,16 @@
             .map((script) => `<script defer src="${script}"><\/script>`)
             .join('')
         );
+      }
+      let setBackground = false;
+      function handleLoad() {
+        if (!setBackground) {
+          setBackground = true;
+          setTimeout(() => {
+            const el = document.getElementsByTagName('body')[0];
+            el.className = 'error-catch';
+          }, 5000);
+        }
       }
     </script>
   </body>
