@@ -488,8 +488,9 @@ export const PageListItem = observer(
 const DomainTitle = styled(Title)`
   //text-decoration: underline;
   font-weight: bold;
-  margin: 0 0 0 0;
+  margin: 0 0 0 -22px;
   overflow: visible;
+  font-size: 16px;
 `;
 
 export const TitleItem = ({

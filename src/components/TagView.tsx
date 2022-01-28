@@ -7,7 +7,6 @@ import { useStore } from '../store/tab-page-store';
 import TagModel from '../watermelon/TagModel';
 import { TagPages } from '../watermelon/components/Pages';
 import { ColumnContainer } from './Column';
-import { TagWithTitle } from '../watermelon/components/Tag';
 import BackColumn from './BackColumn';
 import { DummyCard } from './Card';
 import { useWindowSize } from '../utils/utils';
@@ -30,16 +29,25 @@ const TagViewHeader = observer(({ tag }: { tag: TagModel }) => {
           margin: 'auto 0 auto 0',
         }}
       >
-        <Typography variant="h6">Pages with&nbsp;</Typography>
-      </div>
-      <div style={{ margin: 'auto 0 auto 0' }}>
-        <TagWithTitle
-          tagTitle={tag.title}
-          onClick={() => {
-            // fake on click to change cursor to pointer
+        <Typography
+          variant="h2"
+          style={{
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
           }}
-        />
+        >
+          {tag.title}
+        </Typography>
       </div>
+      {/* <div style={{ margin: 'auto 0 auto 0' }}> */}
+      {/*  <TagWithTitle */}
+      {/*    tagTitle={tag.title} */}
+      {/*    onClick={() => { */}
+      {/*      // fake on click to change cursor to pointer */}
+      {/*    }} */}
+      {/*  /> */}
+      {/* </div> */}
     </TagViewHeaderParent>
   );
 
