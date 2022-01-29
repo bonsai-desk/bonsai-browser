@@ -1285,10 +1285,6 @@ export default class TabPageStore {
         this.windowFloating = windowFloating;
       });
     });
-    // renderOn('gesture', (_, { id }) => {
-    //   // ipcRenderer.send('log-data', 'render-gesture');
-    //   // this.bumpTab(id);
-    // });
     renderOn('will-navigate', (_, { id }) => {
       runInAction(() => {
         this.navigatorTabModalSelectedNodeId = '';

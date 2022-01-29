@@ -1934,7 +1934,6 @@ export default class WindowManager {
     ipcMain.on('gesture', (event, data) => {
       log(`\n${event.sender.id} GESTURE ${data}`);
       this.setGesture(event.sender.id, true);
-      this.tabPageView.webContents.send('gesture', { id: event.sender.id });
     });
     ipcMain.on('dom-content-loaded', (event) => {
       log(`\n${event.sender.id} DOM LOADED`);

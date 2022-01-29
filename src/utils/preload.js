@@ -3,15 +3,38 @@ const { ipcRenderer } = require('electron');
 function getMeta() {
   const metas = document.getElementsByTagName('meta');
   const data = [];
+  const descriptions = [];
+  let bestDescription = '';
   for (let i = 0; i < metas.length; i += 1) {
     const name = metas[i].getAttribute('name');
+    const property = metas[i].getAttribute('property');
     const content = metas[i].getAttribute('content');
-    if (name && content) {
-      data.push([name, content]);
+
+    if (content) {
+      if (name) {
+        data.push([name, content]);
+      }
+      if (name && name.includes('description')) {
+        descriptions.push([name, content]);
+        if (name === 'description' && bestDescription === '') {
+          bestDescription = content;
+        }
+      }
+      if (property && property.includes('description')) {
+        descriptions.push([property, content]);
+        if (property === 'description' && bestDescription === '') {
+          bestDescription = content;
+        }
+      }
     }
   }
 
-  return data;
+  if (bestDescription === '' && descriptions.length > 0) {
+    // eslint-disable-next-line prefer-destructuring
+    bestDescription = descriptions[0];
+  }
+
+  return [data, bestDescription];
 }
 
 function getOpenGraphData() {
@@ -45,8 +68,6 @@ function genTriggers() {
   });
 }
 
-genTriggers();
-
 ipcRenderer.on('get-scroll-height', (_, id) => {
   ipcRenderer.send('scroll-height', [id, window.pageYOffset]);
 });
@@ -60,8 +81,16 @@ function removeChars(validChars, inputString) {
   return inputString.replace(regex, '');
 }
 
+const stopPropagationFuncTemp = Event.prototype.stopPropagation;
+Event.prototype.stopPropagation = () => {
+  stopPropagationFuncTemp.apply(this);
+  ipcRenderer.send('log-data', 'prop');
+};
+
 window.addEventListener('DOMContentLoaded', () => {
-  ipcRenderer.send('meta-info', getMeta());
+  const meta = getMeta();
+  const metaDescription = meta[1];
+  ipcRenderer.send('meta-info', meta[0]);
   ipcRenderer.send('dom-content-loaded');
 
   function drop(e) {
@@ -113,11 +142,11 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     }
   }
-  const maxLength = 500;
+  const maxLength = 250;
   const openGraphData = getOpenGraphData();
   let output =
     typeof openGraphData.description === 'undefined'
-      ? ''
+      ? `${metaDescription} `
       : `${openGraphData.description} `;
   const lines = biggestText.split(/\r\n|\r|\n/);
   for (let i = 0; i < lines.length; i += 1) {
@@ -141,4 +170,32 @@ window.addEventListener('DOMContentLoaded', () => {
   );
 
   ipcRenderer.send('scrape-data', output);
+
+  genTriggers();
+
+  const interactions = [
+    'mousewheel',
+    'onmousemove',
+    'onmousedown',
+    'onmouseup',
+    'onpointermove',
+    'onpointerdown',
+    'onpointerup',
+    'onkeydown',
+    'onkeyup',
+    'change',
+    'click',
+    'contextmenu',
+    'dblclick',
+    'mouseup',
+    'pointerup',
+    'reset',
+    'submit',
+    'touchend',
+  ];
+  interactions.forEach((interaction) => {
+    document.addEventListener(interaction, () => {
+      // ipcRenderer.send('log-data', interaction);
+    });
+  });
 });
