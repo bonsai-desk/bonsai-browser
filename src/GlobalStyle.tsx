@@ -2,6 +2,10 @@ import { createGlobalStyle } from 'styled-components';
 import { color, themePermute } from './utils/jsutils';
 
 const THEME_LIGHT = {
+  'goog-link': '#1a0dab',
+  'goog-domain': '#202124',
+  'goog-breadcrumb': '#5f6368',
+  'goog-description': '#4d5156',
   'canvas-color': '#ffffff',
   'canvas-border-color': '#d6d7d8',
   'canvas-inactive-color': '#d9dde2',
@@ -30,6 +34,10 @@ const THEME_LIGHT = {
 };
 
 const THEME_DARK = {
+  'goog-link': '#8ab4f8',
+  'goog-domain': '#bdc1c6',
+  'goog-breadcrumb': '#969ba1',
+  'goog-description': '#bdc1c6',
   'canvas-color': '#2f2f33',
   'canvas-border-color': '#585858',
   'canvas-inactive-color': '#1d1e20',

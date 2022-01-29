@@ -220,11 +220,11 @@ const UrlParent = styled.div`
 `;
 
 const GoogUrl = styled.span`
-  color: #202124;
+  color: var(--goog-domain);
 `;
 
 const BreadcrumbParent = styled.span`
-  color: #5f6368;
+  color: var(--goog-breadcrumb);
   position: relative;
 `;
 
@@ -238,7 +238,7 @@ const Breadcrumbs = ({ crumbs }: { crumbs: string[] }) => {
 
 const GoogBlueLink = styled(Typography)`
   font-size: 20px;
-  color: #1a0dab;
+  color: var(--goog-link);
   cursor: pointer;
   overflow: hidden;
   white-space: nowrap;
@@ -246,7 +246,7 @@ const GoogBlueLink = styled(Typography)`
 `;
 
 const GoogDescription = styled.div`
-  color: #4d5156;
+  color: var(--goog-description);
   font-size: 14px;
 `;
 
