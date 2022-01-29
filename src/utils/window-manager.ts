@@ -2135,5 +2135,16 @@ export default class WindowManager {
       this.saveData.data.shouldNotFocusBonsaiBox = shouldNotFocusBonsaiBox;
       this.saveData.save();
     });
+    ipcMain.on('scrape-data', (_, data) => {
+      if (this.activeTabId !== -1) {
+        const view = this.allWebViews[this.activeTabId];
+        if (view && view.view) {
+          this.tabPageView.webContents.send('description-updated', [
+            data,
+            view.view.webContents.getURL(),
+          ]);
+        }
+      }
+    });
   }
 }

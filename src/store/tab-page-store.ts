@@ -25,6 +25,7 @@ import { TagModalData } from '../pages/TagModal';
 import {
   addTagStrings,
   getPage,
+  getPageOrCreateOrUpdate,
   getTag,
   removeTagStrings,
 } from '../watermelon/databaseUtils';
@@ -803,6 +804,7 @@ export default class TabPageStore {
       lastAccessTime: new Date().getTime(),
       url: '',
       title: '',
+      description: '',
       image: '',
       favicon: '',
       openGraphInfo: undefined,
@@ -1011,7 +1013,6 @@ export default class TabPageStore {
   handleRefreshError(error: any) {
     const expiresAt = this.supaClient.auth.session()?.expires_at;
 
-    console.log(expiresAt);
     if (typeof expiresAt === 'undefined' || error.status === 400) {
       this.clearSession();
       return;
@@ -1133,6 +1134,13 @@ export default class TabPageStore {
       runInAction(() => {
         this.openTabs[id].url = url;
 
+        if (this.database) {
+          getPageOrCreateOrUpdate(this.database, baseUrl(url), {
+            title: this.openTabs[id].title,
+            favicon: this.openTabs[id].favicon,
+          });
+        }
+
         const tab = this.openTabs[id];
         if (!tab.title && tab.url.startsWith('file:')) {
           const split = tab.url.split(/[\\/]/);
@@ -1150,6 +1158,12 @@ export default class TabPageStore {
             split.length === 0 ? 'file' : split[split.length - 1];
         } else {
           this.openTabs[id].title = title;
+        }
+
+        if (this.database) {
+          getPageOrCreateOrUpdate(this.database, baseUrl(tab.url), {
+            title: tab.title,
+          });
         }
       });
     });
@@ -1227,6 +1241,13 @@ export default class TabPageStore {
     renderOn('favicon-updated', (_, [id, favicon]) => {
       runInAction(() => {
         this.openTabs[id].favicon = favicon;
+
+        const tab = this.openTabs[id];
+        if (this.database) {
+          getPageOrCreateOrUpdate(this.database, baseUrl(tab.url), {
+            favicon: tab.favicon,
+          });
+        }
       });
     });
     renderOn('history-cleared', () => {
@@ -1406,6 +1427,20 @@ export default class TabPageStore {
       runInAction(() => {
         this.shouldNotFocusBonsaiBox = shouldNotFocusBonsaiBox;
       });
+    });
+    renderOn('description-updated', (_, [data, url]) => {
+      if (!this.database) {
+        return;
+      }
+
+      getPageOrCreateOrUpdate(this.database, baseUrl(url), {
+        description: data,
+      });
+
+      const activeTab = this.openTabs[this.activeTabId];
+      if (activeTab) {
+        activeTab.description = data;
+      }
     });
   }
 

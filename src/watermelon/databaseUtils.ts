@@ -100,13 +100,30 @@ export async function getPage(
   return null;
 }
 
-export async function getPageOrCreate(
+export async function getPageOrCreateOrUpdate(
   database: Database,
   baseUrl: string,
-  pageInfo: { title: string; favicon: string }
+  {
+    title,
+    favicon,
+    description,
+  }: { title?: string; favicon?: string; description?: string }
 ): Promise<PageModel> {
   const page = await getPage(database, baseUrl);
   if (page) {
+    await database.write(async () => {
+      await page.update((updatePage) => {
+        if (typeof title !== 'undefined') {
+          updatePage.title = title;
+        }
+        if (typeof favicon !== 'undefined') {
+          updatePage.favicon = favicon;
+        }
+        if (typeof description !== 'undefined') {
+          updatePage.description = description;
+        }
+      });
+    });
     return page;
   }
 
@@ -116,9 +133,22 @@ export async function getPageOrCreate(
       .get<PageModel>(TableName.PAGES)
       .create((createPage) => {
         createPage.url = baseUrl;
-        createPage.title = pageInfo.title;
-        createPage.favicon = pageInfo.favicon;
-        createPage.image = ''; // todo: page image
+        if (typeof title !== 'undefined') {
+          createPage.title = title;
+        } else {
+          createPage.title = '';
+        }
+        if (typeof favicon !== 'undefined') {
+          createPage.favicon = favicon;
+        } else {
+          createPage.favicon = '';
+        }
+        if (typeof description !== 'undefined') {
+          createPage.description = description;
+        } else {
+          createPage.description = '';
+        }
+        createPage.image = '';
       });
   });
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -178,11 +208,11 @@ export async function removeTag(
       await pageTags[i].destroyPermanently();
     }
 
-    const num = await page.tags.fetchCount();
-    if (num === 0) {
-      ipcRenderer.send('delete-image-with-name', page.image);
-      await page.destroyPermanently();
-    }
+    // const num = await page.tags.fetchCount();
+    // if (num === 0) {
+    //   ipcRenderer.send('delete-image-with-name', page.image);
+    //   await page.destroyPermanently();
+    // }
   });
 
   trackNumTagUsage(database);
@@ -200,7 +230,7 @@ export async function addTagStrings(
   tagTitle: string,
   pageInfo: { title: string; favicon: string }
 ) {
-  const page = await getPageOrCreate(database, pageBaseUrl, pageInfo);
+  const page = await getPageOrCreateOrUpdate(database, pageBaseUrl, pageInfo);
   const tag = await getTagOrCreate(database, tagTitle);
   await addTag(database, page, tag);
 }
@@ -235,7 +265,7 @@ export async function deleteTag(database: Database, tag: TagModel) {
         if (pageTagsCounts <= 1) {
           ipcRenderer.send('delete-image-with-name', page.image);
           // eslint-disable-next-line no-await-in-loop
-          await page.destroyPermanently();
+          // await page.destroyPermanently();
         }
       }
       // eslint-disable-next-line no-await-in-loop
@@ -276,6 +306,7 @@ export async function exportWatermelon(
       title: page.title,
       favicon: page.favicon,
       image: page.image,
+      description: page.description,
     });
   });
 
@@ -330,6 +361,9 @@ export async function importWatermelon(
 
     for (let i = 0; i < dbData.pages.length; i += 1) {
       const pageData = dbData.pages[i];
+      if (typeof pageData.description === 'undefined') {
+        pageData.description = '';
+      }
       // eslint-disable-next-line no-await-in-loop
       await database.get<PageModel>(TableName.PAGES).create((createPage) => {
         // eslint-disable-next-line no-underscore-dangle

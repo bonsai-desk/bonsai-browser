@@ -21,15 +21,17 @@ export interface TabPageTab {
 
   title: string;
 
+  description: string;
+
   image: string;
 
   favicon: string;
 
   openGraphInfo?: OpenGraphInfo;
 
-  canGoBack: false;
+  canGoBack: boolean;
 
-  canGoForward: false;
+  canGoForward: boolean;
 
   // un-rooted if user dragged this tab out of its position in the tab order
   // don't care if it incidentally was re-ordered

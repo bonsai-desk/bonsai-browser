@@ -13,6 +13,7 @@ export interface PageModelDataType {
   title: string;
   favicon: string;
   image: string;
+  description: string;
 }
 
 export default class PageModel extends Model {
@@ -33,6 +34,8 @@ export default class PageModel extends Model {
   @text('favicon') favicon!: string;
 
   @text('image') image!: string;
+
+  @text('description') description!: string;
 
   @lazy
   tags = this.collections

@@ -98,6 +98,7 @@ function tabToItem(
         active={active}
         url={tab.url}
         title={tabTitle(tab)}
+        description={tab.description}
         favicon={tab.favicon}
         extraButtons={
           active ? (
@@ -218,6 +219,7 @@ export function pagesToItems(
           key={page.id}
           url={page.url}
           title={tabTitle(page)}
+          description={page.description}
           favicon={page.favicon}
           hideTags={hideTags}
           firstTag={parentTag ? parentTag.title : undefined}

@@ -9,9 +9,11 @@ import { TagWithTitle } from '../watermelon/components/Tag';
 import { useStore } from '../store/tab-page-store';
 import EnhancedTags from '../watermelon/components/EnhancedTags';
 import { trackOpenItem } from '../utils/tracking';
+import { baseUrl } from '../utils/utils';
 
 export interface IHomeListItem {
   title: string;
+  description: string;
   favicon: string;
   active: boolean;
   url?: string;
@@ -258,14 +260,16 @@ function getAllIndexes(arr: string, val: string) {
 }
 
 export const GoogListItem = observer(
-  ({ title, active, url = '' }: IHomeListItem) => {
-    const description =
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras venenatis non ligula sit amet porta. Vestibulum venenatis nisi ex, eu iaculis est rhoncus sed. Quisque ac felis maximus, faucibus arcu et, consectetur purus. Etiam ultricies ipsum et posuere tempor. Sed urna nulla, dignissim in diam sed, maximus vehicula est. Etiam eget sem et ligula semper pellentesque. Cras convallis viverra finibus. Aliquam dolor nunc, fermentum sit amet sodales non, sodales sit amet neque. Morbi malesuada massa at elit molestie, nec eleifend quam mollis. Nunc et mauris molestie, vestibulum diam in, aliquam justo. Cras volutpat elit ipsum, at iaculis libero tristique gravida. Nullam faucibus eros non enim porta elementum. Maecenas non ligula tincidunt, posuere nunc id, ornare metus. Nullam sit amet lobortis tellus. Phasellus neque ex, vulputate semper feugiat non, tincidunt sed leo. Nullam id luctus risus, non semper eros.';
+  ({ title, description, active, url = '' }: IHomeListItem) => {
+    const fullDescription =
+      description === ''
+        ? 'No information is available for this page.'
+        : description;
 
     const choppedDescription =
-      description.length > 155
-        ? `${description.slice(0, 155)} ...`
-        : description;
+      fullDescription.length > 155
+        ? `${fullDescription.slice(0, 155)} ...`
+        : fullDescription;
 
     const idxs = getAllIndexes(url, '/');
     const queryBegin = getAllIndexes(url, '?');
@@ -277,7 +281,7 @@ export const GoogListItem = observer(
     let crumbs: string[] = [];
     if (idxs.length > 2) {
       processedUrl = url.slice(0, idxs[2]);
-      crumbs = url
+      crumbs = baseUrl(url)
         .slice(0, queryBegin[0])
         .slice(idxs[2])
         .split('/')

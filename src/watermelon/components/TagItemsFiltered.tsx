@@ -7,9 +7,10 @@ import { IListItem } from '../../interface/ListItem';
 import ControlledList from '../../components/ControlledPageList';
 import { pagesToItems, tabsToGoogItems, tagsToItems } from '../../utils/xutils';
 import { GoogListItem } from '../../components/ListItem';
+import { baseUrl } from '../../utils/utils';
 
 function aGoogleSearch(url: string) {
-  return url.includes('https://www.google.com/search');
+  return url.includes('google.com/search');
 }
 
 const TagItemsFiltered: React.FC<{
@@ -25,7 +26,7 @@ const TagItemsFiltered: React.FC<{
     .map((value) => value.item)
     .filter((tab) => !aGoogleSearch(tab.url));
 
-  const openUrls = filteredOpenTabs.map((tab) => tab.url);
+  const openUrls = filteredOpenTabs.map((tab) => baseUrl(tab.url));
 
   const openPageItems = tabsToGoogItems(
     tabPageStore,
@@ -37,7 +38,8 @@ const TagItemsFiltered: React.FC<{
   const taggedPagesFiltered = pages.filter(
     (page) =>
       page.title.toLocaleLowerCase().includes(lowerFilterText) &&
-      !openUrls.includes(page.url)
+      !openUrls.includes(page.url) &&
+      !aGoogleSearch(page.url)
   );
 
   const taggedPageItems = pagesToItems(

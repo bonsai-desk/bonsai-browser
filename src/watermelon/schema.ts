@@ -9,7 +9,7 @@ export enum TableName {
 }
 
 const schema = appSchema({
-  version: 1,
+  version: 2,
   tables: [
     tableSchema({
       name: TableName.PAGES,
@@ -20,6 +20,7 @@ const schema = appSchema({
         { name: 'title', type: 'string' },
         { name: 'favicon', type: 'string' },
         { name: 'image', type: 'string' },
+        { name: 'description', type: 'string' },
       ],
     }),
     tableSchema({
