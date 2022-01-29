@@ -1,12 +1,40 @@
 import { withDatabase } from '@nozbe/watermelondb/DatabaseProvider';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 // import { ipcRenderer } from 'electron';
+import { makeAutoObservable } from 'mobx';
 import TagModel from '../TagModel';
 import { useStore } from '../../store/tab-page-store';
 import { tagsToItems } from '../../utils/xutils';
 import ControlledList from '../../components/ControlledPageList';
 import { enhanceWithAllTags } from './Tags';
+import { IListItem } from '../../interface/ListItem';
+
+class AllTagStore {
+  url = '';
+
+  counts: number[] = [];
+
+  cache: IListItem[] = [];
+
+  async fetchCounts(tags: TagModel[]) {
+    const countsPromises: Promise<number>[] = [];
+    tags.forEach((tag) => {
+      countsPromises.push(tag.pages.fetchCount());
+    });
+    this.counts = await Promise.all(countsPromises);
+  }
+
+  setCache(cache: IListItem[]) {
+    this.cache = cache;
+  }
+
+  constructor() {
+    makeAutoObservable(this);
+  }
+}
+
+const allTagStore = new AllTagStore();
 
 const AllTagsList: React.FC<{
   tags: TagModel[];
@@ -14,30 +42,18 @@ const AllTagsList: React.FC<{
   onDelete?: (tag: TagModel) => void;
   deleteTag?: (tag: TagModel) => void;
 }> = observer(({ tags, deleteTag }) => {
-  const [counts, setCounts] = useState<number[]>([]);
   const { tabPageStore } = useStore();
 
   useEffect(() => {
-    async function fetchCounts() {
-      const countsPromises: Promise<number>[] = [];
-      tags.forEach((tag) => {
-        countsPromises.push(tag.pages.fetchCount());
-      });
-      setCounts(await Promise.all(countsPromises));
-    }
-
-    fetchCounts();
+    allTagStore.fetchCounts(tags);
   }, [tags]);
 
-  if (counts.length !== tags.length) {
-    return null;
-  }
-
-  const sortable = counts.map((count, idx) => ({
+  const countAndTag = allTagStore.counts.map((count, idx) => ({
     count,
     tag: tags[idx],
   }));
-  sortable.sort((a, b) => {
+
+  countAndTag.sort((a, b) => {
     if (a.count > b.count) {
       return -1;
     }
@@ -47,15 +63,25 @@ const AllTagsList: React.FC<{
     return 0;
   });
 
-  const items = tagsToItems(
-    tabPageStore,
-    sortable.map((item) => item.tag),
-    'all tags page',
-    deleteTag,
-    sortable.map((item) => item.count)
-  );
+  let items: IListItem[] = [];
+  const gooodMatch = allTagStore.counts.length === tags.length;
+  if (gooodMatch) {
+    items = tagsToItems(
+      tabPageStore,
+      countAndTag.map((item) => item.tag),
+      'all tags page',
+      deleteTag,
+      countAndTag.map((item) => item.count)
+    );
+    allTagStore.setCache(items);
+  }
 
-  return <ControlledList items={items} initialHighlightedItemId="-1" />;
+  return (
+    <ControlledList
+      items={gooodMatch ? items : allTagStore.cache}
+      initialHighlightedItemId="-1"
+    />
+  );
 });
 const AllTags = withDatabase(enhanceWithAllTags(AllTagsList));
 
