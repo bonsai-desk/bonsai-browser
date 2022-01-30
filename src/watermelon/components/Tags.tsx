@@ -11,7 +11,7 @@ import {
   enhanceWithPageTags,
   enhanceWithTagPages,
 } from '../enhanceWithRelatedTags';
-import { baseUrl } from '../../utils/utils';
+import { getBaseUrl } from '../../utils/utils';
 
 const Tags: React.FC<{
   tags: TagModel[];
@@ -70,7 +70,10 @@ export const enhancePageFromUrlWithTags = withObservables(
       .get<TagModel>(TableName.TAGS)
       .query(
         Q.experimentalNestedJoin(TableName.PAGETAGS, TableName.PAGES),
-        Q.on(TableName.PAGETAGS, Q.on(TableName.PAGES, 'url', baseUrl(pageUrl)))
+        Q.on(
+          TableName.PAGETAGS,
+          Q.on(TableName.PAGES, 'url', getBaseUrl(pageUrl))
+        )
       ),
   })
 );

@@ -149,6 +149,7 @@ export async function getPageOrCreateOrUpdate(
           createPage.description = '';
         }
         createPage.image = '';
+        createPage.totalInteractionTime = 0;
       });
   });
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -307,6 +308,7 @@ export async function exportWatermelon(
       favicon: page.favicon,
       image: page.image,
       description: page.description,
+      totalInteractionTime: page.totalInteractionTime,
     });
   });
 

@@ -8,7 +8,7 @@ import path from 'path';
 import { runInAction } from 'mobx';
 import { Database } from '@nozbe/watermelondb';
 import WorkspaceStore from './workspace-store';
-import { base64ImgToDisk, baseUrl, tryDecrypt } from '../../utils/utils';
+import { base64ImgToDisk, getBaseUrl, tryDecrypt } from '../../utils/utils';
 import { addTagStrings } from '../../watermelon/databaseUtils';
 
 // const animationTime = 0.15;
@@ -213,7 +213,7 @@ function createWorkspaceStore(
         const group = workspace.groups.get(item.groupId);
         if (group) {
           data.push([
-            baseUrl(item.url),
+            getBaseUrl(item.url),
             group.title,
             {
               title: item.title,
@@ -223,7 +223,7 @@ function createWorkspaceStore(
         }
 
         data.push([
-          baseUrl(item.url),
+          getBaseUrl(item.url),
           workspace.name,
           {
             title: item.title,

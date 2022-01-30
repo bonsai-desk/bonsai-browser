@@ -1,5 +1,11 @@
 import { Model, Q } from '@nozbe/watermelondb';
-import { date, lazy, readonly, text } from '@nozbe/watermelondb/decorators';
+import {
+  date,
+  lazy,
+  readonly,
+  text,
+  field,
+} from '@nozbe/watermelondb/decorators';
 import { Associations } from '@nozbe/watermelondb/Model';
 import { TableName } from './schema';
 // eslint-disable-next-line import/no-cycle
@@ -14,6 +20,7 @@ export interface PageModelDataType {
   favicon: string;
   image: string;
   description: string;
+  totalInteractionTime: number;
 }
 
 export default class PageModel extends Model {
@@ -36,6 +43,8 @@ export default class PageModel extends Model {
   @text('image') image!: string;
 
   @text('description') description!: string;
+
+  @field('total_interaction_time') totalInteractionTime!: number;
 
   @lazy
   tags = this.collections

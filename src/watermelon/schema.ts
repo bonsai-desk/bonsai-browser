@@ -21,6 +21,7 @@ const schema = appSchema({
         { name: 'favicon', type: 'string' },
         { name: 'image', type: 'string' },
         { name: 'description', type: 'string' },
+        { name: 'total_interaction_time', type: 'number' },
       ],
     }),
     tableSchema({

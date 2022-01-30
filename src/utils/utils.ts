@@ -292,7 +292,7 @@ export function validateEmail(email: string) {
   return re.test(String(email).toLowerCase());
 }
 
-export function baseUrl(url: string) {
+export function getBaseUrl(url: string) {
   return url.split('#')[0];
 }
 

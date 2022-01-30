@@ -5,9 +5,8 @@ import TagModel from '../TagModel';
 import { useStore } from '../../store/tab-page-store';
 import { IListItem } from '../../interface/ListItem';
 import ControlledList from '../../components/ControlledPageList';
-import { pagesToItems, tabsToGoogItems, tagsToItems } from '../../utils/xutils';
+import { pagesToItems, tagsToItems } from '../../utils/xutils';
 import { GoogListItem } from '../../components/ListItem';
-import { baseUrl } from '../../utils/utils';
 
 function aGoogleSearch(url: string) {
   return url.includes('google.com/search');
@@ -22,29 +21,34 @@ const TagItemsFiltered: React.FC<{
 
   const lowerFilterText = filterText.toLocaleLowerCase();
 
-  const filteredOpenTabs = tabPageStore.filteredOpenTabs
-    .map((value) => value.item)
-    .filter((tab) => !aGoogleSearch(tab.url));
+  // const filteredOpenTabs = tabPageStore.filteredOpenTabs
+  //   .map((value) => value.item)
+  //   .filter((tab) => !aGoogleSearch(tab.url));
 
-  const openUrls = filteredOpenTabs.map((tab) => baseUrl(tab.url));
+  // const openUrls = filteredOpenTabs.map((tab) => getBaseUrl(tab.url));
 
-  const openPageItems = tabsToGoogItems(
-    tabPageStore,
-    filteredOpenTabs,
-    true,
-    'search page'
-  );
+  // const openPageItems = tabsToGoogItems(
+  //   tabPageStore,
+  //   filteredOpenTabs,
+  //   true,
+  //   'search page'
+  // );
 
   const taggedPagesFiltered = pages.filter(
     (page) =>
       page.title.toLocaleLowerCase().includes(lowerFilterText) &&
-      !openUrls.includes(page.url) &&
       !aGoogleSearch(page.url)
   );
 
-  const taggedPageItems = pagesToItems(
+  taggedPagesFiltered.sort((a, b) => {
+    return b.totalInteractionTime - a.totalInteractionTime;
+  });
+
+  const pagesCapped = taggedPagesFiltered.slice(0, 10);
+
+  const pageItems = pagesToItems(
     tabPageStore,
-    taggedPagesFiltered,
+    pagesCapped,
     'search page',
     GoogListItem
   );
@@ -57,9 +61,7 @@ const TagItemsFiltered: React.FC<{
     'search page'
   );
 
-  const items: IListItem[] = tagsFiltered
-    .concat(openPageItems)
-    .concat(taggedPageItems);
+  const items: IListItem[] = tagsFiltered.concat(pageItems);
 
   return (
     <ControlledList

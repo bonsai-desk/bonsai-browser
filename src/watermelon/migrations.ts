@@ -11,7 +11,10 @@ export default schemaMigrations({
       steps: [
         addColumns({
           table: TableName.PAGES,
-          columns: [{ name: 'description', type: 'string' }],
+          columns: [
+            { name: 'description', type: 'string' },
+            { name: 'total_interaction_time', type: 'number' },
+          ],
         }),
       ],
     },

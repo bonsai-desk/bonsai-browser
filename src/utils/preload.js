@@ -31,7 +31,7 @@ function getMeta() {
 
   if (bestDescription === '' && descriptions.length > 0) {
     // eslint-disable-next-line prefer-destructuring
-    bestDescription = descriptions[0];
+    bestDescription = descriptions[0][1];
   }
 
   return [data, bestDescription];
@@ -164,6 +164,7 @@ window.addEventListener('DOMContentLoaded', () => {
     output += `${longest} ${biggestText}`;
   }
   output = output.substr(0, maxLength);
+  output = output.replace(/\r\n|\r|\n/i, ' ');
   output = removeChars(
     ' abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890()-+=/',
     output
@@ -195,7 +196,7 @@ window.addEventListener('DOMContentLoaded', () => {
   ];
   interactions.forEach((interaction) => {
     document.addEventListener(interaction, () => {
-      // ipcRenderer.send('log-data', interaction);
+      ipcRenderer.send('interact');
     });
   });
 });

@@ -8,11 +8,11 @@ import { createContext, RefObject, useContext } from 'react';
 import Fuse from 'fuse.js';
 import { Instance } from 'mobx-state-tree';
 import { DropResult } from 'react-beautiful-dnd';
-import { Database } from '@nozbe/watermelondb';
+import { Database, Q } from '@nozbe/watermelondb';
 import { bind, unbind } from 'mousetrap';
 import { TabPageTab, TabPageTabInfo } from '../interfaces/tab';
 import { Direction } from '../render-constants';
-import { baseUrl, chord, clamp, unixNow } from '../utils/utils';
+import { getBaseUrl, chord, clamp, unixNow } from '../utils/utils';
 import { HistoryEntry } from '../utils/interfaces';
 import { HistoryStore } from './history-store';
 import WorkspaceStore from './workspace/workspace-store';
@@ -30,6 +30,7 @@ import {
   removeTagStrings,
 } from '../watermelon/databaseUtils';
 import PageModel from '../watermelon/PageModel';
+import { TableName } from '../watermelon/schema';
 
 const NOT_TEXT = [
   'Escape',
@@ -639,7 +640,7 @@ export default class TabPageStore {
 
   tabWithUrlOpen(url: string): boolean {
     const match = Object.values(this.openTabs).find(
-      (tab) => baseUrl(tab.url) === baseUrl(url)
+      (tab) => getBaseUrl(tab.url) === getBaseUrl(url)
     );
     return typeof match !== 'undefined';
   }
@@ -1135,7 +1136,7 @@ export default class TabPageStore {
         this.openTabs[id].url = url;
 
         if (this.database) {
-          getPageOrCreateOrUpdate(this.database, baseUrl(url), {
+          getPageOrCreateOrUpdate(this.database, getBaseUrl(url), {
             title: this.openTabs[id].title,
             favicon: this.openTabs[id].favicon,
           });
@@ -1161,7 +1162,7 @@ export default class TabPageStore {
         }
 
         if (this.database) {
-          getPageOrCreateOrUpdate(this.database, baseUrl(tab.url), {
+          getPageOrCreateOrUpdate(this.database, getBaseUrl(tab.url), {
             title: tab.title,
           });
         }
@@ -1244,7 +1245,7 @@ export default class TabPageStore {
 
         const tab = this.openTabs[id];
         if (this.database) {
-          getPageOrCreateOrUpdate(this.database, baseUrl(tab.url), {
+          getPageOrCreateOrUpdate(this.database, getBaseUrl(tab.url), {
             favicon: tab.favicon,
           });
         }
@@ -1367,7 +1368,7 @@ export default class TabPageStore {
             return;
           }
 
-          const page = await getPage(this.database, baseUrl(url));
+          const page = await getPage(this.database, getBaseUrl(url));
           if (!page) {
             return;
           }
@@ -1429,7 +1430,7 @@ export default class TabPageStore {
         return;
       }
 
-      getPageOrCreateOrUpdate(this.database, baseUrl(url), {
+      getPageOrCreateOrUpdate(this.database, getBaseUrl(url), {
         description: data,
       });
 
@@ -1437,6 +1438,30 @@ export default class TabPageStore {
       if (activeTab) {
         activeTab.description = data;
       }
+    });
+    renderOn('track-page-usage', (_, [url, time]) => {
+      (async () => {
+        if (!this.database) {
+          return;
+        }
+
+        const pages = await this.database
+          .get<PageModel>(TableName.PAGES)
+          .query(Q.where('url', getBaseUrl(url)))
+          .fetch();
+
+        if (pages.length === 0) {
+          return;
+        }
+
+        const page = pages[0];
+
+        await this.database.write(async () => {
+          await page.update((pageUpdate) => {
+            pageUpdate.totalInteractionTime = page.totalInteractionTime + time;
+          });
+        });
+      })();
     });
   }
 
@@ -1582,7 +1607,7 @@ export default class TabPageStore {
       this.recentlyUsedTagOldCheckedValue[tagEntry.title] = tagEntry.checked;
     }
 
-    const pageBaseUrl = baseUrl(tab.url);
+    const pageBaseUrl = getBaseUrl(tab.url);
 
     if (tagEntry.checked) {
       removeTagStrings(this.database, pageBaseUrl, tagEntry.title);
@@ -1608,7 +1633,7 @@ export default class TabPageStore {
 
     this.recentlyCreatedTagTitle = tagTitle;
 
-    const pageBaseUrl = baseUrl(tab.url);
+    const pageBaseUrl = getBaseUrl(tab.url);
 
     addTagStrings(this.database, pageBaseUrl, tagTitle, {
       title: tab.title,

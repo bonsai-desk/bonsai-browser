@@ -22,7 +22,7 @@ import {
   trackClosePage,
   trackOpenItem,
 } from './tracking';
-import { baseUrl } from './utils';
+import { getBaseUrl } from './utils';
 
 export function titleToItem(
   title: string,
@@ -163,7 +163,7 @@ export function pagesToItems(
 
   Object.values(store.openTabs).forEach((tab) => {
     const pageMatch = pages.find(
-      (page) => baseUrl(page.url) === baseUrl(tab.url)
+      (page) => getBaseUrl(page.url) === getBaseUrl(tab.url)
     );
     if (typeof pageMatch !== 'undefined') {
       pageIdToTabId[pageMatch.id] = tab.id;

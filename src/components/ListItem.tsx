@@ -9,7 +9,7 @@ import { TagWithTitle } from '../watermelon/components/Tag';
 import { useStore } from '../store/tab-page-store';
 import EnhancedTags from '../watermelon/components/EnhancedTags';
 import { trackOpenItem } from '../utils/tracking';
-import { baseUrl } from '../utils/utils';
+import { getBaseUrl } from '../utils/utils';
 
 export interface IHomeListItem {
   title: string;
@@ -281,7 +281,7 @@ export const GoogListItem = observer(
     let crumbs: string[] = [];
     if (idxs.length > 2) {
       processedUrl = url.slice(0, idxs[2]);
-      crumbs = baseUrl(url)
+      crumbs = getBaseUrl(url)
         .slice(0, queryBegin[0])
         .slice(idxs[2])
         .split('/')

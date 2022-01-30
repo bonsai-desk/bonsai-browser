@@ -10,7 +10,7 @@ import { enhancePageFromUrlWithTags } from './Tags';
 import { BigButton } from '../../components/Buttons';
 import { useStore } from '../../store/tab-page-store';
 import { TableName } from '../schema';
-import { baseUrl } from '../../utils/utils';
+import { getBaseUrl } from '../../utils/utils';
 import { View } from '../../constants';
 
 const Button: React.FC<{
@@ -33,10 +33,10 @@ const Button: React.FC<{
   const tab = tabPageStore.openTabs[historyStore.active];
   let tabBaseUrl = '';
   if (tab) {
-    tabBaseUrl = baseUrl(tab.url);
+    tabBaseUrl = getBaseUrl(tab.url);
   }
   if (tabPageStore.View !== View.Navigator && tabPageStore.selectedForTagTab) {
-    tabBaseUrl = baseUrl(tabPageStore.selectedForTagTab.url);
+    tabBaseUrl = getBaseUrl(tabPageStore.selectedForTagTab.url);
   }
 
   const [queryData, setQueryData] = useState<

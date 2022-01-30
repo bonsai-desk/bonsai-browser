@@ -10,7 +10,7 @@ import { Badge, Tooltip } from '@mui/material';
 import { useStore } from '../../store/tab-page-store';
 import { BigButton } from '../Buttons';
 import TagButton from '../../watermelon/components/TagButton';
-import { baseUrl } from '../../utils/utils';
+import { getBaseUrl } from '../../utils/utils';
 import { FLOATING_BORDER_THICKNESS, View } from '../../constants';
 
 const BonsaiBoxParent = styled.div`
@@ -68,7 +68,7 @@ const Header = observer(({ onViewPage }: { onViewPage: boolean }) => {
   const tab = tabPageStore.openTabs[historyStore.active];
   let tabBaseUrl = '';
   if (tab) {
-    tabBaseUrl = baseUrl(tab.url);
+    tabBaseUrl = getBaseUrl(tab.url);
   }
 
   return (

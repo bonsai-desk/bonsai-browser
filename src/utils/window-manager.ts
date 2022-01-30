@@ -32,7 +32,7 @@ import {
 } from '../constants';
 import {
   base64ImgToDisk,
-  baseUrl,
+  getBaseUrl,
   clamp,
   get16Favicon,
   stringifyMap,
@@ -111,6 +111,10 @@ export default class WindowManager {
 
   mainWindowReady = false;
 
+  pageInteraction: { url: string; time: number } | null = null;
+
+  cachedPageInteractions: Record<string, number> = {};
+
   easeOut = BezierEasing(0, 0, 0.5, 1);
 
   private readonly urlPeekView: BrowserView;
@@ -161,7 +165,7 @@ export default class WindowManager {
     // this.tagModalView.webContents.openDevTools({ mode: 'detach' });
 
     this.tabPageView = makeView(TAB_PAGE);
-    this.tabPageView.webContents.openDevTools({ mode: 'detach' });
+    // this.tabPageView.webContents.openDevTools({ mode: 'detach' });
 
     this.mainWindow.setBrowserView(this.tabPageView);
     this.tabPageView.webContents.on('did-finish-load', () => {
@@ -264,6 +268,10 @@ export default class WindowManager {
       }
     }, 10);
 
+    setInterval(() => {
+      this.handlePageInteractions();
+    }, 1000);
+
     this.registerUpdateEventListeners();
     this.addListeners();
 
@@ -365,11 +373,13 @@ export default class WindowManager {
       this.tabPageView.webContents.send('title-updated', [webView.id, title]);
     });
     webView.view.webContents.on('will-navigate', (_, url) => {
+      this.interactWithPage(url);
       handleWillNavigate(webView, url, [this.tabPageView]);
     });
     webView.view.webContents.on(
       'did-navigate',
       (event, url, httpResponseCode, httpStatusText) => {
+        this.interactWithPage(url);
         if (windowHasView(window, findView)) {
           window.removeBrowserView(findView);
         }
@@ -388,6 +398,7 @@ export default class WindowManager {
     webView.view.webContents.on(
       'did-navigate-in-page',
       (_, url, isMainFrame) => {
+        this.interactWithPage(url);
         if (isMainFrame) {
           log(`${webView.id} did-navigate-in-page main-frame to ${url}`);
           updateContents(webView, this.tabPageView);
@@ -405,6 +416,7 @@ export default class WindowManager {
       }
     );
     webView.view.webContents.on('update-target-url', (_, url) => {
+      this.interactWithPage(url);
       if (url === '') {
         if (windowHasView(window, urlPeekView)) {
           window.removeBrowserView(urlPeekView);
@@ -506,6 +518,11 @@ export default class WindowManager {
       // gets closed
       app.hide();
     }
+
+    const view = this.allWebViews[this.activeTabId];
+    if (view) {
+      this.interactWithPageAndEndUsage(view.view.webContents.getURL());
+    }
   }
 
   showWindow() {
@@ -567,6 +584,11 @@ export default class WindowManager {
     setTimeout(() => {
       this.handleResize();
     }, 100);
+
+    const view = this.allWebViews[this.activeTabId];
+    if (view) {
+      this.interactWithPage(view.view.webContents.getURL());
+    }
 
     // this.handleResize()
 
@@ -665,6 +687,10 @@ export default class WindowManager {
   unSetTab(shouldScreenshot = true, shouldFocusSearch = false, view?: View) {
     const oldTabView = this.allWebViews[this.activeTabId];
 
+    if (oldTabView) {
+      this.interactWithPageAndEndUsage(oldTabView.view.webContents.getURL());
+    }
+
     // move title bar off screen
     const windowSize = currentWindowSize(this.mainWindow);
 
@@ -746,6 +772,10 @@ export default class WindowManager {
 
     const oldTabView = this.allWebViews[this.activeTabId];
 
+    if (oldTabView) {
+      this.interactWithPageAndEndUsage(oldTabView.view.webContents.getURL());
+    }
+
     const cleanupBrowser = () => {
       // if old tab does not exist remove it
       if (typeof oldTabView !== 'undefined') {
@@ -764,6 +794,11 @@ export default class WindowManager {
     this.closeFind();
 
     this.activeTabId = id;
+
+    const view = this.allWebViews[this.activeTabId];
+    if (view) {
+      this.interactWithPage(view.view.webContents.getURL());
+    }
 
     // tell main window that it is active and get the tabview reference
     const tabView = this.allWebViews[id];
@@ -1773,6 +1808,45 @@ export default class WindowManager {
     });
   }
 
+  interactWithPage(url: string) {
+    const baseUrl = getBaseUrl(url);
+    if (this.pageInteraction && this.pageInteraction.url === baseUrl) {
+      const now = Date.now();
+      const diff = now - this.pageInteraction.time;
+      if (diff > 0 && diff / 1000 < 60) {
+        if (baseUrl in this.cachedPageInteractions) {
+          this.cachedPageInteractions[baseUrl] += diff;
+        } else {
+          this.cachedPageInteractions[baseUrl] = diff;
+        }
+      }
+      this.pageInteraction.time = now;
+    } else if (baseUrl !== '') {
+      this.pageInteraction = { url: baseUrl, time: Date.now() };
+    }
+  }
+
+  trackPageUsage(url: string, time: number) {
+    this.tabPageView.webContents.send('track-page-usage', [url, time]);
+  }
+
+  interactWithPageAndEndUsage(url: string) {
+    this.interactWithPage(url);
+
+    const baseUrl = getBaseUrl(url);
+    if (this.pageInteraction && this.pageInteraction.url === baseUrl) {
+      this.pageInteraction = null;
+    }
+  }
+
+  handlePageInteractions() {
+    const keys = Object.keys(this.cachedPageInteractions);
+    keys.forEach((key) => {
+      this.trackPageUsage(key, this.cachedPageInteractions[key]);
+      delete this.cachedPageInteractions[key];
+    });
+  }
+
   addListeners() {
     ipcMain.on('create-new-tab', (_, switchToTab = false) => {
       const id = this.createNewTab();
@@ -1876,10 +1950,17 @@ export default class WindowManager {
       let tabExists = false;
 
       Object.values(this.allWebViews).forEach((tabView) => {
-        const tabUrl = tabView.view.webContents.getURL();
-        if (baseUrl(tabUrl) === baseUrl(url)) {
-          this.setTab(tabView.id);
-          tabExists = true;
+        if (!tabExists) {
+          const tabUrl = tabView.view.webContents.getURL();
+          if (tabUrl === '') {
+            if (getBaseUrl(tabView.unloadedUrl) === getBaseUrl(url)) {
+              this.setTab(tabView.id);
+              tabExists = true;
+            }
+          } else if (getBaseUrl(tabUrl) === getBaseUrl(url)) {
+            this.setTab(tabView.id);
+            tabExists = true;
+          }
         }
       });
 
@@ -2144,6 +2225,14 @@ export default class WindowManager {
           ]);
         }
       }
+    });
+    ipcMain.on('interact', () => {
+      const view = this.allWebViews[this.activeTabId];
+      if (!view) {
+        return;
+      }
+
+      this.interactWithPage(view.view.webContents.getURL());
     });
   }
 }
