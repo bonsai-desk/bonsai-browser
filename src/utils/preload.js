@@ -38,7 +38,7 @@ function getMeta() {
 }
 
 function getOpenGraphData() {
-  const properties = ['title', 'type', 'image', 'url', 'description '];
+  const properties = ['title', 'type', 'image', 'url', 'description'];
   const data = {};
   properties.forEach((property) => {
     const element = document.head.querySelector(
