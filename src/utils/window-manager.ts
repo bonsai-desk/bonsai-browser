@@ -8,7 +8,6 @@ import {
   globalShortcut,
   ipcMain,
   IpcMainEvent,
-  ipcRenderer,
   NativeImage,
   screen,
 } from 'electron';
