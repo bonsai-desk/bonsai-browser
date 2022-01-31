@@ -1,5 +1,18 @@
 # Changelog
 
+## Bonsai v1.2.2 (January 31 2022)
+
+## **Features**
+
+- Include history in search
+- Search UI looks like Google
+- Hotkey for all tags page (Ctrl/Cmd+G)
+- Settings option to disable focusing the search box on toggle
+ 
+### **Fixes**
+- Fix bug where some lists would select first item after deleting something
+- Middle click now also closes pages on the tag view
+
 ## Bonsai v1.2.1 (January 25 2022)
 
 ### **Features**
