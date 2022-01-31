@@ -145,7 +145,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const maxLength = 250;
   const openGraphData = getOpenGraphData();
   let output =
-    typeof openGraphData.description === 'undefined'
+    openGraphData.description === ''
       ? `${metaDescription} `
       : `${openGraphData.description} `;
   const lines = biggestText.split(/\r\n|\r|\n/);
