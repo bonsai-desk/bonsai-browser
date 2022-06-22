@@ -529,6 +529,8 @@ const CreateAccountPage = () => {
     subscribe: false,
   });
 
+  const [hasAutoSubmitted, setHasAutoSubmitted] = useState(false);
+
   const [formError, setFormError] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
@@ -565,6 +567,11 @@ const CreateAccountPage = () => {
       }
     };
   }, [submitted, values]);
+
+  if (!USE_ACCOUNT && !hasAutoSubmitted) {
+    setHasAutoSubmitted(true);
+    handleSignInInstead();
+  }
 
   async function clickLogin() {
     if (!supabase) {
@@ -868,6 +875,8 @@ const LoginPage = observer(() => {
     showPassword: false,
   });
 
+  const [hasAutoSubmitted, setHasAutoSubmitted] = useState(false);
+
   const [resetOpen, setResetOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetComplete, setResetComplete] = useState(false);
@@ -923,8 +932,26 @@ const LoginPage = observer(() => {
 
   async function submit() {
     if (!supabase) {
-      console.log('submit');
-      ipcRenderer.send('log-dat', 'submit');
+      ipcRenderer.send('sign-in-user', 'default-user');
+      const fakeSession: Session = {
+        provider_token: '',
+        access_token: '',
+        expires_in: 0,
+        expires_at: 0,
+        refresh_token: '',
+        token_type: '',
+        user: {
+          id: 'default-user',
+          created_at: '',
+          app_metadata: {},
+          user_metadata: {},
+          aud: '',
+        },
+      };
+      ipcRenderer.send('sign-in-session', fakeSession);
+      const route = onboardingStore.toggledOnce ? 'toggle' : 'is-a-dashboard';
+      history.push(route);
+      setValues({ ...values, loading: false });
       return;
     }
 
@@ -965,6 +992,11 @@ const LoginPage = observer(() => {
     } finally {
       setValues({ ...values, loading: false });
     }
+  }
+
+  if (!USE_ACCOUNT && !hasAutoSubmitted) {
+    setHasAutoSubmitted(true);
+    submit();
   }
 
   return (

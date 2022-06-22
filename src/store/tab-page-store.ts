@@ -1036,8 +1036,12 @@ export default class TabPageStore {
 
   refreshSession(session: Session | null) {
     if (!this.supaClient) {
+      runInAction(() => {
+        this.session = session;
+      });
+      ipcRenderer.send('refresh-session', session);
       if (this.sessionChangeCallback && this.session?.user?.id) {
-        this.sessionChangeCallback('default-user');
+        this.sessionChangeCallback(this.session.user.id);
       }
       return;
     }

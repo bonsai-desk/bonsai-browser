@@ -90,7 +90,7 @@ import HeaderText from './HeaderText';
 import SettingsContainer from './SettingsContainer';
 import { color } from '../utils/jsutils';
 import pkg from '../package.json';
-import { View } from '../constants';
+import { USE_ACCOUNT, View } from '../constants';
 import {
   exportWatermelon,
   importWatermelon,
@@ -1590,17 +1590,41 @@ const ConfigPage = observer(() => {
 const SettingsModalContent = observer(() => {
   const { tabPageStore } = useStore();
 
-  const [activePage, setActivePage] = useState<Page>(
-    tabPageStore.updateDownloaded ? Page.Update : Page.Account
-  );
+  let defaultActivePage = tabPageStore.updateDownloaded
+    ? Page.Update
+    : Page.Account;
+
+  if (!USE_ACCOUNT) {
+    defaultActivePage = Page.SettingsItem;
+  }
+
+  const [activePage, setActivePage] = useState<Page>(defaultActivePage);
 
   let menuItems: IMenuItem[] = [
-    { Icon: <AccountBox />, title: Page.Account, Page: <AccountPage /> },
-    { Icon: <BrowserUpdated />, title: Page.Update, Page: <UpdatesPage /> },
     { Icon: <SettingsIcon />, title: Page.SettingsItem, Page: <ConfigPage /> },
     { Icon: <Keyboard />, title: Page.Shortcuts, Page: <Settings /> },
-    { Icon: <Comment />, title: Page.Feedback, Page: <FeedbackPage /> },
   ];
+
+  if (USE_ACCOUNT) {
+    menuItems.unshift(
+      {
+        Icon: <AccountBox />,
+        title: Page.Account,
+        Page: <AccountPage />,
+      },
+      {
+        Icon: <BrowserUpdated />,
+        title: Page.Update,
+        Page: <UpdatesPage />,
+      }
+    );
+
+    menuItems.push({
+      Icon: <Comment />,
+      title: Page.Feedback,
+      Page: <FeedbackPage />,
+    });
+  }
 
   if (process.env.NODE_ENV === 'development') {
     menuItems.push({
