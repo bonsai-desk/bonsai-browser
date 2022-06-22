@@ -19,7 +19,12 @@ import WorkspaceStore from './workspace/workspace-store';
 import packageInfo from '../package.json';
 import { KeybindStore } from './keybinds';
 import TabStore from './tabs';
-import { SUPABASE_ANON_KEY, SUPABASE_URL, View } from '../constants';
+import {
+  SUPABASE_ANON_KEY,
+  SUPABASE_URL,
+  USE_ACCOUNT,
+  View,
+} from '../constants';
 import TagModel from '../watermelon/TagModel';
 import { TagModalData } from '../pages/TagModal';
 import {
@@ -173,7 +178,7 @@ export default class TabPageStore {
 
   session: Session | null = null;
 
-  supaClient: SupabaseClient;
+  supaClient: SupabaseClient | undefined;
 
   sessionChangeCallback: ((userId: string) => void) | null = null;
 
@@ -1012,6 +1017,10 @@ export default class TabPageStore {
   }
 
   handleRefreshError(error: any) {
+    if (!this.supaClient) {
+      return;
+    }
+
     const expiresAt = this.supaClient.auth.session()?.expires_at;
 
     if (typeof expiresAt === 'undefined' || error.status === 400) {
@@ -1026,6 +1035,12 @@ export default class TabPageStore {
   }
 
   refreshSession(session: Session | null) {
+    if (!this.supaClient) {
+      if (this.sessionChangeCallback && this.session?.user?.id) {
+        this.sessionChangeCallback('default-user');
+      }
+      return;
+    }
     // console.log('refreshSession', session, this.session);
     if (!session || !session.refresh_token) {
       ipcRenderer.send('log-data', ['clear session', session]);
@@ -1061,6 +1076,10 @@ export default class TabPageStore {
   }
 
   clearSession() {
+    if (!this.supaClient) {
+      return;
+    }
+
     console.log('sign out');
     this.session = null;
     this.supaClient.auth.signOut();
@@ -1078,7 +1097,9 @@ export default class TabPageStore {
     makeAutoObservable(this);
 
     this.refreshHandle = null;
-    this.supaClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    if (USE_ACCOUNT) {
+      this.supaClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
     this.versionString = packageInfo.version;
     this.windowSize = { width: 200, height: 200 };
     this.innerBounds = { x: 0, y: 0, width: 100, height: 100 };

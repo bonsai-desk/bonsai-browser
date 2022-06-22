@@ -3,32 +3,40 @@ import { init, Mixpanel } from 'mixpanel';
 import { Session } from '@supabase/supabase-js';
 import packageInfo from '../package.json';
 
-const projectDevToken = '88c46eeab06417e9bf2036451269a022';
-const projectToken = 'fa4d29136a737991cef9ae0a39f0b904';
+const projectDevToken = process.env.MIXPANEL_PROJECT_DEV_TOKEN;
+const projectToken = process.env.MIXPANEL_PROJECT_TOKEN;
 
 class MixpanelManager {
   userId: string;
 
   anonId: string;
 
-  mixpanel: Mixpanel;
+  mixpanel: Mixpanel | undefined;
 
   constructor(anonId: string) {
     this.userId = anonId;
     this.anonId = anonId;
     const token = app.isPackaged ? projectToken : projectDevToken;
-    this.mixpanel = init(token);
+    if (token) {
+      this.mixpanel = init(token);
+    }
     this.track('boot app');
     this.setVersion(anonId);
   }
 
   setVersion(userId: string) {
+    if (!this.mixpanel) {
+      return;
+    }
     this.mixpanel.people.set(userId, {
       version: packageInfo.version,
     });
   }
 
   loggedIn(session: Session) {
+    if (!this.mixpanel) {
+      return;
+    }
     if (session.user) {
       const { id, email } = session.user;
       if (id && this.userId !== id) {
@@ -51,6 +59,9 @@ class MixpanelManager {
   }
 
   track(eventName: string, properties = {}) {
+    if (!this.mixpanel) {
+      return;
+    }
     this.mixpanel.track(eventName, {
       ...properties,
       distinct_id: this.userId,
@@ -60,6 +71,9 @@ class MixpanelManager {
   }
 
   setUserProp(properties = {}) {
+    if (!this.mixpanel) {
+      return;
+    }
     if (this.userId && this.userId !== '') {
       this.mixpanel.people.set(this.userId, properties);
     }

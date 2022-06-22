@@ -18,10 +18,22 @@ export const ONBOARDING_HTML = `file://${__dirname}/onboarding.html`;
 
 export const PRELOAD = `${__dirname}/utils/preload.js`;
 
-export const SUPABASE_URL = 'https://mxwuygijohmfakerdlfz.supabase.co';
+export const SUPABASE_URL =
+  typeof process.env.REACT_APP_SUPABASE_URL === 'undefined'
+    ? ''
+    : process.env.REACT_APP_SUPABASE_URL;
 
 export const SUPABASE_ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTYzNjgzNDE5MywiZXhwIjoxOTUyNDEwMTkzfQ.SpYlL8rJZG6Ij6OHczyb1p6wuVl3Cl-n-dblTrYFs1Q';
+  typeof process.env.SUPABASE_ANON_KEY === 'undefined'
+    ? ''
+    : process.env.SUPABASE_ANON_KEY;
+
+let useAccount = false;
+if (typeof process.env.USE_ACCOUNT !== 'undefined') {
+  useAccount = process.env.USE_ACCOUNT === 'true';
+}
+
+export const USE_ACCOUNT = useAccount;
 
 // export const floatingTitleBarHeight = 37;
 // export const floatingTitleBarSpacing = 10;

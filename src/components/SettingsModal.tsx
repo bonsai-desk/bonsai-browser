@@ -414,7 +414,13 @@ const CreateNewBackupCard = observer(
       snapshot: undefined,
     });
     const myId = tabPageStore.session?.user?.id;
+    if (!tabPageStore.supaClient) {
+      return null;
+    }
     async function submit() {
+      if (!tabPageStore.supaClient) {
+        return;
+      }
       const snapshotData = await exportWatermelon(database);
       fs.writeFileSync(
         path.join(workspaceStore.dataPath, 'data-export'),
@@ -497,9 +503,15 @@ const DeleteSnapshotCard = observer(
     deleteCallback: (id: number) => void;
   }) => {
     const { tabPageStore } = useStore();
+    if (!tabPageStore.supaClient) {
+      return null;
+    }
     const title = hashNumber(snapshot.id);
     const [values, setValues] = useState({ loading: false, error: '' });
     const submit = () => {
+      if (!tabPageStore.supaClient) {
+        return;
+      }
       // eslint-disable-next-line promise/catch-or-return
       tabPageStore.supaClient
         .from('tagssnapshot')
@@ -563,7 +575,13 @@ const ApplyBackupCard = observer(
     const title = hashNumber(snapshot.id);
     const [values, setValues] = useState({ loading: false, done: false });
     const { tabPageStore, database } = useStore();
+    if (!tabPageStore.supaClient) {
+      return null;
+    }
     async function submit() {
+      if (!tabPageStore.supaClient) {
+        return;
+      }
       setValues({ ...values, loading: true });
       const { data, error } = await tabPageStore.supaClient
         .from('tagssnapshot')
@@ -900,9 +918,16 @@ const AccountPage = observer(() => {
   const [createOpen, setCreateOpen] = useState(false);
   const { tabPageStore } = useStore();
 
+  if (!tabPageStore.supaClient) {
+    return null;
+  }
+
   const myId = tabPageStore.session?.user?.id;
 
   const fetchSnapshots = () => {
+    if (!tabPageStore.supaClient) {
+      return;
+    }
     if (!myId) {
       console.log('No user id');
     } else {
@@ -1238,6 +1263,9 @@ function getActivePage(activePage: Page, menuItems: IMenuItem[]) {
 
 const FeedbackPage = observer(() => {
   const { tabPageStore } = useStore();
+  if (!tabPageStore.supaClient) {
+    return null;
+  }
   const [values, setValues] = useState({
     loading: false,
     feedback: '',
@@ -1247,6 +1275,9 @@ const FeedbackPage = observer(() => {
   const myId = tabPageStore.session?.user?.id;
   const email = tabPageStore.session?.user?.email || 'email@address.com';
   async function submit() {
+    if (!tabPageStore.supaClient) {
+      return;
+    }
     setValues({ ...values, loading: true, error: '' });
     if (myId) {
       const { error } = await tabPageStore.supaClient

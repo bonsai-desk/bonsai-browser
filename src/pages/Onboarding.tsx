@@ -10,7 +10,7 @@ import {
   useHistory,
   useLocation,
 } from 'react-router-dom';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import {
   Box,
   Checkbox,
@@ -53,7 +53,7 @@ import {
   Button as GrayButton,
   InertButtonStyle,
 } from '../components/StretchButton';
-import { SUPABASE_ANON_KEY, SUPABASE_URL } from '../constants';
+import { SUPABASE_ANON_KEY, SUPABASE_URL, USE_ACCOUNT } from '../constants';
 import { Buttons } from '../components/Buttons';
 import { GlobalLight } from '../GlobalStyle';
 
@@ -468,7 +468,9 @@ const NotFound = () => {
   );
 };
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase: SupabaseClient | undefined = USE_ACCOUNT
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : undefined;
 
 export interface ILoadyButton {
   children: React.ReactNode | string;
@@ -565,6 +567,10 @@ const CreateAccountPage = () => {
   }, [submitted, values]);
 
   async function clickLogin() {
+    if (!supabase) {
+      return;
+    }
+
     if (!values.loginDisabled) {
       // setValues({ ...values, loading: true });
       onboardingStore.setEmail(values.email);
@@ -666,6 +672,10 @@ const CreateAccountPage = () => {
   // useEffect(() => {}, []);
 
   const handleLogin = async () => {
+    if (!supabase) {
+      return;
+    }
+
     try {
       setValues({ ...values, loading: true });
       const { user, session, error } = await supabase.auth.signUp(
@@ -868,6 +878,10 @@ const LoginPage = observer(() => {
   };
 
   const handleResetPassword = () => {
+    if (!supabase) {
+      return;
+    }
+
     setResetLoading(true);
     if (!validateEmail(resetEmail)) {
       setResetError('Please enter a valid email');
@@ -908,6 +922,12 @@ const LoginPage = observer(() => {
   };
 
   async function submit() {
+    if (!supabase) {
+      console.log('submit');
+      ipcRenderer.send('log-dat', 'submit');
+      return;
+    }
+
     setValues({ ...values, loading: true });
     onboardingStore.setFormError('');
     try {
