@@ -79,6 +79,29 @@ The packaged build will end up in the release folder, and for some platforms, it
 yarn package
 ```
 
+- configuration
+
+The most recent commits have user accounts disabled by default. This can be controlled by a .env file in the root folder.
+
+The following configuration could be used to enable user accounts and to do notarized builds.
+
+This configuration is also required for previous commits to work at all.
+
+Commits older than 11/29/2021 should work without configuration because user accounts did not exist yet.
+
+```
+USE_ACCOUNT=true
+REACT_APP_SUPABASE_URL="https://[app url].supabase.co"
+SUPABASE_ANON_KEY="[anon key]"
+MIXPANEL_PROJECT_DEV_TOKEN="[mixpanel project dev token]"
+MIXPANEL_PROJECT_TOKEN="[mixpanel project token]"
+CI=true
+APPLE_ID="example@example.com"
+APPLE_ID_PASS="[apple id pass]"
+GH_TOKEN="[github token]"
+DEBUG=false
+```
+
 ## Contributing
 
 Bonsai Browser is no longer being actively developed, but contributions are welcome
