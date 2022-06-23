@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      .error-catch {
+        background-color: white;
+        background-image: url(../assets/bonsai-logo-excited.svg);
+      }
+    </style>
+    <meta charset="utf-8" />
+    <title>Bonsai</title>
+    <script>
+      (() => {
+        if (process?.env?.NODE_ENV !== 'development') {
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = './dist/style.css';
+          // HACK: Writing the script path should be done with webpack
+          document.getElementsByTagName('head')[0].appendChild(link);
+        }
+      })();
+    </script>
+  </head>
+  <body onload="handleLoad()">
+    <div id="tab-page"></div>
+    <script>
+      const scripts = [];
+
+      if (process.env.NODE_ENV === 'development') {
+        // Dynamically insert the DLL script in development env in the
+        // renderer process
+        scripts.push('../.erb/dll/renderer.dev.dll.js');
+
+        // Dynamically insert the bundled app script in the renderer process
+        const port = process.env.PORT || 1212;
+        scripts.push(`http://localhost:${port}/dist/renderer.dev.js`);
+      } else {
+        scripts.push('./dist/renderer.prod.js');
+      }
+
+      if (scripts.length) {
+        document.write(
+          scripts
+            .map((script) => `<script defer src="${script}"><\/script>`)
+            .join('')
+        );
+      }
+      let setBackground = false;
+      function handleLoad() {
+        if (!setBackground) {
+          setBackground = true;
+          setTimeout(() => {
+            const el = document.getElementsByTagName('body')[0];
+            el.className = 'error-catch';
+          }, 5000);
+        }
+      }
+    </script>
+  </body>
+</html>

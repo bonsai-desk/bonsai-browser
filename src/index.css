@@ -1,0 +1,43 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+  line-height: 1.6;
+  font-size: 18px;
+  color: black;
+  -webkit-user-select: none; /* Chrome all / Safari all */
+  user-select: none; /* Likely future */
+}
+
+/*https://gist.github.com/Splode/a2ae4f5dbfaca98efad9f93f51832146*/
+
+:not(input):not(textarea),
+:not(input):not(textarea)::after,
+:not(input):not(textarea)::before {
+  -webkit-user-select: none;
+  user-select: none;
+}
+input,
+button,
+textarea,
+:focus {
+  outline: none;
+}
+
+/* disable image and anchor dragging */
+a:not([draggable='true']),
+img:not([draggable='true']) {
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+a[href^="http://"],
+a[href^="https://"],
+a[href^="ftp://"]
+{
+  -webkit-user-drag: auto;
+  user-drag: auto;
+}

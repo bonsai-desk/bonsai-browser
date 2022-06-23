@@ -1,136 +1,533 @@
-# Changelog
+# 2.1.0
 
-## Bonsai v1.2.2 (January 31 2022)
+- Migrate to `css-minifier-webpack-plugin`
 
-## **Features**
+# 2.0.1
 
-- Include history in search
-- Search UI looks like Google
-- Hotkey for all tags page (Ctrl/Cmd+G)
-- Settings option to disable focusing the search box on toggle
- 
-### **Fixes**
-- Fix bug where some lists would select first item after deleting something
-- Middle click now also closes pages on the tag view
+## Fixes
 
-## Bonsai v1.2.1 (January 25 2022)
+- Fix broken css linking in production build
 
-### **Features**
-- Support for local files
-  - Click and drag file into window or put file path in search box
-- Custom floating window widths in settings
-- Open and close pages from tag views without leaving view
-  - Click the green indicator, use hotkey, or middle mouse click item
-- Update notifications in app
-- Page zooming hotkeys
-- Ctrl+Shift+Tab to cycle through tabs
-- Buttons for tagging and closing pages on list items
+# 2.0.0
 
-### **Fixes**
-- Tagged pages now have screenshots
-- Alt+H/L no longer fills bonsai box with junk (macOS)
-- Arrows don't work on some bonsai text boxes
-- Right column dissapears sometimes in domain view
-- List items in tag page remember selection when navigating
+## Breaking Changes
 
-### **Other**
-- Added some pre-filled data for first time users
-- Blur text box when mouse highlights a list item
-- Most recently used tag at top of tag modal
-- Cleaner ordering of items' tags in tag page view
+- drop redux
+- remove counter example app
+- simplify directory structure
+- move `dll` dir to `.erb` dir
+- fix icon/font import paths
+- migrate to `react-refresh` from `react-hot-loader`
+- migrate to webpack@5
+- migrate to electron@11
+- remove e2e tests and testcafe integration
+- rename `app` dir to more conventional `src` dir
+- rename `resources` dir to `assets`
+- simplify npm scripts
+- drop stylelint
+- simplify styling of boilerplate app
+- remove `START_HOT` env variable
+- notarize support
+- landing page boilerplate
+- docs updates
+- restore removed debugging support
 
-## Bonsai 1.2.0 (January 14, 2022)
+# 1.4.0
 
-### Features
-- Tagging system to replace workspaces!
-  - Use Ctrl/Cmd+D to tag a page
-- Redesigned app around lists and hotkey navigation
+- Migrate to `eslint-config-erb@2`
+- Rename `dev` npm script to `start`
+- GitHub Actions: only publish GitHub releases when on master branch
 
-## Bonsai 1.1.4 (December 17, 2021)
+# 1.3.1
 
-### Fixes 
-- Tiled windows now stay tiled when toggle the app
+- Fix sass building bug ([#2540](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/2540))
+- Fix CI bug related to E2E tests and network timeouts
+- Move automated dependency PRs to `next` ([#2554](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/2554))
+- Bump dependencies to patch semver
 
-## Bonsai 1.1.3 (December 16, 2021)
+# 1.3.0
 
-### Features
-- Tiling floating window with hotkeys (physics window replaced)
-- While app is open, press Alt+H or Alt+L to tile window left or right.
-- You can also use ALt+LeftArrow and Alt+RightArrow
-- App is fully functional in tiled window mode
-- Light & dark mode (matches system theme by default), custom background color, & UI improvements
-- Choose between Google/DuckDuckGo
-- Scrollbounce on macOS
-- Switch between tabs on macOS with Cmd+Opt+Left/Right
+- Fixes E2E tests ([#2516](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/2516))
+- Fixes preload entrypoint ([#2503](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/2503))
+- Downgrade to `electron@8`
+- Bump dependencies to latest semver
 
-### Fixes
-- Escape hotkey now does not trigger unless app has focus
-- Hotkeys display correctly for each platform
-- Close find-in-page popup when you navigate
-- Fixed problem where macOS notch cuts into search bar
-- Remove unintended outlines that would appear on buttons sometimes
-- Return to homepage hotkey no longer bricks app when in floaty window mode
+# 1.2.0
 
-## Bonsai 1.1.2 (December 07, 2021)
+- Migrate to redux toolkit
+- Lazy load routes with react suspense
+- Drop support for azure-pipelines and use only github actions
+- Bump all deps to latest semver
+- Remove `test-e2e` script from tests (blocked on release of https://github.com/DevExpress/testcafe-browser-provider-electron/pull/65)
+- Swap `typed-css-modules-webpack-plugin` for `typings-for-css-modules-loader`
+- Use latest version of `eslint-config-erb`
+- Remove unnecessary file extensions from ts exclude
+- Add experimental support for vscode debugging
+- Revert https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/2365 as default for users, provide as opt in option
 
-### Features
-- Data backup and sync to Bonsai account
-- New UI style
-- Toggle between tab columns and bump-ordered grid on home page
-- Feedback page
+# 1.1.0
 
-### Fixes 
-- Improved performance of workspaces
-- Better tab image handling to reduce latency of home & search
-- Undo closed tab(s) with ctrl+shift+t is no longer broken
+- Fix #2402
+- Simplify configs (https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/2406)
 
-## Bonsai 1.1.1 (October 26, 2021)
-- Tab home page is now bump ordered instead of grouped by domains in columns
-- New tab card styling on homepage & search
-- Fix: UI for small tabs when many are open and overflow behavior in tab row
-- Fix: new tab hotkey focuses the url box now
+# 1.0.0
 
-## Bonsai 1.1.0 (October 20, 2021)
+- Migrate to TypeScript from Flow ([#2363](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/2363))
+- Use browserslist for `@babel/preset-env` targets ([#2368](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/2368))
+- Use preload script, disable `nodeIntegration` in renderer process for [improved security](https://www.electronjs.org/docs/tutorial/security#2-do-not-enable-nodejs-integration-for-remote-content) ([#2365](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/2365))
+- Add support for azure pipelines ([#2369](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/2369))
+- Disable sourcemaps in production
 
-- Normal URL box, tabs, and back/forward buttons cloned from Chrome
-- Removed tree history data structure and associated UI
-- Change the floating window icon to ‘Picture in Picture’
-- Fixed bug where pages opened in a new window would disappear if opened too quickly
-- Added more logging to workspace load function on startup to catch help catch bug where workspace data gets lost
-- Updated some macOS icons
+# 0.18.1 (2019.12.12)
 
-## Bonsai 1.0.9 (October 12, 2021)
+- Fix HMR env bug ([#2343](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/2343))
+- Bump all deps to latest semver
+- Bump to `electron@7`
 
-- Linux version available at https://bonsaibrowser.com/
-    - Tested on Ubuntu 20.04
+# 0.18.0 (2019.11.19)
 
-## Bonsai 1.0.8 (October 8, 2021)
+- Bump electron to `electron@6` (`electron@7` introduces breaking changes to testcafe end to end tests)
+- Revert back to [two `package.json` structure](https://www.electron.build/tutorials/two-package-structure)
+- Bump all deps to latest semver
 
-- Windows version available at https://bonsaibrowser.com/
-- You will have to click 'more info' -> 'run anyway' to launch it the first time since the app is not signed on Windows
-- Update the style of some buttons
-- Change background to solid color instead of translucent
-- Sign up for mailing list in settings
+# 0.17.1 (2018.11.20)
 
-## Bonsai 1.0.7 (September 18, 2021)
+- Fix `yarn test-e2e` and testcafe for single package.json structure
+- Fixes incorrect path in `yarn start` script
+- Bumped deps
+- Bump g++ in travis
+- Change clone arguments to clone only master
+- Change babel config to target current electron version
 
-- Floating window is now interactable
-- Shortcuts can be rebound
-- New settings page
-- More shortcuts + documentation on the settings page
-- Search box is now always available and focused when app is toggled on
-- Fixed bug causing URLs to be Googled sometimes
-- Added support for localhost
-- Added support for custom hosts file URLs
-- Fixed window width when OS dock in on the side of your screen
-- Reduced lag when starting fuzzy search
+For full change list, see https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/2021
 
-New Shortcuts
-- Toggle floating window: Command+\
-- Focus search box: Command+L
-- Return to tab page: Command+E
-- Close current page: Command+W
+# 0.17.0 (2018.10.30)
 
-## Bonsai 1.0.6 (September 7, 2021)
+- upgraded to `babel@7` (thanks to @vikr01 🎉🎉🎉)
+- migrated from [two `package.json` structure](https://www.electron.build/tutorials/two-package-structure) (thanks to @HyperSprite!)
+- initial auto update support (experimental)
+- migrate from greenkeeper to [renovate](https://renovatebot.com)
+- added issue template
+- use `babel-preset-env` to target current electron version
+- add [opencollective](https://opencollective.com/electron-react-boilerplate-594) banner message display in postinstall script (help support ERB 🙏)
+- fix failing ci issues
 
-First public release (macOS only).
+# 0.16.0 (2018.10.3)
+
+- removed unused dependencies
+- migrate from `react-redux-router` to `connect-react-router`
+- move webpack configs to `./webpack` dir
+- use `g++` on travis when testing linux
+- migrate from `spectron` to `testcafe` for e2e tests
+- add linting support for config styles
+- changed stylelint config
+- temporarily disabled flow in appveyor to make ci pass
+- added necessary infra to publish releases from ci
+
+# 0.15.0 (2018.8.25)
+
+- Performance: cache webpack uglify results
+- Feature: add start minimized feature
+- Feature: lint and fix styles with prettier and stylelint
+- Feature: add greenkeeper support
+
+# 0.14.0 (2018.5.24)
+
+- Improved CI timings
+- Migrated README commands to yarn from npm
+- Improved vscode config
+- Updated all dependencies to latest semver
+- Fix `electron-rebuild` script bug
+- Migrated to `mini-css-extract-plugin` from `extract-text-plugin`
+- Added `optimize-css-assets-webpack-plugin`
+- Run `prettier` on json, css, scss, and more filetypes
+
+# 0.13.3 (2018.5.24)
+
+- Add git precommit hook, when git commit will use `prettier` to format git add code
+- Add format code function in `lint-fix` npm script which can use `prettier` to format project js code
+
+# 0.13.2 (2018.1.31)
+
+- Hot Module Reload (HMR) fixes
+- Bumped all dependencies to latest semver
+- Prevent error propagation of `CheckNativeDeps` script
+
+# 0.13.1 (2018.1.13)
+
+- Hot Module Reload (HMR) fixes
+- Bumped all dependencies to latest semver
+- Fixed electron-rebuild script
+- Fixed tests scripts to run on all platforms
+- Skip redux logs in console in test ENV
+
+# 0.13.0 (2018.1.6)
+
+#### Additions
+
+- Add native dependencies check on postinstall
+- Updated all dependencies to latest semver
+
+# 0.12.0 (2017.7.8)
+
+#### Misc
+
+- Removed `babel-polyfill`
+- Renamed and alphabetized npm scripts
+
+#### Breaking
+
+- Changed node dev `__dirname` and `__filename` to node built in fn's (https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/1035)
+- Renamed `src/bundle.js` to `src/renderer.prod.js` for consistency
+- Renamed `dll/vendor.js` to `dll/renderer.dev.dll.js` for consistency
+
+#### Additions
+
+- Enable node_modules cache on CI
+
+# 0.11.2 (2017.5.1)
+
+Yay! Another patch release. This release mostly includes refactorings and router bug fixes. Huge thanks to @anthonyraymond!
+
+⚠️ Windows electron builds are failing because of [this issue](https://github.com/electron/electron/issues/9321). This is not an issue with the boilerplate ⚠️
+
+#### Breaking
+
+- **Renamed `./src/main.development.js` => `./src/main.{dev,prod}.js`:** [#963](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/963)
+
+#### Fixes
+
+- **Fixed reloading when not on `/` path:** [#958](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/958) [#949](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/949)
+
+#### Additions
+
+- **Added support for stylefmt:** [#960](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/960)
+
+# 0.11.1 (2017.4.23)
+
+You can now debug the production build with devtools like so:
+
+```
+DEBUG_PROD=true npm run package
+```
+
+🎉🎉🎉
+
+#### Additions
+
+- **Added support for debugging production build:** [#fab245a](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/941/commits/fab245a077d02a09630f74270806c0c534a4ff95)
+
+#### Bug Fixes
+
+- **Fixed bug related to importing native dependencies:** [#933](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/933)
+
+#### Improvements
+
+- **Updated all deps to latest semver**
+
+# 0.11.0 (2017.4.19)
+
+Here's the most notable changes since `v0.10.0`. Its been about a year since a release has been pushed. Expect a new release to be published every 3-4 weeks.
+
+#### Breaking Changes
+
+- **Dropped support for node < 6**
+- **Refactored webpack config files**
+- **Migrate to two-package.json project structure**
+- **Updated all devDeps to latest semver**
+- **Migrated to Jest:** [#768](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/768)
+- **Migrated to `react-router@4`**
+- **Migrated to `electron-builder@4`**
+- **Migrated to `webpack@2`**
+- **Migrated to `react-hot-loader@3`**
+- **Changed default live reload server PORT to `1212` from `3000`**
+
+#### Additions
+
+- **Added support for Yarn:** [#451](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/451)
+- **Added support for Flow:** [#425](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/425)
+- **Added support for stylelint:** [#911](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/911)
+- **Added support for electron-builder:** [#876](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/876)
+- **Added optional support for SASS:** [#880](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/880)
+- **Added support for eslint-plugin-flowtype:** [#911](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/911)
+- **Added support for appveyor:** [#280](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/280)
+- **Added support for webpack dlls:** [#860](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/860)
+- **Route based code splitting:** [#884](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/884)
+- **Added support for Webpack Bundle Analyzer:** [#922](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/922)
+
+#### Improvements
+
+- **Parallelize renderer and main build processes when running `npm run build`**
+- **Dynamically generate electron app menu**
+- **Improved vscode integration:** [#856](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/856)
+
+#### Bug Fixes
+
+- **Fixed hot module replacement race condition bug:** [#917](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/917) [#920](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/920)
+
+# 0.10.0 (2016.4.18)
+
+#### Improvements
+
+- **Use Babel in main process with Webpack build:** [#201](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/201)
+- **Change targets to built-in support by webpack:** [#197](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/197)
+- **use es2015 syntax for webpack configs:** [#195](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/195)
+- **Open application when webcontent is loaded:** [#192](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/192)
+- **Upgraded dependencies**
+
+#### Bug fixed
+
+- **Fix `npm list electron-prebuilt` in package.js:** [#188](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/188)
+
+# 0.9.0 (2016.3.23)
+
+#### Improvements
+
+- **Added [redux-logger](https://github.com/fcomb/redux-logger)**
+- **Upgraded [react-router-redux](https://github.com/reactjs/react-router-redux) to v4**
+- **Upgraded dependencies**
+- **Added `npm run dev` command:** [#162](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/162)
+- **electron to v0.37.2**
+
+#### Breaking Changes
+
+- **css module as default:** [#154](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/154).
+- **set default NODE_ENV to production:** [#140](https://github.com/electron-react-boilerplate/electron-react-boilerplate/issues/140)
+
+# 0.8.0 (2016.2.17)
+
+#### Bug fixed
+
+- **Fix lint errors**
+- **Fix Webpack publicPath for production builds**: [#119](https://github.com/electron-react-boilerplate/electron-react-boilerplate/issues/119).
+- **package script now chooses correct OS icon extension**
+
+#### Improvements
+
+- **babel 6**
+- **Upgrade Dependencies**
+- **Enable CSS source maps**
+- **Add json-loader**: [#128](https://github.com/electron-react-boilerplate/electron-react-boilerplate/issues/128).
+- **react-router 2.0 and react-router-redux 3.0**
+
+# 0.7.1 (2015.12.27)
+
+#### Bug fixed
+
+- **Fixed npm script on windows 10:** [#103](https://github.com/electron-react-boilerplate/electron-react-boilerplate/issues/103).
+- **history and react-router version bump**: [#109](https://github.com/electron-react-boilerplate/electron-react-boilerplate/issues/109), [#110](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/110).
+
+#### Improvements
+
+- **electron 0.36**
+
+# 0.7.0 (2015.12.16)
+
+#### Bug fixed
+
+- **Fixed process.env.NODE_ENV variable in webpack:** [#74](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/74).
+- **add missing object-assign**: [#76](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/76).
+- **packaging in npm@3:** [#77](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/77).
+- **compatibility in windows:** [#100](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/100).
+- **disable chrome debugger in production env:** [#102](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/102).
+
+#### Improvements
+
+- **redux**
+- **css-modules**
+- **upgrade to react-router 1.x**
+- **unit tests**
+- **e2e tests**
+- **travis-ci**
+- **upgrade to electron 0.35.x**
+- **use es2015**
+- **check dev engine for node and npm**
+
+# 0.6.5 (2015.11.7)
+
+#### Improvements
+
+- **Bump style-loader to 0.13**
+- **Bump css-loader to 0.22**
+
+# 0.6.4 (2015.10.27)
+
+#### Improvements
+
+- **Bump electron-debug to 0.3**
+
+# 0.6.3 (2015.10.26)
+
+#### Improvements
+
+- **Initialize ExtractTextPlugin once:** [#64](https://github.com/electron-react-boilerplate/electron-react-boilerplate/issues/64).
+
+# 0.6.2 (2015.10.18)
+
+#### Bug fixed
+
+- **Babel plugins production env not be set properly:** [#57](https://github.com/electron-react-boilerplate/electron-react-boilerplate/issues/57).
+
+# 0.6.1 (2015.10.17)
+
+#### Improvements
+
+- **Bump electron to v0.34.0**
+
+# 0.6.0 (2015.10.16)
+
+#### Breaking Changes
+
+- **From react-hot-loader to react-transform**
+
+# 0.5.2 (2015.10.15)
+
+#### Improvements
+
+- **Run tests with babel-register:** [#29](https://github.com/electron-react-boilerplate/electron-react-boilerplate/issues/29).
+
+# 0.5.1 (2015.10.12)
+
+#### Bug fixed
+
+- **Fix #51:** use `path.join(__dirname` instead of `./`.
+
+# 0.5.0 (2015.10.11)
+
+#### Improvements
+
+- **Simplify webpack config** see [#50](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/50).
+
+#### Breaking Changes
+
+- **webpack configs**
+- **port changed:** changed default port from 2992 to 3000.
+- **npm scripts:** remove `start-dev` and `dev-server`. rename `hot-dev-server` to `hot-server`.
+
+# 0.4.3 (2015.9.22)
+
+#### Bug fixed
+
+- **Fix #45 zeromq crash:** bump version of `electron-prebuilt`.
+
+# 0.4.2 (2015.9.15)
+
+#### Bug fixed
+
+- **run start-hot breaks chrome refresh(CTRL+R) (#42)**: bump `electron-debug` to `0.2.1`
+
+# 0.4.1 (2015.9.11)
+
+#### Improvements
+
+- **use electron-prebuilt version for packaging (#33)**
+
+# 0.4.0 (2015.9.5)
+
+#### Improvements
+
+- **update dependencies**
+
+# 0.3.0 (2015.8.31)
+
+#### Improvements
+
+- **eslint-config-airbnb**
+
+# 0.2.10 (2015.8.27)
+
+#### Features
+
+- **custom placeholder icon**
+
+#### Improvements
+
+- **electron-renderer as target:** via [webpack-target-electron-renderer](https://github.com/chentsulin/webpack-target-electron-renderer)
+
+# 0.2.9 (2015.8.18)
+
+#### Bug fixed
+
+- **Fix hot-reload**
+
+# 0.2.8 (2015.8.13)
+
+#### Improvements
+
+- **bump electron-debug**
+- **babelrc**
+- **organize webpack scripts**
+
+# 0.2.7 (2015.7.9)
+
+#### Bug fixed
+
+- **defaultProps:** fix typos.
+
+# 0.2.6 (2015.7.3)
+
+#### Features
+
+- **menu**
+
+#### Bug fixed
+
+- **package.js:** include webpack build.
+
+# 0.2.5 (2015.7.1)
+
+#### Features
+
+- **NPM Script:** support multi-platform
+- **package:** `--all` option
+
+# 0.2.4 (2015.6.9)
+
+#### Bug fixed
+
+- **Eslint:** typo, [#17](https://github.com/electron-react-boilerplate/electron-react-boilerplate/issues/17) and improve `.eslintrc`
+
+# 0.2.3 (2015.6.3)
+
+#### Features
+
+- **Package Version:** use latest release electron version as default
+- **Ignore Large peerDependencies**
+
+#### Bug fixed
+
+- **Npm Script:** typo, [#6](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/6)
+- **Missing css:** [#7](https://github.com/electron-react-boilerplate/electron-react-boilerplate/pull/7)
+
+# 0.2.2 (2015.6.2)
+
+#### Features
+
+- **electron-debug**
+
+#### Bug fixed
+
+- **Webpack:** add `.json` and `.node` to extensions for imitating node require.
+- **Webpack:** set `node_modules` to externals for native module support.
+
+# 0.2.1 (2015.5.30)
+
+#### Bug fixed
+
+- **Webpack:** #1, change build target to `atom`.
+
+# 0.2.0 (2015.5.30)
+
+#### Features
+
+- **Ignore:** `test`, `tools`, `release` folder and devDependencies in `package.json`.
+- **Support asar**
+- **Support icon**
+
+# 0.1.0 (2015.5.27)
+
+#### Features
+
+- **Webpack:** babel, react-hot, ...
+- **Flux:** actions, api, components, containers, stores..
+- **Package:** darwin (osx), linux and win32 (windows) platform.
