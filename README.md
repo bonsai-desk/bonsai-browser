@@ -123,7 +123,7 @@ Join the [Discord server](https://discord.com/invite/DRCu3qJEZc)
 [issues-shield]: https://img.shields.io/github/issues/Bonsai-Desk/bonsai-browser.svg?style=for-the-badge
 [issues-url]: https://github.com/Bonsai-Desk/bonsai-browser/issues
 [license-shield]: https://img.shields.io/github/license/Bonsai-Desk/bonsai-browser.svg?style=for-the-badge
-[license-url]: https://github.com/Bonsai-Desk/bonsai-browser/blob/master/LICENSE.txt
+[license-url]: https://github.com/Bonsai-Desk/bonsai-browser/blob/master/LICENSE
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://linkedin.com/in/linkedin_username
 [product-screenshot]: images/screenshot.png
